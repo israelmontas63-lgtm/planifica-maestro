@@ -129,15 +129,22 @@ export default function App() {
     <div className="phone-shell">
       <Header onLogout={() => alert("Sesion cerrada")} />
       
-      <div className="title-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ textTransform: 'capitalize' }}>{periodo} - {nivel}</span>
-        <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <input type="checkbox" checked={hablarRespuestas} onChange={(e) => setHablarRespuestas(e.target.checked)} />
+      <section className="pm-title-card">
+        <h1 className="pm-title">{periodo} - {nivel}</h1>
+        <label className="pm-switch">
           Voz (Bot)
+          <input 
+            type="checkbox" 
+            checked={hablarRespuestas} 
+            onChange={(e) => setHablarRespuestas(e.target.checked)} 
+          />
+          <div className="pm-switch-track">
+            <div className="pm-switch-thumb"></div>
+          </div>
         </label>
-      </div>
+      </section>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '10px', background: '#f8fafc', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 10px 100px 10px', background: 'var(--pm-bg)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {messages.length === 0 && (
           <div style={{ textAlign: 'center', color: '#64748b', marginTop: '20px' }}>
             <p>Sube una foto de la pizarra o presiona el micrófono para decirme qué clase quieres planificar.</p>

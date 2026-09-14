@@ -552,3 +552,47 @@ body {
 .modal-actions { display: flex; gap: 10px; margin-top: 10px; }
 .modal-actions button { flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; }
 .status-text { font-size: 13px; color: #6b7c85; padding: 8px 16px; }
+
+
+/* NEW PM STYLES */
+.pm-header { background: var(--pm-navy); display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; }
+.pm-logo { display: flex; align-items: center; gap: 10px; }
+.pm-logo-icon { width: 32px; height: 32px; }
+.pm-logo-text { font-weight: 700; font-size: 18px; line-height: 1.1; color: var(--pm-white); }
+.pm-logo-accent { color: var(--pm-green); }
+.pm-header-actions { display: flex; align-items: center; gap: 16px; }
+.pm-icon-btn { background: none; border: none; cursor: pointer; padding: 0; display: flex; }
+.pm-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--pm-white); cursor: pointer; }
+
+.pm-title-card { background: var(--pm-white); border-radius: var(--pm-radius-md); box-shadow: var(--pm-shadow); padding: 18px 20px; margin: 16px; display: flex; justify-content: space-between; align-items: center; }
+.pm-title { color: var(--pm-navy); font-weight: 700; font-size: 22px; margin: 0; text-transform: capitalize; }
+
+.pm-viewfinder { position: relative; margin: 0 16px; border-radius: var(--pm-radius-md); overflow: hidden; aspect-ratio: 4/5; background: #000; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.pm-viewfinder-img { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
+.pm-corner { position: absolute; width: 28px; height: 28px; border-color: var(--pm-white); border-style: solid; z-index: 2; pointer-events: none; }
+.pm-corner-tl { top: 14px; left: 14px; border-width: 3px 0 0 3px; }
+.pm-corner-tr { top: 14px; right: 14px; border-width: 3px 3px 0 0; }
+.pm-corner-bl { bottom: 14px; left: 14px; border-width: 0 0 3px 3px; }
+.pm-corner-br { bottom: 14px; right: 14px; border-width: 0 3px 3px 0; }
+.pm-viewfinder-text { position: absolute; z-index: 1; color: rgba(255,255,255,0.7); text-align: center; padding: 0 20px; font-size: 14px; pointer-events: none; }
+
+.pm-bottom-bar { display: flex; align-items: center; gap: 10px; background: var(--pm-bg); border-radius: var(--pm-radius-lg); padding: 10px; margin: 16px; box-shadow: var(--pm-shadow); position: fixed; bottom: 0; left: 0; right: 0; z-index: 100; }
+.pm-menu-dropdown { position: relative; }
+.pm-menu-toggle { background: var(--pm-white); color: var(--pm-navy); border: none; border-radius: var(--pm-radius-md); padding: 16px 20px; font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.pm-menu-list { position: absolute; bottom: calc(100% + 10px); left: 0; background: var(--pm-white); border-radius: var(--pm-radius-md); box-shadow: var(--pm-shadow); padding: 8px; list-style: none; margin: 0; min-width: 250px; display: flex; flex-direction: column; gap: 4px; max-height: 400px; overflow-y: auto; }
+.pm-menu-list button { width: 100%; text-align: left; padding: 12px; border: none; background: transparent; border-radius: 8px; cursor: pointer; font-size: 14px; color: var(--pm-text-dark); }
+.pm-menu-list button:hover { background: var(--pm-bg); }
+.pm-menu-list button.active { background: var(--pm-teal); color: var(--pm-white); font-weight: bold; }
+
+.pm-btn-dictado { flex: 1; background: var(--pm-teal); color: var(--pm-white); border: none; border-radius: var(--pm-radius-md); padding: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: background 0.2s; }
+.pm-btn-dictado.listening { background: var(--pm-green); }
+.pm-btn-texto { background: var(--pm-white); color: var(--pm-navy); border: none; border-radius: var(--pm-radius-md); padding: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
+
+/* Switch for toggle */
+.pm-switch { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--pm-text-muted); font-weight: 600; cursor: pointer; }
+.pm-switch input { display: none; }
+.pm-switch-track { width: 36px; height: 20px; background: #CBD5E1; border-radius: 10px; position: relative; transition: 0.3s; }
+.pm-switch input:checked + .pm-switch-track { background: var(--pm-green); }
+.pm-switch-thumb { width: 16px; height: 16px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: 0.3s; }
+.pm-switch input:checked + .pm-switch-track .pm-switch-thumb { left: 18px; }
+

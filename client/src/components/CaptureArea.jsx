@@ -10,7 +10,7 @@ export default function CaptureArea({ imageSrc, onImageSelected, procesando }) {
     reader.readAsDataURL(file);
   };
   return (
-    <div className="capture-area" onClick={() => fileInputRef.current?.click()}>
+    <div className="pm-viewfinder" onClick={() => fileInputRef.current?.click()}>
       <input
         ref={fileInputRef}
         type="file"
@@ -19,16 +19,19 @@ export default function CaptureArea({ imageSrc, onImageSelected, procesando }) {
         style={{ display: "none" }}
         onChange={handleFile}
       />
-      {imageSrc ? (
-        <img src={imageSrc} alt="Pagina capturada" />
-      ) : (
-        <div className="capture-placeholder">
-          📷 Toca aqui para tomar una foto del libro o guia docente.<br />
-          Planifica Maestro leera el contenido automaticamente.
+      {imageSrc && (
+        <img src={imageSrc} alt="Página capturada" className="pm-viewfinder-img" />
+      )}
+      {!imageSrc && !procesando && (
+        <div className="pm-viewfinder-text">
+          📷 Toca aquí para tomar una foto del libro o guía docente.
         </div>
       )}
-      <div className="grid-overlay" />
-      {procesando && <div className="status-text">Leyendo la imagen...</div>}
+      {procesando && <div className="pm-viewfinder-text">Leyendo la imagen...</div>}
+      
+      <span className="pm-corner pm-corner-tl"></span>
+      <span className="pm-corner pm-corner-tr"></span>
+      <span className="pm-corner pm-corner-bl"></span>
+      <span className="pm-corner pm-corner-br"></span>
     </div>
-  );
 }

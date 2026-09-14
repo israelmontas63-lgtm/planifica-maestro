@@ -173,12 +173,12 @@ No omitas ningún bloque. Adapta el nivel de detalle, pero conserva siempre esta
           });
         }
         if (textToUse) {
-          parts.push(textToUse);
+          parts.push({ text: textToUse });
         }
         
         return {
           role: msg.role === "user" ? "user" : "model",
-          parts: parts.length > 0 ? parts : ["..."]
+          parts: parts.length > 0 ? parts : [{ text: "..." }]
         };
       });
 

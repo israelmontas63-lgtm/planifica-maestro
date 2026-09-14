@@ -41,7 +41,7 @@ export default function BottomPanel({
   onDictadoClick,
   onAbrirTexto,
 }) {
-  const [menuOpen, setMenuOpen] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [expandedSeccion, setExpandedSeccion] = useState(null);
 
   const SECCIONES = [
@@ -59,79 +59,58 @@ export default function BottomPanel({
   ];
 
   return (
-    <div className="bottom-panel">
-      <div className="menu-toggle" onClick={() => setMenuOpen((m) => !m)}>
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <line x1="2" y1="4" x2="14" y2="4" stroke="#12304a" strokeWidth="2" strokeLinecap="round" />
-          <line x1="2" y1="8" x2="14" y2="8" stroke="#12304a" strokeWidth="2" strokeLinecap="round" />
-          <line x1="2" y1="12" x2="14" y2="12" stroke="#12304a" strokeWidth="2" strokeLinecap="round" />
-        </svg>
-        <span>Esquemas de Planificación</span>
-      </div>
-
-      {menuOpen && (
-        <div className="menu-list" style={{ maxHeight: '250px', overflowY: 'auto' }}>
-          {SECCIONES.map((sec) => (
-            <div key={sec.value}>
-              <button
-                className={periodoActivo === sec.value ? "active" : ""}
-                onClick={() => setExpandedSeccion(expandedSeccion === sec.value ? null : sec.value)}
-                style={{ justifyContent: 'space-between' }}
-              >
-                <span>
-                  {periodoActivo === sec.value && <span className="menu-dot" />}
-                  {sec.label}
-                </span>
-                <span style={{ fontSize: '10px' }}>{expandedSeccion === sec.value ? '▲' : '▼'}</span>
-              </button>
-              
-              {expandedSeccion === sec.value && (
-                <div style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px', marginBottom: '8px' }}>
-                  {ESQUEMAS.map((esq) => (
-                    <button
-                      key={esq.value}
-                      style={{
-                        background: periodoActivo === sec.value && nivelActivo === esq.value ? '#1a7d8c' : '#f1f5f9',
-                        color: periodoActivo === sec.value && nivelActivo === esq.value ? '#fff' : '#475569',
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        border: 'none',
-                        textAlign: 'left',
-                        fontSize: '13px'
-                      }}
-                      onClick={() => {
-                        onSeleccionarEsquema(sec.value, esq.value);
-                        setMenuOpen(false); // Cierra el menú al elegir
-                      }}
-                    >
-                      {esq.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div className="action-row">
-        <button
-          className={`btn-dictado ${listening ? "listening" : ""}`}
-          onClick={onDictadoClick}
-        >
-          <div className="btn-icon-wrap">
-            <MicIcon />
-          </div>
-          <span className="btn-label">{listening ? "Escuchando…" : "Dictado"}</span>
+    <div className="pm-bottom-bar">
+      <div className="pm-menu-dropdown">
+        <button className="pm-menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>
+          ☰ Menú
         </button>
-
-        <button className="btn-texto" onClick={onAbrirTexto}>
-          <div className="btn-icon-wrap-light">
-            <KeyboardIcon />
-          </div>
-          <span className="btn-label">Texto</span>
-        </button>
+        {menuOpen && (
+          <ul className="pm-menu-list">
+            {SECCIONES.map((sec) => (
+              <li key={sec.value} style={{ marginBottom: '4px' }}>
+                <button
+                  className={periodoActivo === sec.value && !expandedSeccion ? "active" : ""}
+                  onClick={() => setExpandedSeccion(expandedSeccion === sec.value ? null : sec.value)}
+                  style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '600' }}
+                >
+                  <span>{sec.label}</span>
+                  <span style={{ fontSize: '10px', marginTop: '2px' }}>{expandedSeccion === sec.value ? '▲' : '▼'}</span>
+                </button>
+                {expandedSeccion === sec.value && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '10px', marginTop: '4px' }}>
+                    {ESQUEMAS.map((esq) => (
+                      <button
+                        key={esq.value}
+                        className={periodoActivo === sec.value && nivelActivo === esq.value ? "active" : ""}
+                        style={{ fontSize: '12px', padding: '8px', borderRadius: '4px' }}
+                        onClick={() => {
+                          onSeleccionarEsquema(sec.value, esq.value);
+                          setMenuOpen(false);
+                        }}
+                      >
+                        {esq.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
+      
+      <button 
+        className={`pm-btn-dictado ${listening ? "listening" : ""}`} 
+        onClick={onDictadoClick}
+      >
+        <MicIcon />
+        {listening ? "Escuchando…" : "Dictado"}
+      </button>
+      
+      <button className="pm-btn-texto" onClick={onAbrirTexto}>
+        <KeyboardIcon />
+        Texto
+      </button>
     </div>
   );
 }
