@@ -63,6 +63,12 @@ export default function Header({ onLogout }) {
           <span className="brand-planifica">Planifica</span>
           <span className="brand-maestro">Maestro</span>
         </div>
+        <span style={{ 
+          background: '#4ECFB3', color: '#12304a', fontSize: '10px', fontWeight: 'bold', 
+          padding: '2px 6px', borderRadius: '10px', marginLeft: '4px' 
+        }}>
+          v2.0
+        </span>
       </div>
 
       {/* ── Acciones ── */}
