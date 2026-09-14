@@ -35,4 +35,5 @@ export default function CaptureArea({ imageSrc, onImageSelected, procesando }) {
       <span className="pm-corner pm-corner-bl"></span>
       <span className="pm-corner pm-corner-br"></span>
     </div>
+  );
 }
