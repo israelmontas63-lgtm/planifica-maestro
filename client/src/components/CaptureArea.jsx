@@ -29,6 +29,7 @@ export default function CaptureArea({ imageSrc, onImageSelected, procesando }) {
       )}
       {procesando && <div className="pm-viewfinder-text">Leyendo la imagen...</div>}
       
+      <div className="pm-viewfinder-grid"></div>
       <span className="pm-corner pm-corner-tl"></span>
       <span className="pm-corner pm-corner-tr"></span>
       <span className="pm-corner pm-corner-bl"></span>
