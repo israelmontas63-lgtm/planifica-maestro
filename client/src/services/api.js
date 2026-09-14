@@ -1,0 +1,43 @@
+const BASE = "/api";
+
+export async function generarPlanificacion({ messages, nivel, periodo }) {
+  const res = await fetch(`${BASE}/plan/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages, nivel, periodo, permitirBusquedaWeb: true }),
+  });
+  if (!res.ok) throw new Error((await res.json()).error || "Error generando plan");
+  return res.json();
+}
+
+export async function exportarWord({ titulo, plan }) {
+  const res = await fetch(`${BASE}/export/docx`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ titulo, plan }),
+  });
+  if (!res.ok) throw new Error("Error exportando a Word");
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${titulo.replace(/\s+/g, "_")}.docx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+export async function generarVoz(text) {
+  const res = await fetch(`${BASE}/voice/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || errorData.detail || "Error generando voz");
+  }
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
+}

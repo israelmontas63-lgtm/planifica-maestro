@@ -1,0 +1,554 @@
+/* ─────────────────────────────────────────────
+   PLANIFICA MAESTRO — Design System
+   Basado en los mockups oficiales de la app
+───────────────────────────────────────────── */
+:root {
+  --azul-oscuro:  #12304a;
+  --azul:         #1d4e6e;
+  --azul-header1: #1a5276;
+  --azul-header2: #1e7a8c;
+  --teal:         #1a7d8c;
+  --teal-btn:     #1d6a78;
+  --verde:        #35b07a;
+  --verde-menta:  #4ECFB3;
+  --fondo:        #eef5f6;
+  --blanco:       #ffffff;
+  --texto:        #12304a;
+  --gris-panel:   #f4fafb;
+  --gris-borde:   #dde8ea;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--texto);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Contenedor principal de la app (vista nativa fluida) ── */
+.phone-shell {
+  width: 100%;
+  margin: 0;
+  min-height: 100vh;
+  background: var(--blanco);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ═══════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════ */
+.header {
+  background: linear-gradient(135deg, var(--azul-header1) 0%, var(--azul-header2) 100%);
+  color: white;
+  padding: 13px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  min-height: 60px;
+}
+
+/* Logo: ícono SVG + texto de marca */
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-brand {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.brand-planifica {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.01em;
+}
+
+.brand-maestro {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--verde-menta);   /* verde-menta del diseño */
+  letter-spacing: 0.01em;
+}
+
+/* Área de acciones (campana + avatar + chevron) */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.header-actions:hover { background: rgba(255,255,255,0.08); }
+
+/* Avatar circular */
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Dropdown de perfil — card limpia igual al mockup */
+.profile-menu {
+  position: absolute;
+  top: 62px;
+  right: 12px;
+  background: white;
+  color: var(--texto);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(18, 48, 74, 0.18);
+  overflow: hidden;
+  min-width: 172px;
+  z-index: 100;
+  animation: dropIn 0.15s ease;
+}
+
+@keyframes dropIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.profile-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 13px 18px;
+  border: none;
+  background: white;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--texto);
+  cursor: pointer;
+  border-bottom: 1px solid #f0f4f5;
+  transition: background 0.12s;
+}
+.profile-menu button:last-child { border-bottom: none; }
+.profile-menu button:hover { background: #f3f9fa; }
+.profile-menu .logout-btn { color: #c0392b; }
+
+/* ═══════════════════════════════════════════
+   TITLE BAR
+═══════════════════════════════════════════ */
+.title-bar {
+  background: var(--blanco);
+  padding: 15px 18px 13px;
+  font-size: 21px;
+  font-weight: 800;
+  color: var(--azul-oscuro);
+  border-bottom: 1px solid #edf2f4;
+  letter-spacing: -0.01em;
+}
+
+/* ═══════════════════════════════════════════
+   ÁREA DE CAPTURA (cámara)
+═══════════════════════════════════════════ */
+.capture-area {
+  flex: 1;
+  background: #c8d4d8;
+  position: relative;
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.capture-area img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.capture-placeholder {
+  color: #5a7080;
+  text-align: center;
+  padding: 24px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Cuadrícula de encuadre (regla de tercios) */
+.grid-overlay {
+  position: absolute;
+  inset: 20px;
+  border: 1.5px solid rgba(255, 255, 255, 0.55);
+  background-image:
+    linear-gradient(rgba(255,255,255,0.25) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.25) 1px, transparent 1px);
+  background-size: 33.33% 33.33%;
+  pointer-events: none;
+  border-radius: 2px;
+}
+
+/* ═══════════════════════════════════════════
+   PANEL INFERIOR (menú + botones de acción)
+═══════════════════════════════════════════ */
+.bottom-panel {
+  background: var(--gris-panel);
+  padding: 12px 14px 18px;
+  border-top: 1px solid var(--gris-borde);
+}
+
+/* Toggle del menú */
+.menu-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--azul-oscuro);
+  margin-bottom: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Lista de secciones */
+.menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 14px;
+}
+
+.menu-list button {
+  text-align: left;
+  padding: 7px 10px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  font-size: 13.5px;
+  color: #4a6070;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  transition: background 0.12s, color 0.12s;
+  font-weight: 500;
+}
+.menu-list button:hover { background: #e8f2f4; }
+
+.menu-list button.active {
+  background: #dceef0;
+  font-weight: 700;
+  color: var(--teal);
+}
+
+/* Punto indicador del ítem activo */
+.menu-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--teal);
+  flex-shrink: 0;
+}
+
+/* ── Fila de botones de acción ── */
+.action-row {
+  display: flex;
+  gap: 12px;
+}
+
+/* Botón base — forma cuadrada redondeada tipo app icon */
+.btn-dictado,
+.btn-texto {
+  flex: 1;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0 0 10px 0;
+  border-radius: 18px;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.btn-dictado:active, .btn-texto:active { transform: scale(0.96); }
+
+/* Botón Dictado — fondo teal oscuro con ícono grande */
+.btn-dictado {
+  background: var(--teal-btn);
+  box-shadow: 0 4px 16px rgba(29, 106, 120, 0.35);
+}
+.btn-dictado.listening {
+  background: var(--verde);
+  box-shadow: 0 4px 16px rgba(53, 176, 122, 0.4);
+}
+
+/* Botón Texto — fondo blanco con borde suave */
+.btn-texto {
+  background: var(--blanco);
+  border: 1.5px solid var(--gris-borde);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+
+/* Área del ícono — cuadrado redondeado interior (como en el mockup) */
+.btn-icon-wrap {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.btn-icon-wrap-light {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  background: #eef4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.btn-label {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.btn-dictado .btn-label { color: white; }
+.btn-texto .btn-label   { color: var(--azul-oscuro); }
+
+/* ═══════════════════════════════════════════
+   PANEL DE RESULTADO
+═══════════════════════════════════════════ */
+.result-panel {
+  padding: 16px;
+  background: white;
+  border-top: 1px solid var(--gris-borde);
+}
+.result-panel h3 {
+  margin-top: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--azul-oscuro);
+}
+
+.result-text {
+  white-space: pre-wrap;
+  font-size: 13.5px;
+  line-height: 1.6;
+  background: #f7fbfc;
+  border-radius: 10px;
+  padding: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #e8f0f2;
+}
+
+/* Selector de nivel */
+.select-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.select-row select {
+  flex: 1;
+  padding: 9px 12px;
+  border-radius: 9px;
+  border: 1.5px solid var(--gris-borde);
+  font-size: 14px;
+  color: var(--texto);
+  background: white;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%2312304a' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+/* Botón Exportar a Word */
+.export-btn {
+  margin-top: 12px;
+  width: 100%;
+  padding: 13px;
+  border-radius: 11px;
+  border: none;
+  background: linear-gradient(135deg, var(--teal) 0%, var(--verde) 100%);
+  color: white;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(26, 125, 140, 0.3);
+  transition: opacity 0.15s, transform 0.12s;
+}
+.export-btn:hover { opacity: 0.93; transform: translateY(-1px); }
+.export-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+/* ═══════════════════════════════════════════
+   MODAL DE TEXTO
+═══════════════════════════════════════════ */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 30, 48, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 50;
+  backdrop-filter: blur(2px);
+}
+
+.modal-box {
+  background: white;
+  width: 100%;
+  max-width: 420px;
+  border-radius: 20px 20px 0 0;
+  padding: 20px 18px 28px;
+  animation: slideUp 0.22s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(60px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.modal-box h3 {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--azul-oscuro);
+}
+
+.modal-box textarea {
+  width: 100%;
+  min-height: 120px;
+  border-radius: 11px;
+  border: 1.5px solid var(--gris-borde);
+  padding: 11px 13px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  color: var(--texto);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.modal-box textarea:focus { border-color: var(--teal); }
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.modal-actions button {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: opacity 0.12s;
+}
+.modal-actions button:hover { opacity: 0.88; }
+
+/* ═══════════════════════════════════════════
+   TEXTOS DE ESTADO
+═══════════════════════════════════════════ */
+.status-text {
+  font-size: 12.5px;
+  color: #6b7c85;
+  padding: 6px 16px;
+}
+
+
+
+.header {
+  background: linear-gradient(135deg, var(--azul-oscuro), var(--azul));
+  color: white; padding: 14px 16px; display: flex;
+  align-items: center; justify-content: space-between; position: relative;
+}
+.header-logo { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 18px; }
+.header-logo .accent { color: #7be0b0; }
+.header-actions { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.avatar {
+  width: 34px; height: 34px; border-radius: 50%; background: #ddd;
+  display: flex; align-items: center; justify-content: center; font-size: 14px; overflow: hidden;
+}
+.profile-menu {
+  position: absolute; top: 56px; right: 12px; background: white;
+  color: var(--texto); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  overflow: hidden; min-width: 180px; z-index: 10;
+}
+.profile-menu button {
+  display: block; width: 100%; text-align: left; padding: 12px 16px;
+  border: none; background: white; font-size: 15px; cursor: pointer;
+}
+.profile-menu button:hover { background: #f0f6f7; }
+.title-bar { background: #f4fafb; padding: 16px; font-size: 20px; font-weight: 700; }
+.capture-area {
+  flex: 1; background: #dbe2e6; position: relative; min-height: 340px;
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.capture-area img { width: 100%; height: 100%; object-fit: cover; }
+.capture-placeholder { color: #6b7c85; text-align: center; padding: 24px; font-size: 14px; }
+.grid-overlay {
+  position: absolute; inset: 24px; border: 2px solid rgba(255,255,255,0.6);
+  background-image:
+    linear-gradient(rgba(255,255,255,0.35) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.35) 1px, transparent 1px);
+  background-size: 33.3% 33.3%; pointer-events: none;
+}
+.bottom-panel { background: #f4fafb; padding: 14px 16px 20px; }
+.menu-toggle { display: flex; align-items: center; gap: 6px; font-weight: 600; margin-bottom: 8px; cursor: pointer; }
+.menu-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+.menu-list button {
+  text-align: left; padding: 8px 10px; border-radius: 8px;
+  border: none; background: transparent; font-size: 14px; cursor: pointer;
+}
+.menu-list button.active { background: #dceef0; font-weight: 600; color: var(--teal); }
+.action-row { display: flex; gap: 10px; }
+.btn-dictado, .btn-texto {
+  flex: 1; padding: 16px 8px; border-radius: 14px; border: none;
+  font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.btn-dictado { background: var(--azul); color: white; }
+.btn-dictado.listening { background: var(--verde); }
+.btn-texto { background: white; border: 1px solid #d9e2e5; color: var(--texto); }
+.result-panel { padding: 16px; background: white; border-top: 1px solid #e5edef; }
+.result-panel h3 { margin-top: 0; }
+.result-text {
+  white-space: pre-wrap; font-size: 14px; line-height: 1.5;
+  background: #f7fbfc; border-radius: 10px; padding: 12px; max-height: 300px; overflow-y: auto;
+}
+.select-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.select-row select { flex: 1; padding: 8px; border-radius: 8px; border: 1px solid #d9e2e5; }
+.export-btn {
+  margin-top: 12px; width: 100%; padding: 12px; border-radius: 10px;
+  border: none; background: var(--verde); color: white; font-weight: 700; cursor: pointer;
+}
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  display: flex; align-items: flex-end; justify-content: center; z-index: 50;
+}
+.modal-box { background: white; width: 100%; max-width: 420px; border-radius: 16px 16px 0 0; padding: 16px; }
+.modal-box textarea {
+  width: 100%; min-height: 120px; border-radius: 10px;
+  border: 1px solid #d9e2e5; padding: 10px; font-size: 14px;
+}
+.modal-actions { display: flex; gap: 10px; margin-top: 10px; }
+.modal-actions button { flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; }
+.status-text { font-size: 13px; color: #6b7c85; padding: 8px 16px; }
