@@ -5,6 +5,7 @@ import BottomPanel from "./components/BottomPanel.jsx";
 import TextoModal from "./components/TextoModal.jsx";
 import PlanResult from "./components/PlanResult.jsx";
 import SchemaSelector from "./components/SchemaSelector.jsx";
+import PerfilDocente from "./components/PerfilDocente.jsx";
 import { useSpeechRecognition } from "./hooks/useSpeechRecognition.js";
 import { useSpeechSynthesis } from "./hooks/useSpeechSynthesis.js";
 import { useTrialStatus } from "./hooks/useTrialStatus.js";
@@ -19,6 +20,7 @@ export default function App() {
   const [textoModalOpen, setTextoModalOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [schemaOpen, setSchemaOpen] = useState(false);
+  const [perfilOpen, setPerfilOpen] = useState(false);
   
   // Chat History
   const [messages, setMessages] = useState([]);
@@ -198,9 +200,10 @@ export default function App() {
         listening={listening}
         onDictadoClick={handleDictadoClick}
         menuOpen={menuOpen}
-        setMenuOpen={(open) => { setMenuOpen(open); if(open) { setTextoModalOpen(false); setSchemaOpen(false); } }}
-        onAbrirTexto={() => { setTextoModalOpen(true); setMenuOpen(false); setSchemaOpen(false); }}
-        onAbrirEsquemas={() => { setSchemaOpen(true); setMenuOpen(false); setTextoModalOpen(false); }}
+        setMenuOpen={(open) => { setMenuOpen(open); if(open) { setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); } }}
+        onAbrirTexto={() => { setTextoModalOpen(true); setMenuOpen(false); setSchemaOpen(false); setPerfilOpen(false); }}
+        onAbrirEsquemas={() => { setSchemaOpen(true); setMenuOpen(false); setTextoModalOpen(false); setPerfilOpen(false); }}
+        onAbrirPerfil={() => { setPerfilOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); }}
       />
       
       {textoModalOpen && (
@@ -217,6 +220,10 @@ export default function App() {
           onSeleccionar={(p, n) => { setPeriodo(p); setNivel(n); }}
           onCerrar={() => setSchemaOpen(false)}
         />
+      )}
+
+      {perfilOpen && (
+        <PerfilDocente onCerrar={() => setPerfilOpen(false)} />
       )}
     </div>
   );

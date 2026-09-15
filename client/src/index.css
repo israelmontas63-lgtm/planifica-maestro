@@ -735,3 +735,67 @@ body {
   color: var(--pm-green, #3FB88A);
 }
 
+/* ═══════════════════════════════════════════
+   PERFIL DOCENTE
+═══════════════════════════════════════════ */
+.perfil-body {
+  padding: 20px 18px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.perfil-intro {
+  font-size: 13px;
+  color: var(--pm-text-muted, #5A7284);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.perfil-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pm-navy, #1B3A5C);
+}
+
+.perfil-input {
+  padding: 12px 14px;
+  border: 1.5px solid #CBD5E1;
+  border-radius: 10px;
+  font-size: 15px;
+  color: var(--pm-navy, #1B3A5C);
+  background: white;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.perfil-input:focus {
+  border-color: var(--pm-green, #3FB88A);
+}
+
+.perfil-reset-fecha {
+  background: none;
+  border: none;
+  color: var(--pm-green, #3FB88A);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  align-self: flex-start;
+  padding: 2px 0;
+}
+
+.perfil-guardar {
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: var(--pm-navy, #1B3A5C);
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  margin-top: 6px;
+}
+.perfil-guardar:hover { opacity: 0.9; }

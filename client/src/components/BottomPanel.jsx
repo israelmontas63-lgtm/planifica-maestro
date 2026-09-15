@@ -38,6 +38,7 @@ export default function BottomPanel({
   onDictadoClick,
   onAbrirTexto,
   onAbrirEsquemas,
+  onAbrirPerfil,
   menuOpen,
   setMenuOpen
 }) {
@@ -112,6 +113,14 @@ export default function BottomPanel({
                 onClick={() => { setMenuOpen(false); onAbrirEsquemas(); }}
               >
                 📋 Ver todos los Esquemas
+              </button>
+            </li>
+            <li>
+              <button
+                style={{ fontWeight: '700', color: 'var(--pm-navy, #1B3A5C)' }}
+                onClick={() => { setMenuOpen(false); onAbrirPerfil(); }}
+              >
+                👤 Mi Perfil
               </button>
             </li>
           </ul>
