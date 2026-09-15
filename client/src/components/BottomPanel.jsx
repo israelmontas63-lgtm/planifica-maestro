@@ -37,6 +37,7 @@ export default function BottomPanel({
   listening,
   onDictadoClick,
   onAbrirTexto,
+  onAbrirEsquemas,
   menuOpen,
   setMenuOpen
 }) {
@@ -105,6 +106,14 @@ export default function BottomPanel({
                 )}
               </li>
             ))}
+            <li style={{ marginTop: '8px', borderTop: '1px solid #e2e8f0', paddingTop: '8px' }}>
+              <button
+                style={{ fontWeight: '700', color: 'var(--pm-green, #3FB88A)' }}
+                onClick={() => { setMenuOpen(false); onAbrirEsquemas(); }}
+              >
+                📋 Ver todos los Esquemas
+              </button>
+            </li>
           </ul>
         )}
       </div>

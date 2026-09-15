@@ -4,6 +4,7 @@ import CaptureArea from "./components/CaptureArea.jsx";
 import BottomPanel from "./components/BottomPanel.jsx";
 import TextoModal from "./components/TextoModal.jsx";
 import PlanResult from "./components/PlanResult.jsx";
+import SchemaSelector from "./components/SchemaSelector.jsx";
 import { useSpeechRecognition } from "./hooks/useSpeechRecognition.js";
 import { useSpeechSynthesis } from "./hooks/useSpeechSynthesis.js";
 import { useTrialStatus } from "./hooks/useTrialStatus.js";
@@ -17,6 +18,7 @@ export default function App() {
   const [procesandoImagen, setProcesandoImagen] = useState(false);
   const [textoModalOpen, setTextoModalOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [schemaOpen, setSchemaOpen] = useState(false);
   
   // Chat History
   const [messages, setMessages] = useState([]);
@@ -196,14 +198,24 @@ export default function App() {
         listening={listening}
         onDictadoClick={handleDictadoClick}
         menuOpen={menuOpen}
-        setMenuOpen={(open) => { setMenuOpen(open); if(open) setTextoModalOpen(false); }}
-        onAbrirTexto={() => { setTextoModalOpen(true); setMenuOpen(false); }}
+        setMenuOpen={(open) => { setMenuOpen(open); if(open) { setTextoModalOpen(false); setSchemaOpen(false); } }}
+        onAbrirTexto={() => { setTextoModalOpen(true); setMenuOpen(false); setSchemaOpen(false); }}
+        onAbrirEsquemas={() => { setSchemaOpen(true); setMenuOpen(false); setTextoModalOpen(false); }}
       />
       
       {textoModalOpen && (
         <TextoModal
           onCancel={() => setTextoModalOpen(false)}
           onConfirm={(texto) => { setTextoModalOpen(false); enviarMensaje(texto); }}
+        />
+      )}
+
+      {schemaOpen && (
+        <SchemaSelector
+          periodoActivo={periodo}
+          nivelActivo={nivel}
+          onSeleccionar={(p, n) => { setPeriodo(p); setNivel(n); }}
+          onCerrar={() => setSchemaOpen(false)}
         />
       )}
     </div>
