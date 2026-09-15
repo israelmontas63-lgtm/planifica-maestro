@@ -1,8 +1,5 @@
 import { useState } from "react";
 
-const SECCIONES = ["Planificación Diaria", "Planificación Mensual", "Planificación Anual"];
-const PERIODO_POR_SECCION = { 0: "diaria", 1: "mensual", 2: "anual" };
-
 /* Ícono micrófono SVG */
 function MicIcon() {
   return (
@@ -48,16 +45,22 @@ export default function BottomPanel({
 
   const SECCIONES = [
     { label: "Planificación Diaria", value: "diaria" },
+    { label: "Planificación Semanal", value: "semanal" },
     { label: "Planificación Mensual", value: "mensual" },
-    { label: "Planificación Anual", value: "anual" }
+    { label: "Planificación Anual", value: "anual" },
+    { label: "Unidad de Aprendizaje", value: "unidad de aprendizaje" },
+    { label: "Proyecto", value: "proyecto" }
   ];
 
   const ESQUEMAS = [
-    { value: "inicial", label: "Esquema Tradicional (Inicial)" },
-    { value: "primario", label: "Esquema Tradicional (Primario)" },
-    { value: "secundario", label: "Esquema Tradicional (Secundario)" },
-    { value: "conbase", label: "Esquema 'Con Base' (1ro a 3ro Primaria)" },
-    { value: "especial", label: "Esquema Educación Especial" }
+    { value: "inicial", label: "Tradicional (Inicial)" },
+    { value: "primario", label: "Tradicional (Primario)" },
+    { value: "secundario", label: "Tradicional (Secundario)" },
+    { value: "especial", label: "Educación Especial" },
+    { value: "conbase", label: "Programa 'Con Base'" },
+    { value: "abp", label: "Aprendizaje Basado en Proyectos (ABP)" },
+    { value: "competencias_situacion", label: "Por Situación de Aprendizaje" },
+    { value: "secuencia_didactica", label: "Secuencia Didáctica (Fases detalladas)" }
   ];
 
   return (
@@ -81,7 +84,7 @@ export default function BottomPanel({
                   style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '600' }}
                 >
                   <span>{sec.label}</span>
-                  <span style={{ fontSize: '10px', marginTop: '2px' }}>{expandedSeccion === sec.value ? '▲' : '▼'}</span>
+                  <span style={{ fontSize: '10px', marginTop: '2px' }}>{expandedSeccion === sec.value ? '▼' : '▶'}</span>
                 </button>
                 {expandedSeccion === sec.value && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '10px', marginTop: '4px' }}>
@@ -111,7 +114,7 @@ export default function BottomPanel({
         onClick={onDictadoClick}
       >
         <MicIcon />
-        {listening ? "Escuchando…" : "Dictado"}
+        {listening ? "Escuchando..." : "Dictado"}
       </button>
       
       <button className="pm-btn-texto" onClick={onAbrirTexto}>
@@ -121,7 +124,3 @@ export default function BottomPanel({
     </div>
   );
 }
-
-export { PERIODO_POR_SECCION };
-
-
