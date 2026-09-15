@@ -16,6 +16,7 @@ export default function App() {
   const [imageSrc, setImageSrc] = useState(null);
   const [procesandoImagen, setProcesandoImagen] = useState(false);
   const [textoModalOpen, setTextoModalOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   
   // Chat History
   const [messages, setMessages] = useState([]);
@@ -194,7 +195,9 @@ export default function App() {
         onSeleccionarEsquema={(p, n) => { setPeriodo(p); setNivel(n); }}
         listening={listening}
         onDictadoClick={handleDictadoClick}
-        onAbrirTexto={() => setTextoModalOpen(true)}
+        menuOpen={menuOpen}
+        setMenuOpen={(open) => { setMenuOpen(open); if(open) setTextoModalOpen(false); }}
+        onAbrirTexto={() => { setTextoModalOpen(true); setMenuOpen(false); }}
       />
       
       {textoModalOpen && (
@@ -206,3 +209,4 @@ export default function App() {
     </div>
   );
 }
+

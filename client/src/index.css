@@ -405,7 +405,7 @@ body {
   inset: 0;
   background: rgba(12, 30, 48, 0.45);
   display: flex;
-  align-items: flex-end;
+  align-items: center; padding: 20px;
   justify-content: center;
   z-index: 50;
   backdrop-filter: blur(2px);
@@ -415,7 +415,7 @@ body {
   background: white;
   width: 100%;
   max-width: 420px;
-  border-radius: 20px 20px 0 0;
+  border-radius: 20px;
   padding: 20px 18px 28px;
   animation: slideUp 0.22s ease;
 }
@@ -542,7 +542,7 @@ body {
 }
 .modal-backdrop {
   position: fixed; inset: 0; background: rgba(0,0,0,0.4);
-  display: flex; align-items: flex-end; justify-content: center; z-index: 50;
+  display: flex; align-items: center; padding: 20px; justify-content: center; z-index: 50;
 }
 .modal-box { background: white; width: 100%; max-width: 420px; border-radius: 16px 16px 0 0; padding: 16px; }
 .modal-box textarea {
@@ -597,5 +597,6 @@ body {
 .pm-switch input:checked + .pm-switch-track { background: var(--pm-green); }
 .pm-switch-thumb { width: 16px; height: 16px; background: white; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: 0.3s; }
 .pm-switch input:checked + .pm-switch-track .pm-switch-thumb { left: 18px; }
+
 
 

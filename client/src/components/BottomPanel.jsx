@@ -40,8 +40,10 @@ export default function BottomPanel({
   listening,
   onDictadoClick,
   onAbrirTexto,
+  menuOpen,
+  setMenuOpen
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
+  
   const [expandedSeccion, setExpandedSeccion] = useState(null);
 
   const SECCIONES = [
@@ -121,4 +123,5 @@ export default function BottomPanel({
 }
 
 export { PERIODO_POR_SECCION };
+
 
