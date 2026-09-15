@@ -39,6 +39,7 @@ export default function BottomPanel({
   onAbrirTexto,
   onAbrirEsquemas,
   onAbrirPerfil,
+  onAbrirCurriculo,
   menuOpen,
   setMenuOpen
 }) {
@@ -121,6 +122,14 @@ export default function BottomPanel({
                 onClick={() => { setMenuOpen(false); onAbrirPerfil(); }}
               >
                 👤 Mi Perfil
+              </button>
+            </li>
+            <li>
+              <button
+                style={{ fontWeight: '700', color: '#1a7d8c' }}
+                onClick={() => { setMenuOpen(false); onAbrirCurriculo(); }}
+              >
+                📚 Currículo MINERD
               </button>
             </li>
           </ul>

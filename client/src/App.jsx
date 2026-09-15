@@ -6,10 +6,11 @@ import TextoModal from "./components/TextoModal.jsx";
 import PlanResult from "./components/PlanResult.jsx";
 import SchemaSelector from "./components/SchemaSelector.jsx";
 import PerfilDocente from "./components/PerfilDocente.jsx";
+import CurriculumViewer from "./components/CurriculumViewer.jsx";
 import { useSpeechRecognition } from "./hooks/useSpeechRecognition.js";
 import { useSpeechSynthesis } from "./hooks/useSpeechSynthesis.js";
 import { useTrialStatus } from "./hooks/useTrialStatus.js";
-import { generarPlanificacion, exportarWord, generarVoz } from "./services/api.js";
+import { generarPlanificacion, exportarWord, generarVoz, guardarAjustesPlan } from "./services/api.js";
 
 export default function App() {
   const { diasRestantes, expirado, diasPrueba } = useTrialStatus();
@@ -21,6 +22,7 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [schemaOpen, setSchemaOpen] = useState(false);
   const [perfilOpen, setPerfilOpen] = useState(false);
+  const [curriculumOpen, setCurriculumOpen] = useState(false);
   
   // Chat History
   const [messages, setMessages] = useState([]);
@@ -61,7 +63,8 @@ export default function App() {
       const newAssistantMsg = { 
         role: "assistant", 
         text: chatText,
-        datosGenerados: planCompleto ? planDatos : null
+        datosGenerados: planCompleto ? planDatos : null,
+        planId: data.planId || null
       };
       setMessages([...newHistory, newAssistantMsg]);
       
@@ -73,6 +76,17 @@ export default function App() {
     } finally {
       setCargando(false);
     }
+  }
+
+  // FASE 8: Aplicar contenido del Visor de Currículo MINERD directamente a la planificación activa
+  function handleAplicarCurriculo(datosPlanificacion, tema) {
+    const newAssistantMsg = {
+      role: "assistant",
+      text: `✅ He cargado las competencias, contenidos y actividades oficiales del MINERD para: "${tema}". Revisa o edita los campos a continuación antes de imprimir o exportar.`,
+      datosGenerados: datosPlanificacion,
+      planId: "plan_curriculo_" + Date.now()
+    };
+    setMessages((prev) => [...prev, newAssistantMsg]);
   }
 
   async function handleImageSelected(dataUrl, mediaType) {
@@ -188,6 +202,11 @@ export default function App() {
                 onEscuchar={(datos) => handleEscuchar(Object.values(datos).join(" ").substring(0, 500))}
                 escuchando={escuchando}
                 audioUrl={audioUrl}
+                onDatosActualizados={(nuevosDatos) => {
+                  if (m.planId) {
+                    guardarAjustesPlan({ planId: m.planId, datosAjustados: nuevosDatos });
+                  }
+                }}
               />
             )}
           </div>
@@ -205,10 +224,11 @@ export default function App() {
         listening={listening}
         onDictadoClick={handleDictadoClick}
         menuOpen={menuOpen}
-        setMenuOpen={(open) => { setMenuOpen(open); if(open) { setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); } }}
-        onAbrirTexto={() => { setTextoModalOpen(true); setMenuOpen(false); setSchemaOpen(false); setPerfilOpen(false); }}
-        onAbrirEsquemas={() => { setSchemaOpen(true); setMenuOpen(false); setTextoModalOpen(false); setPerfilOpen(false); }}
-        onAbrirPerfil={() => { setPerfilOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); }}
+        setMenuOpen={(open) => { setMenuOpen(open); if(open) { setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); } }}
+        onAbrirTexto={() => { setTextoModalOpen(true); setMenuOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); }}
+        onAbrirEsquemas={() => { setSchemaOpen(true); setMenuOpen(false); setTextoModalOpen(false); setPerfilOpen(false); setCurriculumOpen(false); }}
+        onAbrirPerfil={() => { setPerfilOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); setCurriculumOpen(false); }}
+        onAbrirCurriculo={() => { setCurriculumOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); }}
       />
       
       {textoModalOpen && (
@@ -229,6 +249,15 @@ export default function App() {
 
       {perfilOpen && (
         <PerfilDocente onCerrar={() => setPerfilOpen(false)} />
+      )}
+
+      {curriculumOpen && (
+        <CurriculumViewer
+          esquemaActivo={nivel}
+          periodoActivo={periodo}
+          onCerrar={() => setCurriculumOpen(false)}
+          onAplicarAlEsquema={handleAplicarCurriculo}
+        />
       )}
     </div>
   );

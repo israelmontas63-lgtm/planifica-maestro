@@ -41,3 +41,37 @@ export async function generarVoz(text) {
   const blob = await res.blob();
   return URL.createObjectURL(blob);
 }
+
+export async function consultarCurriculo({ nivel, grado, area, tema, esquemaActivo, periodoActivo }) {
+  const res = await fetch(`${BASE}/plan/consultar-curriculo`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ nivel, grado, area, tema, esquemaActivo, periodoActivo }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || errorData.detail || "Error al consultar currículo con IA");
+  }
+  return res.json();
+}
+
+export async function guardarAjustesPlan({ planId, datosAjustados }) {
+  const res = await fetch(`${BASE}/plan/ajustes-manuales`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ planId, datosAjustados }),
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+export async function obtenerPatronesDocente({ area, nivel } = {}) {
+  const params = new URLSearchParams();
+  if (area) params.append("area", area);
+  if (nivel) params.append("nivel", nivel);
+  const res = await fetch(`${BASE}/plan/patrones-docente?${params.toString()}`);
+  if (!res.ok) return null;
+  return res.json();
+}
+
+
