@@ -184,9 +184,9 @@ export default function App() {
         ))}
         {cargando && <div style={{ alignSelf: 'flex-start', color: '#64748b', fontStyle: 'italic' }}>Pensando...</div>}
         <div ref={chatEndRef} />
+        
+        <CaptureArea imageSrc={imageSrc} onImageSelected={handleImageSelected} procesando={procesandoImagen} />
       </div>
-
-      <CaptureArea imageSrc={imageSrc} onImageSelected={handleImageSelected} procesando={procesandoImagen} />
       
       <BottomPanel
         periodoActivo={periodo}
