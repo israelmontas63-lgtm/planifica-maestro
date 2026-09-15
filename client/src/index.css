@@ -799,3 +799,102 @@ body {
   margin-top: 6px;
 }
 .perfil-guardar:hover { opacity: 0.9; }
+
+/* ═══════════════════════════════════════════
+   PLAN RESULT (Campos editables)
+═══════════════════════════════════════════ */
+.plan-result-container {
+  background: white;
+  border-radius: 14px;
+  padding: 16px;
+  margin-top: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+}
+
+.plan-ia-aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #FFF8E1;
+  border: 1px solid #FFE082;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-size: 12px;
+  color: #795548;
+  line-height: 1.4;
+}
+.plan-ia-icono { font-size: 16px; flex-shrink: 0; }
+
+.plan-campos {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.plan-campo {
+  border: 1px solid #E8EEF2;
+  border-radius: 10px;
+  padding: 12px;
+  background: #FAFCFD;
+}
+
+.plan-campo-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.plan-campo-titulo {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--pm-navy, #1B3A5C);
+  flex: 1;
+  line-height: 1.3;
+}
+
+.plan-campo-editar-btn {
+  background: none;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pm-navy, #1B3A5C);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+.plan-campo-editar-btn:hover { background: #F1F5F9; }
+
+.plan-campo-contenido {
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.plan-campo-textarea {
+  width: 100%;
+  border: 1.5px solid var(--pm-green, #3FB88A);
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.6;
+  resize: vertical;
+  min-height: 100px;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.plan-acciones {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}

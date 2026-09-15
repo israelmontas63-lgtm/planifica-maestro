@@ -44,20 +44,29 @@ export default function App() {
   async function enviarMensaje(texto, imageBase64, mediaType) {
     if (!texto && !imageBase64) return;
     
-    // Add User Message
     const newUserMsg = { role: "user", text: texto, imageBase64, mediaType };
     const newHistory = [...messages, newUserMsg];
     setMessages(newHistory);
     setCargando(true);
-    setImageSrc(null); // Clear image after sending
+    setImageSrc(null);
 
     try {
       const data = await generarPlanificacion({ messages: newHistory, nivel, periodo });
-      const newAssistantMsg = { role: "assistant", text: data.plan };
+      
+      // Handle new structured JSON response
+      const chatText = data.mensaje_chat || data.plan || "";
+      const planDatos = data.datos_planificacion || null;
+      const planCompleto = data.plan_completado || false;
+
+      const newAssistantMsg = { 
+        role: "assistant", 
+        text: chatText,
+        datosGenerados: planCompleto ? planDatos : null
+      };
       setMessages([...newHistory, newAssistantMsg]);
       
-      if (hablarRespuestas) {
-        speak(data.plan);
+      if (hablarRespuestas && chatText) {
+        speak(chatText);
       }
     } catch (err) {
       alert(err.message);
@@ -127,8 +136,7 @@ export default function App() {
     );
   }
 
-  // Detect if the latest assistant message looks like a final plan (has MINERD sections)
-  const isFinalPlan = (text) => text && text.includes("Datos generales") && text.includes("Evaluación");
+
 
   return (
     <div className="phone-shell">
@@ -172,15 +180,12 @@ export default function App() {
             )}
             <div style={{ whiteSpace: 'pre-wrap', fontSize: '14px' }}>{m.text}</div>
             
-            {m.role === 'assistant' && isFinalPlan(m.text) && (
+            {m.role === 'assistant' && m.datosGenerados && (
                <PlanResult 
-                nivel={nivel} 
-                setNivel={setNivel} 
-                cargando={false} 
-                plan={m.text} 
-                onExportar={() => handleExportar(m.text)} 
+                datosGenerados={m.datosGenerados}
+                onExportar={(datos) => handleExportar(Object.entries(datos).map(([k,v]) => `${k}\n${v}`).join("\n\n"))} 
                 exportando={exportando}
-                onEscuchar={() => handleEscuchar(m.text)}
+                onEscuchar={(datos) => handleEscuchar(Object.values(datos).join(" ").substring(0, 500))}
                 escuchando={escuchando}
                 audioUrl={audioUrl}
               />
