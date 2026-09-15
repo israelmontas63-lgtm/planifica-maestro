@@ -894,7 +894,283 @@ body {
 }
 
 .plan-acciones {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
   margin-top: 14px;
 }
+
+.plan-acciones .export-btn {
+  margin-top: 0;
+  padding: 11px 12px;
+  font-size: 13.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.btn-word {
+  background: linear-gradient(135deg, var(--teal) 0%, var(--pm-green) 100%);
+}
+
+.btn-escuchar {
+  background: linear-gradient(135deg, #1d4e6e 0%, #1a7d8c 100%);
+}
+
+.btn-imprimir {
+  background: var(--pm-navy, #1B3A5C);
+  box-shadow: 0 4px 14px rgba(27, 58, 92, 0.25);
+}
+.btn-imprimir:hover {
+  background: var(--pm-navy-dark, #142C47);
+}
+
+.btn-compartir {
+  background: var(--pm-green, #3FB88A);
+  box-shadow: 0 4px 14px rgba(63, 184, 138, 0.3);
+}
+.btn-compartir:hover {
+  opacity: 0.92;
+}
+
+/* Ocultar encabezado de impresión en pantalla normal */
+.plan-print-header {
+  display: none;
+}
+
+/* ═══════════════════════════════════════════
+   MODAL DE COMPARTIR (RESPALDO / DESKTOP)
+═══════════════════════════════════════════ */
+.plan-share-backdrop {
+  z-index: 50;
+}
+
+.plan-share-box {
+  max-width: 440px;
+  padding: 22px 20px 24px;
+}
+
+.plan-share-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.plan-share-header h3 {
+  margin: 0;
+  color: var(--pm-navy, #1B3A5C);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.plan-share-desc {
+  font-size: 13px;
+  color: var(--pm-text-muted, #5A7284);
+  margin: 0 0 16px 0;
+  line-height: 1.4;
+}
+
+.plan-share-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.plan-share-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+  text-align: left;
+  border: 1.5px solid transparent;
+  width: 100%;
+  box-sizing: border-box;
+}
+.plan-share-btn:hover {
+  transform: translateY(-1px);
+}
+
+.share-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.share-btn-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.share-btn-text strong {
+  font-size: 14px;
+  color: #1e293b;
+}
+
+.share-btn-text small {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.btn-share-whatsapp {
+  background: #E8F8F0;
+  border-color: #25D366;
+}
+.btn-share-whatsapp .share-btn-text strong {
+  color: #0d6e3f;
+}
+
+.btn-share-facebook {
+  background: #EBF5FF;
+  border-color: #1877F2;
+}
+.btn-share-facebook .share-btn-text strong {
+  color: #1877F2;
+}
+
+.btn-share-file {
+  background: #F8FAFC;
+  border-color: #CBD5E1;
+}
+.btn-share-file .share-btn-text strong {
+  color: var(--pm-navy, #1B3A5C);
+}
+
+.plan-share-cancel {
+  width: 100%;
+  padding: 11px;
+  border: 1px solid #CBD5E1;
+  background: #fff;
+  border-radius: 10px;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.plan-share-cancel:hover {
+  background: #F1F5F9;
+}
+
+/* ═══════════════════════════════════════════
+   FORMATO DE IMPRESIÓN (@media print)
+   Optimizado para papel carta / A4
+═══════════════════════════════════════════ */
+@media print {
+  /* 1. Ocultar todos los controles de navegación y UI interactiva */
+  .no-print,
+  .pm-header,
+  .pm-title-card,
+  .pm-bottom-bar,
+  .pm-viewfinder,
+  .plan-acciones,
+  .plan-ia-aviso,
+  .plan-campo-editar-btn,
+  .modal-backdrop,
+  .schema-overlay,
+  audio,
+  button {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* 2. Ajuste de página completa sin bordes de teléfono ni fondo */
+  html, body, #root, .phone-shell {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: auto !important;
+    box-shadow: none !important;
+  }
+
+  /* 3. Evitar recortes en contenedores con scroll */
+  div[style*="overflowY"],
+  div[style*="overflow-y"] {
+    overflow: visible !important;
+    height: auto !important;
+    padding: 0 !important;
+  }
+
+  /* 4. Mostrar encabezado formal de la planificación */
+  .plan-print-header {
+    display: block !important;
+    margin-bottom: 24px !important;
+    border-bottom: 2.5px solid #1B3A5C !important;
+    padding-bottom: 12px !important;
+  }
+
+  .plan-print-brand {
+    font-size: 13pt !important;
+    font-weight: 800 !important;
+    color: #1B3A5C !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .plan-print-title {
+    font-size: 17pt !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    margin: 0 0 6px 0 !important;
+  }
+
+  .plan-print-meta {
+    font-size: 10pt !important;
+    color: #475569 !important;
+    margin: 0 !important;
+  }
+
+  /* 5. Tarjetas de campos formateadas para impresión */
+  .plan-result-container {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    width: 100% !important;
+  }
+
+  .plan-campos {
+    display: block !important;
+  }
+
+  .plan-campo {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    border-left: 4px solid #1B3A5C !important;
+    padding: 12px 14px !important;
+    margin-bottom: 14px !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    border-radius: 6px !important;
+  }
+
+  .plan-campo-header {
+    margin-bottom: 6px !important;
+  }
+
+  .plan-campo-titulo {
+    font-size: 11.5pt !important;
+    font-weight: 700 !important;
+    color: #1B3A5C !important;
+  }
+
+  .plan-campo-contenido {
+    font-size: 10pt !important;
+    color: #1e293b !important;
+    line-height: 1.5 !important;
+    white-space: pre-wrap !important;
+  }
+}
+
