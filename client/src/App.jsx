@@ -12,6 +12,8 @@ import { useSpeechRecognition } from "./hooks/useSpeechRecognition.js";
 import { useSpeechSynthesis } from "./hooks/useSpeechSynthesis.js";
 import { useTrialStatus } from "./hooks/useTrialStatus.js";
 import { generarPlanificacion, exportarWord, generarVoz, guardarAjustesPlan } from "./services/api.js";
+import { registrarAjusteConRespaldoOffline, sincronizarAjustesPendientes } from "./services/offlineSync.js";
+import { guardarPlanEnBiblioteca } from "./services/bibliotecaStorage.js";
 
 export default function App() {
   const { diasRestantes, expirado, diasPrueba } = useTrialStatus();
@@ -25,6 +27,8 @@ export default function App() {
   const [perfilOpen, setPerfilOpen] = useState(false);
   const [curriculumOpen, setCurriculumOpen] = useState(false);
   const [bibliotecaOpen, setBibliotecaOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [notificacionSync, setNotificacionSync] = useState(null);
   
   // Chat History
   const [messages, setMessages] = useState([]);
@@ -45,14 +49,59 @@ export default function App() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // FASE 13: Listener de conectividad y sincronización automática al volver online
+  useEffect(() => {
+    function handleOnline() {
+      setIsOnline(true);
+      sincronizarAjustesPendientes((info) => {
+        if (info && info.totalSincronizados > 0) {
+          setNotificacionSync(`✓ Se sincronizaron ${info.totalSincronizados} cambios guardados offline.`);
+          setTimeout(() => setNotificacionSync(null), 3500);
+        }
+      });
+    }
+
+    function handleOffline() {
+      setIsOnline(false);
+    }
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    if (navigator.onLine) {
+      sincronizarAjustesPendientes((info) => {
+        if (info && info.totalSincronizados > 0) {
+          setNotificacionSync(`✓ Se sincronizaron ${info.totalSincronizados} cambios guardados offline.`);
+          setTimeout(() => setNotificacionSync(null), 3500);
+        }
+      });
+    }
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
   async function enviarMensaje(texto, imageBase64, mediaType) {
     if (!texto && !imageBase64) return;
     
     const newUserMsg = { role: "user", text: texto, imageBase64, mediaType };
     const newHistory = [...messages, newUserMsg];
     setMessages(newHistory);
-    setCargando(true);
     setImageSrc(null);
+
+    // FASE 13: Verificación estricta de conexión antes de llamar a la IA
+    if (!navigator.onLine) {
+      const offlineMsg = {
+        role: "assistant",
+        text: "⚠️ Se necesita conexión a internet para generar contenido nuevo con IA. Puedes seguir viendo tus planificaciones guardadas."
+      };
+      setMessages([...newHistory, offlineMsg]);
+      return;
+    }
+
+    setCargando(true);
 
     try {
       const data = await generarPlanificacion({ messages: newHistory, nivel, periodo });
@@ -74,7 +123,15 @@ export default function App() {
         speak(chatText);
       }
     } catch (err) {
-      alert(err.message);
+      if (!navigator.onLine || err.message?.includes("Failed to fetch") || err.message?.includes("NetworkError")) {
+        const offlineMsg = {
+          role: "assistant",
+          text: "⚠️ Se necesita conexión a internet para generar contenido nuevo con IA. Puedes seguir viendo tus planificaciones guardadas."
+        };
+        setMessages([...newHistory, offlineMsg]);
+      } else {
+        alert(err.message);
+      }
     } finally {
       setCargando(false);
     }
@@ -169,6 +226,18 @@ export default function App() {
 
   return (
     <div className="phone-shell">
+      {/* FASE 13: Banner de modo offline y notificación de sincronización automática */}
+      {!isOnline && (
+        <div className="pm-offline-banner no-print">
+          <span>📡 Modo sin conexión — Puedes ver y editar tus planificaciones guardadas.</span>
+        </div>
+      )}
+      {notificacionSync && (
+        <div className="pm-sync-toast no-print">
+          <span>{notificacionSync}</span>
+        </div>
+      )}
+
       <Header onLogout={() => alert("Sesion cerrada")} />
       
       <section className="pm-title-card">
@@ -221,8 +290,17 @@ export default function App() {
                 escuchando={escuchando}
                 audioUrl={audioUrl}
                 onDatosActualizados={(nuevosDatos) => {
+                  // FASE 13: Actualizar biblioteca local inmediatamente para persistencia offline
+                  guardarPlanEnBiblioteca({
+                    id: m.planId,
+                    titulo: m.text?.substring(0, 45) || "Planificación Docente",
+                    nivel,
+                    periodo,
+                    datosPlanificacion: nuevosDatos
+                  });
+                  // Sincronizar o encolar para sincronizar cuando vuelva la conexión
                   if (m.planId) {
-                    guardarAjustesPlan({ planId: m.planId, datosAjustados: nuevosDatos });
+                    registrarAjusteConRespaldoOffline({ planId: m.planId, datosAjustados: nuevosDatos });
                   }
                 }}
               />

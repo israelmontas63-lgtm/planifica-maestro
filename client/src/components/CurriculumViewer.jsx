@@ -41,6 +41,12 @@ export default function CurriculumViewer({
     if (e) e.preventDefault();
     if (!temaInput.trim()) return;
 
+    // FASE 13: Comprobación offline antes de consultar IA
+    if (!navigator.onLine) {
+      setErrorIA("Se necesita conexión a internet para generar contenido nuevo con IA. Puedes seguir viendo tus planificaciones guardadas.");
+      return;
+    }
+
     setConsultando(true);
     setErrorIA(null);
     setResultadoIA(null);
@@ -56,7 +62,11 @@ export default function CurriculumViewer({
       });
       setResultadoIA(data);
     } catch (err) {
-      setErrorIA(err.message || "Error consultando el currículo.");
+      if (!navigator.onLine || err.message?.includes("Failed to fetch") || err.message?.includes("NetworkError")) {
+        setErrorIA("Se necesita conexión a internet para generar contenido nuevo con IA. Puedes seguir viendo tus planificaciones guardadas.");
+      } else {
+        setErrorIA(err.message || "Error consultando el currículo.");
+      }
     } finally {
       setConsultando(false);
     }
