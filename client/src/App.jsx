@@ -11,7 +11,7 @@ import MisPlanificaciones from "./components/MisPlanificaciones.jsx";
 import { useSpeechRecognition } from "./hooks/useSpeechRecognition.js";
 import { useSpeechSynthesis } from "./hooks/useSpeechSynthesis.js";
 import { useTrialStatus } from "./hooks/useTrialStatus.js";
-import { generarPlanificacion, exportarWord, generarVoz, guardarAjustesPlan } from "./services/api.js";
+import { generarPlanificacion, exportarWord, generarVoz, guardarAjustesPlan, obtenerCuotaDocente } from "./services/api.js";
 import { registrarAjusteConRespaldoOffline, sincronizarAjustesPendientes } from "./services/offlineSync.js";
 import { guardarPlanEnBiblioteca } from "./services/bibliotecaStorage.js";
 
@@ -29,6 +29,7 @@ export default function App() {
   const [bibliotecaOpen, setBibliotecaOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [notificacionSync, setNotificacionSync] = useState(null);
+  const [estadoCuota, setEstadoCuota] = useState(null);
   
   // Chat History
   const [messages, setMessages] = useState([]);
@@ -53,6 +54,7 @@ export default function App() {
   useEffect(() => {
     function handleOnline() {
       setIsOnline(true);
+      obtenerCuotaDocente().then((cuota) => cuota && setEstadoCuota(cuota)).catch(() => {});
       sincronizarAjustesPendientes((info) => {
         if (info && info.totalSincronizados > 0) {
           setNotificacionSync(`✓ Se sincronizaron ${info.totalSincronizados} cambios guardados offline.`);
@@ -83,6 +85,21 @@ export default function App() {
     };
   }, []);
 
+  // FASE 14: Hook de inicialización de cuota en App.jsx al cargar la app
+  useEffect(() => {
+    async function cargarEstadoInicialCuota() {
+      try {
+        const cuotaData = await obtenerCuotaDocente();
+        if (cuotaData) {
+          setEstadoCuota(cuotaData);
+        }
+      } catch (e) {
+        console.warn("No se pudo cargar la cuota inicial (posible modo offline)");
+      }
+    }
+    cargarEstadoInicialCuota();
+  }, []);
+
   async function enviarMensaje(texto, imageBase64, mediaType) {
     if (!texto && !imageBase64) return;
     
@@ -101,11 +118,26 @@ export default function App() {
       return;
     }
 
+    // FASE 14: Manejo de límite de cuota alcanzado antes de consumir red
+    if (estadoCuota?.agotado) {
+      const quotaMsg = {
+        role: "assistant",
+        text: `🛑 Has alcanzado tu cuota de ${estadoCuota.limite} planificaciones de este periodo. Puedes seguir viendo, editando y exportando tus trabajos guardados.`
+      };
+      setMessages([...newHistory, quotaMsg]);
+      return;
+    }
+
     setCargando(true);
 
     try {
       const data = await generarPlanificacion({ messages: newHistory, nivel, periodo });
       
+      // FASE 14: Actualizar contador de cuota devuelto por backend
+      if (data.cuota) {
+        setEstadoCuota(data.cuota);
+      }
+
       // Handle new structured JSON response
       const chatText = data.mensaje_chat || data.plan || "";
       const planDatos = data.datos_planificacion || null;
@@ -123,7 +155,16 @@ export default function App() {
         speak(chatText);
       }
     } catch (err) {
-      if (!navigator.onLine || err.message?.includes("Failed to fetch") || err.message?.includes("NetworkError")) {
+      if (err.cuota) {
+        setEstadoCuota(err.cuota);
+      }
+      if (err.limiteAlcanzado || err.agotado) {
+        const quotaMsg = {
+          role: "assistant",
+          text: `🛑 ${err.message || "Has alcanzado tu cuota de planificaciones de este periodo."}`
+        };
+        setMessages([...newHistory, quotaMsg]);
+      } else if (!navigator.onLine || err.message?.includes("Failed to fetch") || err.message?.includes("NetworkError")) {
         const offlineMsg = {
           role: "assistant",
           text: "⚠️ Se necesita conexión a internet para generar contenido nuevo con IA. Puedes seguir viendo tus planificaciones guardadas."
@@ -238,7 +279,20 @@ export default function App() {
         </div>
       )}
 
-      <Header onLogout={() => alert("Sesion cerrada")} />
+      {/* FASE 14: Banners dinámicos de control de cuota de IA */}
+      {estadoCuota?.alerta80 && !estadoCuota?.agotado && (
+        <div className="banner-alerta-80 flex justify-between items-center px-4 py-2 no-print">
+          <span>⚠️ Estás cerca del límite de tu cuota de planificaciones de este periodo ({estadoCuota.usadas}/{estadoCuota.limite}).</span>
+        </div>
+      )}
+
+      {estadoCuota?.agotado && (
+        <div className="banner-limite-100 flex justify-between items-center px-4 py-2 no-print">
+          <span>🛑 Has alcanzado tu cuota de {estadoCuota.limite} planificaciones. Puedes seguir viendo, editando y exportando tus trabajos guardados.</span>
+        </div>
+      )}
+
+      <Header onLogout={() => alert("Sesion cerrada")} estadoCuota={estadoCuota} />
       
       <section className="pm-title-card">
         <h1 className="pm-title">{periodo} - {nivel}</h1>

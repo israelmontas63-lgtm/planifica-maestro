@@ -7,6 +7,10 @@ const {
   registrarAjustesManuales,
   obtenerResumenPatrones
 } = require("../curriculum/teacherHistory");
+const {
+  consultarEstadoCuota,
+  verificarYConsumirCuota
+} = require("../curriculum/quotaManager");
 
 const geminiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -89,7 +93,19 @@ Devuelve SIEMPRE tu respuesta en formato JSON estrictamente estructurado con est
 
 router.post("/generate", async (req, res) => {
   try {
-    const { messages = [], nivel, periodo = "diaria" } = req.body;
+    const { messages = [], nivel, periodo = "diaria", docenteId = "docente_default" } = req.body;
+    const resolvedDocenteId = docenteId || req.headers["x-docente-id"] || "docente_default";
+
+    // FASE 14: Control de uso y verificación de cuota por docente
+    const cheqCuota = verificarYConsumirCuota(resolvedDocenteId, false);
+    if (!cheqCuota.permitido) {
+      return res.status(429).json({
+        error: `Has alcanzado tu cuota de ${cheqCuota.estado.limite} planificaciones de este ${cheqCuota.estado.periodo}. Puedes seguir viendo, editando y exportando tus trabajos guardados.`,
+        limiteAlcanzado: true,
+        agotado: true,
+        cuota: cheqCuota.estado
+      });
+    }
 
     if (!messages.length) return res.status(400).json({ error: "Faltan 'messages'." });
     if (!nivel) return res.status(400).json({ error: "Falta 'nivel'." });
@@ -180,19 +196,37 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
       planId = reg.id;
     }
 
+    // FASE 14: Consumir 1 unidad de cuota si el plan fue completado exitosamente
+    let estadoCuotaActual = cheqCuota.estado;
+    if (parsedResponse.plan_completado) {
+      const consumo = verificarYConsumirCuota(resolvedDocenteId, true);
+      estadoCuotaActual = consumo.estado;
+    }
+
     res.json({
       ...parsedResponse,
       planId,
       nivel,
       periodo,
       nivelLabel: esquema.label,
-      proveedor: "Google AI Studio (Gemini)"
+      proveedor: "Google AI Studio (Gemini)",
+      cuota: estadoCuotaActual
     });
     
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Error generando la planificación.", detail: err.message });
   }
+});
+
+/**
+ * GET /api/plan/cuota
+ * Retorna el estado actual de la cuota de uso del docente
+ */
+router.get("/cuota", (req, res) => {
+  const docenteId = req.query.docenteId || req.headers["x-docente-id"] || "docente_default";
+  const estado = consultarEstadoCuota(docenteId);
+  res.json(estado);
 });
 
 /**

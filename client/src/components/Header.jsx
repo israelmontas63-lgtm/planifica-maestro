@@ -18,7 +18,7 @@ function BellOutlineIcon() {
   );
 }
 
-export default function Header({ onLogout }) {
+export default function Header({ onLogout, estadoCuota }) {
   const [open, setOpen] = useState(false);
   const avatarUrl = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face"; // Placeholder avatar real
 
@@ -29,6 +29,15 @@ export default function Header({ onLogout }) {
         <span className="pm-logo-text">Planifica<br /><span className="pm-logo-accent">Maestro</span></span>
       </div>
       <div className="pm-header-actions">
+        {estadoCuota && (
+          <div 
+            className={`pm-cuota-badge ${estadoCuota.agotado ? 'cuota-agotada' : estadoCuota.alerta80 ? 'cuota-alerta' : ''}`}
+            title={`Cuota: ${estadoCuota.usadas} de ${estadoCuota.limite} planificaciones generadas en este periodo`}
+          >
+            <span className="pm-cuota-icon">⚡</span>
+            <span className="pm-cuota-text">{estadoCuota.usadas}/{estadoCuota.limite}</span>
+          </div>
+        )}
         <button className="pm-icon-btn" aria-label="Notificaciones">
           <BellOutlineIcon />
         </button>

@@ -27,6 +27,18 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api/],
         runtimeCaching: [
           {
+            urlPattern: /^\/api\/plan\/cuota/,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "pm-cuotas-cache",
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 días
+              },
+              networkTimeoutSeconds: 3,
+            },
+          },
+          {
             urlPattern: /^\/api\/.*/,
             handler: "NetworkOnly",
           },

@@ -1875,6 +1875,75 @@ body {
   animation: fadeInDown 0.25s ease-out;
 }
 
+/* ═══════════════════════════════════════════
+   FASE 14 — CONTROL DE CUOTA Y USO GEMINI
+═══════════════════════════════════════════ */
+.banner-alerta-80 {
+  background-color: #fef3c7;
+  color: #92400e;
+  border-left: 4px solid #f59e0b;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.15);
+  margin: 0;
+  z-index: 35;
+}
+
+.banner-limite-100 {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border-left: 4px solid #ef4444;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+  margin: 0;
+  z-index: 35;
+}
+
+.pm-cuota-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.pm-cuota-badge.cuota-alerta {
+  background: #f59e0b;
+  color: #ffffff;
+  border-color: #d97706;
+}
+
+.pm-cuota-badge.cuota-agotada {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #b91c1c;
+}
+
+.pm-cuota-icon {
+  font-size: 13px;
+}
+
+.pm-cuota-text {
+  font-variant-numeric: tabular-nums;
+}
+
 
 
 

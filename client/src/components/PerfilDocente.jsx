@@ -5,13 +5,33 @@ const PERFIL_KEY = "planifica_maestro_perfil";
 function cargarPerfil() {
   try {
     const saved = localStorage.getItem(PERFIL_KEY);
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (!parsed.docenteId) {
+        parsed.docenteId = "docente_" + Math.random().toString(36).substring(2, 10);
+        localStorage.setItem(PERFIL_KEY, JSON.stringify(parsed));
+      }
+      return parsed;
+    }
   } catch (e) { /* ignore */ }
-  return { nombre: "", escuela: "", fecha: new Date().toISOString().split("T")[0] };
+  const defaultPerfil = {
+    docenteId: "docente_" + Math.random().toString(36).substring(2, 10),
+    nombre: "",
+    escuela: "",
+    fecha: new Date().toISOString().split("T")[0]
+  };
+  try {
+    localStorage.setItem(PERFIL_KEY, JSON.stringify(defaultPerfil));
+  } catch (e) {}
+  return defaultPerfil;
 }
 
 function guardarPerfil(perfil) {
   localStorage.setItem(PERFIL_KEY, JSON.stringify(perfil));
+}
+
+export function obtenerDocenteId() {
+  return cargarPerfil().docenteId;
 }
 
 export function obtenerPerfil() {
@@ -39,7 +59,8 @@ export default function PerfilDocente({ onCerrar }) {
   }, []);
 
   const handleGuardar = () => {
-    guardarPerfil({ nombre, escuela, fecha, fechaManual });
+    const perfilActual = cargarPerfil();
+    guardarPerfil({ ...perfilActual, nombre, escuela, fecha, fechaManual });
     setGuardado(true);
     setTimeout(() => {
       setGuardado(false);

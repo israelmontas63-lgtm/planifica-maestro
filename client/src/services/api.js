@@ -1,12 +1,37 @@
+import { obtenerDocenteId } from "../components/PerfilDocente.jsx";
+
 const BASE = "/api";
 
 export async function generarPlanificacion({ messages, nivel, periodo }) {
+  const docenteId = obtenerDocenteId();
   const res = await fetch(`${BASE}/plan/generate`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages, nivel, periodo, permitirBusquedaWeb: true }),
+    headers: { 
+      "Content-Type": "application/json",
+      "x-docente-id": docenteId
+    },
+    body: JSON.stringify({ messages, nivel, periodo, docenteId, permitirBusquedaWeb: true }),
   });
-  if (!res.ok) throw new Error((await res.json()).error || "Error generando plan");
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const error = new Error(data.error || "Error generando plan");
+    error.status = res.status;
+    error.cuota = data.cuota;
+    error.limiteAlcanzado = data.limiteAlcanzado;
+    error.agotado = data.agotado;
+    throw error;
+  }
+  return data;
+}
+
+export async function obtenerCuotaDocente() {
+  const docenteId = obtenerDocenteId();
+  const res = await fetch(`${BASE}/plan/cuota?docenteId=${encodeURIComponent(docenteId)}`, {
+    headers: { "x-docente-id": docenteId }
+  });
+  if (!res.ok) {
+    throw new Error("No se pudo obtener la cuota del docente");
+  }
   return res.json();
 }
 
