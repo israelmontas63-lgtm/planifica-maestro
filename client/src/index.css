@@ -1944,6 +1944,123 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* ═══════════════════════════════════════════
+   PROTECCIÓN DE ACCESO INSTITUCIONAL (CLOUDFLARE)
+═══════════════════════════════════════════ */
+.access-gate-overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #12304a 0%, #1a7d8c 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.access-gate-card {
+  background: #ffffff;
+  border-radius: 16px;
+  max-width: 400px;
+  width: 100%;
+  padding: 28px 24px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+  text-align: center;
+  animation: fadeInDown 0.3s ease;
+}
+
+.access-gate-badge {
+  display: inline-block;
+  background: #eef5f6;
+  color: #1a7d8c;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.access-gate-header h2 {
+  font-size: 20px;
+  color: #12304a;
+  margin: 0 0 8px 0;
+}
+
+.access-gate-header p {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 20px 0;
+  line-height: 1.4;
+}
+
+.access-gate-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+}
+
+.access-gate-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.access-gate-input {
+  padding: 12px 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.access-gate-input:focus {
+  border-color: #1a7d8c;
+  box-shadow: 0 0 0 3px rgba(26, 125, 140, 0.15);
+}
+
+.access-gate-error {
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.access-gate-btn {
+  background: linear-gradient(135deg, #4ECFB3 0%, #1a7d8c 100%);
+  color: #ffffff;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(26, 125, 140, 0.3);
+  transition: transform 0.15s, opacity 0.15s;
+}
+
+.access-gate-btn:hover {
+  opacity: 0.95;
+}
+
+.access-gate-btn:active {
+  transform: scale(0.98);
+}
+
+.access-gate-footer {
+  margin-top: 20px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
 
 
 

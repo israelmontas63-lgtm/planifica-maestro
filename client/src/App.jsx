@@ -14,8 +14,10 @@ import { useTrialStatus } from "./hooks/useTrialStatus.js";
 import { generarPlanificacion, exportarWord, generarVoz, guardarAjustesPlan, obtenerCuotaDocente } from "./services/api.js";
 import { registrarAjusteConRespaldoOffline, sincronizarAjustesPendientes } from "./services/offlineSync.js";
 import { guardarPlanEnBiblioteca } from "./services/bibliotecaStorage.js";
+import AccessGate, { verificarAccesoAutorizado } from "./components/AccessGate.jsx";
 
 export default function App() {
+  const [accesoAutorizado, setAccesoAutorizado] = useState(verificarAccesoAutorizado);
   const { diasRestantes, expirado, diasPrueba } = useTrialStatus();
   const [periodo, setPeriodo] = useState("diaria");
   const [nivel, setNivel] = useState("primario");
@@ -249,6 +251,10 @@ export default function App() {
     } finally {
       setEscuchando(false);
     }
+  }
+
+  if (!accesoAutorizado) {
+    return <AccessGate onUnlock={() => setAccesoAutorizado(true)} />;
   }
 
   if (expirado) {

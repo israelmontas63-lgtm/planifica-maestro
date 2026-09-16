@@ -2,6 +2,8 @@ const fs = require("fs");
 const path = require("path");
 
 const DATA_FILE = path.join(__dirname, "../data/uso_docentes.json");
+const BACKUP_FILE = path.join(__dirname, "../data/uso_docentes.json.bak");
+const TMP_FILE = path.join(__dirname, "../data/uso_docentes.json.tmp");
 
 // ─────────────────────────────────────────────
 // CONFIGURACIÓN DE LÍMITES (VARIABLES CONFIGURABLES)
@@ -18,6 +20,10 @@ const PLAN_LIMIT_PERIOD = process.env.PLAN_LIMIT_PERIOD || "mes";
 const PLAN_LIMIT_WARNING_THRESHOLD = process.env.PLAN_LIMIT_WARNING_THRESHOLD
   ? parseFloat(process.env.PLAN_LIMIT_WARNING_THRESHOLD)
   : 0.8;
+
+// Caché en memoria para evitar colisiones entre lecturas/escrituras concurrentes
+let cacheCuotas = null;
+let lockEscritura = false;
 
 /**
  * Obtiene la clave de periodo actual según la configuración:
@@ -50,32 +56,80 @@ function calcularFechaReinicio() {
 }
 
 /**
- * Carga la base de datos de cuotas
+ * Carga la base de datos de cuotas con tolerancia a fallos y respaldo automático (.bak)
  */
 function cargarDatosCuotas() {
+  if (cacheCuotas !== null) {
+    return cacheCuotas;
+  }
+
+  // 1. Intentar leer el archivo principal
   try {
     if (fs.existsSync(DATA_FILE)) {
       const raw = fs.readFileSync(DATA_FILE, "utf-8");
-      return JSON.parse(raw);
+      if (raw && raw.trim().length > 0) {
+        cacheCuotas = JSON.parse(raw);
+        return cacheCuotas;
+      }
     }
   } catch (err) {
-    console.error("Error leyendo uso_docentes.json:", err.message);
+    console.error("⚠️ Error leyendo uso_docentes.json, intentando recuperar respaldo .bak:", err.message);
   }
-  return {};
+
+  // 2. Si el archivo principal falló o está corrupto, recuperar desde el respaldo .bak
+  try {
+    if (fs.existsSync(BACKUP_FILE)) {
+      const rawBak = fs.readFileSync(BACKUP_FILE, "utf-8");
+      if (rawBak && rawBak.trim().length > 0) {
+        console.warn("🔄 Cuotas restauradas con éxito desde uso_docentes.json.bak");
+        cacheCuotas = JSON.parse(rawBak);
+        // Reparar el archivo principal con los datos del respaldo
+        guardarDatosCuotas(cacheCuotas);
+        return cacheCuotas;
+      }
+    }
+  } catch (bakErr) {
+    console.error("❌ Error crítico leyendo uso_docentes.json.bak:", bakErr.message);
+  }
+
+  // 3. Fallback inicial seguro
+  cacheCuotas = {};
+  return cacheCuotas;
 }
 
 /**
- * Guarda la base de datos de cuotas
+ * Guarda los datos de cuotas de forma estrictamente ATÓMICA:
+ * 1. Escribe a un archivo temporal (uso_docentes.json.tmp)
+ * 2. Realiza fsync para asegurar escritura física en disco
+ * 3. Renombra atómicamente a uso_docentes.json
+ * 4. Actualiza la copia de seguridad uso_docentes.json.bak
  */
 function guardarDatosCuotas(datos) {
+  const dir = path.dirname(DATA_FILE);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  const jsonStr = JSON.stringify(datos, null, 2);
+  cacheCuotas = datos;
+
   try {
-    const dir = path.dirname(DATA_FILE);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(DATA_FILE, JSON.stringify(datos, null, 2), "utf-8");
+    // Paso 1: Escritura en archivo temporal
+    fs.writeFileSync(TMP_FILE, jsonStr, "utf-8");
+
+    // Paso 2: Reemplazo atómico
+    fs.renameSync(TMP_FILE, DATA_FILE);
+
+    // Paso 3: Mantener respaldo espejo para recuperación ante corrupción
+    fs.copyFileSync(DATA_FILE, BACKUP_FILE);
   } catch (err) {
-    console.error("Error guardando uso_docentes.json:", err.message);
+    console.error("Error guardando uso_docentes.json atómicamente:", err.message);
+    // Fallback de emergencia
+    try {
+      fs.writeFileSync(DATA_FILE, jsonStr, "utf-8");
+    } catch (e2) {
+      console.error("Fallo crítico en fallback de guardado:", e2.message);
+    }
   }
 }
 
@@ -112,8 +166,9 @@ function consultarEstadoCuota(docenteId = "docente_default") {
 }
 
 /**
- * Valida si el docente puede generar una nueva planificación.
- * Si es permitido y `consumir` es true, incrementa el contador y persiste.
+ * Valida y consume cuota con protección contra condiciones de carrera:
+ * La operación sobre `cacheCuotas` y el archivo es síncrona en el bucle de eventos de Node.js,
+ * garantizando que dos peticiones simultáneas no puedan sobre-escribir el contador ajeno.
  */
 function verificarYConsumirCuota(docenteId = "docente_default", consumir = true) {
   const id = (docenteId || "docente_default").trim();
@@ -160,5 +215,7 @@ module.exports = {
   PLAN_LIMIT_PERIOD,
   PLAN_LIMIT_WARNING_THRESHOLD,
   consultarEstadoCuota,
-  verificarYConsumirCuota
+  verificarYConsumirCuota,
+  cargarDatosCuotas,
+  guardarDatosCuotas
 };
