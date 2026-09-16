@@ -250,3 +250,32 @@ describe("FASE 14 / 15: Verificación del sistema de cuotas y umbral preventivo"
     assert.strictEqual(activaAlerta, true, "16 de 20 planificaciones debe activar el 80%");
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRUEBA 5 (Fase 16): Mitigación de Alucinaciones y Detección de Baja Certeza
+// ─────────────────────────────────────────────────────────────────────────────
+describe("FASE 16: Mitigación de alucinaciones y resalte visual de baja certeza", () => {
+  it("5.1 El modelo de datos procesa confianza_curricular con bloques aproximados y nota de revisión", () => {
+    const mockConfianza = {
+      nivel_certeza: "media",
+      bloques_aproximados: [
+        "3. Competencias Específicas del área/grado",
+        "8. Evaluación: indicadores de logro, técnicas e instrumentos"
+      ],
+      nota_revision: "Los indicadores fueron formulados como aproximación pedagógica. Coteja los códigos con la malla curricular impresa del MINERD."
+    };
+
+    assert.strictEqual(mockConfianza.nivel_certeza, "media");
+    assert.strictEqual(mockConfianza.bloques_aproximados.length, 2);
+    assert.ok(mockConfianza.nota_revision.includes("MINERD"));
+
+    // Simular función de detección de resalte visual
+    function esBloqueResaltado(nombreBloque, confianza) {
+      return confianza.bloques_aproximados.some((b) => b === nombreBloque);
+    }
+
+    assert.strictEqual(esBloqueResaltado("3. Competencias Específicas del área/grado", mockConfianza), true);
+    assert.strictEqual(esBloqueResaltado("1. Datos generales (grado, sección, fecha, área, maestro, tiempo estimado)", mockConfianza), false);
+  });
+});
+

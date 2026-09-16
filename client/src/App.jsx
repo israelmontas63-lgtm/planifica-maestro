@@ -149,6 +149,7 @@ export default function App() {
         role: "assistant", 
         text: chatText,
         datosGenerados: planCompleto ? planDatos : null,
+        confianzaCurricular: data.confianzaCurricular || null,
         planId: data.planId || null
       };
       setMessages([...newHistory, newAssistantMsg]);
@@ -341,6 +342,7 @@ export default function App() {
             {m.role === 'assistant' && m.datosGenerados && (
                <PlanResult 
                 datosGenerados={m.datosGenerados}
+                confianzaCurricular={m.confianzaCurricular}
                 planId={m.planId}
                 nivel={nivel}
                 periodo={periodo}

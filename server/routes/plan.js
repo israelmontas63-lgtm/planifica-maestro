@@ -70,6 +70,12 @@ Tu objetivo es asistir al docente a generar una planificación curricular impeca
 3. GENERACIÓN CURRICULAR REAL: Cuando tengas la información, genera contenido real, riguroso y alineado al MINERD (competencias fundamentales, específicas, indicadores de logro, conceptuales, procedimentales, actitudinales, actividades, recursos, evaluación).
 4. MAPEO EXACTO: El contenido generado debe mapearse exactamente a los bloques del esquema seleccionado por el usuario.
 
+## REGLA ANTI-ALUCINACIÓN Y PRECISIÓN CURRICULAR (FASE 16 - CRÍTICA)
+- Si no tienes certeza absoluta sobre un dato curricular específico oficial (ej. número o código exacto de un indicador de logro en la malla curricular, o número de ordenanza/resolución):
+  * PROHIBIDO inventar números de indicadores, códigos o referencias legales ficticias que suenen oficiales pero no lo sean.
+  * En su lugar, formula el contenido de forma pedagógicamente sólida, general y coherente con las competencias del MINERD, usando redacción docente clara.
+  * En el campo 'confianza_curricular', reporta honestamente el nivel de certeza ('alta', 'media', 'baja'), enlista los nombres exactos de los bloques que son aproximaciones pedagógicas generales en 'bloques_aproximados', y escribe una nota explicativa en 'nota_revision' orientando al maestro a revisar esa sección específica con su diseño curricular oficial.
+
 ## CAPACIDAD MULTIMODAL (IMÁGENES)
 Si el usuario envía una imagen de una pizarra, libro o ejercicio:
 - Usa 'mensaje_chat' para confirmar qué interpretas de la imagen.
@@ -87,6 +93,13 @@ Devuelve SIEMPRE tu respuesta en formato JSON estrictamente estructurado con est
     // Ejemplo:
     // "1. Datos generales...": "valor generado",
     // "2. Competencias...": "valor generado"
+  },
+  "confianza_curricular": {
+    "nivel_certeza": "alta | media | baja",
+    "bloques_aproximados": [
+      // Strings con los nombres exactos de los bloques donde el contenido es una aproximación pedagógica general (ej. "3. Competencias Específicas del área/grado")
+    ],
+    "nota_revision": "String con recomendación pedagógica para el docente si algún bloque requiere cotejo con la malla curricular impresa u oficial."
   }
 }
 `;
@@ -210,7 +223,8 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
       periodo,
       nivelLabel: esquema.label,
       proveedor: "Google AI Studio (Gemini)",
-      cuota: estadoCuotaActual
+      cuota: estadoCuotaActual,
+      confianzaCurricular: parsedResponse.confianza_curricular || null
     });
     
   } catch (err) {

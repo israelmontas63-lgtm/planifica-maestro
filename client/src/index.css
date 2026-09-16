@@ -2061,6 +2061,70 @@ body {
   color: #94a3b8;
 }
 
+/* ═══════════════════════════════════════════
+   FASE 16 — MITIGACIÓN DE ALUCINACIONES Y RESALTE VISUAL
+═══════════════════════════════════════════ */
+.plan-confianza-alerta {
+  background: #fffbeb;
+  border: 1.5px solid #f59e0b;
+  border-left: 5px solid #d97706;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);
+}
+
+.plan-confianza-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.plan-confianza-body {
+  flex: 1;
+}
+
+.plan-confianza-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #b45309;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.plan-confianza-desc {
+  margin: 0;
+  font-size: 13px;
+  color: #92400e;
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+/* Resalte visual específico en el campo del formulario (borde amarillo) */
+.plan-campo.plan-campo-baja-certeza {
+  border: 2px solid #f59e0b !important;
+  background: #fffdf5;
+  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.15);
+  border-radius: 10px;
+}
+
+.plan-badge-baja-certeza {
+  background: #fef3c7;
+  color: #b45309;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+  border: 1px solid #f59e0b;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 
 
 

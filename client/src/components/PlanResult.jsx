@@ -12,7 +12,8 @@ export default function PlanResult({
   onEscuchar,
   escuchando,
   audioUrl,
-  onDatosActualizados
+  onDatosActualizados,
+  confianzaCurricular
 }) {
   const [campos, setCampos] = useState(datosGenerados || {});
   const [editandoCampo, setEditandoCampo] = useState(null);
@@ -52,6 +53,13 @@ export default function PlanResult({
     setGuardadoEnBiblio(true);
     setTimeout(() => setGuardadoEnBiblio(false), 2500);
   }
+
+  const nivelCerteza = (confianzaCurricular?.nivel_certeza || "alta").toLowerCase();
+  const bloquesAproximados = Array.isArray(confianzaCurricular?.bloques_aproximados)
+    ? confianzaCurricular.bloques_aproximados
+    : [];
+  const notaRevision = confianzaCurricular?.nota_revision || null;
+  const tieneAproximaciones = nivelCerteza === "baja" || nivelCerteza === "media" || bloquesAproximados.length > 0;
 
   const claves = Object.keys(campos);
 
@@ -139,30 +147,60 @@ export default function PlanResult({
         </div>
       </div>
 
-      {/* FASE 10: Todos los campos 100% editables al toque directo, sin bloqueos */}
-      <div className="plan-campos">
-        {claves.map((clave) => (
-          <div
-            key={clave}
-            className={`plan-campo ${editandoCampo === clave ? "campo-enfocado" : ""}`}
-          >
-            <div className="plan-campo-header">
-              <h4 className="plan-campo-titulo">{clave}</h4>
-              <span className="plan-campo-badge no-print">
-                {editandoCampo === clave ? "✏️ Editando..." : "✏️ Toca para editar"}
-              </span>
-            </div>
-            <textarea
-              className="plan-campo-textarea"
-              value={campos[clave] || ""}
-              onChange={(e) => handleCampoChange(clave, e.target.value)}
-              onFocus={() => setEditandoCampo(clave)}
-              onBlur={() => setEditandoCampo(null)}
-              rows={Math.max(4, ((campos[clave] || "").match(/\n/g) || []).length + 2)}
-              placeholder={`Escribe o ajusta aquí ${clave}...`}
-            />
+      {/* FASE 16: Banner pedagógico si la certeza curricular es media o baja */}
+      {tieneAproximaciones && (
+        <div className="plan-confianza-alerta no-print">
+          <div className="plan-confianza-icon">🔍</div>
+          <div className="plan-confianza-body">
+            <span className="plan-confianza-tag">
+              Aproximación Pedagógica General ({nivelCerteza.toUpperCase()})
+            </span>
+            <p className="plan-confianza-desc">
+              {notaRevision || "Algunos bloques curriculares fueron formulados de forma general para evitar alucinaciones. Revisa las secciones resaltadas con borde amarillo con tu diseño curricular oficial del MINERD."}
+            </p>
           </div>
-        ))}
+        </div>
+      )}
+
+      {/* FASE 10 & 16: Campos 100% editables con resalte visual si la certeza es baja */}
+      <div className="plan-campos">
+        {claves.map((clave) => {
+          const esBloqueAproximado = bloquesAproximados.some((b) => {
+            const s1 = b.toLowerCase().replace(/[^a-záéíóúñ0-9]/g, "");
+            const s2 = clave.toLowerCase().replace(/[^a-záéíóúñ0-9]/g, "");
+            return s1.includes(s2) || s2.includes(s1);
+          }) || (nivelCerteza === "baja" && (clave.includes("Competencias") || clave.includes("Evaluación") || clave.includes("Contenidos")));
+
+          return (
+            <div
+              key={clave}
+              className={`plan-campo ${esBloqueAproximado ? "plan-campo-baja-certeza" : ""} ${editandoCampo === clave ? "campo-enfocado" : ""}`}
+            >
+              <div className="plan-campo-header">
+                <h4 className="plan-campo-titulo">{clave}</h4>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  {esBloqueAproximado && (
+                    <span className="plan-badge-baja-certeza no-print" title="Esta sección es una aproximación general. Coteja con tu currículo oficial.">
+                      ⚠️ Cotejar con malla oficial
+                    </span>
+                  )}
+                  <span className="plan-campo-badge no-print">
+                    {editandoCampo === clave ? "✏️ Editando..." : "✏️ Toca para editar"}
+                  </span>
+                </div>
+              </div>
+              <textarea
+                className="plan-campo-textarea"
+                value={campos[clave] || ""}
+                onChange={(e) => handleCampoChange(clave, e.target.value)}
+                onFocus={() => setEditandoCampo(clave)}
+                onBlur={() => setEditandoCampo(null)}
+                rows={Math.max(4, ((campos[clave] || "").match(/\n/g) || []).length + 2)}
+                placeholder={`Escribe o ajusta aquí ${clave}...`}
+              />
+            </div>
+          );
+        })}
       </div>
 
       {/* Botones de acción */}
