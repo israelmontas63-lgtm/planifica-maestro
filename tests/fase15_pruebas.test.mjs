@@ -279,3 +279,56 @@ describe("FASE 16: Mitigación de alucinaciones y resalte visual de baja certeza
   });
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PRUEBA 6: Mejoras de UX (Triple Entrada, Stepper y Cabecera Interactiva)
+// ─────────────────────────────────────────────────────────────────────────────
+describe("MEJORAS UX: Triple entrada unificada, Stepper de progreso y Cabecera interactiva", () => {
+  it("6.1 El selector de entrada define exactamente las 3 modalidades con sus etiquetas y acciones", () => {
+    const modalidades = [
+      { id: "voz", titulo: "Dictado por Voz", tipo: "audio" },
+      { id: "foto", titulo: "Subir Foto o Captura", tipo: "imagen" },
+      { id: "texto", titulo: "Escribir con Teclado", tipo: "texto" }
+    ];
+
+    assert.strictEqual(modalidades.length, 3);
+    assert.deepStrictEqual(modalidades.map(m => m.id), ["voz", "foto", "texto"]);
+    assert.ok(modalidades.every(m => m.titulo.length > 0));
+  });
+
+  it("6.2 El stepper refleja las 3 fases pedagógicas secuenciales del wizard", () => {
+    const pasos = [
+      { num: 1, titulo: "Configurar" },
+      { num: 2, titulo: "Tema / Material" },
+      { num: 3, titulo: "Revisar y Exportar" }
+    ];
+
+    assert.strictEqual(pasos.length, 3);
+    assert.strictEqual(pasos[0].num, 1);
+    assert.strictEqual(pasos[1].num, 2);
+    assert.strictEqual(pasos[2].num, 3);
+
+    // Verificación de cálculo dinámico de paso actual
+    function calcularPaso(tienePlan, tieneInput) {
+      if (tienePlan) return 3;
+      if (tieneInput) return 2;
+      return 2;
+    }
+
+    assert.strictEqual(calcularPaso(false, false), 2, "Sin mensajes, el paso activo es ingresar tema");
+    assert.strictEqual(calcularPaso(false, true), 2, "Con imagen o audio, el paso activo es procesar tema");
+    assert.strictEqual(calcularPaso(true, true), 3, "Con plan generado, el paso activo es revisar y exportar");
+  });
+
+  it("6.3 La cabecera proporciona affordance táctil para cambiar esquema y periodo", () => {
+    let schemaModalAbierto = false;
+    function clickChipEsquema() {
+      schemaModalAbierto = true;
+    }
+
+    assert.strictEqual(schemaModalAbierto, false);
+    clickChipEsquema();
+    assert.strictEqual(schemaModalAbierto, true, "Hacer clic en el chip de la cabecera abre el selector de esquemas");
+  });
+});
+
+

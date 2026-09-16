@@ -15,6 +15,9 @@ import { generarPlanificacion, exportarWord, generarVoz, guardarAjustesPlan, obt
 import { registrarAjusteConRespaldoOffline, sincronizarAjustesPendientes } from "./services/offlineSync.js";
 import { guardarPlanEnBiblioteca } from "./services/bibliotecaStorage.js";
 import AccessGate, { verificarAccesoAutorizado } from "./components/AccessGate.jsx";
+import WizardStepper from "./components/WizardStepper.jsx";
+import UnifiedEntrySelector from "./components/UnifiedEntrySelector.jsx";
+import { ESQUEMAS, PERIODOS } from "./components/SchemaSelector.jsx";
 
 export default function App() {
   const [accesoAutorizado, setAccesoAutorizado] = useState(verificarAccesoAutorizado);
@@ -48,6 +51,18 @@ export default function App() {
 
   // Auto-scroll chat
   const chatEndRef = useRef(null);
+  const fileInputHiddenRef = useRef(null);
+
+  // Esquema y periodo legibles
+  const esquemaActual = ESQUEMAS.find((e) => e.id === nivel);
+  const esquemaLabel = esquemaActual ? esquemaActual.nombre : nivel;
+  const periodoObj = PERIODOS.find((p) => p.value === periodo);
+  const periodoLabel = periodoObj ? periodoObj.label : periodo;
+
+  // Paso del wizard (1: Configurar, 2: Tema/Material, 3: Revisar y Exportar)
+  const tienePlanGenerado = messages.some((m) => m.role === "assistant" && m.datosGenerados);
+  const pasoActual = tienePlanGenerado ? 3 : (messages.length > 0 || cargando || imageSrc) ? 2 : 2;
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -311,10 +326,24 @@ export default function App() {
 
       <Header onLogout={() => alert("Sesion cerrada")} estadoCuota={estadoCuota} />
       
-      <section className="pm-title-card">
-        <h1 className="pm-title">{periodo} - {nivel}</h1>
-        <label className="pm-switch">
-          Voz (Bot)
+      <section className="pm-title-card no-print">
+        <button
+          type="button"
+          className="pm-chip-esquema"
+          onClick={() => { setSchemaOpen(true); setMenuOpen(false); }}
+          title="Toca para cambiar el esquema curricular o el periodo"
+          aria-label={`Esquema actual: ${periodoLabel} - ${esquemaLabel}. Toca para cambiar.`}
+        >
+          <div className="pm-chip-main">
+            <span className="pm-chip-icon">📋</span>
+            <span className="pm-chip-text">{periodoLabel} • {esquemaLabel}</span>
+            <span className="pm-chip-caret">▾</span>
+          </div>
+          <span className="pm-chip-hint">Toca para cambiar esquema</span>
+        </button>
+
+        <label className="pm-switch" title="Activar o desactivar la lectura por voz de las respuestas generadas con IA">
+          <span className="pm-switch-label">🔊 Voz IA</span>
           <input 
             type="checkbox" 
             checked={hablarRespuestas} 
@@ -326,11 +355,40 @@ export default function App() {
         </label>
       </section>
 
+      {/* Stepper de progreso guiado tipo wizard */}
+      <WizardStepper
+        pasoActual={pasoActual}
+        onConfigurarClick={() => { setSchemaOpen(true); setMenuOpen(false); }}
+        periodo={periodoLabel}
+        esquemaLabel={esquemaLabel}
+      />
+
+      {/* Input invisible para activar la cámara desde el botón Foto de la barra inferior */}
+      <input
+        ref={fileInputHiddenRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        style={{ display: "none" }}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => handleImageSelected(reader.result, file.type);
+          reader.readAsDataURL(file);
+          e.target.value = "";
+        }}
+      />
+
       <div style={{ flex: 1, overflowY: 'auto', padding: '10px 10px 100px 10px', background: 'var(--pm-bg)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {messages.length === 0 && (
-          <div style={{ textAlign: 'center', color: '#64748b', marginTop: '20px' }}>
-            <p>Sube una foto de la pizarra o presiona el micrófono para decirme qué clase quieres planificar.</p>
-          </div>
+          <UnifiedEntrySelector
+            onDictadoClick={handleDictadoClick}
+            onTextoClick={() => { setTextoModalOpen(true); setMenuOpen(false); }}
+            onImageSelected={handleImageSelected}
+            listening={listening}
+            procesandoImagen={procesandoImagen}
+          />
         )}
         
         {messages.map((m, i) => (
@@ -382,7 +440,12 @@ export default function App() {
         {cargando && <div style={{ alignSelf: 'flex-start', color: '#64748b', fontStyle: 'italic' }}>Pensando...</div>}
         <div ref={chatEndRef} />
         
-        <CaptureArea imageSrc={imageSrc} onImageSelected={handleImageSelected} procesando={procesandoImagen} />
+        <CaptureArea
+          imageSrc={imageSrc}
+          onImageSelected={handleImageSelected}
+          onRemoveImage={() => setImageSrc(null)}
+          procesando={procesandoImagen}
+        />
       </div>
       
       <BottomPanel
@@ -391,6 +454,7 @@ export default function App() {
         onSeleccionarEsquema={(p, n) => { setPeriodo(p); setNivel(n); }}
         listening={listening}
         onDictadoClick={handleDictadoClick}
+        onAbrirCamara={() => fileInputHiddenRef.current?.click()}
         menuOpen={menuOpen}
         setMenuOpen={(open) => { setMenuOpen(open); if(open) { setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); } }}
         onAbrirTexto={() => { setTextoModalOpen(true); setMenuOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); }}

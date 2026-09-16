@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const ESQUEMAS = [
+export const ESQUEMAS = [
   {
     id: "inicial",
     nombre: "Tradicional (Inicial)",
@@ -59,7 +59,7 @@ const ESQUEMAS = [
   }
 ];
 
-const PERIODOS = [
+export const PERIODOS = [
   { value: "diaria", label: "Diaria" },
   { value: "semanal", label: "Semanal" },
   { value: "mensual", label: "Mensual" },

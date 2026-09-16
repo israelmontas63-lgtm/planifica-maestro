@@ -1,16 +1,20 @@
 import { useRef } from "react";
 
-export default function CaptureArea({ imageSrc, onImageSelected, procesando }) {
+export default function CaptureArea({ imageSrc, onImageSelected, onRemoveImage, procesando }) {
   const fileInputRef = useRef(null);
+
   const handleFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => onImageSelected(reader.result, file.type);
     reader.readAsDataURL(file);
+    // Reset file input so selecting the same file works again if needed
+    e.target.value = "";
   };
+
   return (
-    <div className="pm-viewfinder" onClick={() => fileInputRef.current?.click()}>
+    <div className="pm-capture-container">
       <input
         ref={fileInputRef}
         type="file"
@@ -19,21 +23,54 @@ export default function CaptureArea({ imageSrc, onImageSelected, procesando }) {
         style={{ display: "none" }}
         onChange={handleFile}
       />
-      {imageSrc && (
-        <img src={imageSrc} alt="Página capturada" className="pm-viewfinder-img" />
-      )}
-      {!imageSrc && !procesando && (
-        <div className="pm-viewfinder-text">
-          📷 Toca aquí para tomar una foto del libro o guía docente.
+
+      {imageSrc ? (
+        <div className="pm-capture-preview-card">
+          <img src={imageSrc} alt="Página capturada" className="pm-capture-thumbnail" />
+          <div className="pm-capture-preview-info">
+            <span className="pm-capture-tag">📷 Foto adjunta</span>
+            <p className="pm-capture-hint">Se incluirá al dictar o enviar tu solicitud</p>
+            <div className="pm-capture-actions">
+              <button
+                type="button"
+                className="pm-capture-btn-change"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={procesando}
+              >
+                Cambiar foto
+              </button>
+              {onRemoveImage && (
+                <button
+                  type="button"
+                  className="pm-capture-btn-remove"
+                  onClick={onRemoveImage}
+                  disabled={procesando}
+                >
+                  Quitar
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div
+          className={`pm-viewfinder-compact ${procesando ? "procesando" : ""}`}
+          onClick={() => fileInputRef.current?.click()}
+          role="button"
+          tabIndex={0}
+          title="Tomar o subir foto de libro o guía docente"
+        >
+          <div className="pm-viewfinder-compact-icon">📷</div>
+          <div className="pm-viewfinder-compact-text">
+            <strong>Subir foto de material docente</strong>
+            <span>Pizarra, libro de texto o guía curricular</span>
+          </div>
+          <div className="pm-viewfinder-compact-badge">Seleccionar</div>
+          {procesando && (
+            <div className="pm-viewfinder-compact-loading">Leyendo imagen...</div>
+          )}
         </div>
       )}
-      {procesando && <div className="pm-viewfinder-text">Leyendo la imagen...</div>}
-      
-      <div className="pm-viewfinder-grid"></div>
-      <span className="pm-corner pm-corner-tl"></span>
-      <span className="pm-corner pm-corner-tr"></span>
-      <span className="pm-corner pm-corner-bl"></span>
-      <span className="pm-corner pm-corner-br"></span>
     </div>
   );
 }
