@@ -1,7 +1,12 @@
 import { useState } from "react";
+import { guardarPlanEnBiblioteca } from "../services/bibliotecaStorage.js";
 
 export default function PlanResult({
   datosGenerados,
+  planId,
+  nivel = "primario",
+  periodo = "diaria",
+  esquemaLabel = "Esquema MINERD",
   onExportar,
   exportando,
   onEscuchar,
@@ -13,11 +18,39 @@ export default function PlanResult({
   const [editandoCampo, setEditandoCampo] = useState(null);
   const [showShareModal, setShowShareModal] = useState(false);
   const [guardandoArchivo, setGuardandoArchivo] = useState(false);
+  const [guardadoEnBiblio, setGuardadoEnBiblio] = useState(false);
 
   function handleCampoChange(clave, valor) {
     const nuevos = { ...campos, [clave]: valor };
     setCampos(nuevos);
     if (onDatosActualizados) onDatosActualizados(nuevos);
+  }
+
+  function handleGuardarEnBiblioteca() {
+    const clavesList = Object.keys(campos);
+    let detectedTitle = "Planificación Docente";
+
+    const primerCampo = campos[clavesList[0]] || "";
+    if (typeof primerCampo === "string" && primerCampo.trim()) {
+      const lineas = primerCampo.split("\n").filter((l) => l.trim());
+      if (lineas[0]) {
+        detectedTitle = lineas[0].replace(/^[#*\-•:\d. ]+/, "").substring(0, 50);
+      }
+    }
+
+    guardarPlanEnBiblioteca({
+      id: planId || "plan_" + Date.now(),
+      titulo: detectedTitle,
+      area: "Área Curricular",
+      grado: "Nivel MINERD",
+      nivel,
+      periodo,
+      esquemaLabel,
+      datosPlanificacion: campos
+    });
+
+    setGuardadoEnBiblio(true);
+    setTimeout(() => setGuardadoEnBiblio(false), 2500);
   }
 
   const claves = Object.keys(campos);
@@ -164,6 +197,15 @@ export default function PlanResult({
           title="Compartir por WhatsApp, Facebook o Bluetooth"
         >
           ↗️ Compartir
+        </button>
+
+        <button
+          className="export-btn btn-guardar-biblio"
+          onClick={handleGuardarEnBiblioteca}
+          title="Guardar en Mis Planificaciones"
+          style={{ gridColumn: 'span 2', background: 'linear-gradient(135deg, #1B3A5C 0%, #1d4e6e 100%)' }}
+        >
+          {guardadoEnBiblio ? "✓ ¡Guardada en Biblioteca!" : "💾 Guardar en Mis Planificaciones"}
         </button>
       </div>
 

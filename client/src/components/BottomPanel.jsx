@@ -40,6 +40,7 @@ export default function BottomPanel({
   onAbrirEsquemas,
   onAbrirPerfil,
   onAbrirCurriculo,
+  onAbrirBiblioteca,
   menuOpen,
   setMenuOpen
 }) {
@@ -109,6 +110,14 @@ export default function BottomPanel({
               </li>
             ))}
             <li style={{ marginTop: '8px', borderTop: '1px solid #e2e8f0', paddingTop: '8px' }}>
+              <button
+                style={{ fontWeight: '700', color: '#B45309' }}
+                onClick={() => { setMenuOpen(false); onAbrirBiblioteca(); }}
+              >
+                📁 Mis Planificaciones
+              </button>
+            </li>
+            <li>
               <button
                 style={{ fontWeight: '700', color: 'var(--pm-green, #3FB88A)' }}
                 onClick={() => { setMenuOpen(false); onAbrirEsquemas(); }}

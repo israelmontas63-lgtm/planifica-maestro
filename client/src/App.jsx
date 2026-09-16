@@ -7,6 +7,7 @@ import PlanResult from "./components/PlanResult.jsx";
 import SchemaSelector from "./components/SchemaSelector.jsx";
 import PerfilDocente from "./components/PerfilDocente.jsx";
 import CurriculumViewer from "./components/CurriculumViewer.jsx";
+import MisPlanificaciones from "./components/MisPlanificaciones.jsx";
 import { useSpeechRecognition } from "./hooks/useSpeechRecognition.js";
 import { useSpeechSynthesis } from "./hooks/useSpeechSynthesis.js";
 import { useTrialStatus } from "./hooks/useTrialStatus.js";
@@ -23,6 +24,7 @@ export default function App() {
   const [schemaOpen, setSchemaOpen] = useState(false);
   const [perfilOpen, setPerfilOpen] = useState(false);
   const [curriculumOpen, setCurriculumOpen] = useState(false);
+  const [bibliotecaOpen, setBibliotecaOpen] = useState(false);
   
   // Chat History
   const [messages, setMessages] = useState([]);
@@ -85,6 +87,19 @@ export default function App() {
       text: `✅ He cargado las competencias, contenidos y actividades oficiales del MINERD para: "${tema}". Revisa o edita los campos a continuación antes de imprimir o exportar.`,
       datosGenerados: datosPlanificacion,
       planId: "plan_curriculo_" + Date.now()
+    };
+    setMessages((prev) => [...prev, newAssistantMsg]);
+  }
+
+  // FASE 11: Cargar planificación seleccionada desde Mis Planificaciones
+  function handleAbrirPlanDesdeBiblioteca(plan) {
+    if (plan.nivel) setNivel(plan.nivel);
+    if (plan.periodo) setPeriodo(plan.periodo);
+    const newAssistantMsg = {
+      role: "assistant",
+      text: `📂 Planificación cargada desde tu biblioteca: "${plan.titulo}" (${plan.esquemaLabel || "Esquema MINERD"}). Puedes revisarla, editarla o exportarla libremente.`,
+      datosGenerados: plan.datosPlanificacion,
+      planId: plan.id
     };
     setMessages((prev) => [...prev, newAssistantMsg]);
   }
@@ -197,6 +212,9 @@ export default function App() {
             {m.role === 'assistant' && m.datosGenerados && (
                <PlanResult 
                 datosGenerados={m.datosGenerados}
+                planId={m.planId}
+                nivel={nivel}
+                periodo={periodo}
                 onExportar={(datos) => handleExportar(Object.entries(datos).map(([k,v]) => `${k}\n${v}`).join("\n\n"))} 
                 exportando={exportando}
                 onEscuchar={(datos) => handleEscuchar(Object.values(datos).join(" ").substring(0, 500))}
@@ -224,11 +242,12 @@ export default function App() {
         listening={listening}
         onDictadoClick={handleDictadoClick}
         menuOpen={menuOpen}
-        setMenuOpen={(open) => { setMenuOpen(open); if(open) { setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); } }}
-        onAbrirTexto={() => { setTextoModalOpen(true); setMenuOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); }}
-        onAbrirEsquemas={() => { setSchemaOpen(true); setMenuOpen(false); setTextoModalOpen(false); setPerfilOpen(false); setCurriculumOpen(false); }}
-        onAbrirPerfil={() => { setPerfilOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); setCurriculumOpen(false); }}
-        onAbrirCurriculo={() => { setCurriculumOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); }}
+        setMenuOpen={(open) => { setMenuOpen(open); if(open) { setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); } }}
+        onAbrirTexto={() => { setTextoModalOpen(true); setMenuOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); }}
+        onAbrirEsquemas={() => { setSchemaOpen(true); setMenuOpen(false); setTextoModalOpen(false); setPerfilOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); }}
+        onAbrirPerfil={() => { setPerfilOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); }}
+        onAbrirCurriculo={() => { setCurriculumOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); setBibliotecaOpen(false); }}
+        onAbrirBiblioteca={() => { setBibliotecaOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); }}
       />
       
       {textoModalOpen && (
@@ -257,6 +276,14 @@ export default function App() {
           periodoActivo={periodo}
           onCerrar={() => setCurriculumOpen(false)}
           onAplicarAlEsquema={handleAplicarCurriculo}
+        />
+      )}
+
+      {bibliotecaOpen && (
+        <MisPlanificaciones
+          onCerrar={() => setBibliotecaOpen(false)}
+          onAbrirPlan={handleAbrirPlanDesdeBiblioteca}
+          onExportarWord={(titulo, texto) => exportarWord({ titulo, plan: texto })}
         />
       )}
     </div>
