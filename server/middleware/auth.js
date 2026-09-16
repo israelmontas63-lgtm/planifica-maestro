@@ -15,6 +15,12 @@ function authMiddleware(req, res, next) {
     return next();
   }
 
+  // Si REQUIRE_ACCESS_KEY está en "false", se desactiva temporalmente el bloqueo 401 para uso personal
+  // Para reactivar la protección institucional: pon REQUIRE_ACCESS_KEY=true en server/.env
+  if (process.env.REQUIRE_ACCESS_KEY === "false") {
+    return next();
+  }
+
   const expectedKey = process.env.APP_ACCESS_KEY;
 
   // Si no está configurada la variable en .env, permitir en modo desarrollo

@@ -169,3 +169,47 @@ ORDER BY p.creado_en DESC;
    - Se creará una función `sincronizarPlanificacionesLocales(usuarioId, escuelaId)` que migrará los registros locales a la base de datos central.
 2. **Privacidad y Aislamiento:**
    Cada petición al backend validará que el `docente_id` pertenezca a la misma `escuela_id` antes de permitir lectura o edición.
+
+---
+
+## 🔐 Control de Acceso Institucional y Modo de Uso Personal
+
+La aplicación cuenta con dos modalidades de acceso configurables:
+
+### A. Modo de Uso Personal (Activo por Defecto)
+Permite ingresar a la aplicación directamente sin pantalla de bloqueo ni contraseñas.
+- **Frontend (`client/src/App.jsx`):**
+  ```javascript
+  const MODO_USO_PERSONAL = true;
+  ```
+- **Backend (`server/.env`):**
+  ```env
+  REQUIRE_ACCESS_KEY=false
+  ```
+
+### B. Cómo Reactivar la Contraseña Institucional para Compartir con Otros Maestros
+Cuando decidas abrir el enlace de Cloudflare a otros docentes o autoridades escolares y quieras exigir clave de acceso:
+
+1. **En `server/.env`:**
+   Cambia la bandera a `true` y verifica la contraseña deseada:
+   ```env
+   REQUIRE_ACCESS_KEY=true
+   APP_ACCESS_KEY=RD-Maestro-8492
+   ```
+2. **En `client/src/App.jsx`:**
+   Cambia la constante a `false`:
+   ```javascript
+   const MODO_USO_PERSONAL = false;
+   ```
+3. **Reinicia el backend (`node index.js`)**:
+   El componente `AccessGate.jsx` se presentará automáticamente al abrir la app, y el backend rechazará con HTTP 401 cualquier petición externa que no incluya el token válido.
+
+---
+
+## 🌐 Configuración de Acceso Público (Cloudflare Tunnel)
+
+Para exponer la aplicación en internet sin exponer puertos de tu router:
+- Ejecutar: `cloudflared tunnel --protocol http2 --url http://localhost:5173`
+- La URL asignada por Cloudflare se almacena en la variable de entorno `PUBLIC_URL` en `server/.env`.
+- El frontend utiliza rutas relativas (`/api/...`), por lo que la aplicación funciona automáticamente bajo cualquier dominio o túnel sin necesidad de cambiar código.
+

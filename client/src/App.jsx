@@ -254,7 +254,17 @@ export default function App() {
     }
   }
 
-  if (!accesoAutorizado) {
+  // =========================================================================
+  // CONTROL DE ACCESO / CONTRASEÑA INSTITUCIONAL (AccessGate)
+  // • MODO_USO_PERSONAL = true  -> Entra directo a la aplicación sin pedir contraseña.
+  // • MODO_USO_PERSONAL = false -> Muestra la pantalla AccessGate y exige la clave institucional.
+  // Para reactivar la contraseña en el futuro (al compartir con otros maestros):
+  // Cambia la siguiente línea a: const MODO_USO_PERSONAL = false;
+  // y en server/.env cambia: REQUIRE_ACCESS_KEY=true
+  // =========================================================================
+  const MODO_USO_PERSONAL = true;
+
+  if (!MODO_USO_PERSONAL && !accesoAutorizado) {
     return <AccessGate onUnlock={() => setAccesoAutorizado(true)} />;
   }
 
