@@ -95,36 +95,39 @@ export default function PlanResult({
         </p>
       </div>
 
-      {/* Aviso de IA */}
-      <div className="plan-ia-aviso no-print">
-        <span className="plan-ia-icono">⚠️</span>
-        <span>Contenido generado con IA — revisa la información antes de usarla oficialmente.</span>
+      {/* FASE 10: Aviso de IA destacado y permanente (no cerrable ni desactivable) */}
+      <div className="plan-ia-banner-destacado no-print">
+        <div className="plan-ia-banner-icon">⚠️</div>
+        <div className="plan-ia-banner-texto">
+          <span className="plan-ia-banner-tag">Aviso Institucional</span>
+          <p className="plan-ia-banner-msj">
+            Contenido generado con IA — revisa y ajusta antes de uso oficial.
+          </p>
+        </div>
       </div>
 
-      {/* Campos editables */}
+      {/* FASE 10: Todos los campos 100% editables al toque directo, sin bloqueos */}
       <div className="plan-campos">
         {claves.map((clave) => (
-          <div key={clave} className="plan-campo">
+          <div
+            key={clave}
+            className={`plan-campo ${editandoCampo === clave ? "campo-enfocado" : ""}`}
+          >
             <div className="plan-campo-header">
               <h4 className="plan-campo-titulo">{clave}</h4>
-              <button
-                className="plan-campo-editar-btn no-print"
-                onClick={() => setEditandoCampo(editandoCampo === clave ? null : clave)}
-              >
-                {editandoCampo === clave ? "✓ Listo" : "✏️ Editar"}
-              </button>
+              <span className="plan-campo-badge no-print">
+                {editandoCampo === clave ? "✏️ Editando..." : "✏️ Toca para editar"}
+              </span>
             </div>
-            {editandoCampo === clave ? (
-              <textarea
-                className="plan-campo-textarea"
-                value={campos[clave]}
-                onChange={(e) => handleCampoChange(clave, e.target.value)}
-                rows={6}
-                autoFocus
-              />
-            ) : (
-              <div className="plan-campo-contenido">{campos[clave]}</div>
-            )}
+            <textarea
+              className="plan-campo-textarea"
+              value={campos[clave] || ""}
+              onChange={(e) => handleCampoChange(clave, e.target.value)}
+              onFocus={() => setEditandoCampo(clave)}
+              onBlur={() => setEditandoCampo(null)}
+              rows={Math.max(4, ((campos[clave] || "").match(/\n/g) || []).length + 2)}
+              placeholder={`Escribe o ajusta aquí ${clave}...`}
+            />
           </div>
         ))}
       </div>

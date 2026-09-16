@@ -801,7 +801,7 @@ body {
 .perfil-guardar:hover { opacity: 0.9; }
 
 /* ═══════════════════════════════════════════
-   PLAN RESULT (Campos editables)
+   PLAN RESULT (Campos editables - FASE 10)
 ═══════════════════════════════════════════ */
 .plan-result-container {
   background: white;
@@ -811,20 +811,46 @@ body {
   box-shadow: 0 2px 10px rgba(0,0,0,0.07);
 }
 
-.plan-ia-aviso {
+/* FASE 10: Banner de IA destacado y permanente */
+.plan-ia-banner-destacado {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  background: #FFF8E1;
-  border: 1px solid #FFE082;
-  border-radius: 10px;
-  padding: 10px 14px;
-  margin-bottom: 14px;
-  font-size: 12px;
-  color: #795548;
+  gap: 12px;
+  background: #FFFBEB;
+  border: 2px solid #F59E0B;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 3px 10px rgba(245, 158, 11, 0.12);
+}
+
+.plan-ia-banner-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.plan-ia-banner-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.plan-ia-banner-tag {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #B45309;
+  letter-spacing: 0.5px;
+}
+
+.plan-ia-banner-msj {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #78350F;
   line-height: 1.4;
 }
-.plan-ia-icono { font-size: 16px; flex-shrink: 0; }
 
 .plan-campos {
   display: flex;
@@ -833,10 +859,17 @@ body {
 }
 
 .plan-campo {
-  border: 1px solid #E8EEF2;
-  border-radius: 10px;
-  padding: 12px;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 12px 14px;
   background: #FAFCFD;
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+}
+
+.plan-campo.campo-enfocado {
+  border-color: var(--pm-green, #3FB88A);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(63, 184, 138, 0.18);
 }
 
 .plan-campo-header {
@@ -855,42 +888,41 @@ body {
   line-height: 1.3;
 }
 
-.plan-campo-editar-btn {
-  background: none;
-  border: 1px solid #CBD5E1;
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 12px;
+.plan-campo-badge {
+  font-size: 11.5px;
   font-weight: 600;
-  color: var(--pm-navy, #1B3A5C);
-  cursor: pointer;
-  white-space: nowrap;
-  flex-shrink: 0;
-  margin-left: 8px;
+  color: #64748b;
+  background: #F1F5F9;
+  padding: 3px 8px;
+  border-radius: 6px;
 }
-.plan-campo-editar-btn:hover { background: #F1F5F9; }
 
-.plan-campo-contenido {
-  font-size: 13px;
-  color: #334155;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-break: break-word;
+.plan-campo.campo-enfocado .plan-campo-badge {
+  color: var(--pm-green, #3FB88A);
+  background: #E8F8F0;
+  font-weight: 700;
 }
 
 .plan-campo-textarea {
   width: 100%;
-  border: 1.5px solid var(--pm-green, #3FB88A);
+  border: 1px solid transparent;
   border-radius: 8px;
-  padding: 10px;
+  padding: 8px 0;
   font-size: 13px;
-  color: #334155;
+  color: #1E293B;
   line-height: 1.6;
   resize: vertical;
-  min-height: 100px;
   font-family: inherit;
   outline: none;
   box-sizing: border-box;
+  background: transparent;
+  transition: all 0.15s;
+}
+
+.plan-campo-textarea:focus {
+  background: #ffffff;
+  padding: 8px 10px;
+  border-color: #CBD5E1;
 }
 
 .plan-acciones {
