@@ -246,6 +246,15 @@ router.get("/cuota", (req, res) => {
 });
 
 /**
+ * GET /api/plan/esquemas
+ * FASE 20: Retorna las definiciones oficiales completas de todos los esquemas (LEVELS)
+ * directamente desde server/curriculum/levels.js (fuente única de verdad).
+ */
+router.get("/esquemas", (_req, res) => {
+  res.json({ ok: true, esquemas: LEVELS });
+});
+
+/**
  * POST /api/plan/consultar-curriculo
  * Consulta a la IA para buscar competencias, indicadores, contenidos y actividades
  * específicas de un tema según las bases curriculares oficiales del MINERD.

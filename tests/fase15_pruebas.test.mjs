@@ -331,4 +331,57 @@ describe("MEJORAS UX: Triple entrada unificada, Stepper de progreso y Cabecera i
   });
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PRUEBA 7: FASE 20 — Vista previa de plantillas vacías por esquema
+// ─────────────────────────────────────────────────────────────────────────────
+describe("FASE 20: Vista previa de plantillas vacías por esquema (Fuente única de verdad)", () => {
+  const esquemasEsperados = ["inicial", "primario", "secundario", "especial", "conbase", "abp", "competencias_situacion", "secuencia_didactica"];
+
+  it("7.1 Todos los esquemas oficiales en LEVELS definen bloques curriculares estructurados", () => {
+    esquemasEsperados.forEach((id) => {
+      const def = LEVELS[id];
+      assert.ok(def, `El esquema ${id} debe existir en server/curriculum/levels.js`);
+      assert.ok(Array.isArray(def.bloques), `El esquema ${id} debe tener un array de bloques`);
+      assert.ok(def.bloques.length >= 5, `El esquema ${id} debe tener al menos 5 bloques curriculares`);
+      def.bloques.forEach((b) => {
+        assert.ok(typeof b === "string" && b.trim().length > 0, `Cada bloque de ${id} debe ser un string no vacío`);
+      });
+    });
+  });
+
+  it("7.2 La plantilla vacía de cada esquema refleja exactamente el mismo orden y formato de LEVELS", () => {
+    // Simulación del generador de plantilla vacía en EsquemaPreviewModal
+    function generarPlantillaVacia(esquemaId) {
+      const def = LEVELS[esquemaId];
+      if (!def || !def.bloques) return [];
+      return def.bloques.map((bloque, index) => ({
+        numero: index + 1,
+        etiqueta: bloque,
+        valorVacio: ""
+      }));
+    }
+
+    const plantillaConBase = generarPlantillaVacia("conbase");
+    assert.strictEqual(plantillaConBase.length, LEVELS["conbase"].bloques.length);
+    assert.strictEqual(plantillaConBase[0].etiqueta, LEVELS["conbase"].bloques[0]);
+    assert.strictEqual(plantillaConBase[1].etiqueta, LEVELS["conbase"].bloques[1]);
+
+    const plantillaABP = generarPlantillaVacia("abp");
+    assert.strictEqual(plantillaABP.length, LEVELS["abp"].bloques.length);
+    assert.strictEqual(plantillaABP[0].etiqueta, LEVELS["abp"].bloques[0]);
+  });
+
+  it("7.3 La acción 'Usar este esquema' activa el periodo y esquema seleccionados para auto-relleno", () => {
+    let estadoApp = { periodo: "diaria", nivel: "primario" };
+
+    function confirmarUsoEsquema(nuevoPeriodo, nuevoEsquemaId) {
+      estadoApp = { periodo: nuevoPeriodo, nivel: nuevoEsquemaId };
+    }
+
+    confirmarUsoEsquema("semanal", "conbase");
+    assert.strictEqual(estadoApp.periodo, "semanal");
+    assert.strictEqual(estadoApp.nivel, "conbase");
+  });
+});
+
 

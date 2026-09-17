@@ -48,6 +48,32 @@ export async function obtenerOwnerStats() {
   return data.stats;
 }
 
+export async function obtenerEsquemasCurriculares() {
+  try {
+    const res = await fetch(`${BASE}/plan/esquemas`, {
+      headers: getAuthHeaders(),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.esquemas) {
+        try {
+          localStorage.setItem("pm_esquemas_cache", JSON.stringify(data.esquemas));
+        } catch (e) {}
+        return data.esquemas;
+      }
+    }
+  } catch (err) {
+    console.warn("Aviso: No se pudieron cargar esquemas desde el servidor, usando caché.");
+  }
+
+  try {
+    const cached = localStorage.getItem("pm_esquemas_cache");
+    if (cached) return JSON.parse(cached);
+  } catch (e) {}
+
+  return null;
+}
+
 export async function generarPlanificacion({ messages, nivel, periodo }) {
   const docenteId = obtenerDocenteId();
   const res = await fetch(`${BASE}/plan/generate`, {

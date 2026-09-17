@@ -25,7 +25,9 @@ function authMiddleware(req, res, next) {
     req.path === "/api/auth/verify" ||
     req.path === "/auth/verify" ||
     req.path === "/api/auth/owner-verify" ||
-    req.path === "/auth/owner-verify"
+    req.path === "/auth/owner-verify" ||
+    req.path === "/api/plan/esquemas" ||
+    req.path === "/plan/esquemas"
   );
 
   if (rutaExenta || req.isOwner) {
