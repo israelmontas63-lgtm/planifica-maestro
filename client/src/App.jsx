@@ -1,26 +1,28 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, lazy, Suspense } from "react";
 import Header from "./components/Header.jsx";
 import CaptureArea from "./components/CaptureArea.jsx";
 import BottomPanel from "./components/BottomPanel.jsx";
-import TextoModal from "./components/TextoModal.jsx";
-import PlanResult from "./components/PlanResult.jsx";
-import SchemaSelector from "./components/SchemaSelector.jsx";
-import PerfilDocente from "./components/PerfilDocente.jsx";
-import CurriculumViewer from "./components/CurriculumViewer.jsx";
-import MisPlanificaciones from "./components/MisPlanificaciones.jsx";
+import WizardStepper from "./components/WizardStepper.jsx";
+import UnifiedEntrySelector from "./components/UnifiedEntrySelector.jsx";
+import { ESQUEMAS, PERIODOS } from "./data/esquemasData.js";
 import { useSpeechRecognition } from "./hooks/useSpeechRecognition.js";
 import { useSpeechSynthesis } from "./hooks/useSpeechSynthesis.js";
 import { useTrialStatus } from "./hooks/useTrialStatus.js";
-import { generarPlanificacion, exportarWord, generarVoz, guardarAjustesPlan, obtenerCuotaDocente } from "./services/api.js";
-import { registrarAjusteConRespaldoOffline, sincronizarAjustesPendientes } from "./services/offlineSync.js";
-import AuthScreen from "./components/AuthScreen.jsx";
-import OwnerModal from "./components/OwnerModal.jsx";
-import OwnerStatsModal from "./components/OwnerStatsModal.jsx";
 import { useAuth } from "./hooks/useAuth.js";
-import WizardStepper from "./components/WizardStepper.jsx";
-import UnifiedEntrySelector from "./components/UnifiedEntrySelector.jsx";
-import { ESQUEMAS, PERIODOS } from "./components/SchemaSelector.jsx";
-import { obtenerOwnerKey } from "./services/api.js";
+import { generarPlanificacion, exportarWord, generarVoz, guardarAjustesPlan, obtenerCuotaDocente, obtenerOwnerKey } from "./services/api.js";
+import { registrarAjusteConRespaldoOffline, sincronizarAjustesPendientes } from "./services/offlineSync.js";
+import { guardarPlanEnBiblioteca } from "./services/bibliotecaStorage.js";
+
+// Modales y componentes secundarios con carga diferida (Lazy Loading) para carga móvil instantánea
+const PlanResult = lazy(() => import("./components/PlanResult.jsx"));
+const SchemaSelector = lazy(() => import("./components/SchemaSelector.jsx"));
+const PerfilDocente = lazy(() => import("./components/PerfilDocente.jsx"));
+const CurriculumViewer = lazy(() => import("./components/CurriculumViewer.jsx"));
+const MisPlanificaciones = lazy(() => import("./components/MisPlanificaciones.jsx"));
+const TextoModal = lazy(() => import("./components/TextoModal.jsx"));
+const AuthScreen = lazy(() => import("./components/AuthScreen.jsx"));
+const OwnerModal = lazy(() => import("./components/OwnerModal.jsx"));
+const OwnerStatsModal = lazy(() => import("./components/OwnerStatsModal.jsx"));
 
 export default function App() {
   const {
@@ -447,32 +449,34 @@ export default function App() {
             <div style={{ whiteSpace: 'pre-wrap', fontSize: '14px' }}>{m.text}</div>
             
             {m.role === 'assistant' && m.datosGenerados && (
-               <PlanResult 
-                datosGenerados={m.datosGenerados}
-                confianzaCurricular={m.confianzaCurricular}
-                planId={m.planId}
-                nivel={nivel}
-                periodo={periodo}
-                onExportar={(datos) => handleExportar(Object.entries(datos).map(([k,v]) => `${k}\n${v}`).join("\n\n"))} 
-                exportando={exportando}
-                onEscuchar={(datos) => handleEscuchar(Object.values(datos).join(" ").substring(0, 500))}
-                escuchando={escuchando}
-                audioUrl={audioUrl}
-                onDatosActualizados={(nuevosDatos) => {
-                  // FASE 13: Actualizar biblioteca local inmediatamente para persistencia offline
-                  guardarPlanEnBiblioteca({
-                    id: m.planId,
-                    titulo: m.text?.substring(0, 45) || "Planificación Docente",
-                    nivel,
-                    periodo,
-                    datosPlanificacion: nuevosDatos
-                  });
-                  // Sincronizar o encolar para sincronizar cuando vuelva la conexión
-                  if (m.planId) {
-                    registrarAjusteConRespaldoOffline({ planId: m.planId, datosAjustados: nuevosDatos });
-                  }
-                }}
-              />
+              <Suspense fallback={<div style={{ padding: '12px', color: '#64748b' }}>Cargando planificación...</div>}>
+                <PlanResult 
+                  datosGenerados={m.datosGenerados}
+                  confianzaCurricular={m.confianzaCurricular}
+                  planId={m.planId}
+                  nivel={nivel}
+                  periodo={periodo}
+                  onExportar={(datos) => handleExportar(Object.entries(datos).map(([k,v]) => `${k}\n${v}`).join("\n\n"))} 
+                  exportando={exportando}
+                  onEscuchar={(datos) => handleEscuchar(Object.values(datos).join(" ").substring(0, 500))}
+                  escuchando={escuchando}
+                  audioUrl={audioUrl}
+                  onDatosActualizados={(nuevosDatos) => {
+                    // FASE 13: Actualizar biblioteca local inmediatamente para persistencia offline
+                    guardarPlanEnBiblioteca({
+                      id: m.planId,
+                      titulo: m.text?.substring(0, 45) || "Planificación Docente",
+                      nivel,
+                      periodo,
+                      datosPlanificacion: nuevosDatos
+                    });
+                    // Sincronizar o encolar para sincronizar cuando vuelva la conexión
+                    if (m.planId) {
+                      registrarAjusteConRespaldoOffline({ planId: m.planId, datosAjustados: nuevosDatos });
+                    }
+                  }}
+                />
+              </Suspense>
             )}
           </div>
         ))}
@@ -507,67 +511,83 @@ export default function App() {
       />
       
       {authModalOpen && (
-        <AuthScreen
-          onSignIn={signIn}
-          onSignUp={signUp}
-          onResetPassword={resetPassword}
-          onCerrar={() => setAuthModalOpen(false)}
-          isConfigured={isSupabaseConfigured}
-        />
+        <Suspense fallback={null}>
+          <AuthScreen
+            onSignIn={signIn}
+            onSignUp={signUp}
+            onResetPassword={resetPassword}
+            onCerrar={() => setAuthModalOpen(false)}
+            isConfigured={isSupabaseConfigured}
+          />
+        </Suspense>
       )}
 
       {ownerModalOpen && (
-        <OwnerModal
-          onCerrar={() => setOwnerModalOpen(false)}
-          onSuccess={handleOwnerSuccess}
-        />
+        <Suspense fallback={null}>
+          <OwnerModal
+            onCerrar={() => setOwnerModalOpen(false)}
+            onSuccess={handleOwnerSuccess}
+          />
+        </Suspense>
       )}
 
       {ownerStatsModalOpen && (
-        <OwnerStatsModal
-          onCerrar={() => setOwnerStatsModalOpen(false)}
-        />
+        <Suspense fallback={null}>
+          <OwnerStatsModal
+            onCerrar={() => setOwnerStatsModalOpen(false)}
+          />
+        </Suspense>
       )}
       
       {textoModalOpen && (
-        <TextoModal
-          onCancel={() => setTextoModalOpen(false)}
-          onConfirm={(texto) => { setTextoModalOpen(false); enviarMensaje(texto); }}
-        />
+        <Suspense fallback={null}>
+          <TextoModal
+            onCancel={() => setTextoModalOpen(false)}
+            onConfirm={(texto) => { setTextoModalOpen(false); enviarMensaje(texto); }}
+          />
+        </Suspense>
       )}
 
       {schemaOpen && (
-        <SchemaSelector
-          periodoActivo={periodo}
-          nivelActivo={nivel}
-          onSeleccionar={(p, n) => { setPeriodo(p); setNivel(n); }}
-          onCerrar={() => setSchemaOpen(false)}
-        />
+        <Suspense fallback={null}>
+          <SchemaSelector
+            periodoActivo={periodo}
+            nivelActivo={nivel}
+            onSeleccionar={(p, n) => { setPeriodo(p); setNivel(n); }}
+            onCerrar={() => setSchemaOpen(false)}
+          />
+        </Suspense>
       )}
 
       {perfilOpen && (
-        <PerfilDocente
-          user={user}
-          onActualizarPerfil={updateProfile}
-          onCerrar={() => setPerfilOpen(false)}
-        />
+        <Suspense fallback={null}>
+          <PerfilDocente
+            user={user}
+            onActualizarPerfil={updateProfile}
+            onCerrar={() => setPerfilOpen(false)}
+          />
+        </Suspense>
       )}
 
       {curriculumOpen && (
-        <CurriculumViewer
-          esquemaActivo={nivel}
-          periodoActivo={periodo}
-          onCerrar={() => setCurriculumOpen(false)}
-          onAplicarAlEsquema={handleAplicarCurriculo}
-        />
+        <Suspense fallback={null}>
+          <CurriculumViewer
+            esquemaActivo={nivel}
+            periodoActivo={periodo}
+            onCerrar={() => setCurriculumOpen(false)}
+            onAplicarAlEsquema={handleAplicarCurriculo}
+          />
+        </Suspense>
       )}
 
       {bibliotecaOpen && (
-        <MisPlanificaciones
-          onCerrar={() => setBibliotecaOpen(false)}
-          onAbrirPlan={handleAbrirPlanDesdeBiblioteca}
-          onExportarWord={(titulo, texto) => exportarWord({ titulo, plan: texto })}
-        />
+        <Suspense fallback={null}>
+          <MisPlanificaciones
+            onCerrar={() => setBibliotecaOpen(false)}
+            onAbrirPlan={handleAbrirPlanDesdeBiblioteca}
+            onExportarWord={(titulo, texto) => exportarWord({ titulo, plan: texto })}
+          />
+        </Suspense>
       )}
     </div>
   );

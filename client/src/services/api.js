@@ -1,4 +1,4 @@
-import { obtenerDocenteId } from "../components/PerfilDocente.jsx";
+import { obtenerDocenteId } from "./perfilStorage.js";
 import { obtenerAuthToken } from "../components/AccessGate.jsx";
 
 const BASE = "/api";

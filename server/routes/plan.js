@@ -14,6 +14,102 @@ const {
 
 const geminiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+// Modelos optimizados para máxima velocidad y tolerancia a fallos
+const PRIMARY_MODELS = [
+  "gemini-3-flash-preview",
+  "gemini-3.5-flash",
+  "gemini-3.1-flash-lite",
+  "gemini-flash-latest"
+];
+
+async function generarConGeminiRapido({ contents, systemInstruction, responseMimeType = "application/json" }) {
+  let ultimoError = null;
+  for (const model of PRIMARY_MODELS) {
+    // 1. Intento rápido con thinkingBudget: 0 (para modelos que lo soporten)
+    try {
+      const config = { responseMimeType };
+      if (systemInstruction) config.systemInstruction = systemInstruction;
+      if (model.includes("flash") && !model.includes("lite")) {
+        config.thinkingConfig = { thinkingBudget: 0 };
+      }
+      const response = await geminiClient.models.generateContent({
+        model,
+        contents,
+        config
+      });
+      return response;
+    } catch (err) {
+      console.warn(`Aviso: modelo ${model} rápido falló (${err.message?.substring(0, 80)}). Reintentando modo estándar...`);
+      // 2. Reintento estándar sin thinkingConfig
+      try {
+        const configSimple = { responseMimeType };
+        if (systemInstruction) configSimple.systemInstruction = systemInstruction;
+        const response = await geminiClient.models.generateContent({
+          model,
+          contents,
+          config: configSimple
+        });
+        return response;
+      } catch (err2) {
+        console.warn(`Aviso: modelo ${model} estándar falló (${err2.message?.substring(0, 80)}). Probando siguiente modelo...`);
+        ultimoError = err2;
+      }
+    }
+  }
+  throw ultimoError || new Error("No fue posible generar respuesta con ningún modelo disponible.");
+}
+
+function extraerJsonValido(text) {
+  if (!text || typeof text !== "string") return null;
+  let str = text.trim();
+  if (str.startsWith("```json")) {
+    str = str.replace(/^```json\s*/, "").replace(/```\s*$/, "").trim();
+  } else if (str.startsWith("```")) {
+    str = str.replace(/^```\s*/, "").replace(/```\s*$/, "").trim();
+  }
+  try {
+    return JSON.parse(str);
+  } catch (e) {}
+
+  const startIdx = str.indexOf("{");
+  if (startIdx === -1) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = startIdx; i < str.length; i++) {
+    const char = str[i];
+    if (inString) {
+      if (char === "\\" && !escaped) {
+        escaped = true;
+      } else {
+        if (char === '"' && !escaped) inString = false;
+        escaped = false;
+      }
+    } else {
+      if (char === '"') inString = true;
+      else if (char === "{") depth++;
+      else if (char === "}") {
+        depth--;
+        if (depth === 0) {
+          const candidate = str.substring(startIdx, i + 1);
+          try {
+            return JSON.parse(candidate);
+          } catch (err) {}
+        }
+      }
+    }
+  }
+
+  const lastIdx = str.lastIndexOf("}");
+  if (lastIdx > startIdx) {
+    try {
+      return JSON.parse(str.substring(startIdx, lastIdx + 1));
+    } catch (err) {}
+  }
+  return null;
+}
+
 // ─────────────────────────────────────────────
 // MAPA DE PROFUNDIDAD TEMPORAL
 // Instruye a Gemini sobre cuánto detalle generar
@@ -175,22 +271,17 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
       };
     });
 
-    console.log(`Generando contenido curricular con Gemini (Modo JSON) para esquema: ${nivel}...`);
+    console.log(`Generando contenido curricular ultrarrápido con Gemini para esquema: ${nivel}...`);
     
-    const geminiResponse = await geminiClient.models.generateContent({
-      model: 'gemini-2.5-flash',
+    const geminiResponse = await generarConGeminiRapido({
       contents: geminiContents,
-      config: {
-        systemInstruction: dynamicSystemPrompt,
-        responseMimeType: "application/json"
-      }
+      systemInstruction: dynamicSystemPrompt,
+      responseMimeType: "application/json"
     });
     
     const jsonText = geminiResponse.text;
-    let parsedResponse;
-    try {
-      parsedResponse = JSON.parse(jsonText);
-    } catch(e) {
+    const parsedResponse = extraerJsonValido(jsonText);
+    if (!parsedResponse) {
       console.error("Gemini no devolvió JSON válido:", jsonText);
       return res.status(500).json({ error: "Error de formato de IA." });
     }
@@ -324,17 +415,18 @@ DEBES responder EXCLUSIVAMENTE con un JSON con la siguiente estructura exacta:
 }
 `;
 
-    console.log(`Consultando currículo MINERD con Gemini para tema: "${tema}" (${grado} - ${area})...`);
-
-    const geminiResponse = await geminiClient.models.generateContent({
-      model: "gemini-2.5-flash",
+    console.log(`Consultando currículo MINERD ultrarrápido con Gemini para tema: "${tema}" (${grado} - ${area})...`);
+ 
+    const geminiResponse = await generarConGeminiRapido({
       contents: [{ role: "user", parts: [{ text: promptCurricular }] }],
-      config: {
-        responseMimeType: "application/json"
-      }
+      responseMimeType: "application/json"
     });
 
-    const parsedResponse = JSON.parse(geminiResponse.text);
+    const parsedResponse = extraerJsonValido(geminiResponse.text);
+    if (!parsedResponse) {
+      console.error("Gemini no devolvió JSON válido en currículo:", geminiResponse.text);
+      return res.status(500).json({ error: "Error de formato de IA." });
+    }
     res.json(parsedResponse);
   } catch (err) {
     console.error("Error en consultar-curriculo:", err);

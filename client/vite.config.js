@@ -14,6 +14,19 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: "./src/test/setup.js",
   },
+  build: {
+    target: "es2020",
+    minify: "esbuild",
+    cssMinify: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-react": ["react", "react-dom"],
+          "vendor-supabase": ["@supabase/supabase-js"],
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({
@@ -62,6 +75,14 @@ export default defineConfig({
     }),
   ],
   server: {
+    allowedHosts: true,
+    proxy: {
+      "/api": "http://localhost:3001",
+    },
+  },
+  preview: {
+    port: 5173,
+    host: true,
     allowedHosts: true,
     proxy: {
       "/api": "http://localhost:3001",
