@@ -3,15 +3,32 @@
  * Bloquea con HTTP 401 cualquier petición no autenticada contra las APIs del backend.
  */
 function authMiddleware(req, res, next) {
-  // Rutas exentas de autenticación: healthcheck y verificación de credenciales
+  // 1. Verificación del modo DUEÑO / ADMINISTRADOR en CADA petición del servidor
+  const ownerHeader = req.headers["x-owner-key"];
+  const expectedOwnerKey = process.env.OWNER_MASTER_KEY;
+  if (
+    expectedOwnerKey &&
+    expectedOwnerKey.trim() !== "ESCRIBE_AQUI_TU_LLAVE_SECRETA" &&
+    ownerHeader &&
+    typeof ownerHeader === "string" &&
+    ownerHeader.trim() === expectedOwnerKey.trim()
+  ) {
+    req.isOwner = true;
+  } else {
+    req.isOwner = false;
+  }
+
+  // Rutas exentas de autenticación general: healthcheck y verificación de credenciales
   const rutaExenta = (
     req.path === "/api/health" ||
     req.path === "/health" ||
     req.path === "/api/auth/verify" ||
-    req.path === "/auth/verify"
+    req.path === "/auth/verify" ||
+    req.path === "/api/auth/owner-verify" ||
+    req.path === "/auth/owner-verify"
   );
 
-  if (rutaExenta) {
+  if (rutaExenta || req.isOwner) {
     return next();
   }
 

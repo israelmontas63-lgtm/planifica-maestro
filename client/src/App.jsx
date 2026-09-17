@@ -13,14 +13,27 @@ import { useSpeechSynthesis } from "./hooks/useSpeechSynthesis.js";
 import { useTrialStatus } from "./hooks/useTrialStatus.js";
 import { generarPlanificacion, exportarWord, generarVoz, guardarAjustesPlan, obtenerCuotaDocente } from "./services/api.js";
 import { registrarAjusteConRespaldoOffline, sincronizarAjustesPendientes } from "./services/offlineSync.js";
-import { guardarPlanEnBiblioteca } from "./services/bibliotecaStorage.js";
-import AccessGate, { verificarAccesoAutorizado } from "./components/AccessGate.jsx";
+import AuthScreen from "./components/AuthScreen.jsx";
+import OwnerModal from "./components/OwnerModal.jsx";
+import OwnerStatsModal from "./components/OwnerStatsModal.jsx";
+import { useAuth } from "./hooks/useAuth.js";
 import WizardStepper from "./components/WizardStepper.jsx";
 import UnifiedEntrySelector from "./components/UnifiedEntrySelector.jsx";
 import { ESQUEMAS, PERIODOS } from "./components/SchemaSelector.jsx";
+import { obtenerOwnerKey } from "./services/api.js";
 
 export default function App() {
-  const [accesoAutorizado, setAccesoAutorizado] = useState(verificarAccesoAutorizado);
+  const {
+    user,
+    session,
+    loading: authLoading,
+    isSupabaseConfigured,
+    signIn,
+    signUp,
+    signOut,
+    resetPassword,
+    updateProfile
+  } = useAuth();
   const { diasRestantes, expirado, diasPrueba } = useTrialStatus();
   const [periodo, setPeriodo] = useState("diaria");
   const [nivel, setNivel] = useState("primario");
@@ -32,6 +45,10 @@ export default function App() {
   const [perfilOpen, setPerfilOpen] = useState(false);
   const [curriculumOpen, setCurriculumOpen] = useState(false);
   const [bibliotecaOpen, setBibliotecaOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [isOwner, setIsOwner] = useState(!!obtenerOwnerKey());
+  const [ownerModalOpen, setOwnerModalOpen] = useState(false);
+  const [ownerStatsModalOpen, setOwnerStatsModalOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [notificacionSync, setNotificacionSync] = useState(null);
   const [estadoCuota, setEstadoCuota] = useState(null);
@@ -102,7 +119,36 @@ export default function App() {
     };
   }, []);
 
-  // FASE 14: Hook de inicialización de cuota en App.jsx al cargar la app
+  // Detección de atajo ?owner=1 o #owner
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("owner") === "1" || window.location.hash === "#owner") {
+      setOwnerModalOpen(true);
+    }
+    // Atajo de prueba exclusivo para localhost (nunca en túnel público por seguridad)
+    if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+      const quickKey = params.get("key");
+      if (quickKey) {
+        localStorage.setItem("pm_owner_key", quickKey);
+        setIsOwner(true);
+        obtenerCuotaDocente().then((c) => c && setEstadoCuota(c)).catch(() => {});
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+  }, []);
+
+  const handleOwnerSuccess = () => {
+    setIsOwner(true);
+    obtenerCuotaDocente().then((c) => c && setEstadoCuota(c)).catch(() => {});
+  };
+
+  const handleOwnerLogout = () => {
+    localStorage.removeItem("pm_owner_key");
+    setIsOwner(false);
+    obtenerCuotaDocente().then((c) => c && setEstadoCuota(c)).catch(() => {});
+  };
+
+  // Carga y actualización de cuota (modo Invitado, Docente Supabase o Dueño)
   useEffect(() => {
     async function cargarEstadoInicialCuota() {
       try {
@@ -115,7 +161,7 @@ export default function App() {
       }
     }
     cargarEstadoInicialCuota();
-  }, []);
+  }, [user, isOwner]);
 
   async function enviarMensaje(texto, imageBase64, mediaType) {
     if (!texto && !imageBase64) return;
@@ -269,19 +315,8 @@ export default function App() {
     }
   }
 
-  // =========================================================================
-  // CONTROL DE ACCESO / CONTRASEÑA INSTITUCIONAL (AccessGate)
-  // • MODO_USO_PERSONAL = true  -> Entra directo a la aplicación sin pedir contraseña.
-  // • MODO_USO_PERSONAL = false -> Muestra la pantalla AccessGate y exige la clave institucional.
-  // Para reactivar la contraseña en el futuro (al compartir con otros maestros):
-  // Cambia la siguiente línea a: const MODO_USO_PERSONAL = false;
-  // y en server/.env cambia: REQUIRE_ACCESS_KEY=true
-  // =========================================================================
-  const MODO_USO_PERSONAL = true;
-
-  if (!MODO_USO_PERSONAL && !accesoAutorizado) {
-    return <AccessGate onUnlock={() => setAccesoAutorizado(true)} />;
-  }
+  // El registro/inicio de sesión es 100% opcional (acceso abierto al público).
+  // Se abre a petición del usuario desde el avatar o el menú.
 
   if (expirado) {
     return (
@@ -324,7 +359,17 @@ export default function App() {
         </div>
       )}
 
-      <Header onLogout={() => alert("Sesion cerrada")} estadoCuota={estadoCuota} />
+      <Header
+        user={user}
+        isOwner={isOwner}
+        onLogout={signOut}
+        onLogoutOwner={handleOwnerLogout}
+        onAbrirPerfil={() => { setPerfilOpen(true); setMenuOpen(false); }}
+        onAbrirAuth={() => { setAuthModalOpen(true); setMenuOpen(false); }}
+        onAbrirOwnerModal={() => { setOwnerModalOpen(true); setMenuOpen(false); }}
+        onAbrirOwnerStats={() => { setOwnerStatsModalOpen(true); setMenuOpen(false); }}
+        estadoCuota={estadoCuota}
+      />
       
       <section className="pm-title-card no-print">
         <button
@@ -382,13 +427,7 @@ export default function App() {
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '10px 10px 100px 10px', background: 'var(--pm-bg)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {messages.length === 0 && (
-          <UnifiedEntrySelector
-            onDictadoClick={handleDictadoClick}
-            onTextoClick={() => { setTextoModalOpen(true); setMenuOpen(false); }}
-            onImageSelected={handleImageSelected}
-            listening={listening}
-            procesandoImagen={procesandoImagen}
-          />
+          <UnifiedEntrySelector />
         )}
         
         {messages.map((m, i) => (
@@ -456,13 +495,39 @@ export default function App() {
         onDictadoClick={handleDictadoClick}
         onAbrirCamara={() => fileInputHiddenRef.current?.click()}
         menuOpen={menuOpen}
-        setMenuOpen={(open) => { setMenuOpen(open); if(open) { setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); } }}
-        onAbrirTexto={() => { setTextoModalOpen(true); setMenuOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); }}
-        onAbrirEsquemas={() => { setSchemaOpen(true); setMenuOpen(false); setTextoModalOpen(false); setPerfilOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); }}
-        onAbrirPerfil={() => { setPerfilOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); }}
-        onAbrirCurriculo={() => { setCurriculumOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); setBibliotecaOpen(false); }}
-        onAbrirBiblioteca={() => { setBibliotecaOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); }}
+        setMenuOpen={(open) => { setMenuOpen(open); if(open) { setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); setAuthModalOpen(false); } }}
+        onAbrirTexto={() => { setTextoModalOpen(true); setMenuOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); setAuthModalOpen(false); }}
+        onAbrirEsquemas={() => { setSchemaOpen(true); setMenuOpen(false); setTextoModalOpen(false); setPerfilOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); setAuthModalOpen(false); }}
+        onAbrirPerfil={() => { setPerfilOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); setAuthModalOpen(false); }}
+        onAbrirCurriculo={() => { setCurriculumOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); setBibliotecaOpen(false); setAuthModalOpen(false); }}
+        onAbrirBiblioteca={() => { setBibliotecaOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); setAuthModalOpen(false); }}
+        user={user}
+        onAbrirAuth={() => { setAuthModalOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); }}
+        onLogout={signOut}
       />
+      
+      {authModalOpen && (
+        <AuthScreen
+          onSignIn={signIn}
+          onSignUp={signUp}
+          onResetPassword={resetPassword}
+          onCerrar={() => setAuthModalOpen(false)}
+          isConfigured={isSupabaseConfigured}
+        />
+      )}
+
+      {ownerModalOpen && (
+        <OwnerModal
+          onCerrar={() => setOwnerModalOpen(false)}
+          onSuccess={handleOwnerSuccess}
+        />
+      )}
+
+      {ownerStatsModalOpen && (
+        <OwnerStatsModal
+          onCerrar={() => setOwnerStatsModalOpen(false)}
+        />
+      )}
       
       {textoModalOpen && (
         <TextoModal
@@ -481,7 +546,11 @@ export default function App() {
       )}
 
       {perfilOpen && (
-        <PerfilDocente onCerrar={() => setPerfilOpen(false)} />
+        <PerfilDocente
+          user={user}
+          onActualizarPerfil={updateProfile}
+          onCerrar={() => setPerfilOpen(false)}
+        />
       )}
 
       {curriculumOpen && (

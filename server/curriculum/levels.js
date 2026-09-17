@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Cerebro curricular y metodológico - Planifica Maestro
  * Base de datos de esquemas de planificación pedagógica.
  */
@@ -24,6 +24,18 @@ const BLOQUES_PLANIFICACION_MINERD = [
   "8. Evaluación: indicadores de logro, técnicas e instrumentos",
 ];
 
+// Las 8 áreas curriculares oficiales del currículo dominicano MINERD
+const AREAS_CURRICULARES_OFICIALES = [
+  "Lengua Española",
+  "Matemática",
+  "Ciencias Sociales",
+  "Ciencias de la Naturaleza",
+  "Formación Integral Humana y Religiosa",
+  "Inglés",
+  "Educación Física",
+  "Educación Artística"
+];
+
 const LEVELS = {
   // ─────────────────────────────────────────────
   // ESQUEMAS TRADICIONALES (POR NIVELES)
@@ -31,28 +43,46 @@ const LEVELS = {
   inicial: {
     label: "Esquema Tradicional (Nivel Inicial)",
     descripcion: "Planificación por centros de interés o proyectos de aula para niños de 0 a 6 años.",
-    ciclos: ["Todos los niveles iniciales"],
-    areas: ["Comunicación", "Entorno Natural/Social", "Lógico-Matemática", "Desarrollo Personal", "Expresión Artística", "Educación Física"],
+    ciclos: [
+      "Maternal (0 a 1 año)",
+      "Infantes (1 a 2 años)",
+      "Párvulos (2 a 3 años)",
+      "Pre-Kínder (3 a 4 años)",
+      "Kínder (4 a 5 años)",
+      "Pre-Primario (5 a 6 años)"
+    ],
+    areas: AREAS_CURRICULARES_OFICIALES,
     bloques: BLOQUES_PLANIFICACION_MINERD,
-    notas: ["Enfoque lúdico y globalizado. No hay materias separadas."]
+    notas: ["Enfoque lúdico y globalizado. Dimensiones integradas según diseño curricular de Nivel Inicial."]
   },
 
   primario: {
     label: "Esquema Tradicional (Nivel Primario)",
     descripcion: "Planificación por asignaturas para 1ro a 6to grado de Primaria.",
-    ciclos: ["Primer y Segundo Ciclo de Primaria"],
-    areas: ["Lengua Española", "Matemática", "Ciencias Sociales", "Ciencias de la Naturaleza", "FIHR", "Artística", "Ed. Física", "Inglés/Francés"],
+    ciclos: [
+      "Primer Ciclo (1ro, 2do, 3ro de Primaria)",
+      "Segundo Ciclo (4to, 5to, 6to de Primaria)"
+    ],
+    areas: AREAS_CURRICULARES_OFICIALES,
     bloques: BLOQUES_PLANIFICACION_MINERD,
-    notas: ["Integración de ejes transversales en las áreas curriculares."]
+    notas: ["Integración de ejes transversales y adecuación curricular oficial del MINERD."]
   },
 
   secundario: {
     label: "Esquema Tradicional (Nivel Secundario)",
     descripcion: "Planificación especializada por asignaturas para 1ro a 6to de Secundaria.",
-    ciclos: ["Primer Ciclo y Segundo Ciclo (Bachillerato)"],
-    areas: ["Lengua Española", "Matemática", "Ciencias Sociales/Historia", "Ciencias de la Naturaleza/Biología", "FIHR", "Artística", "Ed. Física", "Idiomas", "TIC", "Filosofía"],
+    ciclos: [
+      "Primer Ciclo (1ro, 2do, 3ro de Secundaria)",
+      "Segundo Ciclo Modalidad Académica / Técnica / Artes (4to, 5to, 6to de Secundaria)"
+    ],
+    areas: [
+      ...AREAS_CURRICULARES_OFICIALES,
+      "Francés",
+      "Filosofía",
+      "Informática Educativa / TIC"
+    ],
     bloques: BLOQUES_PLANIFICACION_MINERD,
-    notas: ["Énfasis en resolución de problemas complejos y preparación pre-universitaria/técnica."]
+    notas: ["Énfasis en resolución de problemas complejos y competencias preuniversitarias/laborales."]
   },
 
   especial: {
@@ -71,21 +101,28 @@ const LEVELS = {
   // ESQUEMAS METODOLÓGICOS ESPECÍFICOS
   // ─────────────────────────────────────────────
   conbase: {
-    label: "Esquema 'Con Base' (Alfabetización)",
-    descripcion: "Programa 'Construyendo la base de los aprendizajes' del MINERD, centrado en alfabetización inicial.",
+    label: "Esquema 'Con Base' (Aprendizaje Basado en Competencias)",
+    descripcion: "Programa 'Construyendo la Base de los Aprendizajes' del MINERD, articulando competencias fundamentales, específicas y alfabetización inicial.",
     ciclos: ["1ro, 2do y 3ro de Primaria"],
-    areas: ["Lengua Española (Fascículos)", "Matemática (Fascículos)"],
-    bloques: [
-      "1. Datos generales (grado, fascículo, secuencia, actividad)",
-      "2. Competencias e Indicadores de Logro",
-      "3. Primer momento: Encuentro de grupo (recuperación de saberes)",
-      "4. Segundo momento: Actividad grupal guiada",
-      "5. Tercer momento: Práctica independiente",
-      "6. Cuarto momento: Cierre y reflexión",
-      "7. Recursos de apoyo",
-      "8. Evaluación formativa (observación)"
+    areas: [
+      "Lengua Española (Fascículos Con Base)",
+      "Matemática (Fascículos Con Base)",
+      "Ciencias Sociales",
+      "Ciencias de la Naturaleza"
     ],
-    notas: ["Reemplaza los bloques tradicionales por 4 momentos cronológicos exactos."]
+    bloques: [
+      "1. Datos generales (grado, sección, fascículo/secuencia, tiempo estimado)",
+      "2. Situación de Aprendizaje (contexto, reto o necesidad de alfabetización/cálculo y producto)",
+      "3. Competencias Específicas del grado",
+      "4. Criterios de Desempeño e Indicadores de Logro",
+      "5. Momentos Pedagógicos Con Base: Encuentro de grupo / Actividad guiada / Práctica independiente / Cierre",
+      "6. Evidencias de Aprendizaje (producciones escritas, resolución y cuaderno de trabajo)",
+      "7. Recursos y materiales manipulativos (letras móviles, fascículos, tarjetas)",
+      "8. Evaluación formativa y retroalimentación"
+    ],
+    notas: [
+      "Integra la situación de aprendizaje contextualizada con los 4 momentos del programa Con Base y el enfoque de competencias del MINERD."
+    ]
   },
 
   abp: {
@@ -144,4 +181,10 @@ const LEVELS = {
 
 const PERIODOS = ["diaria", "semanal", "mensual", "anual", "secuencia didáctica", "unidad de aprendizaje", "proyecto"];
 
-module.exports = { LEVELS, PERIODOS, COMPETENCIAS_FUNDAMENTALES, BLOQUES_PLANIFICACION_MINERD };
+module.exports = {
+  LEVELS,
+  PERIODOS,
+  COMPETENCIAS_FUNDAMENTALES,
+  BLOQUES_PLANIFICACION_MINERD,
+  AREAS_CURRICULARES_OFICIALES
+};

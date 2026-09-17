@@ -108,9 +108,10 @@ router.post("/generate", async (req, res) => {
   try {
     const { messages = [], nivel, periodo = "diaria", docenteId = "docente_default" } = req.body;
     const resolvedDocenteId = docenteId || req.headers["x-docente-id"] || "docente_default";
+    const isOwner = req.isOwner === true;
 
-    // FASE 14: Control de uso y verificación de cuota por docente
-    const cheqCuota = verificarYConsumirCuota(resolvedDocenteId, false);
+    // FASE 14: Control de uso y verificación de cuota por docente (Bypass si es Owner)
+    const cheqCuota = verificarYConsumirCuota(resolvedDocenteId, false, isOwner);
     if (!cheqCuota.permitido) {
       return res.status(429).json({
         error: `Has alcanzado tu cuota de ${cheqCuota.estado.limite} planificaciones de este ${cheqCuota.estado.periodo}. Puedes seguir viendo, editando y exportando tus trabajos guardados.`,
@@ -209,10 +210,10 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
       planId = reg.id;
     }
 
-    // FASE 14: Consumir 1 unidad de cuota si el plan fue completado exitosamente
+    // FASE 14: Consumir 1 unidad de cuota si el plan fue completado exitosamente (omitido si es Owner)
     let estadoCuotaActual = cheqCuota.estado;
     if (parsedResponse.plan_completado) {
-      const consumo = verificarYConsumirCuota(resolvedDocenteId, true);
+      const consumo = verificarYConsumirCuota(resolvedDocenteId, true, isOwner);
       estadoCuotaActual = consumo.estado;
     }
 
@@ -238,8 +239,9 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
  * Retorna el estado actual de la cuota de uso del docente
  */
 router.get("/cuota", (req, res) => {
+  const isOwner = req.isOwner === true;
   const docenteId = req.query.docenteId || req.headers["x-docente-id"] || "docente_default";
-  const estado = consultarEstadoCuota(docenteId);
+  const estado = consultarEstadoCuota(docenteId, isOwner);
   res.json(estado);
 });
 

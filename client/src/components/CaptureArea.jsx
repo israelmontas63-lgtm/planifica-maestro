@@ -24,7 +24,7 @@ export default function CaptureArea({ imageSrc, onImageSelected, onRemoveImage, 
         onChange={handleFile}
       />
 
-      {imageSrc ? (
+      {imageSrc && (
         <div className="pm-capture-preview-card">
           <img src={imageSrc} alt="Página capturada" className="pm-capture-thumbnail" />
           <div className="pm-capture-preview-info">
@@ -51,24 +51,6 @@ export default function CaptureArea({ imageSrc, onImageSelected, onRemoveImage, 
               )}
             </div>
           </div>
-        </div>
-      ) : (
-        <div
-          className={`pm-viewfinder-compact ${procesando ? "procesando" : ""}`}
-          onClick={() => fileInputRef.current?.click()}
-          role="button"
-          tabIndex={0}
-          title="Tomar o subir foto de libro o guía docente"
-        >
-          <div className="pm-viewfinder-compact-icon">📷</div>
-          <div className="pm-viewfinder-compact-text">
-            <strong>Subir foto de material docente</strong>
-            <span>Pizarra, libro de texto o guía curricular</span>
-          </div>
-          <div className="pm-viewfinder-compact-badge">Seleccionar</div>
-          {procesando && (
-            <div className="pm-viewfinder-compact-loading">Leyendo imagen...</div>
-          )}
         </div>
       )}
     </div>

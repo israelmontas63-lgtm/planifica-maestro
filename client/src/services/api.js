@@ -3,13 +3,49 @@ import { obtenerAuthToken } from "../components/AccessGate.jsx";
 
 const BASE = "/api";
 
+export function obtenerOwnerKey() {
+  try {
+    return localStorage.getItem("pm_owner_key") || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 function getAuthHeaders(customHeaders = {}) {
   const token = obtenerAuthToken();
+  const ownerKey = obtenerOwnerKey();
   const headers = { ...customHeaders };
   if (token) {
     headers["x-app-key"] = token;
   }
+  if (ownerKey) {
+    headers["x-owner-key"] = ownerKey;
+  }
   return headers;
+}
+
+export async function verificarLlaveMaestra(key) {
+  const res = await fetch(`${BASE}/auth/owner-verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ key }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || "Llave maestra incorrecta.");
+  }
+  return data;
+}
+
+export async function obtenerOwnerStats() {
+  const res = await fetch(`${BASE}/auth/owner-stats`, {
+    headers: getAuthHeaders(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || "No se pudieron obtener las métricas del sistema.");
+  }
+  return data.stats;
 }
 
 export async function generarPlanificacion({ messages, nivel, periodo }) {

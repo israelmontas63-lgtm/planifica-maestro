@@ -738,22 +738,19 @@ body {
    TRIPLE ENTRADA UNIFICADA (VOZ, FOTO, TEXTO)
 ═══════════════════════════════════════════ */
 .pm-entry-selector-wrapper {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 16px 14px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-  border: 1px solid #e2e8f0;
-  margin-bottom: 6px;
+  background: transparent;
+  padding: 16px 14px 8px 14px;
+  text-align: center;
 }
 .pm-entry-intro {
   text-align: center;
-  margin-bottom: 14px;
+  margin-bottom: 0;
 }
 .pm-entry-heading {
   font-size: 15px;
   font-weight: 700;
   color: var(--pm-navy, #12304a);
-  margin: 0 0 3px 0;
+  margin: 0;
 }
 .pm-entry-subheading {
   font-size: 12px;
@@ -982,6 +979,19 @@ body {
   left: 0;
   right: 0;
   z-index: 25;
+}
+
+.pm-menu-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 24;
+  background: rgba(18, 48, 74, 0.25);
+  backdrop-filter: blur(1.5px);
+  -webkit-backdrop-filter: blur(1.5px);
+  cursor: pointer;
 }
 .pm-menu-dropdown { position: relative; }
 .pm-menu-toggle {
@@ -2599,6 +2609,429 @@ body {
   align-items: center;
   gap: 4px;
 }
+
+/* ═══════════════════════════════════════════
+   FASE 17: SUPABASE AUTH & AVATAR DINÁMICO
+═══════════════════════════════════════════ */
+.pm-btn-login-header {
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+  white-space: nowrap;
+}
+
+.pm-btn-login-header:hover {
+  background: rgba(255, 255, 255, 0.28);
+  border-color: #4ECFB3;
+  color: #4ECFB3;
+  transform: translateY(-1px);
+}
+
+.pm-btn-login-header:active {
+  transform: translateY(0);
+}
+
+.pm-cuota-owner {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%) !important;
+  border-color: #f59e0b !important;
+  color: #ffffff !important;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.4);
+}
+
+.pm-avatar-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  outline: none;
+}
+
+.pm-avatar-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #35b07a;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.pm-avatar-initials {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1a7d8c 0%, #12304a 100%);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #35b07a;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.pm-profile-menu-dropdown {
+  min-width: 220px;
+  padding: 0 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2) !important;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.pm-user-info-banner {
+  padding: 12px 14px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pm-user-avatar-mini {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #1a7d8c;
+  color: white;
+  font-weight: 700;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pm-user-details {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pm-user-name {
+  font-weight: 700;
+  font-size: 13px;
+  color: #12304a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pm-user-email {
+  font-size: 11px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pm-user-school {
+  font-size: 10.5px;
+  color: #1a7d8c;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pm-profile-menu-items {
+  padding: 4px 0;
+}
+
+.pm-profile-menu-items button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 11px 16px;
+  border: none;
+  background: white;
+  font-size: 13.5px;
+  cursor: pointer;
+  color: #334155;
+  transition: background 0.15s;
+}
+
+.pm-profile-menu-items button:hover {
+  background: #f1f5f9;
+}
+
+.pm-profile-menu-items button.logout-btn {
+  color: #dc2626;
+  font-weight: 600;
+  border-top: 1px solid #f1f5f9;
+}
+
+.pm-profile-menu-items button.logout-btn:hover {
+  background: #fef2f2;
+}
+
+/* ─────────────────────────────────────────────
+   PANTALLA DE AUTENTICACIÓN (AuthScreen)
+   ───────────────────────────────────────────── */
+.pm-auth-overlay {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #12304a 0%, #1a7d8c 100%);
+  padding: 16px;
+}
+
+.pm-auth-card {
+  background: #ffffff;
+  border-radius: 20px;
+  max-width: 400px;
+  width: 100%;
+  padding: 28px 24px;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.pm-auth-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.pm-auth-logo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #12304a;
+}
+
+.pm-auth-accent {
+  color: #35b07a;
+}
+
+.pm-auth-subtitle {
+  font-size: 12px;
+  color: #64748b;
+  margin: 6px 0 0 0;
+  line-height: 1.4;
+}
+
+.pm-auth-dev-badge {
+  font-size: 11px;
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+  padding: 5px 10px;
+  border-radius: 8px;
+  margin-top: 10px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.pm-auth-tabs {
+  display: flex;
+  background: #f1f5f9;
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 18px;
+}
+
+.pm-auth-tab {
+  flex: 1;
+  padding: 10px 0;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pm-auth-tab.active {
+  background: #ffffff;
+  color: #12304a;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+  font-weight: 700;
+}
+
+.pm-auth-reset-heading {
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.pm-auth-reset-heading h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #12304a;
+}
+
+.pm-auth-reset-heading p {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.pm-auth-alert {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.pm-auth-error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.pm-auth-success {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.pm-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.pm-auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.pm-auth-field label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.pm-auth-field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pm-auth-forgot-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 11px;
+  color: #1a7d8c;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.pm-auth-forgot-btn:hover {
+  text-decoration: underline;
+}
+
+.pm-auth-field input {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 13.5px;
+  color: #1e293b;
+  background: #f8fafc;
+  box-sizing: border-box;
+  transition: all 0.2s;
+}
+
+.pm-auth-field input:focus {
+  outline: none;
+  border-color: #1a7d8c;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(26, 125, 140, 0.15);
+}
+
+.pm-auth-submit-btn {
+  width: 100%;
+  padding: 12px;
+  margin-top: 4px;
+  background: linear-gradient(135deg, #1a7d8c 0%, #12304a 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(26, 125, 140, 0.35);
+  transition: transform 0.15s, opacity 0.2s;
+}
+
+.pm-auth-submit-btn:hover {
+  transform: translateY(-1px);
+}
+
+.pm-auth-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pm-auth-footer {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.pm-auth-footer p {
+  margin: 0;
+}
+
+.pm-auth-toggle-link {
+  background: none;
+  border: none;
+  color: #1a7d8c;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.pm-auth-back-btn {
+  background: none;
+  border: none;
+  color: #1a7d8c;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 12.5px;
+}
+
+.pm-auth-spinner {
+  width: 38px;
+  height: 38px;
+  border: 3.5px solid rgba(26, 125, 140, 0.2);
+  border-top-color: #1a7d8c;
+  border-radius: 50%;
+  animation: pm-spin 0.8s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes pm-spin {
+  to { transform: rotate(360deg); }
+}
+
 
 
 

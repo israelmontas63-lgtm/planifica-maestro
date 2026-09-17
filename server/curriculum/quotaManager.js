@@ -136,7 +136,23 @@ function guardarDatosCuotas(datos) {
 /**
  * Consulta el estado actual de la cuota para un docente
  */
-function consultarEstadoCuota(docenteId = "docente_default") {
+function consultarEstadoCuota(docenteId = "docente_default", isOwner = false) {
+  if (isOwner) {
+    return {
+      docenteId: "owner",
+      periodo: "ilimitado",
+      clavePeriodo: obtenerClavePeriodoActual(),
+      usadas: 0,
+      limite: Infinity,
+      restantes: Infinity,
+      porcentaje: 0,
+      alerta80: false,
+      agotado: false,
+      esOwner: true,
+      fechaReinicio: null
+    };
+  }
+
   const id = (docenteId || "docente_default").trim();
   const datos = cargarDatosCuotas();
   const clavePeriodo = obtenerClavePeriodoActual();
@@ -170,7 +186,16 @@ function consultarEstadoCuota(docenteId = "docente_default") {
  * La operación sobre `cacheCuotas` y el archivo es síncrona en el bucle de eventos de Node.js,
  * garantizando que dos peticiones simultáneas no puedan sobre-escribir el contador ajeno.
  */
-function verificarYConsumirCuota(docenteId = "docente_default", consumir = true) {
+function verificarYConsumirCuota(docenteId = "docente_default", consumir = true, isOwner = false) {
+  if (isOwner) {
+    return {
+      permitido: true,
+      ilimitado: true,
+      esOwner: true,
+      estado: consultarEstadoCuota("owner", true)
+    };
+  }
+
   const id = (docenteId || "docente_default").trim();
   const datos = cargarDatosCuotas();
   const clavePeriodo = obtenerClavePeriodoActual();

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 /* Ícono micrófono SVG */
 function MicIcon() {
@@ -52,11 +52,30 @@ export default function BottomPanel({
   onAbrirPerfil,
   onAbrirCurriculo,
   onAbrirBiblioteca,
+  user,
+  onAbrirAuth,
+  onLogout,
   menuOpen,
   setMenuOpen
 }) {
   
   const [expandedSeccion, setExpandedSeccion] = useState(null);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClickOutside(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [menuOpen, setMenuOpen]);
 
   const SECCIONES = [
     { label: "Planificación Diaria", value: "diaria" },
@@ -79,112 +98,138 @@ export default function BottomPanel({
   ];
 
   return (
-    <div className="pm-bottom-bar">
-      <div className="pm-menu-dropdown">
-        <button className="pm-menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
-          </svg>
-          Menú
-        </button>
-        {menuOpen && (
-          <ul className="pm-menu-list">
-            {SECCIONES.map((sec) => (
-              <li key={sec.value} style={{ marginBottom: '4px' }}>
+    <>
+      {menuOpen && (
+        <div
+          className="pm-menu-backdrop"
+          onClick={() => setMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+      <div className="pm-bottom-bar">
+        <div className="pm-menu-dropdown" ref={dropdownRef}>
+          <button className="pm-menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+            Menú
+          </button>
+          {menuOpen && (
+            <ul className="pm-menu-list">
+              {SECCIONES.map((sec) => (
+                <li key={sec.value} style={{ marginBottom: '4px' }}>
+                  <button
+                    className={periodoActivo === sec.value && !expandedSeccion ? "active" : ""}
+                    onClick={() => setExpandedSeccion(expandedSeccion === sec.value ? null : sec.value)}
+                    style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '600' }}
+                  >
+                    <span>{sec.label}</span>
+                    <span style={{ fontSize: '10px', marginTop: '2px' }}>{expandedSeccion === sec.value ? '▼' : '▶'}</span>
+                  </button>
+                  {expandedSeccion === sec.value && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '10px', marginTop: '4px' }}>
+                      {ESQUEMAS.map((esq) => (
+                        <button
+                          key={esq.value}
+                          className={periodoActivo === sec.value && nivelActivo === esq.value ? "active" : ""}
+                          style={{ fontSize: '12px', padding: '8px', borderRadius: '4px' }}
+                          onClick={() => {
+                            onSeleccionarEsquema(sec.value, esq.value);
+                            setMenuOpen(false);
+                          }}
+                        >
+                          {esq.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </li>
+              ))}
+              <li style={{ marginTop: '8px', borderTop: '1px solid #e2e8f0', paddingTop: '8px' }}>
                 <button
-                  className={periodoActivo === sec.value && !expandedSeccion ? "active" : ""}
-                  onClick={() => setExpandedSeccion(expandedSeccion === sec.value ? null : sec.value)}
-                  style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '600' }}
+                  style={{ fontWeight: '700', color: '#B45309' }}
+                  onClick={() => { setMenuOpen(false); onAbrirBiblioteca(); }}
                 >
-                  <span>{sec.label}</span>
-                  <span style={{ fontSize: '10px', marginTop: '2px' }}>{expandedSeccion === sec.value ? '▼' : '▶'}</span>
+                  📁 Mis Planificaciones
                 </button>
-                {expandedSeccion === sec.value && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '10px', marginTop: '4px' }}>
-                    {ESQUEMAS.map((esq) => (
-                      <button
-                        key={esq.value}
-                        className={periodoActivo === sec.value && nivelActivo === esq.value ? "active" : ""}
-                        style={{ fontSize: '12px', padding: '8px', borderRadius: '4px' }}
-                        onClick={() => {
-                          onSeleccionarEsquema(sec.value, esq.value);
-                          setMenuOpen(false);
-                        }}
-                      >
-                        {esq.label}
-                      </button>
-                    ))}
-                  </div>
+              </li>
+              <li>
+                <button
+                  style={{ fontWeight: '700', color: 'var(--pm-green, #3FB88A)' }}
+                  onClick={() => { setMenuOpen(false); onAbrirEsquemas(); }}
+                >
+                  📋 Ver todos los Esquemas
+                </button>
+              </li>
+              <li>
+                <button
+                  style={{ fontWeight: '700', color: 'var(--pm-navy, #1B3A5C)' }}
+                  onClick={() => { setMenuOpen(false); onAbrirPerfil(); }}
+                >
+                  👤 Mi Perfil
+                </button>
+              </li>
+              <li>
+                <button
+                  style={{ fontWeight: '700', color: '#1a7d8c' }}
+                  onClick={() => { setMenuOpen(false); onAbrirCurriculo(); }}
+                >
+                  📚 Currículo MINERD
+                </button>
+              </li>
+              <li style={{ marginTop: '4px', borderTop: '1px solid #f1f5f9', paddingTop: '4px' }}>
+                {user ? (
+                  <button
+                    style={{ fontWeight: '700', color: '#dc2626' }}
+                    onClick={() => { setMenuOpen(false); onLogout?.(); }}
+                  >
+                    🚪 Cerrar Sesión
+                  </button>
+                ) : (
+                  <button
+                    style={{ fontWeight: '700', color: '#1a7d8c' }}
+                    onClick={() => { setMenuOpen(false); onAbrirAuth?.(); }}
+                  >
+                    🔐 Iniciar Sesión / Registrarse
+                  </button>
                 )}
               </li>
-            ))}
-            <li style={{ marginTop: '8px', borderTop: '1px solid #e2e8f0', paddingTop: '8px' }}>
-              <button
-                style={{ fontWeight: '700', color: '#B45309' }}
-                onClick={() => { setMenuOpen(false); onAbrirBiblioteca(); }}
-              >
-                📁 Mis Planificaciones
-              </button>
-            </li>
-            <li>
-              <button
-                style={{ fontWeight: '700', color: 'var(--pm-green, #3FB88A)' }}
-                onClick={() => { setMenuOpen(false); onAbrirEsquemas(); }}
-              >
-                📋 Ver todos los Esquemas
-              </button>
-            </li>
-            <li>
-              <button
-                style={{ fontWeight: '700', color: 'var(--pm-navy, #1B3A5C)' }}
-                onClick={() => { setMenuOpen(false); onAbrirPerfil(); }}
-              >
-                👤 Mi Perfil
-              </button>
-            </li>
-            <li>
-              <button
-                style={{ fontWeight: '700', color: '#1a7d8c' }}
-                onClick={() => { setMenuOpen(false); onAbrirCurriculo(); }}
-              >
-                📚 Currículo MINERD
-              </button>
-            </li>
-          </ul>
-        )}
-      </div>
-      
-      <button 
-        type="button"
-        className="pm-btn-action pm-btn-foto" 
-        onClick={onAbrirCamara}
-        title="Tomar o subir foto de material docente"
-      >
-        <CameraIcon />
-        <span>Foto</span>
-      </button>
+            </ul>
+          )}
+        </div>
+        
+        <button 
+          type="button"
+          className="pm-btn-action pm-btn-foto" 
+          onClick={() => { setMenuOpen(false); onAbrirCamara?.(); }}
+          title="Tomar o subir foto de material docente"
+        >
+          <CameraIcon />
+          <span>Foto</span>
+        </button>
 
-      <button 
-        type="button"
-        className={`pm-btn-action pm-btn-dictado ${listening ? "listening" : ""}`} 
-        onClick={onDictadoClick}
-        title="Dictar tema de planificación por voz"
-      >
-        <MicIcon />
-        <span>{listening ? "Escuchando..." : "Voz"}</span>
-      </button>
-      
-      <button 
-        type="button"
-        className="pm-btn-action pm-btn-texto" 
-        onClick={onAbrirTexto}
-        title="Escribir tema o competencias con el teclado"
-      >
-        <KeyboardIcon />
-        <span>Texto</span>
-      </button>
-    </div>
+        <button 
+          type="button"
+          className={`pm-btn-action pm-btn-dictado ${listening ? "listening" : ""}`} 
+          onClick={() => { setMenuOpen(false); onDictadoClick?.(); }}
+          title="Dictar tema de planificación por voz"
+        >
+          <MicIcon />
+          <span>{listening ? "Escuchando..." : "Voz"}</span>
+        </button>
+        
+        <button 
+          type="button"
+          className="pm-btn-action pm-btn-texto" 
+          onClick={() => { setMenuOpen(false); onAbrirTexto?.(); }}
+          title="Escribir tema o competencias con el teclado"
+        >
+          <KeyboardIcon />
+          <span>Texto</span>
+        </button>
+      </div>
+    </>
   );
 }
