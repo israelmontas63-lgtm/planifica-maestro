@@ -35,20 +35,51 @@ export default defineConfig({
       manifest: {
         name: "Planifica Maestro",
         short_name: "PlanificaMaestro",
-        description: "Planificacion docente con IA: dictado, foto y texto, para todos los niveles educativos.",
+        description: "Planificación docente con IA: dictado, foto y texto, alineada al currículo oficial MINERD y programa CON BASE.",
+        lang: "es",
+        id: "/",
         start_url: "/",
         scope: "/",
         display: "standalone",
         background_color: "#eef5f6",
         theme_color: "#12304a",
         orientation: "portrait",
+        categories: ["education", "productivity"],
         icons: [
-          { src: "icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any maskable" },
-          { src: "icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
+          { src: "icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+          { src: "icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
+          { src: "icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+          { src: "icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+        ],
+        shortcuts: [
+          {
+            name: "Nueva Planificación",
+            short_name: "Planificar",
+            description: "Crear una nueva planificación curricular",
+            url: "/",
+            icons: [{ src: "icons/icon-192.png", sizes: "192x192" }]
+          },
+          {
+            name: "Consultar Currículo",
+            short_name: "Currículo",
+            description: "Consultar diseño curricular MINERD y CON BASE",
+            url: "/?accion=curriculo",
+            icons: [{ src: "icons/icon-192.png", sizes: "192x192" }]
+          },
+          {
+            name: "Mis Planificaciones",
+            short_name: "Guardadas",
+            description: "Ver historial de planificaciones guardadas",
+            url: "/?accion=historial",
+            icons: [{ src: "icons/icon-192.png", sizes: "192x192" }]
+          }
         ],
       },
       workbox: {
         navigateFallbackDenylist: [/^\/api/],
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
         runtimeCaching: [
           {
             urlPattern: /^\/api\/plan\/cuota/,

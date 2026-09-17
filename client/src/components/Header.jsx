@@ -27,7 +27,8 @@ export default function Header({
   onAbrirAuth, 
   onAbrirOwnerModal, 
   onAbrirOwnerStats, 
-  estadoCuota 
+  estadoCuota,
+  onInstallApp
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
@@ -206,6 +207,15 @@ export default function Header({
                     >
                       👤 Perfil del Docente
                     </button>
+                    {onInstallApp && (
+                      <button
+                        type="button"
+                        style={{ color: "#0d9488", fontWeight: "600", background: "#f0fdfa" }}
+                        onClick={() => { setOpen(false); onInstallApp(); }}
+                      >
+                        📲 Instalar Aplicación PWA
+                      </button>
+                    )}
                     <button
                       type="button"
                       className="logout-btn"
@@ -236,6 +246,15 @@ export default function Header({
                     >
                       👤 Mi Perfil Docente
                     </button>
+                    {onInstallApp && (
+                      <button
+                        type="button"
+                        style={{ color: "#0d9488", fontWeight: "600", background: "#f0fdfa" }}
+                        onClick={() => { setOpen(false); onInstallApp(); }}
+                      >
+                        📲 Instalar Aplicación PWA
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => setOpen(false)}
@@ -278,6 +297,15 @@ export default function Header({
                     >
                       👤 Perfil del Docente
                     </button>
+                    {onInstallApp && (
+                      <button
+                        type="button"
+                        style={{ color: "#0d9488", fontWeight: "600", background: "#f0fdfa" }}
+                        onClick={() => { setOpen(false); onInstallApp(); }}
+                      >
+                        📲 Instalar Aplicación PWA
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => setOpen(false)}

@@ -65,6 +65,27 @@ export default function App() {
   const [escuchando, setEscuchando] = useState(false);
   const [audioUrl, setAudioUrl] = useState(null);
 
+  // PWA Install prompt state
+  const [installPrompt, setInstallPrompt] = useState(null);
+
+  useEffect(() => {
+    const handleBeforeInstall = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", handleBeforeInstall);
+    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const choice = await installPrompt.userChoice;
+    if (choice?.outcome === "accepted") {
+      setInstallPrompt(null);
+    }
+  };
+
   const { listening, transcript, start, stop } = useSpeechRecognition();
   const { speak, stopSpeaking } = useSpeechSynthesis();
 
@@ -371,6 +392,7 @@ export default function App() {
         onAbrirOwnerModal={() => { setOwnerModalOpen(true); setMenuOpen(false); }}
         onAbrirOwnerStats={() => { setOwnerStatsModalOpen(true); setMenuOpen(false); }}
         estadoCuota={estadoCuota}
+        onInstallApp={installPrompt ? handleInstallApp : null}
       />
       
       <section className="pm-title-card no-print">

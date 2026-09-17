@@ -5,18 +5,27 @@ import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import "./index.css";
 import { registerSW } from "virtual:pwa-register";
 
-// Configurar actualización en tiempo real de la PWA
+// Configurar actualización automática en tiempo real de la PWA
 const updateSW = registerSW({
+  immediate: true,
   onNeedRefresh() {
-    // Cuando hay una nueva versión, se actualiza y recarga automáticamente
-    if (confirm("Hay una nueva actualización disponible. ¿Deseas aplicarla ahora?")) {
-      updateSW(true);
-    } else {
-       updateSW(true); // Auto-update anyway based on user request for "immediately"
-    }
+    console.log("Planifica Maestro: Nueva versión detectada, actualizando PWA...");
+    updateSW(true);
   },
   onOfflineReady() {
-    console.log("PWA lista para trabajar sin conexión");
+    console.log("Planifica Maestro: PWA lista para operar sin conexión.");
+  },
+  onRegisteredSW(_swScriptUrl, registration) {
+    if (registration) {
+      // Comprobación periódica de nueva versión cada 30 minutos
+      setInterval(() => {
+        registration.update();
+      }, 30 * 60 * 1000);
+
+      // Comprobar actualización al volver a la ventana o recuperar conexión
+      window.addEventListener("focus", () => registration.update());
+      window.addEventListener("online", () => registration.update());
+    }
   },
 });
 
