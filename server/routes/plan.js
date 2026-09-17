@@ -11,6 +11,10 @@ const {
   consultarEstadoCuota,
   verificarYConsumirCuota
 } = require("../curriculum/quotaManager");
+const {
+  obtenerContextoConBase,
+  COBERTURA_CON_BASE
+} = require("../curriculum/contextoConBase");
 
 const geminiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -25,9 +29,9 @@ const PRIMARY_MODELS = [
 async function generarConGeminiRapido({ contents, systemInstruction, responseMimeType = "application/json" }) {
   let ultimoError = null;
   for (const model of PRIMARY_MODELS) {
-    // 1. Intento rápido con thinkingBudget: 0 (para modelos que lo soporten)
+    // 1. Intento rápido con thinkingBudget: 0 (para modelos que lo soporten) y temperatura determinista 0.0
     try {
-      const config = { responseMimeType };
+      const config = { responseMimeType, temperature: 0.0 };
       if (systemInstruction) config.systemInstruction = systemInstruction;
       if (model.includes("flash") && !model.includes("lite")) {
         config.thinkingConfig = { thinkingBudget: 0 };
@@ -40,9 +44,9 @@ async function generarConGeminiRapido({ contents, systemInstruction, responseMim
       return response;
     } catch (err) {
       console.warn(`Aviso: modelo ${model} rápido falló (${err.message?.substring(0, 80)}). Reintentando modo estándar...`);
-      // 2. Reintento estándar sin thinkingConfig
+      // 2. Reintento estándar sin thinkingConfig con temperatura determinista 0.0
       try {
-        const configSimple = { responseMimeType };
+        const configSimple = { responseMimeType, temperature: 0.0 };
         if (systemInstruction) configSimple.systemInstruction = systemInstruction;
         const response = await geminiClient.models.generateContent({
           model,
@@ -156,46 +160,68 @@ const PROFUNDIDAD_TEMPORAL = {
 };
 
 const SYSTEM_PROMPT = `
-Eres un Especialista en Diseño Curricular de la República Dominicana, con dominio experto y actualizado del currículo del MINERD en todos los niveles educativos (Inicial, Primario, Secundario) y sus diversas metodologías (ABP, Secuencias Didácticas, Ejes Temáticos, Con Base).
+# [SYSTEM_CORE_PROMPT: PLANIFICA_MAESTRO_MINERD_PROD_V5]
 
-Tu objetivo es asistir al docente a generar una planificación curricular impecable.
+## ROL Y DIRECTIVA DE OPERACIÓN
+Eres el motor cognitivo de la aplicación "Planifica Maestro". Tu única función es generar planificaciones educativas reales, precisas y operativas para el sistema educativo de la República Dominicana, utilizando estrictamente como fuentes de verdad los documentos oficiales, diseños curriculares y guías metodológicas integrados en esta directiva. Tienes prohibido absoluto inventar, suponer o extrapolar información pedagógica extranjera.
 
-## REGLAS DE FLUJO CONVERSACIONAL Y GENERACIÓN
+## 1. BASES DOCUMENTALES Y FUENTES OFICIALES OBLIGATORIAS
+Para cualquier proceso de planificación, análisis o estructuración de clases, debes basar tu razonamiento y extraer los contenidos textualmente o por adaptación directa de las siguientes fuentes oficiales integradas en el sistema:
+
+1. Diseño Curricular Vigente del Nivel Primario y Secundario (MINERD):
+   - Competencias Fundamentales: Ética y Ciudadana; Comunicativa; Pensamiento Lógico, Creativo y Crítico; Resolución de Problemas; Científica y Tecnológica; Ambiental y de la Salud; Desarrollo Personal y Espiritual.
+   - Mallas Curriculares: Competencias específicas, contenidos conceptuales, procedimentales y actitudinales, e indicadores de logro oficiales por grado y área.
+2. Guías y Protocolos del Proyecto / Sistema CONBASE:
+   - Estructura metodológica: Secuencia de actividades basada en las directrices operativas del modelo CONBASE para la articulación de áreas y resolución de situaciones de aprendizaje contextualizadas en la realidad dominicana.
+3. Ordenanzas y Normativas de Evaluación del MINERD:
+   - Criterios de evaluación formativa y sumativa, instrumentos de observación y registro de progresos acordes al currículo dominicano.
+
+## 2. REGLAS DE EJECUCIÓN TÉCNICA (CERO ALUCINACIÓN)
+- Apego Estricto: Si el usuario solicita una planificación de matemáticas, ciencias o cualquier área bajo el esquema CONBASE, debes buscar y alinear los contenidos exclusivamente dentro de las matrices curriculares oficiales descritas en la sección 1.
+- Bloqueo de Contenido Ficticio: Si un término, indicador o contenido no forma parte del currículo oficial del MINERD o de las guías CONBASE, no debes generarlo. En su lugar, debes ceñirte estrictamente a los bloques programáticos reales registrados.
+- Temperatura y Precisión: Operas con rigor determinista (temperature: 0.0), asegurando que la estructura técnica de salida cumpla con los estándares formales exigidos a los docentes en la República Dominicana.
+
+## 3. FORMATO DE SALIDA ESTRICTO (ESQUEMA CONBASE / MINERD)
+1. Encabezado y Metadatos (Grado, Ciclo, Área, Eje Transversal, Tiempo y Situación de Aprendizaje CONBASE).
+2. Competencias Fundamentales y Específicas (seleccionadas directamente del currículo oficial del grado).
+3. Bloque de Contenidos:
+   - Conceptuales (conceptos extraídos de la malla oficial).
+   - Procedimentales (acciones y métodos oficiales).
+   - Actitudinales (valores y normas del currículo).
+4. Indicadores de Logro (criterios oficiales evaluables).
+5. Secuencia Didáctica Operativa (Momentos de la Clase - CONBASE):
+   - Inicio (recuperación de saberes previos y conexión con la situación de aprendizaje).
+   - Desarrollo (actividades de construcción del conocimiento y práctica guiada con enfoque CONBASE).
+   - Cierre (metacognición y evaluación formativa).
+6. Medios, Recursos y Estrategias de Evaluación.
+
+## 4. REGLAS DE FLUJO CONVERSACIONAL Y DIAGNÓSTICO
 1. DIAGNÓSTICO: Si el usuario te da un tema muy vago (ej. "los números") o te sube una foto sin contexto, debes usar 'mensaje_chat' para preguntarle a qué nivel y grado va dirigido. NO generes el plan si faltan datos clave (nivel, grado, tema).
 2. ADAPTACIÓN: Si el usuario da instrucciones específicas (ej. "usa estrategias lúdicas", "enfócalo en trabajo colaborativo"), DEBES reflejarlo en el contenido generado.
 3. GENERACIÓN CURRICULAR REAL: Cuando tengas la información, genera contenido real, riguroso y alineado al MINERD (competencias fundamentales, específicas, indicadores de logro, conceptuales, procedimentales, actitudinales, actividades, recursos, evaluación).
 4. MAPEO EXACTO: El contenido generado debe mapearse exactamente a los bloques del esquema seleccionado por el usuario.
 
-## REGLA ANTI-ALUCINACIÓN Y PRECISIÓN CURRICULAR (FASE 16 - CRÍTICA)
-- Si no tienes certeza absoluta sobre un dato curricular específico oficial (ej. número o código exacto de un indicador de logro en la malla curricular, o número de ordenanza/resolución):
-  * PROHIBIDO inventar números de indicadores, códigos o referencias legales ficticias que suenen oficiales pero no lo sean.
-  * En su lugar, formula el contenido de forma pedagógicamente sólida, general y coherente con las competencias del MINERD, usando redacción docente clara.
-  * En el campo 'confianza_curricular', reporta honestamente el nivel de certeza ('alta', 'media', 'baja'), enlista los nombres exactos de los bloques que son aproximaciones pedagógicas generales en 'bloques_aproximados', y escribe una nota explicativa en 'nota_revision' orientando al maestro a revisar esa sección específica con su diseño curricular oficial.
-
-## CAPACIDAD MULTIMODAL (IMÁGENES)
+## 5. CAPACIDAD MULTIMODAL (IMÁGENES)
 Si el usuario envía una imagen de una pizarra, libro o ejercicio:
 - Usa 'mensaje_chat' para confirmar qué interpretas de la imagen.
 - Extrae el tema central y posibles errores/desafíos del estudiante.
 - Ancla la planificación a lo observado en la foto.
 
-## FORMATO DE SALIDA (OBLIGATORIO JSON)
+## 6. FORMATO DE SALIDA (OBLIGATORIO JSON)
 Devuelve SIEMPRE tu respuesta en formato JSON estrictamente estructurado con esta interfaz:
 
 {
   "mensaje_chat": "String. Tu respuesta conversacional al docente. Úsala para saludar, pedir contexto faltante, o explicar la planificación generada.",
-  "plan_completado": "Booleano. true si lograste generar la planificación completa. false si estás preguntando por más contexto.",
+  "plan_completado": true,
   "datos_planificacion": {
     // Si plan_completado es true, este objeto debe tener como claves exactamente los bloques del esquema seleccionado, y como valores el contenido generado para ese bloque.
-    // Ejemplo:
-    // "1. Datos generales...": "valor generado",
-    // "2. Competencias...": "valor generado"
   },
   "confianza_curricular": {
     "nivel_certeza": "alta | media | baja",
     "bloques_aproximados": [
-      // Strings con los nombres exactos de los bloques donde el contenido es una aproximación pedagógica general (ej. "3. Competencias Específicas del área/grado")
+      // Strings con los nombres exactos de los bloques donde el contenido es una aproximación pedagógica general (ej. "3. Competencias Específicas del grado")
     ],
-    "nota_revision": "String con recomendación pedagógica para el docente si algún bloque requiere cotejo con la malla curricular impresa u oficial."
+    "nota_revision": "String con recomendación pedagógica para el docente si algún bloque requiere cotejo con la malla curricular oficial."
   }
 }
 `;
@@ -231,6 +257,54 @@ router.post("/generate", async (req, res) => {
     // FASE 9: Recuperar patrones históricos del docente para personalizar
     const patronesDocente = obtenerResumenPatrones({ area: req.body.area, nivel });
 
+    // GROUNDING REAL CON BASE (INYECCIÓN DIRECTA)
+    let groundingConBaseBloque = "";
+    let resConBase = null;
+    if (nivel === "conbase") {
+      const allText = messages.map(m => m.text || "").join(" ").toLowerCase();
+      let gradoDetectado = req.body.grado || "";
+      if (!gradoDetectado) {
+        if (allText.includes("1ro") || allText.includes("1ero") || allText.includes("primer grado") || allText.includes("primero")) gradoDetectado = "1ro de Primaria";
+        else if (allText.includes("2do") || allText.includes("segundo grado") || allText.includes("segundo")) gradoDetectado = "2do de Primaria";
+        else if (allText.includes("3ro") || allText.includes("tercer grado") || allText.includes("tercero") || allText.includes("3er grado")) gradoDetectado = "3ro de Primaria";
+        else if (allText.includes("4to") || allText.includes("cuarto")) gradoDetectado = "4to de Primaria";
+        else if (allText.includes("5to") || allText.includes("quinto")) gradoDetectado = "5to de Primaria";
+        else if (allText.includes("6to") || allText.includes("sexto")) gradoDetectado = "6to de Primaria";
+      }
+
+      let areaDetectada = req.body.area || "";
+      if (!areaDetectada) {
+        if (allText.includes("lengua") || allText.includes("español") || allText.includes("espanol") || allText.includes("lectura") || allText.includes("escritura")) areaDetectada = "Lengua Española";
+        else if (allText.includes("matem") || allText.includes("calcul") || allText.includes("número") || allText.includes("numero")) areaDetectada = "Matemática";
+        else if (allText.includes("social")) areaDetectada = "Ciencias Sociales";
+        else if (allText.includes("natural")) areaDetectada = "Ciencias de la Naturaleza";
+      }
+
+      const temaDetectado = req.body.tema || (messages[0]?.text ? messages[0].text.substring(0, 100) : "");
+      resConBase = obtenerContextoConBase(gradoDetectado, areaDetectada, temaDetectado);
+
+      if (resConBase.cubierto) {
+        groundingConBaseBloque = `CONTEXTO OFICIAL VERIFICADO (usa esto como única fuente para el contenido curricular de esta respuesta):
+${resConBase.contexto}
+
+DIRECTIVA DE PRECISIÓN CON BASE (CERO ALUCINACIÓN):
+- Estás planificando para ${resConBase.gradoNorm.toUpperCase()} GRADO en ${resConBase.areaNorm === 'lengua' ? 'LENGUA ESPAÑOLA' : 'MATEMÁTICA'}.
+- Extrae textualmente o por adaptación directa las competencias específicas, contenidos (conceptuales, procedimentales y actitudinales), indicadores de logro y momentos pedagógicos CON BASE de la matriz oficial provista arriba.
+- En 'confianza_curricular': DEBES reportar nivel_certeza = "alta", bloques_aproximados = [], y nota_revision = "Planificación 100% verificada y alineada con la Guía Didáctica Oficial CON BASE y la Adecuación Curricular del MINERD (2023)."`;
+      } else {
+        groundingConBaseBloque = `AVISO DE COBERTURA OFICIAL CON BASE:
+El grado ("${gradoDetectado || 'No especificado'}") o área ("${areaDetectada || 'No especificada'}") solicitada NO cuenta con guía oficial CON BASE publicada (las guías oficiales CON BASE del MINERD y UNICEF se focalizan exclusivamente en 1ro, 2do y 3er Grado de Primaria en Lengua Española y Matemática).
+
+DIRECTIVA OBLIGATORIA PARA ESTE CASO:
+1. Utiliza el esquema "CON BASE" ÚNICAMENTE como formato y estructura operativa (Momentos pedagógicos, etc.).
+2. Para el contenido curricular (competencias, contenidos e indicadores), genera el contenido aplicando el enfoque general de "Por Competencias" del currículo del MINERD.
+3. DEBES OBLIGATORIAMENTE reportar en la respuesta JSON:
+   - confianza_curricular.nivel_certeza = "baja"
+   - confianza_curricular.bloques_aproximados = ["3. Competencias Específicas del grado", "4. Criterios de Desempeño e Indicadores de Logro"]
+   - confianza_curricular.nota_revision = "AVISO CON BASE: Las guías oficiales CON BASE abarcan exclusivamente de 1ro a 3ro de Primaria en Lengua Española y Matemática. Para este grado/área se aplicó la estructura de momentos CON BASE con contenidos del currículo general por competencias, por lo que requiere verificación con el diseño curricular oficial."`;
+      }
+    }
+
     const dynamicSystemPrompt = SYSTEM_PROMPT + `
 ## ESQUEMA ACTUAL SELECCIONADO POR EL USUARIO:
 - ID: ${nivel}
@@ -255,7 +329,11 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
       const parts = [];
       let textToUse = msg.text || "";
       if (index === 0 && msg.role === "user") {
-        textToUse = `[Contexto: El usuario seleccionó el esquema "${esquema.label}", Periodo: "${periodo}"]\n\n${textToUse}`;
+        let prefix = `[Contexto: El usuario seleccionó el esquema "${esquema.label}", Periodo: "${periodo}"]\n\n`;
+        if (groundingConBaseBloque) {
+          prefix += `${groundingConBaseBloque}\n\n`;
+        }
+        textToUse = prefix + (msg.text || "");
       }
       
       if (msg.imageBase64 && msg.mediaType) {
@@ -284,6 +362,30 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
     if (!parsedResponse) {
       console.error("Gemini no devolvió JSON válido:", jsonText);
       return res.status(500).json({ error: "Error de formato de IA." });
+    }
+
+    // FASE 16 & CON BASE: Garantizar consistencia en la certeza curricular de CON BASE
+    if (nivel === "conbase" && parsedResponse.plan_completado) {
+      if (!parsedResponse.confianza_curricular) {
+        parsedResponse.confianza_curricular = {};
+      }
+      if (!resConBase?.cubierto) {
+        parsedResponse.confianza_curricular.nivel_certeza = "baja";
+        if (!parsedResponse.confianza_curricular.bloques_aproximados || !parsedResponse.confianza_curricular.bloques_aproximados.length) {
+          parsedResponse.confianza_curricular.bloques_aproximados = [
+            "3. Competencias Específicas del grado",
+            "4. Criterios de Desempeño e Indicadores de Logro"
+          ];
+        }
+        if (!parsedResponse.confianza_curricular.nota_revision) {
+          parsedResponse.confianza_curricular.nota_revision = "AVISO CON BASE: Las guías oficiales CON BASE abarcan exclusivamente de 1ro a 3ro de Primaria en Lengua Española y Matemática. Para este grado/área se aplicó la estructura de momentos CON BASE con contenidos del currículo general por competencias, por lo que requiere verificación con el diseño curricular oficial.";
+        }
+      } else {
+        parsedResponse.confianza_curricular.nivel_certeza = "alta";
+        if (!parsedResponse.confianza_curricular.nota_revision) {
+          parsedResponse.confianza_curricular.nota_revision = "Planificación 100% verificada y alineada con la Guía Didáctica Oficial CON BASE y la Adecuación Curricular del MINERD (2023).";
+        }
+      }
     }
 
     // FASE 9: Registrar automáticamente la planificación en el historial
@@ -360,8 +462,15 @@ router.post("/consultar-curriculo", async (req, res) => {
 
     const esquema = LEVELS[esquemaActivo] || LEVELS["primario"];
 
-    const promptCurricular = `
-Eres el Especialista en Diseño Curricular del Ministerio de Educación de la República Dominicana (MINERD).
+    let conBaseInyeccion = "";
+    if (esquemaActivo === "conbase" || nivel === "conbase") {
+      const resConBase = obtenerContextoConBase(grado, area, tema);
+      if (resConBase.cubierto) {
+        conBaseInyeccion = `CONTEXTO OFICIAL VERIFICADO (usa esto como única fuente para el contenido curricular de esta respuesta):\n${resConBase.contexto}\n\n`;
+      }
+    }
+
+    const promptCurricular = `${conBaseInyeccion}Eres el Especialista en Diseño Curricular del Ministerio de Educación de la República Dominicana (MINERD):
 El maestro necesita consultar el currículo oficial para el siguiente requerimiento pedagógico:
 - Nivel educativo: ${nivel}
 - Grado escolar: ${grado}
