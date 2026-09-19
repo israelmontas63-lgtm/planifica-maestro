@@ -971,13 +971,14 @@ body {
   background: var(--pm-white);
   border-radius: 18px;
   padding: 8px 12px;
-  margin: 12px;
+  margin: 0 auto 12px auto;
   box-shadow: 0 6px 20px rgba(18, 48, 74, 0.12);
   border: 1.5px solid #e2e8f0;
   position: fixed;
   bottom: 0;
-  left: 0;
-  right: 0;
+  left: 12px;
+  right: 12px;
+  max-width: 520px;
   z-index: 25;
 }
 
@@ -993,22 +994,15 @@ body {
   -webkit-backdrop-filter: blur(1.5px);
   cursor: pointer;
 }
-.pm-menu-dropdown { position: relative; }
-.pm-menu-toggle {
-  background: #f8fafc;
-  color: var(--pm-navy);
-  border: 1px solid #cbd5e1;
-  border-radius: 10px;
-  font-weight: 700;
-  font-size: 12.5px;
+.pm-menu-dropdown { 
+  position: relative; 
+  flex: 1;
   display: flex;
-  align-items: center;
-  gap: 5px;
-  cursor: pointer;
-  padding: 8px 10px;
-  transition: all 0.12s;
+  min-width: 0;
 }
-.pm-menu-toggle:hover { background: #f1f5f9; }
+.pm-menu-toggle {
+  width: 100%;
+}
 .pm-menu-list {
   position: absolute;
   z-index: 30;
@@ -1032,23 +1026,58 @@ body {
 .pm-menu-list button:hover { background: var(--pm-bg); }
 .pm-menu-list button.active { background: var(--pm-bg); color: var(--pm-teal); font-weight: bold; }
 
+/* Regla común para los cuatro botones: Menú, Foto, Voz, Texto (Mismo flex, alto, padding, ícono y fuente) */
 .pm-btn-action {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 3px;
   border-radius: 12px;
-  padding: 8px 10px;
+  padding: 8px 4px;
   cursor: pointer;
-  border: 1px solid transparent;
+  border: 1.5px solid #cbd5e1;
   transition: all 0.15s ease;
   font-size: 11px;
   font-weight: 700;
-  min-width: 58px;
+  line-height: 1.2;
+  min-width: 0;
+  height: 54px;
+  box-sizing: border-box;
+  background: #f8fafc;
+  color: #334155;
+  width: 100%;
 }
 .pm-btn-action:active { transform: scale(0.96); }
 
+.pm-btn-action svg {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.pm-btn-action span {
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* 1. Botón Menú */
+.pm-btn-menu {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: var(--pm-navy, #12304a);
+}
+.pm-btn-menu:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+/* 2. Botón Foto */
 .pm-btn-foto {
   background: #f8fafc;
   border-color: #cbd5e1;
@@ -1060,17 +1089,25 @@ body {
   color: #c2410c;
 }
 
+/* 3. Botón Voz (Acción recomendada: Verde sólido, sin gradiente, mismo tamaño exacto que los otros tres) */
 .pm-btn-dictado {
-  background: linear-gradient(135deg, #14b8a6 0%, #12304a 100%);
+  background: #10b981;
+  border-color: #059669;
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(20, 184, 166, 0.35);
-  flex: 1.2;
+  box-shadow: none;
+}
+.pm-btn-dictado:hover {
+  background: #059669;
+  border-color: #047857;
+  color: #ffffff;
 }
 .pm-btn-dictado.listening {
-  background: #22c55e;
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+  background: #16a34a;
+  border-color: #15803d;
+  color: #ffffff;
 }
 
+/* 4. Botón Texto */
 .pm-btn-texto {
   background: #f8fafc;
   border-color: #cbd5e1;
