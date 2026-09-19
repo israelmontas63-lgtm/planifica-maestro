@@ -971,6 +971,7 @@ body {
   background: var(--pm-white);
   border-radius: 18px;
   padding: 8px 12px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
   margin: 0 auto 12px auto;
   box-shadow: 0 6px 20px rgba(18, 48, 74, 0.12);
   border: 1.5px solid #e2e8f0;
@@ -980,6 +981,15 @@ body {
   right: 12px;
   max-width: 520px;
   z-index: 25;
+}
+
+@media (max-width: 360px) {
+  .pm-bottom-bar {
+    left: 6px;
+    right: 6px;
+    gap: 4px;
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px)) 6px;
+  }
 }
 
 .pm-menu-backdrop {

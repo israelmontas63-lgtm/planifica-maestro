@@ -208,6 +208,26 @@ export default function BottomPanel({
                   </button>
                 )}
               </li>
+              <li style={{ marginTop: '6px', borderTop: '1px solid #f1f5f9', paddingTop: '6px', textAlign: 'center' }}>
+                <span style={{ fontSize: '10px', color: '#94a3b8', letterSpacing: '0.02em', display: 'block' }}>
+                  v{(() => {
+                    try {
+                      const raw = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '';
+                      if (!raw) return '1.0.0';
+                      const d = new Date(raw);
+                      if (isNaN(d.getTime())) return raw;
+                      const dia = String(d.getDate()).padStart(2, '0');
+                      const mes = String(d.getMonth() + 1).padStart(2, '0');
+                      const anio = d.getFullYear();
+                      const hh = String(d.getHours()).padStart(2, '0');
+                      const mm = String(d.getMinutes()).padStart(2, '0');
+                      return `${dia}/${mes}/${anio} ${hh}:${mm}`;
+                    } catch {
+                      return '1.0.0';
+                    }
+                  })()}
+                </span>
+              </li>
             </ul>
           )}
         </div>

@@ -4,7 +4,10 @@ import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
 
 export default defineConfig({
-  base: "./",
+  base: "/",
+  define: {
+    __APP_VERSION__: JSON.stringify(new Date().toISOString()),
+  },
   resolve: {
     alias: {
       docx: path.resolve(__dirname, "../server/node_modules/docx"),
@@ -32,6 +35,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      injectRegister: false,
       includeAssets: ["icons/icon-192.png", "icons/icon-512.png"],
       manifest: {
         name: "Planifica Maestro",
@@ -77,6 +81,7 @@ export default defineConfig({
         ],
       },
       workbox: {
+        navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/api/],
         cleanupOutdatedCaches: true,
         clientsClaim: true,

@@ -3,31 +3,37 @@ import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import "./index.css";
-import { registerSW } from "virtual:pwa-register";
+import { registerSW } from 'virtual:pwa-register';
 
-// Configurar actualización automática en tiempo real de la PWA
-const updateSW = registerSW({
-  immediate: true,
-  onNeedRefresh() {
-    console.log("Planifica Maestro: Nueva versión detectada, actualizando PWA...");
-    updateSW(true);
-  },
-  onOfflineReady() {
-    console.log("Planifica Maestro: PWA lista para operar sin conexión.");
-  },
-  onRegisteredSW(_swScriptUrl, registration) {
-    if (registration) {
-      // Comprobación periódica de nueva versión cada 30 minutos
-      setInterval(() => {
-        registration.update();
-      }, 30 * 60 * 1000);
+const CHECK_EVERY = 15 * 60 * 1000;
+const hadController = !!navigator.serviceWorker?.controller;
+let refreshing = false;
 
-      // Comprobar actualización al volver a la ventana o recuperar conexión
-      window.addEventListener("focus", () => registration.update());
-      window.addEventListener("online", () => registration.update());
-    }
-  },
-});
+function safeReload() {
+  const el = document.activeElement;
+  const typing = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+  if (typing) { setTimeout(safeReload, 5000); return; }
+  window.location.reload();
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || refreshing) return;
+    refreshing = true;
+    safeReload();
+  });
+
+  registerSW({
+    immediate: true,
+    onRegisteredSW(_url, registration) {
+      if (!registration) return;
+      const check = () => registration.update().catch(() => {});
+      setInterval(check, CHECK_EVERY);
+      window.addEventListener('focus', check);
+      window.addEventListener('online', check);
+    },
+  });
+}
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
