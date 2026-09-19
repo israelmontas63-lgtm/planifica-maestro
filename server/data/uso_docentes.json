@@ -1,0 +1,47 @@
+{
+  "docente_default": {
+    "periodo": "2026-09",
+    "usadas": 2,
+    "generaciones": [
+      {
+        "fecha": "2026-09-17T12:34:44.993Z"
+      },
+      {
+        "fecha": "2026-09-17T12:44:18.096Z"
+      }
+    ]
+  },
+  "docente_mexv5gji": {
+    "periodo": "2026-09",
+    "usadas": 2,
+    "generaciones": [
+      {
+        "fecha": "2026-09-17T13:22:24.986Z"
+      },
+      {
+        "fecha": "2026-09-17T14:45:47.308Z"
+      }
+    ]
+  },
+  "docente_b9wapko4": {
+    "periodo": "2026-09",
+    "usadas": 1,
+    "generaciones": [
+      {
+        "fecha": "2026-09-17T13:33:42.349Z"
+      }
+    ]
+  },
+  "docente_conbase_test": {
+    "periodo": "2026-09",
+    "usadas": 2,
+    "generaciones": [
+      {
+        "fecha": "2026-09-17T17:22:57.169Z"
+      },
+      {
+        "fecha": "2026-09-17T17:23:05.917Z"
+      }
+    ]
+  }
+}

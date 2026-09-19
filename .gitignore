@@ -3,4 +3,4 @@ node_modules/
 dist/
 .DS_Store
 dev-dist/
-server/data/
+server/data/*.bak
