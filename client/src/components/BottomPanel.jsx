@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 
-/* ── ÍCONOS DE LA BARRA INFERIOR (Sin cambios) ── */
+/* ── ÍCONOS DE LA BARRA INFERIOR (Acción rápida) ── */
 function MenuIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -62,7 +62,7 @@ function SchoolIcon() {
   );
 }
 
-/* ── ÍCONOS DE CADA SECCIÓN DE PLANIFICACIÓN ── */
+/* ── ÍCONOS VECTORIALES DE SECCIONES (Planificación) ── */
 function DailyIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -128,6 +128,91 @@ function ProjectIcon() {
       <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" />
       <path d="M9 18h6" />
       <path d="M10 22h4" />
+    </svg>
+  );
+}
+
+/* ── ÍCONOS VECTORIALES DE "MI ESPACIO" Y "CUENTA Y APP" (Sin emojis) ── */
+function FolderIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
+function ClipboardCheckIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+      <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+      <path d="M9 12h6" />
+      <path d="M9 16h6" />
+    </svg>
+  );
+}
+
+function BookOpenIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+    </svg>
+  );
+}
+
+function UserIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  );
+}
+
+function DownloadIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+  );
+}
+
+function SettingsIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+    </svg>
+  );
+}
+
+function HelpCircleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
+
+function CrownIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" />
+    </svg>
+  );
+}
+
+function LogOutIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
     </svg>
   );
 }
@@ -306,7 +391,7 @@ export default function BottomPanel({
           {menuOpen && (
             <div className="pm-menu-list" role="menu">
               
-              {/* 1. ENCABEZADO */}
+              {/* 1. ENCABEZADO: Ícono escuela + "Planifica Maestro" */}
               <div className="pm-menu-header">
                 <div className="pm-menu-header-icon">
                   <SchoolIcon />
@@ -413,7 +498,7 @@ export default function BottomPanel({
                   })}
                 </div>
 
-                {/* 3. GRUPO: MI ESPACIO */}
+                {/* 3. GRUPO: MI ESPACIO (Filas simples con íconos SVG) */}
                 <div className="pm-menu-group" style={{ paddingTop: "6px", borderTop: "1px solid var(--pm-menu-separator)" }}>
                   <div className="pm-menu-group-title">Mi espacio</div>
 
@@ -428,7 +513,7 @@ export default function BottomPanel({
                   >
                     <div style={{ display: "flex", alignItems: "center" }}>
                       <div className="pm-link-icon-box" style={{ backgroundColor: "rgba(241, 196, 15, 0.15)", color: "#b45309" }}>
-                        <span style={{ fontSize: "16px" }}>📁</span>
+                        <FolderIcon />
                       </div>
                       <span>Mis planificaciones</span>
                     </div>
@@ -445,7 +530,7 @@ export default function BottomPanel({
                   >
                     <div style={{ display: "flex", alignItems: "center" }}>
                       <div className="pm-link-icon-box" style={{ backgroundColor: "rgba(39, 174, 96, 0.15)", color: "#27ae60" }}>
-                        <span style={{ fontSize: "16px" }}>📋</span>
+                        <ClipboardCheckIcon />
                       </div>
                       <span>Esquemas</span>
                     </div>
@@ -462,7 +547,7 @@ export default function BottomPanel({
                   >
                     <div style={{ display: "flex", alignItems: "center" }}>
                       <div className="pm-link-icon-box" style={{ backgroundColor: "rgba(26, 125, 140, 0.15)", color: "#1a7d8c" }}>
-                        <span style={{ fontSize: "16px" }}>📚</span>
+                        <BookOpenIcon />
                       </div>
                       <span>Currículo MINERD</span>
                     </div>
@@ -479,7 +564,7 @@ export default function BottomPanel({
                   >
                     <div style={{ display: "flex", alignItems: "center" }}>
                       <div className="pm-link-icon-box" style={{ backgroundColor: "rgba(27, 58, 92, 0.15)", color: "#1B3A5C" }}>
-                        <span style={{ fontSize: "16px" }}>👤</span>
+                        <UserIcon />
                       </div>
                       <span>Mi perfil</span>
                     </div>
@@ -503,7 +588,7 @@ export default function BottomPanel({
                     >
                       <div style={{ display: "flex", alignItems: "center" }}>
                         <div className="pm-link-icon-box" style={{ backgroundColor: "rgba(26, 125, 140, 0.15)", color: "#1a7d8c" }}>
-                          <span style={{ fontSize: "16px" }}>📲</span>
+                          <DownloadIcon />
                         </div>
                         <span>Instalar aplicación</span>
                       </div>
@@ -518,7 +603,7 @@ export default function BottomPanel({
                   >
                     <div style={{ display: "flex", alignItems: "center" }}>
                       <div className="pm-link-icon-box" style={{ backgroundColor: "rgba(100, 116, 139, 0.15)", color: "#64748b" }}>
-                        <span style={{ fontSize: "16px" }}>⚙️</span>
+                        <SettingsIcon />
                       </div>
                       <span>Ajustes</span>
                     </div>
@@ -533,7 +618,7 @@ export default function BottomPanel({
                   >
                     <div style={{ display: "flex", alignItems: "center" }}>
                       <div className="pm-link-icon-box" style={{ backgroundColor: "rgba(14, 165, 233, 0.15)", color: "#0ea5e9" }}>
-                        <span style={{ fontSize: "16px" }}>❓</span>
+                        <HelpCircleIcon />
                       </div>
                       <span>Ayuda</span>
                     </div>
@@ -553,7 +638,7 @@ export default function BottomPanel({
                     >
                       <div style={{ display: "flex", alignItems: "center" }}>
                         <div className="pm-link-icon-box" style={{ backgroundColor: "rgba(124, 58, 237, 0.15)", color: "#7c3aed" }}>
-                          <span style={{ fontSize: "16px" }}>👑</span>
+                          <CrownIcon />
                         </div>
                         <span>Panel Propietario</span>
                       </div>
@@ -580,8 +665,9 @@ export default function BottomPanel({
                               "Docente"}
                           </span>
                         </div>
-                        <span style={{ fontSize: "12px", fontWeight: "600", padding: "4px 8px", borderRadius: "6px", backgroundColor: "rgba(185, 28, 28, 0.1)" }}>
-                          Cerrar sesión 🚪
+                        <span style={{ fontSize: "12px", fontWeight: "600", padding: "4px 8px", borderRadius: "6px", backgroundColor: "rgba(185, 28, 28, 0.1)", display: "flex", alignItems: "center", gap: "4px" }}>
+                          <span>Cerrar sesión</span>
+                          <LogOutIcon />
                         </span>
                       </button>
                     ) : (
@@ -601,7 +687,7 @@ export default function BottomPanel({
 
               </div>
 
-              {/* 5. PIE: Versión y Fecha/Hora de build */}
+              {/* 5. PIE: Versión y Fecha/Hora de build generada por Vite */}
               <div className="pm-menu-footer">
                 v{(() => {
                   try {
