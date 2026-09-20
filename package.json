@@ -5,5 +5,8 @@
   "description": "Planifica Maestro - Asistente de Planificación Curricular MINERD",
   "scripts": {
     "test": "node --test tests/fase15_pruebas.test.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.135.0"
   }
 }
