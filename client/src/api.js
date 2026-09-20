@@ -404,6 +404,11 @@ export async function generarVoz(text) {
     body: JSON.stringify({ text }),
     timeout: 30000,
   });
+  const contentType = res.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    const data = await res.json();
+    if (data.fallbackLocal) throw new Error("Fallback local");
+  }
   const blob = await res.blob();
   return URL.createObjectURL(blob);
 }

@@ -28,7 +28,9 @@ export default function Header({
   onAbrirOwnerModal, 
   onAbrirOwnerStats, 
   estadoCuota,
-  onInstallApp
+  onInstallApp,
+  onAbrirNotificaciones,
+  onAbrirConfiguracion
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
@@ -124,7 +126,13 @@ export default function Header({
           </div>
         )}
 
-        <button className="pm-icon-btn" aria-label="Notificaciones" title="Notificaciones del sistema">
+        <button 
+          type="button"
+          className="pm-icon-btn" 
+          aria-label="Notificaciones" 
+          title="Notificaciones del sistema"
+          onClick={onAbrirNotificaciones}
+        >
           <BellOutlineIcon />
         </button>
 
@@ -257,7 +265,7 @@ export default function Header({
                     )}
                     <button
                       type="button"
-                      onClick={() => setOpen(false)}
+                      onClick={() => { setOpen(false); onAbrirConfiguracion?.(); }}
                     >
                       ⚙️ Configuración (v2.0)
                     </button>
@@ -308,7 +316,7 @@ export default function Header({
                     )}
                     <button
                       type="button"
-                      onClick={() => setOpen(false)}
+                      onClick={() => { setOpen(false); onAbrirConfiguracion?.(); }}
                     >
                       ⚙️ Configuración (v2.0)
                     </button>

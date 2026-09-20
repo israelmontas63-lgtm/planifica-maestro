@@ -14,7 +14,7 @@ router.post('/generate', async (req, res) => {
 
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: 'ElevenLabs API key no configurada.' });
+      return res.status(200).json({ fallbackLocal: true, message: 'ElevenLabs API key no configurada, usando síntesis de voz nativa del dispositivo.' });
     }
 
     // Usaremos la voz de Rachel o cualquier voz en español (ej. un ID predeterminado de ElevenLabs)

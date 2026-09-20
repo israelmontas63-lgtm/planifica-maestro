@@ -1,4 +1,11 @@
-export default function WizardStepper({ pasoActual, onConfigurarClick, periodo, esquemaLabel }) {
+export default function WizardStepper({ 
+  pasoActual, 
+  onConfigurarClick, 
+  onTemaClick,
+  onRevisarClick,
+  periodo, 
+  esquemaLabel 
+}) {
   const pasos = [
     {
       num: 1,
@@ -12,15 +19,17 @@ export default function WizardStepper({ pasoActual, onConfigurarClick, periodo, 
       num: 2,
       titulo: "Tema / Material",
       detalle: pasoActual >= 2 ? (pasoActual === 2 ? "Voz, Foto o Texto" : "Recibido ✓") : "Pendiente",
-      clickable: false,
-      tooltip: "Proporciona el tema por voz, foto o teclado"
+      clickable: true,
+      onClick: onTemaClick,
+      tooltip: "Toca para escribir o dictar el tema de la clase"
     },
     {
       num: 3,
       titulo: "Revisar y Exportar",
       detalle: pasoActual === 3 ? "Listo para Word/Imprimir" : "Generación con IA",
-      clickable: false,
-      tooltip: "Edita el plan y expórtalo a Word o compártelo"
+      clickable: pasoActual === 3,
+      onClick: onRevisarClick,
+      tooltip: pasoActual === 3 ? "Toca para ir al plan generado y opciones de exportación" : "Disponible tras generar la planificación"
     }
   ];
 
@@ -62,4 +71,3 @@ export default function WizardStepper({ pasoActual, onConfigurarClick, periodo, 
     </nav>
   );
 }
-

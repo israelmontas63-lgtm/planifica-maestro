@@ -23,6 +23,9 @@ const TextoModal = lazy(() => import("./components/TextoModal.jsx"));
 const AuthScreen = lazy(() => import("./components/AuthScreen.jsx"));
 const OwnerModal = lazy(() => import("./components/OwnerModal.jsx"));
 const OwnerStatsModal = lazy(() => import("./components/OwnerStatsModal.jsx"));
+const NotificacionesModal = lazy(() => import("./components/NotificacionesModal.jsx"));
+const ConfiguracionModal = lazy(() => import("./components/ConfiguracionModal.jsx"));
+const AyudaModal = lazy(() => import("./components/AyudaModal.jsx"));
 
 export default function App() {
   const {
@@ -42,12 +45,17 @@ export default function App() {
   const [imageSrc, setImageSrc] = useState(null);
   const [procesandoImagen, setProcesandoImagen] = useState(false);
   const [textoModalOpen, setTextoModalOpen] = useState(false);
+  const [textoModalPrompt, setTextoModalPrompt] = useState("");
+  const [textoModalTitulo, setTextoModalTitulo] = useState("Describe la planificación");
   const [menuOpen, setMenuOpen] = useState(false);
   const [schemaOpen, setSchemaOpen] = useState(false);
   const [perfilOpen, setPerfilOpen] = useState(false);
   const [curriculumOpen, setCurriculumOpen] = useState(false);
   const [bibliotecaOpen, setBibliotecaOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [notificacionesOpen, setNotificacionesOpen] = useState(false);
+  const [configuracionOpen, setConfiguracionOpen] = useState(false);
+  const [ayudaOpen, setAyudaOpen] = useState(false);
   const [isOwner, setIsOwner] = useState(!!obtenerOwnerKey());
   const [ownerModalOpen, setOwnerModalOpen] = useState(false);
   const [ownerStatsModalOpen, setOwnerStatsModalOpen] = useState(false);
@@ -90,7 +98,8 @@ export default function App() {
   };
 
   const { listening, transcript, start, stop } = useSpeechRecognition();
-  const { speak, stopSpeaking } = useSpeechSynthesis();
+  const { speak, stopSpeaking, isSpeaking } = useSpeechSynthesis();
+  const fuePorVozRef = useRef(false);
 
   // Auto-scroll chat
   const chatEndRef = useRef(null);
@@ -252,12 +261,10 @@ export default function App() {
       };
       setMessages([...newHistory, newAssistantMsg]);
 
-      if (hablarRespuestas && chatText) {
-        speak(chatText, (notice) => {
-          setNotificacionSync(notice);
-          setTimeout(() => setNotificacionSync(null), 3500);
-        });
+      if ((hablarRespuestas || fuePorVozRef.current) && chatText) {
+        handleEscuchar(chatText);
       }
+      fuePorVozRef.current = false;
     } catch (err) {
       if (err.name === "AbortError") {
         // Cancelado por el usuario voluntariamente
@@ -322,12 +329,28 @@ export default function App() {
     setMessages((prev) => [...prev, newAssistantMsg]);
   }
 
+  function handleAbrirTexto(promptInicial = "", titulo = "Describe la planificación") {
+    setTextoModalPrompt(promptInicial || "");
+    setTextoModalTitulo(titulo || "Describe la planificación");
+    setTextoModalOpen(true);
+    setMenuOpen(false);
+    setSchemaOpen(false);
+    setPerfilOpen(false);
+    setCurriculumOpen(false);
+    setBibliotecaOpen(false);
+    setAuthModalOpen(false);
+    setNotificacionesOpen(false);
+    setConfiguracionOpen(false);
+    setAyudaOpen(false);
+  }
+
   async function handleImageSelected(dataUrl, mediaType) {
     setImageSrc(dataUrl);
     setProcesandoImagen(true);
     try {
       const base64 = dataUrl.split(",")[1];
-      await enviarMensaje("Aquí tienes una imagen adjunta.", base64, mediaType);
+      const promptMultimodal = "📸 Analiza esta imagen con visión pedagógica avanzada como un docente experto: 1) Identifica y transcribe el contenido del libro, pizarra, ejercicio o guía didáctica. 2) Determina el tema central, área curricular y grado escolar según el diseño curricular del MINERD. 3) Genera de inmediato la planificación didáctica completa para este contenido según el esquema y período activo.";
+      await enviarMensaje(promptMultimodal, base64, mediaType);
     } catch (err) {
       setErrorGeneracion({
         message: err.friendlyMessage || err.message || "Error procesando la imagen.",
@@ -342,7 +365,10 @@ export default function App() {
     if (listening) {
       const finalText = stop();
       const textToSend = (finalText || transcript).trim();
-      if (textToSend) enviarMensaje(textToSend);
+      if (textToSend) {
+        fuePorVozRef.current = true;
+        enviarMensaje(textToSend);
+      }
     } else {
       stopSpeaking();
       start();
@@ -435,6 +461,8 @@ export default function App() {
         onAbrirOwnerStats={() => { setOwnerStatsModalOpen(true); setMenuOpen(false); }}
         estadoCuota={estadoCuota}
         onInstallApp={installPrompt ? handleInstallApp : null}
+        onAbrirNotificaciones={() => { setNotificacionesOpen(true); setMenuOpen(false); }}
+        onAbrirConfiguracion={() => { setConfiguracionOpen(true); setMenuOpen(false); }}
       />
       
       <section className="pm-title-card no-print">
@@ -470,6 +498,10 @@ export default function App() {
       <WizardStepper
         pasoActual={pasoActual}
         onConfigurarClick={() => { setSchemaOpen(true); setMenuOpen(false); }}
+        onTemaClick={() => handleAbrirTexto()}
+        onRevisarClick={() => {
+          chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }}
         periodo={periodoLabel}
         esquemaLabel={esquemaLabel}
       />
@@ -493,7 +525,14 @@ export default function App() {
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '10px 10px 100px 10px', background: 'var(--pm-bg)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {messages.length === 0 && (
-          <UnifiedEntrySelector />
+          <UnifiedEntrySelector
+            onDictadoClick={handleDictadoClick}
+            listening={listening}
+            onAbrirCamara={() => fileInputHiddenRef.current?.click()}
+            onAbrirTexto={(prompt, titulo) => handleAbrirTexto(prompt, titulo)}
+            onAbrirCurriculo={() => { setCurriculumOpen(true); setMenuOpen(false); }}
+            onAbrirEsquemas={() => { setSchemaOpen(true); setMenuOpen(false); }}
+          />
         )}
         
         {messages.map((m, i) => (
@@ -511,6 +550,30 @@ export default function App() {
               <img src={"data:" + m.mediaType + ";base64," + m.imageBase64} alt="Adjunto" style={{ maxWidth: '100%', borderRadius: '8px', marginBottom: '8px' }} />
             )}
             <div style={{ whiteSpace: 'pre-wrap', fontSize: '14px' }}>{m.text}</div>
+            
+            {m.role === 'assistant' && (
+              <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => isSpeaking ? stopSpeaking() : handleEscuchar(m.text)}
+                  style={{
+                    background: 'none',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '6px',
+                    padding: '3px 8px',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    color: '#475569',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                  title="Escuchar respuesta con voz"
+                >
+                  {isSpeaking ? "⏹️ Detener voz" : "🔊 Escuchar"}
+                </button>
+              </div>
+            )}
             
             {m.role === 'assistant' && m.datosGenerados && (
               <Suspense fallback={<div style={{ padding: '12px', color: '#64748b' }}>Cargando planificación...</div>}>
@@ -549,8 +612,49 @@ export default function App() {
           <div className="pm-dictado-live-preview no-print">
             <span className="pm-dictado-pulse">🎙️</span>
             <div className="pm-dictado-content">
-              <div className="pm-dictado-hint">Escuchando... (Toca "Voz" para enviar)</div>
+              <div className="pm-dictado-hint">Escuchando... Di tu tema o requerimiento pedagógico:</div>
               <div className="pm-dictado-text">{transcript || <span style={{ color: "#94a3b8", fontStyle: "italic" }}>Habla ahora...</span>}</div>
+              <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+                <button
+                  type="button"
+                  className="pm-btn-enviar-dictado"
+                  style={{
+                    background: "var(--teal, #1a7d8c)",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "6px 12px",
+                    fontSize: "13px",
+                    cursor: "pointer"
+                  }}
+                  onClick={() => {
+                    const finalText = stop();
+                    const textToSend = (finalText || transcript).trim();
+                    if (textToSend) {
+                      fuePorVozRef.current = true;
+                      enviarMensaje(textToSend);
+                    }
+                  }}
+                  disabled={!transcript?.trim()}
+                >
+                  🎙️ Enviar a Planificar
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    background: "#f1f5f9",
+                    color: "#64748b",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "6px",
+                    padding: "6px 12px",
+                    fontSize: "13px",
+                    cursor: "pointer"
+                  }}
+                  onClick={() => stop()}
+                >
+                  ✕ Cancelar
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -623,8 +727,8 @@ export default function App() {
         onDictadoClick={handleDictadoClick}
         onAbrirCamara={() => fileInputHiddenRef.current?.click()}
         menuOpen={menuOpen}
-        setMenuOpen={(open) => { setMenuOpen(open); if(open) { setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); setAuthModalOpen(false); } }}
-        onAbrirTexto={() => { setTextoModalOpen(true); setMenuOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); setAuthModalOpen(false); }}
+        setMenuOpen={(open) => { setMenuOpen(open); if(open) { setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); setAuthModalOpen(false); setNotificacionesOpen(false); setConfiguracionOpen(false); setAyudaOpen(false); } }}
+        onAbrirTexto={(prompt, titulo) => handleAbrirTexto(prompt, titulo)}
         onAbrirEsquemas={() => { setSchemaOpen(true); setMenuOpen(false); setTextoModalOpen(false); setPerfilOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); setAuthModalOpen(false); }}
         onAbrirPerfil={() => { setPerfilOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); setAuthModalOpen(false); }}
         onAbrirCurriculo={() => { setCurriculumOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); setBibliotecaOpen(false); setAuthModalOpen(false); }}
@@ -636,6 +740,8 @@ export default function App() {
         onAbrirOwner={() => { setOwnerStatsModalOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); }}
         canInstall={!!installPrompt}
         onInstallApp={handleInstallApp}
+        onAbrirConfiguracion={() => { setConfiguracionOpen(true); setMenuOpen(false); }}
+        onAbrirAyuda={() => { setAyudaOpen(true); setMenuOpen(false); }}
       />
       
       {authModalOpen && (
@@ -670,8 +776,21 @@ export default function App() {
       {textoModalOpen && (
         <Suspense fallback={null}>
           <TextoModal
-            onCancel={() => setTextoModalOpen(false)}
-            onConfirm={(texto) => { setTextoModalOpen(false); enviarMensaje(texto); }}
+            initialValue={textoModalPrompt}
+            titulo={textoModalTitulo}
+            onConsultarCurriculo={() => {
+              setTextoModalOpen(false);
+              setCurriculumOpen(true);
+            }}
+            onCancel={() => {
+              setTextoModalOpen(false);
+              setTextoModalPrompt("");
+            }}
+            onConfirm={(texto) => {
+              setTextoModalOpen(false);
+              setTextoModalPrompt("");
+              enviarMensaje(texto);
+            }}
           />
         </Suspense>
       )}
@@ -714,6 +833,35 @@ export default function App() {
             onCerrar={() => setBibliotecaOpen(false)}
             onAbrirPlan={handleAbrirPlanDesdeBiblioteca}
             onExportarWord={(titulo, texto) => exportarWord({ titulo, plan: texto })}
+          />
+        </Suspense>
+      )}
+
+      {notificacionesOpen && (
+        <Suspense fallback={null}>
+          <NotificacionesModal
+            isOnline={isOnline}
+            estadoCuota={estadoCuota}
+            onCerrar={() => setNotificacionesOpen(false)}
+          />
+        </Suspense>
+      )}
+
+      {configuracionOpen && (
+        <Suspense fallback={null}>
+          <ConfiguracionModal
+            hablarRespuestas={hablarRespuestas}
+            setHablarRespuestas={setHablarRespuestas}
+            onAbrirPerfil={() => { setPerfilOpen(true); setConfiguracionOpen(false); }}
+            onCerrar={() => setConfiguracionOpen(false)}
+          />
+        </Suspense>
+      )}
+
+      {ayudaOpen && (
+        <Suspense fallback={null}>
+          <AyudaModal
+            onCerrar={() => setAyudaOpen(false)}
           />
         </Suspense>
       )}

@@ -2,11 +2,13 @@
   "name": "planifica-maestro",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "Planifica Maestro - Asistente de Planificación Curricular MINERD",
   "scripts": {
     "test": "node --test tests/fase15_pruebas.test.mjs"
   },
   "devDependencies": {
+    "pdf-parse": "^2.4.5",
     "wrangler": "^4.135.0"
   }
 }
