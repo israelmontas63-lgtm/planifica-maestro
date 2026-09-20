@@ -530,6 +530,10 @@ export default function App() {
         user={user}
         onAbrirAuth={() => { setAuthModalOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); }}
         onLogout={signOut}
+        isOwner={isOwner}
+        onAbrirOwner={() => { setOwnerStatsModalOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); }}
+        canInstall={!!installPrompt}
+        onInstallApp={handleInstallApp}
       />
       
       {authModalOpen && (
