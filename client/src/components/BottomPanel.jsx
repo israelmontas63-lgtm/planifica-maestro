@@ -687,7 +687,7 @@ export default function BottomPanel({
 
               </div>
 
-              {/* 5. PIE: Versión y Fecha/Hora de build generada por Vite */}
+              {/* 5. PIE: Versión y Fecha/Hora de build generada por Vite en zona horaria America/Santo_Domingo */}
               <div className="pm-menu-footer">
                 v{(() => {
                   try {
@@ -695,12 +695,20 @@ export default function BottomPanel({
                     if (!raw) return "19/09/2026 22:20";
                     const d = new Date(raw);
                     if (isNaN(d.getTime())) return raw;
-                    const dia = String(d.getDate()).padStart(2, "0");
-                    const mes = String(d.getMonth() + 1).padStart(2, "0");
-                    const anio = d.getFullYear();
-                    const hh = String(d.getHours()).padStart(2, "0");
-                    const mm = String(d.getMinutes()).padStart(2, "0");
-                    return `${dia}/${mes}/${anio} ${hh}:${mm}`;
+                    const formatter = new Intl.DateTimeFormat("es-DO", {
+                      timeZone: "America/Santo_Domingo",
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: false
+                    });
+                    const p = {};
+                    formatter.formatToParts(d).forEach(({ type, value }) => {
+                      p[type] = value;
+                    });
+                    return `${p.day}/${p.month}/${p.year} ${p.hour}:${p.minute}`;
                   } catch {
                     return "19/09/2026 22:20";
                   }
