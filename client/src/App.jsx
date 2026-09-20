@@ -58,6 +58,9 @@ export default function App() {
   // Chat History
   const [messages, setMessages] = useState([]);
   const [cargando, setCargando] = useState(false);
+  const [streamingText, setStreamingText] = useState("");
+  const [errorGeneracion, setErrorGeneracion] = useState(null);
+  const abortControllerRef = useRef(null);
   const [exportando, setExportando] = useState(false);
   const [hablarRespuestas, setHablarRespuestas] = useState(true);
   
@@ -188,38 +191,49 @@ export default function App() {
 
   async function enviarMensaje(texto, imageBase64, mediaType) {
     if (!texto && !imageBase64) return;
-    
+
+    setErrorGeneracion(null);
     const newUserMsg = { role: "user", text: texto, imageBase64, mediaType };
     const newHistory = [...messages, newUserMsg];
     setMessages(newHistory);
     setImageSrc(null);
 
-    // FASE 13: Verificación estricta de conexión antes de llamar a la IA
+    // Verificación estricta de conexión antes de llamar a la IA
     if (!navigator.onLine) {
-      const offlineMsg = {
-        role: "assistant",
-        text: "⚠️ Se necesita conexión a internet para generar contenido nuevo con IA. Puedes seguir viendo tus planificaciones guardadas."
-      };
-      setMessages([...newHistory, offlineMsg]);
+      setErrorGeneracion({
+        message: "⚠️ Se necesita conexión a internet para generar contenido nuevo con IA. Puedes seguir viendo tus planificaciones guardadas.",
+        canRetry: true,
+        lastHistory: newHistory,
+      });
       return;
     }
 
-    // FASE 14: Manejo de límite de cuota alcanzado antes de consumir red
+    // Manejo de límite de cuota alcanzado antes de consumir red
     if (estadoCuota?.agotado) {
-      const quotaMsg = {
-        role: "assistant",
-        text: `🛑 Has alcanzado tu cuota de ${estadoCuota.limite} planificaciones de este periodo. Puedes seguir viendo, editando y exportando tus trabajos guardados.`
-      };
-      setMessages([...newHistory, quotaMsg]);
+      setErrorGeneracion({
+        message: `🛑 Has alcanzado tu cuota de ${estadoCuota.limite} planificaciones de este periodo. Puedes seguir viendo, editando y exportando tus trabajos guardados.`,
+        canRetry: false,
+        lastHistory: newHistory,
+      });
       return;
     }
 
     setCargando(true);
+    setStreamingText("");
+    abortControllerRef.current = new AbortController();
 
     try {
-      const data = await generarPlanificacion({ messages: newHistory, nivel, periodo });
-      
-      // FASE 14: Actualizar contador de cuota devuelto por backend
+      const data = await generarPlanificacion({
+        messages: newHistory,
+        nivel,
+        periodo,
+        signal: abortControllerRef.current.signal,
+        onChunk: (delta, accumulated) => {
+          setStreamingText(accumulated);
+        },
+      });
+
+      // Actualizar contador de cuota devuelto por backend
       if (data.cuota) {
         setEstadoCuota(data.cuota);
       }
@@ -229,39 +243,58 @@ export default function App() {
       const planDatos = data.datos_planificacion || null;
       const planCompleto = data.plan_completado || false;
 
-      const newAssistantMsg = { 
-        role: "assistant", 
+      const newAssistantMsg = {
+        role: "assistant",
         text: chatText,
         datosGenerados: planCompleto ? planDatos : null,
         confianzaCurricular: data.confianzaCurricular || null,
-        planId: data.planId || null
+        planId: data.planId || null,
       };
       setMessages([...newHistory, newAssistantMsg]);
-      
+
       if (hablarRespuestas && chatText) {
-        speak(chatText);
+        speak(chatText, (notice) => {
+          setNotificacionSync(notice);
+          setTimeout(() => setNotificacionSync(null), 3500);
+        });
       }
     } catch (err) {
+      if (err.name === "AbortError") {
+        // Cancelado por el usuario voluntariamente
+        return;
+      }
       if (err.cuota) {
         setEstadoCuota(err.cuota);
       }
-      if (err.limiteAlcanzado || err.agotado) {
-        const quotaMsg = {
-          role: "assistant",
-          text: `🛑 ${err.message || "Has alcanzado tu cuota de planificaciones de este periodo."}`
-        };
-        setMessages([...newHistory, quotaMsg]);
-      } else if (!navigator.onLine || err.message?.includes("Failed to fetch") || err.message?.includes("NetworkError")) {
-        const offlineMsg = {
-          role: "assistant",
-          text: "⚠️ Se necesita conexión a internet para generar contenido nuevo con IA. Puedes seguir viendo tus planificaciones guardadas."
-        };
-        setMessages([...newHistory, offlineMsg]);
-      } else {
-        alert(err.message);
-      }
+      const friendlyMsg = err.friendlyMessage || err.message || "Error al generar la planificación.";
+      setErrorGeneracion({
+        message: friendlyMsg,
+        canRetry: err.canRetry !== false,
+        lastHistory: newHistory,
+      });
     } finally {
       setCargando(false);
+      setStreamingText("");
+      abortControllerRef.current = null;
+    }
+  }
+
+  function handleCancelarGeneracion() {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setCargando(false);
+    setStreamingText("");
+  }
+
+  function handleReintentar() {
+    if (!errorGeneracion?.lastHistory) return;
+    const history = errorGeneracion.lastHistory;
+    const lastMsg = history[history.length - 1];
+    setErrorGeneracion(null);
+    if (lastMsg) {
+      enviarMensaje(lastMsg.text, lastMsg.imageBase64, lastMsg.mediaType);
     }
   }
 
@@ -294,11 +327,12 @@ export default function App() {
     setProcesandoImagen(true);
     try {
       const base64 = dataUrl.split(",")[1];
-      // Instead of sending automatically, we might want the user to add text. 
-      // But for simplicity, send it directly or prompt for text.
       await enviarMensaje("Aquí tienes una imagen adjunta.", base64, mediaType);
     } catch (err) {
-      alert(err.message);
+      setErrorGeneracion({
+        message: err.friendlyMessage || err.message || "Error procesando la imagen.",
+        canRetry: false,
+      });
     } finally {
       setProcesandoImagen(false);
     }
@@ -306,8 +340,9 @@ export default function App() {
 
   function handleDictadoClick() {
     if (listening) {
-      stop();
-      if (transcript.trim()) enviarMensaje(transcript);
+      const finalText = stop();
+      const textToSend = (finalText || transcript).trim();
+      if (textToSend) enviarMensaje(textToSend);
     } else {
       stopSpeaking();
       start();
@@ -319,7 +354,10 @@ export default function App() {
     try {
       await exportarWord({ titulo: "Planificacion_" + periodo + "_" + nivel, plan: planText });
     } catch (err) {
-      alert(err.message);
+      setErrorGeneracion({
+        message: err.friendlyMessage || err.message || "Error al exportar a Word.",
+        canRetry: true,
+      });
     } finally {
       setExportando(false);
     }
@@ -327,12 +365,16 @@ export default function App() {
 
   async function handleEscuchar(planText) {
     setEscuchando(true);
+    const resumen = planText.substring(0, 500);
     try {
-      const resumen = planText.substring(0, 500) + "...";
-      const url = await generarVoz(resumen);
+      const url = await generarVoz(resumen + "...");
       setAudioUrl(url);
     } catch (err) {
-      alert(err.message);
+      console.warn("Voz de IA no disponible, usando síntesis del navegador:", err);
+      speak(resumen, (notice) => {
+        setNotificacionSync(notice);
+        setTimeout(() => setNotificacionSync(null), 4000);
+      });
     } finally {
       setEscuchando(false);
     }
@@ -502,7 +544,67 @@ export default function App() {
             )}
           </div>
         ))}
-        {cargando && <div style={{ alignSelf: 'flex-start', color: '#64748b', fontStyle: 'italic' }}>Pensando...</div>}
+        {/* Vista previa en vivo del dictado mientras se habla */}
+        {listening && (
+          <div className="pm-dictado-live-preview no-print">
+            <span className="pm-dictado-pulse">🎙️</span>
+            <div className="pm-dictado-content">
+              <div className="pm-dictado-hint">Escuchando... (Toca "Voz" para enviar)</div>
+              <div className="pm-dictado-text">{transcript || <span style={{ color: "#94a3b8", fontStyle: "italic" }}>Habla ahora...</span>}</div>
+            </div>
+          </div>
+        )}
+
+        {/* Estado "Pensando..." con streaming en tiempo real y botón Cancelar */}
+        {cargando && (
+          <div className="pm-thinking-card no-print">
+            <div className="pm-thinking-header">
+              <div className="pm-thinking-spinner"></div>
+              <span className="pm-thinking-label">Pensando con IA...</span>
+              <button
+                type="button"
+                className="pm-btn-cancel-thinking"
+                onClick={handleCancelarGeneracion}
+                title="Cancelar generación"
+              >
+                ✕ Cancelar
+              </button>
+            </div>
+            {streamingText && (
+              <div className="pm-streaming-text">
+                {streamingText}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Aviso de error amigable en pantalla con botón Reintentar */}
+        {errorGeneracion && (
+          <div className="pm-error-card no-print">
+            <div className="pm-error-content">
+              <span className="pm-error-icon">⚠️</span>
+              <div className="pm-error-text">{errorGeneracion.message}</div>
+            </div>
+            <div className="pm-error-actions">
+              {errorGeneracion.canRetry && (
+                <button
+                  type="button"
+                  className="pm-btn-retry"
+                  onClick={handleReintentar}
+                >
+                  🔄 Reintentar
+                </button>
+              )}
+              <button
+                type="button"
+                className="pm-btn-dismiss"
+                onClick={() => setErrorGeneracion(null)}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        )}
         <div ref={chatEndRef} />
         
         <CaptureArea

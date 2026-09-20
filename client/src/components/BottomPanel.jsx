@@ -359,6 +359,7 @@ export default function BottomPanel({
     if (sub.isGeneral) {
       onSeleccionarEsquema(sec.periodoValue, nivelActivo || "primario");
       setMenuOpen(false);
+      onAbrirTexto?.();
     } else {
       handleProximamente(sub.label);
     }

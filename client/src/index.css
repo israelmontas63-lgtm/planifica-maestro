@@ -3794,6 +3794,205 @@ body {
   box-shadow: 0 6px 16px rgba(26, 125, 140, 0.4);
 }
 
+/* ═══════════════════════════════════════════
+   FASE 2: FEEDBACK EN VIVO, PENSANDO Y ERRORES AMIGABLES
+═══════════════════════════════════════════ */
+
+/* Vista previa en vivo del dictado por voz */
+.pm-dictado-live-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #E1F5EE;
+  border: 1.5px solid #0F6E56;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin: 6px 0;
+  box-shadow: 0 3px 10px rgba(15, 110, 86, 0.12);
+  animation: pmFadeIn 0.2s ease-out;
+}
+
+.pm-dictado-pulse {
+  font-size: 1.375rem;
+  animation: pmPulse 1.5s infinite ease-in-out;
+  flex-shrink: 0;
+}
+
+@keyframes pmPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.18); opacity: 0.75; }
+}
+
+@keyframes pmFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pm-dictado-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.pm-dictado-hint {
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 600;
+  color: #0F6E56;
+  margin-bottom: 2px;
+}
+
+.pm-dictado-text {
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 500;
+  color: #1A2B3C;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+/* Tarjeta "Pensando con IA..." */
+.pm-thinking-card {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 8px 0;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+  animation: pmFadeIn 0.2s ease-out;
+}
+
+.pm-thinking-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pm-thinking-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid #e2e8f0;
+  border-top-color: #1a7d8c;
+  border-radius: 50%;
+  animation: pmSpin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pmSpin {
+  to { transform: rotate(360deg); }
+}
+
+.pm-thinking-label {
+  font-size: 0.9375rem; /* 15px */
+  font-weight: 600;
+  color: #1A2B3C;
+  flex: 1;
+}
+
+.pm-btn-cancel-thinking {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #b91c1c;
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pm-btn-cancel-thinking:hover {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+.pm-streaming-text {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #e2e8f0;
+  font-size: 0.875rem; /* 14px */
+  font-weight: 500;
+  color: #475569;
+  line-height: 1.5;
+  max-height: 160px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Tarjeta de Error Amigable con Reintentar */
+.pm-error-card {
+  background: #fff1f2;
+  border: 1.5px solid #f43f5e;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 8px 0;
+  box-shadow: 0 3px 12px rgba(244, 63, 94, 0.12);
+  animation: pmFadeIn 0.2s ease-out;
+}
+
+.pm-error-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.pm-error-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.pm-error-text {
+  font-size: 0.875rem; /* 14px */
+  font-weight: 500;
+  color: #9f1239;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.pm-error-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.pm-btn-retry {
+  background: #e11d48;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 16px;
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.pm-btn-retry:hover {
+  background: #be123c;
+  transform: translateY(-1px);
+}
+
+.pm-btn-dismiss {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 0.8125rem; /* 13px */
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pm-btn-dismiss:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+
 
 
 

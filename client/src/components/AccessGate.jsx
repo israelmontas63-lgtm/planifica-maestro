@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { verificarClaveInstitucional } from "../api.js";
 
 const AUTH_TOKEN_STORAGE = "pm_auth_token";
 
@@ -38,23 +39,17 @@ export default function AccessGate({ onUnlock }) {
     setErrorMsg(null);
 
     try {
-      const res = await fetch("/api/auth/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: password.trim() })
-      });
+      const data = await verificarClaveInstitucional(password.trim());
 
-      const data = await res.json().catch(() => ({}));
-
-      if (res.ok && data.ok && data.token) {
+      if (data && data.ok && data.token) {
         localStorage.setItem(AUTH_TOKEN_STORAGE, data.token);
         setErrorMsg(null);
         onUnlock();
       } else {
-        setErrorMsg(data.error || "Clave institucional incorrecta.");
+        setErrorMsg(data?.error || "Clave institucional incorrecta.");
       }
     } catch (err) {
-      setErrorMsg("Error de conexión al servidor de validación.");
+      setErrorMsg(err.friendlyMessage || "Error de conexión al servidor de validación.");
     } finally {
       setVerificando(false);
     }
