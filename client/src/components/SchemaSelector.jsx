@@ -29,8 +29,8 @@ export default function SchemaSelector({ onSeleccionar, onCerrar, periodoActivo,
         <div className="schema-header">
           <div>
             <h2 style={{ margin: 0 }}>Esquemas de Planificación</h2>
-            <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "#64748b" }}>
-              Toca una tarjeta para usar el esquema o pulsa <strong>👁️ Vista previa</strong> para ver sus campos vacíos
+            <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "rgba(255, 255, 255, 0.85)" }}>
+              Toca una tarjeta para usar el esquema o pulsa <strong style={{ color: "#ffffff" }}>👁️ Vista previa</strong> para ver sus campos vacíos
             </p>
           </div>
           <button className="schema-close-btn" onClick={onCerrar}>✕</button>
@@ -85,8 +85,10 @@ export default function SchemaSelector({ onSeleccionar, onCerrar, periodoActivo,
                 </button>
               </div>
               <div className="schema-card-desc">{esq.descripcion}</div>
-              <div className="schema-card-nivel">{esq.niveles}</div>
-              {nivelActivo === esq.id && <span className="schema-card-check">✓ Activo</span>}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "6px", flexWrap: "wrap", gap: "6px" }}>
+                <div className="schema-card-nivel">{esq.niveles}</div>
+                {nivelActivo === esq.id && <span className="schema-card-check">✓ Activo</span>}
+              </div>
             </div>
           ))}
         </div>
