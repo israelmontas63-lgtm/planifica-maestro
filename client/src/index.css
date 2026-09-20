@@ -1021,20 +1021,59 @@ body {
   background: var(--pm-white);
   border-radius: var(--pm-radius-md);
   box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-  border: 1px solid #e2e8f0;
-  padding: 8px;
+  border: 1.5px solid #e2e8f0;
+  padding: 10px;
   list-style: none;
   margin: 0;
-  min-width: 230px;
+  min-width: 250px;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-height: 400px;
+  max-height: 420px;
   overflow-y: auto;
 }
-.pm-menu-list button { width: 100%; text-align: left; padding: 10px 12px; border: none; background: transparent; border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--pm-text-dark); }
-.pm-menu-list button:hover { background: var(--pm-bg); }
-.pm-menu-list button.active { background: var(--pm-bg); color: var(--pm-teal); font-weight: bold; }
+.pm-menu-list button {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15.5px;
+  font-weight: 600;
+  color: #1A2B3C;
+  display: flex;
+  align-items: center;
+  transition: background 0.15s ease;
+}
+.pm-menu-list button:hover { background: #f8fafc; }
+.pm-menu-list button.active { background: #f1f5f9; color: var(--pm-teal, #1a7d8c); font-weight: 700; }
+
+.pm-menu-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+  margin-right: 10px;
+}
+
+.pm-submenu-item-btn {
+  width: 100%;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+  font-size: 14.5px !important;
+  font-weight: 600 !important;
+  color: #1A2B3C !important;
+  text-align: left !important;
+  transition: background 0.15s ease;
+}
+.pm-submenu-item-btn:hover { background: #f1f5f9 !important; }
+.pm-submenu-item-btn.active { background: #e2e8f0 !important; }
 
 /* Regla común para los cuatro botones: Menú, Foto, Voz, Texto (Mismo flex, alto, padding, ícono y fuente) */
 .pm-btn-action {
