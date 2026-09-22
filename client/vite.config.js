@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
+import { visualizer } from "rollup-plugin-visualizer";
 import path from "path";
 
 export default defineConfig({
@@ -27,12 +28,20 @@ export default defineConfig({
         manualChunks: {
           "vendor-react": ["react", "react-dom"],
           "vendor-supabase": ["@supabase/supabase-js"],
+          "vendor-docx": ["docx"],
         },
       },
     },
   },
   plugins: [
     react(),
+    process.env.ANALYZE === "true" &&
+      visualizer({
+        filename: "dist/stats.html",
+        open: false,
+        gzipSize: true,
+        brotliSize: true,
+      }),
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: false,
@@ -81,25 +90,13 @@ export default defineConfig({
         ],
       },
       workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,woff,webmanifest}"],
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/api/],
         cleanupOutdatedCaches: true,
-        clientsClaim: true,
-        skipWaiting: true,
         runtimeCaching: [
-          {
-            urlPattern: /^\/api\/plan\/cuota/,
-            handler: "NetworkFirst",
-            options: {
-              cacheName: "pm-cuotas-cache",
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 7, // 7 días
-              },
-              networkTimeoutSeconds: 3,
-            },
-          },
           {
             urlPattern: /^\/api\/.*/,
             handler: "NetworkOnly",
@@ -111,7 +108,7 @@ export default defineConfig({
         type: 'module',
       },
     }),
-  ],
+  ].filter(Boolean),
   server: {
     allowedHosts: true,
     proxy: {

@@ -1,11 +1,18 @@
 /**
- * CONTEXTO OFICIAL VERIFICADO DEL PROGRAMA CON BASE (MINERD / UNICEF)
+ * MUESTRA REFERENCIAL LOCAL (NO VERIFICADA) DEL PROGRAMA CON BASE
  * 
- * Extraído directamente de las Guías Didácticas Oficiales de CON BASE:
- * - Guía Didáctica de Lengua Española para Primer Ciclo de Primaria (MINERD, 2023)
- * - Guía Didáctica de Matemática para Primer Ciclo de Primaria (MINERD, 2023)
+ * TRAZABILIDAD Y PROCEDENCIA:
+ * - Documentos de referencia citados:
+ *   1. "Guía Didáctica de Lengua Española para Primer Ciclo de Primaria" (MINERD / CON BASE, 2023).
+ *   2. "Guía Didáctica de Matemática para Primer Ciclo de Primaria" (MINERD / CON BASE, 2023).
+ *   3. "Adecuación Curricular Nivel Primario" (MINERD, 2023) pp. 63-103.
+ * - URL oficial de descarga / verificación: NO VERIFICADA con hash/checksum en repositorio oficial en línea.
+ * - Estado de verificación: MUESTRA REFERENCIAL LOCAL (NO VERIFICADA).
+ * - Directiva del sistema: Este archivo NO constituye base de datos oficial cargada ni aprobada.
+ *   Su presencia NO autoriza a remover la advertencia obligatoria de borrador sin verificar
+ *   ni el etiquetado [NO OFICIAL / SUGERENCIA] en las planificaciones generadas.
  * 
- * Cobertura oficial del programa CON BASE:
+ * Cobertura referencial:
  * - Grados: 1er Grado, 2do Grado y 3er Grado de Primaria.
  * - Áreas: Lengua Española y Matemática.
  */

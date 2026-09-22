@@ -9,3 +9,7 @@ dist/
 .DS_Store
 dev-dist/
 server/data/*.bak
+  
+# Archivos de prueba de voz  
+prueba_voz_*.mp3 
+.wrangler/ 

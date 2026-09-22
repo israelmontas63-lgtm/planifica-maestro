@@ -16,7 +16,13 @@
  */
 
 const WIKIPEDIA_HOST = "es.wikipedia.org";
-const USER_AGENT = "PlanificaMaestro-Bot/1.0 (+https://planifica-maestro.israelmontas65.workers.dev; contacto: israelmontas65@gmail.com)";
+export const DEFAULT_CONTACT_EMAIL = "israelmontas65@gmail.com";
+export const DEFAULT_BOT_URL = "https://planifica-maestro.israelmontas65.workers.dev";
+
+export function getWikipediaUserAgent(env = {}) {
+  const contacto = env?.BOT_CONTACT_EMAIL || DEFAULT_CONTACT_EMAIL;
+  return `PlanificaMaestro-Bot/1.0 (+${DEFAULT_BOT_URL}; contacto: ${contacto})`;
+}
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 días en milisegundos
 const TIMEOUT_MS = 5000; // 5 segundos
 
@@ -98,7 +104,7 @@ export function sanitizarTextoComoDato(texto) {
  * 1. Búsqueda de artículos en Wikipedia en español
  * Presupuesto: máximo 3 resultados, 1 petición HTTP, timeout 5s
  */
-export async function buscarWikipedia(consulta, { signal, docenteId } = {}) {
+export async function buscarWikipedia(consulta, { signal, docenteId, env } = {}) {
   const validacion = validarConsultaPermitida(consulta);
   if (!validacion.permitida) {
     return { exito: false, error: validacion.razon, tipo: "consulta_prohibida" };
@@ -124,7 +130,7 @@ export async function buscarWikipedia(consulta, { signal, docenteId } = {}) {
     const res = await fetch(url, {
       method: "GET",
       headers: {
-        "User-Agent": USER_AGENT,
+        "User-Agent": getWikipediaUserAgent(env),
         "Accept": "application/json",
       },
       signal: combinedSignal,
@@ -167,7 +173,7 @@ export async function buscarWikipedia(consulta, { signal, docenteId } = {}) {
  * 2. Obtención de resumen de página en Wikipedia
  * Presupuesto: 1 petición HTTP, timeout 5s
  */
-export async function obtenerResumen(titulo, { signal, docenteId } = {}) {
+export async function obtenerResumen(titulo, { signal, docenteId, env } = {}) {
   const validacion = validarConsultaPermitida(titulo);
   if (!validacion.permitida) {
     return { exito: false, error: validacion.razon, tipo: "consulta_prohibida" };
@@ -193,7 +199,7 @@ export async function obtenerResumen(titulo, { signal, docenteId } = {}) {
     const res = await fetch(url, {
       method: "GET",
       headers: {
-        "User-Agent": USER_AGENT,
+        "User-Agent": getWikipediaUserAgent(env),
         "Accept": "application/json",
       },
       signal: combinedSignal,
@@ -259,7 +265,7 @@ export async function obtenerResumen(titulo, { signal, docenteId } = {}) {
  * Ejecuta búsqueda y resumen con un presupuesto estricto de máximo 2 peticiones HTTP.
  * Formatea el texto con el etiquetado y la licencia obligatoria CC BY-SA 4.0.
  */
-export async function consultarWikipediaConceptual(tema, { signal, docenteId } = {}) {
+export async function consultarWikipediaConceptual(tema, { signal, docenteId, env } = {}) {
   // Validación de reglas pedagógicas
   const validacion = validarConsultaPermitida(tema);
   if (!validacion.permitida) {
@@ -271,11 +277,11 @@ export async function consultarWikipediaConceptual(tema, { signal, docenteId } =
   }
 
   // Petición 1: Intento de resumen directo
-  let resumenRes = await obtenerResumen(tema, { signal, docenteId });
+  let resumenRes = await obtenerResumen(tema, { signal, docenteId, env });
 
   // Si no se encuentra directo o es desambiguación, usamos la búsqueda (Petición 2)
   if (!resumenRes.exito && resumenRes.tipo === "no_encontrado") {
-    const busqueda = await buscarWikipedia(tema, { signal, docenteId });
+    const busqueda = await buscarWikipedia(tema, { signal, docenteId, env });
     if (!busqueda.exito || !busqueda.resultados || busqueda.resultados.length === 0) {
       return {
         exito: false,
@@ -286,7 +292,7 @@ export async function consultarWikipediaConceptual(tema, { signal, docenteId } =
 
     // Seleccionar el primer resultado relevante
     const mejorCandidato = busqueda.resultados[0];
-    resumenRes = await obtenerResumen(mejorCandidato.titulo, { signal, docenteId });
+    resumenRes = await obtenerResumen(mejorCandidato.titulo, { signal, docenteId, env });
   }
 
   if (!resumenRes.exito) {

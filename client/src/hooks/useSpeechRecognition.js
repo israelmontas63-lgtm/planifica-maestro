@@ -46,35 +46,30 @@ export function useSpeechRecognition() {
     recognition.maxAlternatives = 1;
 
     recognition.onresult = (event) => {
-      let currentInterim = "";
+      let finalStr = "";
+      let interimStr = "";
 
-      // Procesar desde resultIndex para no re-procesar eventos anteriores
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const res = event.results[i];
-        const piece = res[0]?.transcript || "";
-
-        if (res.isFinal) {
-          const cleanPiece = piece.trim();
-          if (cleanPiece) {
-            confirmedTextRef.current = confirmedTextRef.current
-              ? `${confirmedTextRef.current.trim()} ${cleanPiece}`
-              : cleanPiece;
-          }
+      // Reconstruir siempre a partir de la lista completa de resultados del evento (0 a length - 1)
+      // para evitar que el índice no confiable de Android / Chrome Mobile re-procese y duplique palabras
+      for (let i = 0; i < event.results.length; i++) {
+        const item = event.results[i];
+        const piece = item[0]?.transcript || "";
+        if (item.isFinal) {
+          finalStr += piece;
         } else {
-          currentInterim += piece;
+          interimStr += piece;
         }
       }
 
-      const confirmed = confirmedTextRef.current.trim();
-      const interimClean = currentInterim.trim();
+      const finalClean = finalStr.trim();
+      const interimClean = interimStr.trim();
 
-      // Vista previa temporal: confirmado + interino actual
-      const fullPreview = interimClean
-        ? (confirmed ? `${confirmed} ${interimClean}` : interimClean)
-        : confirmed;
-
-      setFinalTranscript(confirmed);
+      confirmedTextRef.current = finalClean;
+      setFinalTranscript(finalClean);
       setInterimTranscript(interimClean);
+
+      // Vista previa temporal en pantalla
+      const fullPreview = [finalClean, interimClean].filter(Boolean).join(" ");
       setTranscript(fullPreview);
     };
 

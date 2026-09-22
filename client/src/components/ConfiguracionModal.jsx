@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { obtenerTodasLasPlanificaciones } from "../services/bibliotecaStorage.js";
+import { SOPORTE_EMAIL, TEXTO_PRIVACIDAD_AUDIO, TEXTO_PRIVACIDAD_FOTOS } from "../config/constantes.js";
 
 export default function ConfiguracionModal({ 
   onCerrar, 
@@ -152,13 +153,15 @@ export default function ConfiguracionModal({
             color: "#475569"
           }}>
             <div style={{ fontWeight: "700", color: "#1e293b", marginBottom: "6px" }}>
-              ℹ️ Información Técnica y Soporte:
+              ℹ️ Información Técnica, Privacidad y Soporte:
             </div>
             <ul style={{ margin: 0, paddingLeft: "18px", lineHeight: "1.6" }}>
               <li><strong>Motor IA:</strong> Gemini 2.5 Flash + Text-Embedding-004 (pgvector RRF).</li>
               <li><strong>Enciclopedia conceptual:</strong> Wikipedia API (CC BY-SA 4.0).</li>
               <li><strong>Currículo:</strong> Adecuación 2023, Con Base y normativas MINERD.</li>
-              <li><strong>Contacto de soporte:</strong> israelmontas65@gmail.com</li>
+              <li><strong>Privacidad de Audio:</strong> {TEXTO_PRIVACIDAD_AUDIO}</li>
+              <li><strong>Privacidad de Fotos:</strong> {TEXTO_PRIVACIDAD_FOTOS}</li>
+              <li><strong>Contacto de soporte:</strong> {SOPORTE_EMAIL}</li>
             </ul>
           </div>
 

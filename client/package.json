@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "analyze": "set ANALYZE=true&&vite build",
     "preview": "vite preview",
     "test": "node --test ../tests/fase15_pruebas.test.mjs"
   },
@@ -21,6 +22,7 @@
     "@testing-library/react": "^16.3.3",
     "@vitejs/plugin-react": "^4.3.1",
     "jsdom": "^29.1.1",
+    "rollup-plugin-visualizer": "^7.1.1",
     "vite": "^5.4.1",
     "vite-plugin-pwa": "^0.20.5",
     "vitest": "^2.1.0"

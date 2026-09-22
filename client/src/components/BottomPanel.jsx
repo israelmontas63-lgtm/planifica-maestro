@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { ACCIONES_MENU, obtenerEstadoAccion } from "../config/menuActions.js";
 
 /* ── ÍCONOS DE LA BARRA INFERIOR (Acción rápida) ── */
 function MenuIcon() {
@@ -221,6 +222,15 @@ function LogOutIcon() {
   );
 }
 
+function LockIcon({ width = "12", height = "12" }) {
+  return (
+    <svg width={width} height={height} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
+
 /* ── CONFIGURACIÓN CENTRALIZADA DE SECCIONES (Colores e Íconos) ── */
 const SECCIONES_PLANIFICACION = [
   {
@@ -230,12 +240,11 @@ const SECCIONES_PLANIFICACION = [
     cssVar: "diaria",
     Icon: DailyIcon,
     subitems: [
-      { label: "Plan diario general", isGeneral: true },
-      { label: "Registro de actividades", isGeneral: false },
-      { label: "Horario semanal", isGeneral: false },
-      { label: "Día y horario detallado", isGeneral: false },
-      { label: "Notas de aula", isGeneral: false },
-      { label: "Evaluación diaria", isGeneral: false }
+      { label: "Plan diario general", isGeneral: true, accionKey: "plan_diario_general" },
+      { label: "Registro de actividades", isGeneral: false, accionKey: "registro_actividades" },
+      { label: "Horario semanal detallado", isGeneral: false, accionKey: "horario_semanal_detallado" },
+      { label: "Notas de aula", isGeneral: false, accionKey: "notas_aula" },
+      { label: "Evaluación diaria", isGeneral: false, accionKey: "evaluacion_diaria" }
     ]
   },
   {
@@ -245,10 +254,10 @@ const SECCIONES_PLANIFICACION = [
     cssVar: "semanal",
     Icon: WeeklyIcon,
     subitems: [
-      { label: "Plan semanal general", isGeneral: true },
-      { label: "Distribución por áreas", isGeneral: false },
-      { label: "Actividades de la semana", isGeneral: false },
-      { label: "Recursos y materiales", isGeneral: false }
+      { label: "Plan semanal general", isGeneral: true, accionKey: "plan_semanal_general" },
+      { label: "Distribución por áreas", isGeneral: false, accionKey: "distribucion_areas" },
+      { label: "Actividades de la semana", isGeneral: false, accionKey: "actividades_semana" },
+      { label: "Recursos y materiales", isGeneral: false, accionKey: "recursos_materiales" }
     ]
   },
   {
@@ -258,9 +267,9 @@ const SECCIONES_PLANIFICACION = [
     cssVar: "mensual",
     Icon: MonthlyIcon,
     subitems: [
-      { label: "Plan mensual general", isGeneral: true },
-      { label: "Calendario del mes", isGeneral: false },
-      { label: "Competencias del mes", isGeneral: false }
+      { label: "Plan mensual general", isGeneral: true, accionKey: "plan_mensual_general" },
+      { label: "Calendario del mes", isGeneral: false, accionKey: "calendario_mes" },
+      { label: "Competencias del mes", isGeneral: false, accionKey: "competencias_mes" }
     ]
   },
   {
@@ -270,9 +279,9 @@ const SECCIONES_PLANIFICACION = [
     cssVar: "anual",
     Icon: AnnualIcon,
     subitems: [
-      { label: "Plan anual general", isGeneral: true },
-      { label: "Distribución por períodos", isGeneral: false },
-      { label: "Proyección del año", isGeneral: false }
+      { label: "Plan anual general", isGeneral: true, accionKey: "plan_anual_general" },
+      { label: "Distribución por períodos", isGeneral: false, accionKey: "distribucion_periodos" },
+      { label: "Proyección del año", isGeneral: false, accionKey: "proyeccion_anio" }
     ]
   },
   {
@@ -282,11 +291,11 @@ const SECCIONES_PLANIFICACION = [
     cssVar: "unidad",
     Icon: UnitIcon,
     subitems: [
-      { label: "Nueva unidad", isGeneral: true },
-      { label: "Situación de aprendizaje", isGeneral: false },
-      { label: "Competencias e indicadores", isGeneral: false },
-      { label: "Secuencia de actividades", isGeneral: false },
-      { label: "Evaluación de la unidad", isGeneral: false }
+      { label: "Nueva unidad", isGeneral: true, accionKey: "nueva_unidad" },
+      { label: "Situación de aprendizaje", isGeneral: false, accionKey: "situacion_aprendizaje" },
+      { label: "Competencias e indicadores", isGeneral: false, accionKey: "competencias_indicadores" },
+      { label: "Secuencia de actividades", isGeneral: false, accionKey: "secuencia_actividades" },
+      { label: "Evaluación de la unidad", isGeneral: false, accionKey: "evaluacion_unidad" }
     ]
   },
   {
@@ -296,10 +305,10 @@ const SECCIONES_PLANIFICACION = [
     cssVar: "proyecto",
     Icon: ProjectIcon,
     subitems: [
-      { label: "Nuevo proyecto", isGeneral: true },
-      { label: "Proyecto de aula", isGeneral: false },
-      { label: "Proyecto institucional", isGeneral: false },
-      { label: "Evaluación del proyecto", isGeneral: false }
+      { label: "Nuevo proyecto", isGeneral: true, accionKey: "nuevo_proyecto" },
+      { label: "Proyecto de aula", isGeneral: false, accionKey: "proyecto_aula" },
+      { label: "Proyecto institucional", isGeneral: false, accionKey: "proyecto_institucional" },
+      { label: "Evaluación del proyecto", isGeneral: false, accionKey: "evaluacion_proyecto" }
     ]
   }
 ];
@@ -317,6 +326,7 @@ export default function BottomPanel({
   onAbrirCurriculo,
   onAbrirBiblioteca,
   user,
+  tablasDisponibles = [],
   onAbrirAuth,
   onLogout,
   menuOpen,
@@ -361,11 +371,8 @@ export default function BottomPanel({
       // Diaria
       "Plan diario general": "Plan diario general de clase alineado a la Malla Curricular oficial del MINERD y Guías Didácticas (Intención pedagógica, competencias fundamentales y específicas, contenidos conceptuales/procedimentales/actitudinales, secuencia didáctica con momentos de clase Inicio [10 min], Desarrollo [25 min] y Cierre [10 min], recursos didácticos y evaluación formativa) para: ",
       "Registro de actividades": "Registro oficial de actividades pedagógicas según las Guías Didácticas del MINERD y Momentos de Clase: Detalle estructurado de actividades de Inicio (10-15 min - motivación, saberes previos e intención pedagógica), Desarrollo (25-30 min - construcción activa, práctica guiada e independiente con materiales de la guía) y Cierre (10 min - metacognición y síntesis) articulado a las competencias específicas para: ",
-      "Horario semanal": "Distribución horaria semanal oficial de clases estructurada por bloques pedagógicos y áreas curriculares de la Malla Curricular MINERD (Lengua Española, Matemática, Ciencias de la Naturaleza, Ciencias Sociales, Educación Artística, Educación Física, FIHR, Lenguas Extranjeras) según la ordenanza y carga horaria vigente para: ",
       "Horario semanal detallado": "Distribución horaria semanal oficial de clases estructurada por bloques pedagógicos y áreas curriculares de la Malla Curricular MINERD (Lengua Española, Matemática, Ciencias de la Naturaleza, Ciencias Sociales) para: ",
-      "Día y horario detallado": "Estructura diaria detallada de la jornada de clase por bloques y horarios pedagógicos específicos (horas de inicio y fin, distribución por momentos de aprendizaje, pausas activas, intención pedagógica de cada bloque y articulación curricular) según las normativas del MINERD para: ",
-      "Notas de aula": "Registro de notas de aula y adaptaciones pedagógicas según directrices MINERD: Observaciones cualitativas del desempeño estudiantil, adaptaciones curriculares DUA para atención a la diversidad (NEAE / Necesidades Específicas de Apoyo Educativo), seguimiento de avances y registro de incidencias pedagógicas para: ",
-      "Nota de aula": "Registro de notas de aula y adaptaciones pedagógicas según directrices MINERD: Observaciones cualitativas del desempeño estudiantil, adaptaciones curriculares DUA para atención a la diversidad (NEAE) para: ",
+      "Notas de aula": "Registro de notas de aula y adaptaciones pedagógicas según directrices MINERD: Observaciones cualitativas del desempeño estudiantil, adaptaciones curriculares DUA para atención a la diversidad (NEAE / Necesidades Específicas de Apoyo Educativo) para: ",
       "Evaluación diaria": "Instrumentos y criterios de evaluación diaria formativa vinculados directamente al Registro de Grado Oficial del MINERD: Indicadores de logro evaluados en la sesión, criterios de valoración, evidencias de aprendizaje (producciones escritas, cuadernos de trabajo) e instrumentos técnicos (lista de cotejo, rúbrica analítica) para: ",
       // Semanal
       "Plan semanal general": "Planificación semanal completa integrando: 1) Distribución por áreas curriculares, 2) Secuencia pedagógica de actividades de lunes a viernes (Inicio, Desarrollo y Cierre por día), y 3) Recursos didácticos y materiales para: ",
@@ -387,7 +394,7 @@ export default function BottomPanel({
       "Secuencia de actividades": "Diseñar la secuencia didáctica completa de actividades (Inicio, Desarrollo y Cierre) para la unidad de: ",
       "Evaluación de la unidad": "Diseñar la matriz de evaluación, criterios, instrumentos y rúbrica para la unidad de: ",
       // Proyecto
-      "Nuevo proyecto": "Nuevo proyecto pedagógico para: ",
+      "Nuevo proyecto": "Nuevo proyecto pedagógico usando esquema ABP para: ",
       "Proyecto de aula": "Diseñar un proyecto participativo de aula con sus fases de indagación y acción para: ",
       "Proyecto institucional": "Diseñar un proyecto educativo de centro articulado a la comunidad para: ",
       "Evaluación del proyecto": "Instrumentos de evaluación de impacto, autoevaluación y productos del proyecto para: "
@@ -396,6 +403,23 @@ export default function BottomPanel({
   };
 
   const handleSubmenuClick = (sec, sub) => {
+    const estado = obtenerEstadoAccion(sub.accionKey, { user, tablasDisponibles });
+
+    if (estado === "requiere_sesion") {
+      setToastMsg("Inicia sesión para usar esta función");
+      setTimeout(() => setToastMsg(null), 3000);
+      setMenuOpen(false);
+      onAbrirAuth?.();
+      return;
+    }
+
+    if (estado === "proximamente") {
+      setToastMsg(`Módulo de ${sub.label}: Próximamente`);
+      setTimeout(() => setToastMsg(null), 3000);
+      setMenuOpen(false);
+      return;
+    }
+
     let periodoVal = sec.periodoValue;
     let esquemaVal = nivelActivo || "primario";
 
@@ -404,12 +428,8 @@ export default function BottomPanel({
       esquemaVal = "abp";
     } else if (sub.label === "Situación de aprendizaje") {
       esquemaVal = "competencias_situacion";
-    } else if (sub.label === "Secuencia de actividades" || sub.label === "Registro de actividades" || sub.label === "Día y horario detallado") {
+    } else if (sub.label === "Secuencia de actividades") {
       esquemaVal = "secuencia_didactica";
-    } else if (sub.label === "Horario semanal") {
-      periodoVal = "semanal";
-    } else if (sub.label === "Notas de aula" || sub.label === "Nota de aula") {
-      if (nivelActivo === "especial") esquemaVal = "especial";
     }
 
     onSeleccionarEsquema(periodoVal, esquemaVal);
@@ -417,30 +437,11 @@ export default function BottomPanel({
 
     const titulosPorSubitem = {
       "Plan diario general": "Plan Diario General (Malla Curricular MINERD)",
-      "Registro de actividades": "Registro de Actividades y Momentos de Clase (Guías MINERD)",
-      "Horario semanal": "Horario Semanal por Áreas Curriculares (MINERD)",
-      "Horario semanal detallado": "Horario Semanal y Distribución por Áreas",
-      "Día y horario detallado": "Día y Horario Detallado (Bloques Pedagógicos MINERD)",
-      "Notas de aula": "Notas de Aula y Adaptaciones Curriculares (DUA/NEAE)",
-      "Nota de aula": "Notas de Aula y Adaptaciones Curriculares (DUA/NEAE)",
-      "Evaluación diaria": "Evaluación Diaria y Registro de Grado Oficial MINERD",
       "Plan semanal general": "Plan Semanal General (Áreas, Actividades y Recursos)",
-      "Distribución por áreas": "Distribución por Áreas Curriculares",
-      "Actividades de la semana": "Actividades de la Semana (Lunes a Viernes)",
-      "Recursos y materiales": "Recursos Didácticos y Materiales de la Semana",
       "Plan mensual general": "Plan Mensual General",
       "Plan anual general": "Plan Anual General",
-      "Distribución por períodos": "Distribución por Períodos (P1, P2, P3, P4)",
-      "Proyección del año": "Proyección y Metas del Año Escolar",
       "Nueva unidad": "Nueva Unidad de Aprendizaje",
-      "Situación de aprendizaje": "Situación de Aprendizaje (MINERD)",
-      "Competencias e indicadores": "Competencias e Indicadores de Logro",
-      "Secuencia de actividades": "Secuencia de Actividades",
-      "Evaluación de la unidad": "Evaluación de la Unidad",
-      "Nuevo proyecto": "Nuevo Proyecto Pedagógico",
-      "Proyecto de aula": "Proyecto Participativo de Aula",
-      "Proyecto institucional": "Proyecto Educativo Institucional",
-      "Evaluación del proyecto": "Evaluación del Proyecto"
+      "Nuevo proyecto": "Nuevo Proyecto Pedagógico (ABP)"
     };
 
     const promptPredefinido = getPromptParaSubitem(sec.key, sub.label);
@@ -538,6 +539,7 @@ export default function BottomPanel({
                             style={{ borderColor: borderVar }}
                           >
                             {sec.subitems.map((sub) => {
+                              const estado = obtenerEstadoAccion(sub.accionKey, { user, tablasDisponibles });
                               const isSubActive =
                                 sub.isGeneral &&
                                 (periodoActivo === sec.periodoValue ||
@@ -549,7 +551,7 @@ export default function BottomPanel({
                                   type="button"
                                   className={`pm-submenu-item pm-touch-row ${
                                     isSubActive ? "active" : ""
-                                  }`}
+                                  } ${estado === "proximamente" ? "proximamente" : ""}`}
                                   style={
                                     isSubActive
                                       ? {
@@ -575,6 +577,25 @@ export default function BottomPanel({
                                       }}
                                     >
                                       Activo
+                                    </span>
+                                  ) : estado === "proximamente" ? (
+                                    <span className="pm-badge-prox">Pronto</span>
+                                  ) : estado === "requiere_sesion" ? (
+                                    <span
+                                      className="pm-badge-lock"
+                                      aria-label="Requiere sesión"
+                                      title="Requiere sesión"
+                                      style={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        padding: "3px 6px",
+                                        borderRadius: "4px",
+                                        background: "#fef3c7",
+                                        color: "#92400e"
+                                      }}
+                                    >
+                                      <LockIcon width="12" height="12" />
                                     </span>
                                   ) : (
                                     <span style={{ fontSize: "11px", opacity: 0.5 }}>➔</span>
@@ -783,6 +804,7 @@ export default function BottomPanel({
                 </div>
 
               </div>
+              <div className="pm-menu-scroll-gradient" aria-hidden="true" />
 
               {/* 5. PIE: Versión y Fecha/Hora de build generada por Vite en zona horaria America/Santo_Domingo */}
               <div className="pm-menu-footer">

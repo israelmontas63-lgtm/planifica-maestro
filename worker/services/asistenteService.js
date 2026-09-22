@@ -173,7 +173,7 @@ export function obtenerHerramientasPorFlujo(flujo) {
  * Ejecutor de herramientas del asistente
  */
 export async function ejecutarHerramientaAsistente(nombre, args, contexto = {}) {
-  const { flujo = "pedagogico", docenteId } = contexto;
+  const { flujo = "pedagogico", docenteId, env } = contexto;
 
   if (nombre === "consultar_wikipedia") {
     // Validación de flujo exclusivo
@@ -183,7 +183,7 @@ export async function ejecutarHerramientaAsistente(nombre, args, contexto = {}) 
         error: "La herramienta consultar_wikipedia solo está disponible en el flujo pedagógico y curricular.",
       };
     }
-    return consultarWikipediaConceptual(args.tema, { docenteId });
+    return consultarWikipediaConceptual(args.tema, { docenteId, env });
   }
 
   // Otras herramientas delegadas a sus respectivos servicios

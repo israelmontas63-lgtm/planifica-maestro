@@ -29,7 +29,7 @@ app.use("/api/voice", voiceRoutes);
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Planifica Maestro backend escuchando en http://localhost:${PORT}`);
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.warn("WARNING: ANTHROPIC_API_KEY no esta configurada. Copia .env.example a .env y agrega tu clave.");
+  if (!process.env.GEMINI_API_KEY) {
+    console.warn("WARNING: GEMINI_API_KEY no esta configurada. Copia .env.example a .env y agrega tu clave.");
   }
 });

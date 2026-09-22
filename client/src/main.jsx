@@ -9,32 +9,31 @@ import "@fontsource/inter/700.css";
 import "./index.css";
 import { registerSW } from 'virtual:pwa-register';
 
-const CHECK_EVERY = 15 * 60 * 1000;
-const hadController = !!navigator.serviceWorker?.controller;
-let refreshing = false;
-
-function safeReload() {
-  const el = document.activeElement;
-  const typing = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
-  if (typing) { setTimeout(safeReload, 5000); return; }
-  window.location.reload();
-}
-
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!hadController || refreshing) return;
-    refreshing = true;
-    safeReload();
-  });
-
+if ("serviceWorker" in navigator) {
   registerSW({
     immediate: true,
     onRegisteredSW(_url, registration) {
       if (!registration) return;
-      const check = () => registration.update().catch(() => {});
-      setInterval(check, CHECK_EVERY);
-      window.addEventListener('focus', check);
-      window.addEventListener('online', check);
+      
+      let lastCheck = 0;
+      const check = () => {
+        const now = Date.now();
+        if (now - lastCheck >= 60000) {
+          lastCheck = now;
+          registration.update().catch(() => {});
+        }
+      };
+      
+      // Comprobar al abrir
+      check();
+      // Comprobar al volver a la app (visibilitychange)
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") check();
+      });
+      window.addEventListener("focus", check);
+      window.addEventListener("online", check);
+      // Comprobar cada 30 minutos
+      setInterval(check, 30 * 60 * 1000);
     },
   });
 }

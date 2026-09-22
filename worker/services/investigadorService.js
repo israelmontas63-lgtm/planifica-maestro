@@ -14,8 +14,13 @@ export const DOMINIOS_OFICIALES = [
   "inabima.gob.do",
 ];
 
-// Cabecera User-Agent con correo oficial de contacto
-export const BOT_USER_AGENT = "PlanificaMaestro-Bot/1.0 (+https://planifica-maestro.israelmontas65.workers.dev; contacto: israelmontas65@gmail.com)";
+export const DEFAULT_CONTACT_EMAIL = "israelmontas65@gmail.com";
+export const DEFAULT_BOT_URL = "https://planifica-maestro.israelmontas65.workers.dev";
+
+export function getBotUserAgent(env = {}) {
+  const contacto = env?.BOT_CONTACT_EMAIL || DEFAULT_CONTACT_EMAIL;
+  return `PlanificaMaestro-Bot/1.0 (+${DEFAULT_BOT_URL}; contacto: ${contacto})`;
+}
 
 /**
  * Valida si una URL pertenece estrictamente a la lista blanca autorizada

@@ -5,6 +5,9 @@
   "type": "module",
   "description": "Planifica Maestro - Asistente de Planificación Curricular MINERD",
   "scripts": {
+    "build": "npm run build --prefix client",
+    "preview": "npm run preview --prefix client",
+    "deploy": "npm run build && wrangler deploy",
     "test": "node --test tests/fase15_pruebas.test.mjs"
   },
   "devDependencies": {

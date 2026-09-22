@@ -1,5 +1,7 @@
 import { LEVELS } from "./levels.js";
 import { obtenerContextoConBase } from "./contextoConBase.js";
+import { getAiProvider, getGeminiModels, fetchGeminiWithRetry } from "./services/aiProvider.js";
+import { generateVoice } from "./services/voiceProvider.js";
 
 /**
  * Planifica Maestro - Cloudflare Worker Backend
@@ -41,7 +43,33 @@ function checkOwnerRateLimit(ip) {
   return true;
 }
 
-// Almacén en memoria para cuotas e historial si Supabase aún no está cargado
+// ── Control de Eliminación Segura de Cuenta (JWT + Correo + Token de un solo uso) ──
+const pendingAccountDeletions = new Map(); // userId -> { token, email, expiresAt }
+const failedDeletionAttempts = new Map(); // userId/ip -> { count: number, resetAt: number }
+
+function checkDeletionRateLimit(identifier) {
+  const now = Date.now();
+  const windowMs = 15 * 60 * 1000; // 15 minutos
+  const maxAttempts = 3;
+  const entry = failedDeletionAttempts.get(identifier);
+  if (!entry || now > entry.resetAt) {
+    return true;
+  }
+  return entry.count < maxAttempts;
+}
+
+function recordFailedDeletionAttempt(identifier) {
+  const now = Date.now();
+  const windowMs = 15 * 60 * 1000;
+  const entry = failedDeletionAttempts.get(identifier);
+  if (!entry || now > entry.resetAt) {
+    failedDeletionAttempts.set(identifier, { count: 1, resetAt: now + windowMs });
+  } else {
+    entry.count++;
+  }
+}
+
+// Almacén en memoria para cuotas si Supabase no está configurado
 const inMemoryQuotas = new Map(); // docenteId -> { periodo, usadas, limite }
 
 const PROFUNDIDAD_TEMPORAL = {
@@ -79,9 +107,9 @@ const PROFUNDIDAD_TEMPORAL = {
 };
 
 const SYSTEM_PROMPT = `
-# [SYSTEM_CORE_PROMPT: PLANIFICA_MAESTRO_MINERD_PROD_V5]
+# [SYSTEM_CORE_PROMPT: PLANIFICA_MAESTRO_PROD_V6]
 ## ROL Y DIRECTIVA DE OPERACIÓN
-Eres el motor cognitivo de "Planifica Maestro". Tu única función es generar planificaciones educativas reales, precisas y operativas para el sistema educativo de la República Dominicana, utilizando estrictamente como fuentes de verdad los documentos oficiales, diseños curriculares y guías metodológicas del MINERD y CON BASE.
+Eres el motor pedagógico de "Planifica Maestro". Tu función es asistir al docente en la elaboración de planificaciones educativas reales, precisas y operativas tomando como referencia los documentos curriculares y guías metodológicas del sistema educativo de la República Dominicana (MINERD y CON BASE). No te presentes como representante oficial del MINERD ni certifiques oficialidad.
 
 ## FORMATO DE SALIDA (OBLIGATORIO JSON)
 Devuelve SIEMPRE tu respuesta en formato JSON estrictamente estructurado:
@@ -92,9 +120,9 @@ Devuelve SIEMPRE tu respuesta en formato JSON estrictamente estructurado:
     // Si plan_completado es true, cada clave debe coincidir EXACTAMENTE con los bloques del esquema seleccionado.
   },
   "confianza_curricular": {
-    "nivel_certeza": "alta | media | baja",
+    "nivel_certeza": "alta | media | baja | referencial, no verificado",
     "bloques_aproximados": [],
-    "nota_revision": "String con recomendación pedagógica si aplica."
+    "nota_revision": "String con aclaración pedagógica o advertencia referencial si aplica."
   }
 }
 `;
@@ -303,15 +331,49 @@ async function handleApiRequest(request, env, ctx) {
 
   // 1. GET /api/health
   if (path === "/api/health" && method === "GET") {
+    let tablasDisponibles = [];
+    if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
+      const tablasToCheck = [
+        "curriculo_fragmentos",
+        "calendario_escolar_oficial",
+        "planes_guardados",
+        "perfil_docente",
+        "docente_eventos",
+        "docente_recordatorios",
+        "conversaciones",
+        "tareas_investigacion",
+        "docente_horarios",
+        "docente_actividades",
+        "docente_notas"
+      ];
+      await Promise.all(
+        tablasToCheck.map(async (tabla) => {
+          try {
+            const checkRes = await fetch(`${env.SUPABASE_URL}/rest/v1/${tabla}?select=id&limit=0`, {
+              method: "GET",
+              headers: {
+                apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+                Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+              },
+            });
+            if (checkRes.ok) {
+              tablasDisponibles.push(tabla);
+            }
+          } catch (e) {}
+        })
+      );
+    }
+
     const health = {
       status: "ok",
       worker: "cloudflare-workers",
       timestamp: new Date().toISOString(),
+      tablas_disponibles: tablasDisponibles,
       services: {
         text_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
         vision_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
-        voice_tts: env.ELEVENLABS_API_KEY ? "ok" : "sin_configurar",
-        ocr_ai: env.ANTHROPIC_API_KEY ? "ok" : "sin_configurar",
+        ocr_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
+        voice_mode: "browser_speechSynthesis",
         auth: env.APP_ACCESS_KEY ? "activa" : "abierta",
         owner: env.OWNER_MASTER_KEY ? "configurada" : "sin_configurar",
         database: (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) ? "ok" : "en_memoria",
@@ -453,7 +515,54 @@ async function handleApiRequest(request, env, ctx) {
     const esquema = LEVELS[nivel] || LEVELS["primario"];
     const instruccionesTemporal = PROFUNDIDAD_TEMPORAL[periodo] || PROFUNDIDAD_TEMPORAL["diaria"];
 
-    // Inyección de CON BASE si aplica
+    // Fecha de la planificación: indicada por el maestro o calculada hoy en hora de República Dominicana
+    let fechaPlanificacion = (body.fecha || "").trim();
+    if (!fechaPlanificacion) {
+      const parts = new Intl.DateTimeFormat("es-DO", {
+        timeZone: "America/Santo_Domingo",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).formatToParts(new Date());
+      const d = parts.find((p) => p.type === "day")?.value || "01";
+      const m = parts.find((p) => p.type === "month")?.value || "01";
+      const y = parts.find((p) => p.type === "year")?.value || "2026";
+      fechaPlanificacion = `${y}-${m}-${d}`;
+    }
+
+    // Comprobar si la base oficial está cargada en Supabase
+    let baseOficialCargada = false;
+    if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const checkBaseRes = await fetch(`${env.SUPABASE_URL}/rest/v1/curriculo_fragmentos?select=id&limit=1`, {
+          headers: {
+            apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+          },
+        });
+        if (checkBaseRes.ok) {
+          const rows = await checkBaseRes.json();
+          baseOficialCargada = Array.isArray(rows) && rows.length > 0;
+        }
+      } catch (e) {}
+    }
+
+    const avisoSinVerificar = "Borrador referencial sin contrastar con la base oficial del servidor: valida competencias e indicadores con el currículo vigente";
+    let directivaBorrador = "";
+    if (!baseOficialCargada) {
+      directivaBorrador = `
+## ALERTA OBLIGATORIA (BASE OFICIAL NO CARGADA)
+1. Debes iniciar OBLIGATORIAMENTE tu campo 'mensaje_chat' con la advertencia:
+"[AVISO] ${avisoSinVerificar}"
+2. En 'confianza_curricular', establece obligatoriamente:
+   - "nivel_certeza": "referencial, no verificado"
+   - "bloques_aproximados": []
+   - "nota_revision": "Planificación referencial no contrastada con la base curricular oficial. El docente debe validar los indicadores y competencias con su registro de grado."
+3. En 'datos_planificacion', cualquier competencia, indicador o contenido que no esté textualmente respaldado por el currículo oficial debe marcarse con [REFERENCIAL / SUGERENCIA].
+`;
+    }
+
+    // Inyección de CON BASE si aplica (Muestra referencial local no verificada)
     let groundingConBase = "";
     if (nivel === "conbase") {
       const allText = messages.map((m) => m.text || "").join(" ").toLowerCase();
@@ -473,7 +582,7 @@ async function handleApiRequest(request, env, ctx) {
       const tema = body.tema || (messages[0]?.text ? messages[0].text.substring(0, 100) : "");
       const resConBase = obtenerContextoConBase(grado, area, tema);
       if (resConBase.cubierto) {
-        groundingConBase = `\nCONTEXTO OFICIAL CON BASE (usa esto como fuente estricta):\n${resConBase.contexto}\n`;
+        groundingConBase = `\nMUESTRA REFERENCIAL LOCAL (NO VERIFICADA) DEL PROGRAMA CON BASE:\n${resConBase.contexto}\n`;
       }
     }
 
@@ -483,6 +592,10 @@ async function handleApiRequest(request, env, ctx) {
 - Áreas: ${esquema.areas.join(", ")}
 ${instruccionesTemporal}
 ${groundingConBase}
+${directivaBorrador}
+
+## FECHA DE LA PLANIFICACIÓN:
+- En 'datos_planificacion', en el bloque de datos generales, el campo 'fecha' debe ser EXACTAMENTE: "${fechaPlanificacion}". Prohibido inventar fechas o usar fechas del pasado.
 
 ## BLOQUES OBLIGATORIOS PARA 'datos_planificacion':
 ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
@@ -514,33 +627,59 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
 
     if (!env.GEMINI_API_KEY) {
       return new Response(
-        JSON.stringify({ error: "La clave de IA (GEMINI_API_KEY) no está configurada en los secretos de Cloudflare." }),
+        JSON.stringify({ error: "Hay un problema de configuración en el servicio de generación. Por favor, contacta a soporte." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Modelos a probar en orden de velocidad y cuota
-    const models = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-flash-latest"];
+    const models = getGeminiModels(env);
 
     // Modo Streaming SSE
     if (stream) {
-      const model = models[0];
-      const geminiStreamUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${env.GEMINI_API_KEY}`;
+      let geminiRes = null;
+      let ultimoError = null;
+      let ultimoStatus = 500;
 
-      const geminiRes = await fetch(geminiStreamUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents,
-          systemInstruction: { parts: [{ text: dynamicPrompt }] },
-          generationConfig: { temperature: 0.0, responseMimeType: "application/json" },
-        }),
-      });
+      for (const model of models) {
+        const geminiStreamUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`;
+        try {
+          const res = await fetchGeminiWithRetry(geminiStreamUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": env.GEMINI_API_KEY,
+            },
+            body: JSON.stringify({
+              contents,
+              systemInstruction: { parts: [{ text: dynamicPrompt }] },
+              generationConfig: { temperature: 0.0, responseMimeType: "application/json" },
+            }),
+          });
 
-      if (!geminiRes.ok) {
-        const errText = await geminiRes.text();
-        return new Response(JSON.stringify({ error: "Error en el proveedor de IA.", detail: errText }), {
-          status: 502,
+          if (res && res.ok) {
+            geminiRes = res;
+            break;
+          } else if (res) {
+            ultimoStatus = res.status;
+            ultimoError = await res.text();
+            console.warn(`[Gemini Stream] Modelo ${model} falló con status ${res.status}: ${ultimoError}`);
+          }
+        } catch (e) {
+          ultimoError = e.message;
+          console.warn(`[Gemini Stream] Excepción en modelo ${model}: ${e.message}`);
+        }
+      }
+
+      if (!geminiRes) {
+        console.error("[Gemini Stream Fail] Modelos agotados:", ultimoError);
+        const mensajeMaestro = (ultimoStatus === 503 || ultimoStatus === 429 || ultimoStatus === 502 || ultimoStatus === 504)
+          ? "La IA está ocupada, intenta de nuevo en un minuto."
+          : (ultimoStatus === 401 || ultimoStatus === 403)
+          ? "Hay un problema de configuración en el servicio de generación. Por favor, contacta a soporte."
+          : "La IA está ocupada, intenta de nuevo en un minuto.";
+
+        return new Response(JSON.stringify({ error: mensajeMaestro }), {
+          status: (ultimoStatus === 401 || ultimoStatus === 403) ? 500 : 503,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -568,11 +707,11 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                   if (jsonStr && jsonStr !== "[DONE]") {
                     try {
                       const parsed = JSON.parse(jsonStr);
-                      const textPart = parsed.candidates?.[0]?.content?.parts?.[0]?.text || "";
-                      if (textPart) {
-                        fullText += textPart;
+                      const part = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+                      if (part) {
+                        fullText += part;
                         await writer.write(
-                          encoder.encode(`data: ${JSON.stringify({ delta: textPart })}\n\n`)
+                          encoder.encode(`data: ${JSON.stringify({ delta: part })}\n\n`)
                         );
                       }
                     } catch (e) {}
@@ -582,14 +721,38 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
             }
 
             // Procesar el resultado completo
-            const parsedFinal = extraerJsonValido(fullText);
+            const parsedFinal = extraerJsonValido(fullText) || { mensaje_chat: fullText };
             let estadoActualizado = cheqCuota;
             if (parsedFinal && parsedFinal.plan_completado) {
               estadoActualizado = await consumirCuota(env, resolvedDocenteId, isOwner);
             }
 
+            if (!baseOficialCargada) {
+              if (parsedFinal.mensaje_chat && !parsedFinal.mensaje_chat.includes(avisoSinVerificar)) {
+                parsedFinal.mensaje_chat = `⚠️ ${avisoSinVerificar}\n\n${parsedFinal.mensaje_chat}`;
+              }
+              const infoReferencial = {
+                nivel_certeza: "referencial, no verificado",
+                bloques_aproximados: [],
+                nota_revision: "Planificación referencial no contrastada con la base curricular oficial. El docente debe validar los indicadores y competencias con su registro de grado.",
+              };
+              parsedFinal.confianza_curricular = infoReferencial;
+              parsedFinal.confianzaCurricular = infoReferencial;
+            }
+
+            // Garantizar fecha real no inventada
+            if (parsedFinal && parsedFinal.datos_planificacion) {
+              const claveDatos = Object.keys(parsedFinal.datos_planificacion).find((k) => k.toLowerCase().includes("datos generales"));
+              if (claveDatos && typeof parsedFinal.datos_planificacion[claveDatos] === "object" && parsedFinal.datos_planificacion[claveDatos] !== null) {
+                parsedFinal.datos_planificacion[claveDatos].fecha = fechaPlanificacion;
+              }
+              if (parsedFinal.datos_planificacion.fecha) {
+                parsedFinal.datos_planificacion.fecha = fechaPlanificacion;
+              }
+            }
+
             const finalPayload = {
-              ...(parsedFinal || { mensaje_chat: fullText }),
+              ...parsedFinal,
               planId: "plan_" + Date.now(),
               nivel,
               periodo,
@@ -620,13 +783,19 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
     }
 
     // Modo JSON Estándar (Fallback / Non-Streaming)
+    let geminiData = null;
     let ultimoError = null;
+    let ultimoStatus = 500;
+
     for (const model of models) {
       try {
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${env.GEMINI_API_KEY}`;
-        const geminiRes = await fetch(geminiUrl, {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+        const geminiRes = await fetchGeminiWithRetry(geminiUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": env.GEMINI_API_KEY,
+          },
           body: JSON.stringify({
             contents,
             systemInstruction: { parts: [{ text: dynamicPrompt }] },
@@ -634,40 +803,78 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
           }),
         });
 
-        if (geminiRes.ok) {
-          const geminiData = await geminiRes.json();
-          const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-          const parsed = extraerJsonValido(rawText);
-
-          if (parsed) {
-            let cuotaActualizada = cheqCuota;
-            if (parsed.plan_completado) {
-              cuotaActualizada = await consumirCuota(env, resolvedDocenteId, isOwner);
-            }
-
-            return new Response(
-              JSON.stringify({
-                ...parsed,
-                planId: "plan_" + Date.now(),
-                nivel,
-                periodo,
-                nivelLabel: esquema.label,
-                cuota: cuotaActualizada,
-              }),
-              { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
-          }
-        } else {
+        if (geminiRes && geminiRes.ok) {
+          geminiData = await geminiRes.json();
+          break;
+        } else if (geminiRes) {
+          ultimoStatus = geminiRes.status;
           ultimoError = await geminiRes.text();
+          console.warn(`[Gemini Sync] Modelo ${model} falló con status ${geminiRes.status}: ${ultimoError}`);
         }
       } catch (err) {
         ultimoError = err.message;
+        console.warn(`[Gemini Sync] Excepción en modelo ${model}: ${err.message}`);
       }
     }
 
+    if (geminiData) {
+      const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      const parsed = extraerJsonValido(rawText);
+
+      if (parsed) {
+        let cuotaActualizada = cheqCuota;
+        if (parsed.plan_completado) {
+          cuotaActualizada = await consumirCuota(env, resolvedDocenteId, isOwner);
+        }
+
+        if (!baseOficialCargada) {
+          if (parsed.mensaje_chat && !parsed.mensaje_chat.includes(avisoSinVerificar)) {
+            parsed.mensaje_chat = `⚠️ ${avisoSinVerificar}\n\n${parsed.mensaje_chat}`;
+          }
+          const infoReferencial = {
+            nivel_certeza: "referencial, no verificado",
+            bloques_aproximados: [],
+            nota_revision: "Planificación referencial no contrastada con la base curricular oficial. El docente debe validar los indicadores y competencias con su registro de grado.",
+          };
+          parsed.confianza_curricular = infoReferencial;
+          parsed.confianzaCurricular = infoReferencial;
+        }
+
+        // Garantizar fecha real no inventada
+        if (parsed && parsed.datos_planificacion) {
+          const claveDatos = Object.keys(parsed.datos_planificacion).find((k) => k.toLowerCase().includes("datos generales"));
+          if (claveDatos && typeof parsed.datos_planificacion[claveDatos] === "object" && parsed.datos_planificacion[claveDatos] !== null) {
+            parsed.datos_planificacion[claveDatos].fecha = fechaPlanificacion;
+          }
+          if (parsed.datos_planificacion.fecha) {
+            parsed.datos_planificacion.fecha = fechaPlanificacion;
+          }
+        }
+
+        return new Response(
+          JSON.stringify({
+            ...parsed,
+            planId: "plan_" + Date.now(),
+            nivel,
+            periodo,
+            nivelLabel: esquema.label,
+            cuota: cuotaActualizada,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    console.error("[Gemini Sync Fail] Modelos agotados:", ultimoError);
+    const mensajeMaestro = (ultimoStatus === 503 || ultimoStatus === 429 || ultimoStatus === 502 || ultimoStatus === 504)
+      ? "La IA está ocupada, intenta de nuevo en un minuto."
+      : (ultimoStatus === 401 || ultimoStatus === 403)
+      ? "Hay un problema de configuración en el servicio de generación. Por favor, contacta a soporte."
+      : "La IA está ocupada, intenta de nuevo en un minuto.";
+
     return new Response(
-      JSON.stringify({ error: "Error procesando con Gemini.", detail: ultimoError }),
-      { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: mensajeMaestro }),
+      { status: (ultimoStatus === 401 || ultimoStatus === 403) ? 500 : 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 
@@ -684,14 +891,14 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
     }
 
     if (!env.GEMINI_API_KEY) {
-      return new Response(JSON.stringify({ error: "GEMINI_API_KEY no configurada." }), {
+      return new Response(JSON.stringify({ error: "Hay un problema de configuración en el servicio de generación. Por favor, contacta a soporte." }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const esquema = LEVELS[esquemaActivo] || LEVELS["primario"];
-    const prompt = `Eres el Especialista Curricular del MINERD:
+    const prompt = `Eres un asistente pedagógico de consulta curricular para República Dominicana:
 Requerimiento:
 - Nivel: ${nivel}, Grado: ${grado}, Área: ${area}, Tema: "${tema}"
 - Esquema: ${esquema.label}, Alcance: ${periodoActivo}
@@ -701,7 +908,7 @@ Genera un JSON estricto con:
   "tema": "${tema}",
   "grado": "${grado}",
   "area": "${area}",
-  "resumen_enfoque": "Enfoque oficial en 2 líneas.",
+  "resumen_enfoque": "Enfoque orientativo en 2 líneas.",
   "competencias_especificas": ["..."],
   "indicadores_logro": ["..."],
   "contenidos": { "conceptuales": "...", "procedimentales": "...", "actitudinales": "..." },
@@ -712,21 +919,42 @@ Genera un JSON estricto con:
   }
 }`;
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.0, responseMimeType: "application/json" },
-        }),
-      }
-    );
+    const models = getGeminiModels(env);
+    let curricularData = null;
+    let ultimoError = null;
+    let ultimoStatus = 500;
 
-    if (geminiRes.ok) {
-      const data = await geminiRes.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    for (const model of models) {
+      try {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+        const geminiRes = await fetchGeminiWithRetry(geminiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": env.GEMINI_API_KEY,
+          },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.0, responseMimeType: "application/json" },
+          }),
+        });
+
+        if (geminiRes && geminiRes.ok) {
+          curricularData = await geminiRes.json();
+          break;
+        } else if (geminiRes) {
+          ultimoStatus = geminiRes.status;
+          ultimoError = await geminiRes.text();
+          console.warn(`[Gemini Curriculo] Modelo ${model} falló con status ${geminiRes.status}: ${ultimoError}`);
+        }
+      } catch (err) {
+        ultimoError = err.message;
+        console.warn(`[Gemini Curriculo] Excepción en modelo ${model}: ${err.message}`);
+      }
+    }
+
+    if (curricularData) {
+      const text = curricularData.candidates?.[0]?.content?.parts?.[0]?.text || "";
       const parsed = extraerJsonValido(text);
       if (parsed) {
         return new Response(JSON.stringify(parsed), {
@@ -735,8 +963,15 @@ Genera un JSON estricto con:
       }
     }
 
-    return new Response(JSON.stringify({ error: "Error consultando el currículo." }), {
-      status: 502,
+    console.error("[Gemini Curriculo Fail] Modelos agotados:", ultimoError);
+    const mensajeMaestro = (ultimoStatus === 503 || ultimoStatus === 429 || ultimoStatus === 502 || ultimoStatus === 504)
+      ? "La IA está ocupada, intenta de nuevo en un minuto."
+      : (ultimoStatus === 401 || ultimoStatus === 403)
+      ? "Hay un problema de configuración en el servicio de generación. Por favor, contacta a soporte."
+      : "La IA está ocupada, intenta de nuevo en un minuto.";
+
+    return new Response(JSON.stringify({ error: mensajeMaestro }), {
+      status: (ultimoStatus === 401 || ultimoStatus === 403) ? 500 : 503,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
@@ -748,6 +983,198 @@ Genera un JSON estricto con:
     });
   }
 
+  // 9.1 POST /api/usuario/solicitar-eliminacion (Token de confirmación de un solo uso, TTL 5 min)
+  if (path === "/api/usuario/solicitar-eliminacion" && method === "POST") {
+    const authHeader = request.headers.get("authorization") || "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Se requiere token de autenticación (Bearer)." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const token = authHeader.substring(7).trim();
+
+    if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+      return new Response(JSON.stringify({ error: "Servicio de autenticación no configurado." }), {
+        status: 503,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Validar token estrictamente con Supabase auth
+    const userRes = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+      },
+    });
+
+    if (!userRes.ok) {
+      return new Response(JSON.stringify({ error: "Sesión inválida o expirada." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userData = await userRes.json();
+    const userId = userData.id;
+    const userEmail = userData.email;
+
+    if (!checkDeletionRateLimit(userId)) {
+      return new Response(
+        JSON.stringify({ error: "Demasiados intentos fallidos. Bloqueado temporalmente por 15 minutos." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Generar token de confirmación de un solo uso (6 caracteres alfanuméricos)
+    const confirmationToken = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutos TTL
+
+    pendingAccountDeletions.set(userId, {
+      token: confirmationToken,
+      email: userEmail,
+      expiresAt,
+    });
+
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        mensaje: "Token de confirmación generado. Para confirmar, escribe tu correo y el token antes de 5 minutos.",
+        token_confirmacion: confirmationToken,
+        expira_en_segundos: 300,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
+  // 9.2 POST /api/usuario/eliminar-cuenta (Validación estricta de JWT + correo + token de un solo uso)
+  if (path === "/api/usuario/eliminar-cuenta" && method === "POST") {
+    const authHeader = request.headers.get("authorization") || "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Se requiere token de autenticación (Bearer)." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const token = authHeader.substring(7).trim();
+
+    if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+      return new Response(JSON.stringify({ error: "Servicio de base de datos no configurado." }), {
+        status: 503,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // 1. Validar identidad exclusivamente desde el JWT
+    const userRes = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+      },
+    });
+
+    if (!userRes.ok) {
+      return new Response(JSON.stringify({ error: "Sesión inválida o expirada." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userData = await userRes.json();
+    const userId = userData.id;
+    const userEmail = (userData.email || "").toLowerCase();
+
+    // 2. Verificar límite de intentos (máximo 3 intentos fallidos en 15 min)
+    if (!checkDeletionRateLimit(userId)) {
+      return new Response(
+        JSON.stringify({ error: "Demasiados intentos fallidos. Bloqueado temporalmente por 15 minutos." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const body = await request.json().catch(() => ({}));
+    const emailConfirmacion = (body.emailConfirmacion || "").trim().toLowerCase();
+    const tokenConfirmacion = (body.tokenConfirmacion || "").trim().toUpperCase();
+
+    // 3. Validar token de confirmación pendiente
+    const pending = pendingAccountDeletions.get(userId);
+    if (!pending || Date.now() > pending.expiresAt) {
+      recordFailedDeletionAttempt(userId);
+      pendingAccountDeletions.delete(userId);
+      return new Response(
+        JSON.stringify({ error: "El token de confirmación ha expirado o no existe. Solicita uno nuevo." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // 4. Validar coincidencia de correo y token
+    if (emailConfirmacion !== userEmail || tokenConfirmacion !== pending.token) {
+      recordFailedDeletionAttempt(userId);
+      return new Response(
+        JSON.stringify({ error: "El correo o el token de confirmación no coinciden." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Invalida inmediatamente el token (uso único)
+    pendingAccountDeletions.delete(userId);
+
+    // 5. Borrado atómico / tolerante: elimina registros del usuario sin fallar ante tablas inexistentes
+    const tablasUsuario = [
+      { tabla: "planes_guardados", col: "user_id" },
+      { tabla: "perfil_docente", col: "user_id" },
+      { tabla: "docente_eventos", col: "user_id" },
+      { tabla: "docente_recordatorios", col: "user_id" },
+      { tabla: "conversaciones", col: "user_id" },
+      { tabla: "tareas_investigacion", col: "user_id" },
+      { tabla: "docente_horarios", col: "user_id" },
+      { tabla: "docente_actividades", col: "user_id" },
+      { tabla: "docente_notas", col: "user_id" },
+      { tabla: "uso_docentes", col: "docente_id" },
+    ];
+
+    for (const { tabla, col } of tablasUsuario) {
+      try {
+        const delRes = await fetch(`${env.SUPABASE_URL}/rest/v1/${tabla}?${col}=eq.${encodeURIComponent(userId)}`, {
+          method: "DELETE",
+          headers: {
+            apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+          },
+        });
+        // Si la tabla no existe en la base (404 o 400), se continúa de forma segura sin abortar
+        if (!delRes.ok && delRes.status !== 404 && delRes.status !== 400) {
+          console.warn(`Aviso al limpiar tabla ${tabla} para usuario ${userId}: status ${delRes.status}`);
+        }
+      } catch (e) {
+        // Tolerancia a fallos por tabla
+      }
+    }
+
+    // 6. Eliminar usuario de auth.users vía Admin API
+    const adminDelRes = await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users/${encodeURIComponent(userId)}`, {
+      method: "DELETE",
+      headers: {
+        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+    });
+
+    if (!adminDelRes.ok) {
+      const errText = await adminDelRes.text();
+      return new Response(
+        JSON.stringify({ error: "Error eliminando el usuario de autenticación.", detalle: errText }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({ ok: true, mensaje: "Todos tus datos y cuenta han sido eliminados permanentemente." }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+
   // 10. GET /api/plan/patrones-docente
   if (path === "/api/plan/patrones-docente" && method === "GET") {
     return new Response(JSON.stringify({ resumen: "Estilo pedagógico participativo y orientado a competencias." }), {
@@ -755,57 +1182,43 @@ Genera un JSON estricto con:
     });
   }
 
-  // 11. POST /api/voice/generate (ElevenLabs TTS)
+  // 11. POST /api/voice/generate (Voz de IA fluida: ElevenLabs -> Google TTS -> Fallback Local)
   if (path === "/api/voice/generate" && method === "POST") {
-    const body = await request.json().catch(() => ({}));
-    if (!body.text) {
-      return new Response(JSON.stringify({ error: "Se requiere texto." }), {
-        status: 400,
+    try {
+      const body = await request.json().catch(() => ({}));
+      const text = body.text || "";
+      if (!text) {
+        return new Response(JSON.stringify({ error: "Falta el texto para la voz." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const result = await generateVoice(text, env, { gender: body.gender || "female" });
+
+      if (result.fallbackLocal) {
+        return new Response(JSON.stringify(result), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(result.audio, {
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "audio/mpeg",
+          "X-Voice-Source": result.source,
+        },
+      });
+    } catch (e) {
+      console.warn("Error en /api/voice/generate:", e.message);
+      return new Response(JSON.stringify({ fallbackLocal: true, error: e.message }), {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    if (!env.ELEVENLABS_API_KEY) {
-      return new Response(JSON.stringify({ error: "ELEVENLABS_API_KEY no configurada." }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const VOICE_ID = "XrExE9yKIg1WjnnlVkGX"; // Matilda - español
-    const elevenRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
-      method: "POST",
-      headers: {
-        Accept: "audio/mpeg",
-        "Content-Type": "application/json",
-        "xi-api-key": env.ELEVENLABS_API_KEY,
-      },
-      body: JSON.stringify({
-        text: body.text,
-        model_id: "eleven_multilingual_v2",
-        voice_settings: { stability: 0.5, similarity_boost: 0.75 },
-      }),
-    });
-
-    if (!elevenRes.ok) {
-      const err = await elevenRes.text();
-      return new Response(JSON.stringify({ error: "Error en ElevenLabs.", detail: err }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const audioBuffer = await elevenRes.arrayBuffer();
-    return new Response(audioBuffer, {
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "audio/mpeg",
-        "Content-Length": audioBuffer.byteLength.toString(),
-      },
-    });
   }
 
-  // 12. POST /api/ocr/scan (Anthropic Claude)
+  // 12. POST /api/ocr/scan (Gemini Vision con aiProvider)
   if (path === "/api/ocr/scan" && method === "POST") {
     const body = await request.json().catch(() => ({}));
     if (!body.imageBase64) {
@@ -815,58 +1228,52 @@ Genera un JSON estricto con:
       });
     }
 
-    if (!env.ANTHROPIC_API_KEY) {
-      return new Response(JSON.stringify({ error: "ANTHROPIC_API_KEY no configurada." }), {
+    if (!env.GEMINI_API_KEY) {
+      return new Response(JSON.stringify({ error: "GEMINI_API_KEY no configurada en el Worker." }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": env.ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-3-5-sonnet-20241022",
-        max_tokens: 2000,
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "image",
-                source: {
-                  type: "base64",
-                  media_type: body.mediaType || "image/jpeg",
-                  data: body.imageBase64,
-                },
-              },
-              {
-                type: "text",
-                text: "Transcribe fielmente los temas, contenidos y actividades pedagógicas de esta foto para planificar una clase.",
-              },
-            ],
-          },
-        ],
-      }),
-    });
-
-    if (claudeRes.ok) {
-      const data = await claudeRes.json();
-      const texto = data.content?.filter((b) => b.type === "text").map((b) => b.text).join("\n") || "";
-      return new Response(JSON.stringify({ texto }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    try {
+      const ai = getAiProvider(env);
+      const resultado = await ai.generateVision({
+        imageBase64: body.imageBase64,
+        mediaType: body.mediaType || "image/jpeg",
+        prompt: "Analiza pedagógicamente este material escolar del MINERD (República Dominicana). Extrae con precisión: área curricular, grado escolar (priorizando el grado impreso en el material), tema o unidad de aprendizaje, y un resumen descriptivo del contenido.",
       });
-    }
 
-    const errDetail = await claudeRes.text();
-    return new Response(JSON.stringify({ error: "Error procesando imagen.", detail: errDetail }), {
-      status: 502,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+      // Validación estricta del resultado
+      const area = (resultado.area || "").trim();
+      const grado = (resultado.grado || "").trim();
+      const tema = (resultado.tema || "").trim();
+      const resumen = (resultado.resumen || resultado.contenido_detectado || "").trim();
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          area: area || "General",
+          grado: grado || "No especificado",
+          tema: tema || "Material detectado",
+          resumen: resumen,
+          texto: resumen || `${area} - ${grado}: ${tema}`,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    } catch (err) {
+      return new Response(
+        JSON.stringify({
+          error: "No se pudo procesar la imagen con visión artificial.",
+          detalle: err.message,
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
   }
 
   // 13. Ruta no encontrada en la API
@@ -890,7 +1297,51 @@ export default {
 
     // 2. Todas las demás peticiones se sirven desde los assets estáticos de client/dist
     if (env.ASSETS) {
-      return env.ASSETS.fetch(request);
+      const response = await env.ASSETS.fetch(request);
+      const ct = response.headers.get("Content-Type") || "";
+
+      // /assets/* con hash en el nombre → caché inmutable de un año
+      if (url.pathname.startsWith("/assets/")) {
+        if (response.status === 200 && !ct.includes("text/html")) {
+          const newHeaders = new Headers(response.headers);
+          newHeaders.set("Cache-Control", "public, max-age=31536000, immutable");
+          return new Response(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: newHeaders,
+          });
+        } else {
+          // Fallback SPA atrapó un asset inexistente
+          return new Response("Not Found", {
+            status: 404,
+            statusText: "Not Found",
+            headers: {
+              "Content-Type": "text/plain",
+              "Cache-Control": "no-cache, no-store, must-revalidate",
+            }
+          });
+        }
+      }
+
+      // /sw.js, /manifest.webmanifest y cualquier respuesta HTML (incluyendo
+      // el fallback SPA a index.html para rutas como /planificacion) → no-cache
+      if (
+        url.pathname === "/sw.js" ||
+        url.pathname === "/manifest.webmanifest" ||
+        ct.includes("text/html")
+      ) {
+        const newHeaders = new Headers(response.headers);
+        newHeaders.set("Cache-Control", "no-cache, no-store, must-revalidate");
+        newHeaders.set("Pragma", "no-cache");
+        newHeaders.set("Expires", "0");
+        return new Response(response.body, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: newHeaders,
+        });
+      }
+
+      return response;
     }
 
     return new Response("Assets binding not available", { status: 500 });

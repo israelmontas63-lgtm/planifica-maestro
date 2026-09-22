@@ -254,8 +254,15 @@ export default function CurriculumViewer({
         {/* 2. Bases Curriculares Oficiales (Explorador) */}
         <div className="cv-explorador-container">
           <div className="cv-explorador-title">
-            <h3>📖 Bases Curriculares: {areaActual.nombre}</h3>
-            <span>{gradoActual.nombre}</span>
+            <div>
+              <h3>📖 Bases Curriculares: {areaActual.nombre}</h3>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
+                <span>{gradoActual.nombre}</span>
+                <span className="pm-tag-referencial" style={{ fontSize: "11px", color: "#9a3412", background: "#ffedd5", border: "1px solid #fed7aa", padding: "2px 8px", borderRadius: "4px", fontWeight: "600" }}>
+                  Muestra referencial local (no verificada)
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Competencias Específicas */}

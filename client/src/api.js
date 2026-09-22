@@ -1,4 +1,3 @@
-import { Document, Packer, Paragraph, HeadingLevel, TextRun } from "docx";
 import { obtenerDocenteId } from "./services/perfilStorage.js";
 
 /**
@@ -414,10 +413,31 @@ export async function generarVoz(text) {
 }
 
 /**
+ * POST /api/ocr/scan
+ * Analiza una imagen de material educativo con visión artificial
+ * Retorna datos estructurados: { success, area, grado, tema, resumen, texto }
+ */
+export async function escanearMaterial({ imageBase64, mediaType = "image/jpeg", signal }) {
+  const res = await request(
+    "/api/ocr/scan",
+    {
+      method: "POST",
+      body: JSON.stringify({ imageBase64, mediaType }),
+      signal,
+      timeout: 45000,
+    },
+    1
+  );
+  return res.json();
+}
+
+/**
  * Exportar a Word (.docx) — 100% en el cliente sin consumir CPU del servidor
  */
 export async function exportarWord({ titulo = "Planificacion", plan = "" }) {
   if (!plan) throw new Error("No hay contenido de planificación para exportar.");
+
+  const { Document, Packer, Paragraph, HeadingLevel, TextRun } = await import("docx");
 
   const paragraphs = plan.split("\n").map((line) => {
     const isHeading = /:$/.test(line.trim()) && line.trim().length < 80;

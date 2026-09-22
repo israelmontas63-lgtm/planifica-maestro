@@ -1,5 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 
+function BookOpenIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+    </svg>
+  );
+}
+
 export default function TextoModal({ 
   initialValue = "", 
   titulo = "Describe la planificación", 
@@ -42,6 +51,21 @@ export default function TextoModal({
           onChange={(e) => setValue(e.target.value)}
           rows={5}
         />
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          marginTop: "6px",
+          fontSize: "12px",
+          color: "#475569",
+          background: "#f8fafc",
+          padding: "6px 10px",
+          borderRadius: "6px",
+          border: "1px solid #e2e8f0"
+        }}>
+          <span style={{ fontSize: "13px" }}>🔒</span>
+          <span><strong>Privacidad:</strong> Por seguridad de los alumnos, no ingreses nombres de estudiantes ni datos personales sensibles.</span>
+        </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "10px", flexWrap: "wrap", gap: "8px" }}>
           {onConsultarCurriculo && (
             <button
@@ -57,11 +81,12 @@ export default function TextoModal({
                 cursor: "pointer",
                 display: "inline-flex",
                 alignItems: "center",
-                gap: "5px"
+                gap: "6px"
               }}
               title="Consultar competencias e indicadores en el currículo oficial"
             >
-              📚 Ver en Malla Curricular
+              <BookOpenIcon />
+              <span>Ver en Malla Curricular</span>
             </button>
           )}
           <div className="modal-actions" style={{ marginLeft: "auto", display: "flex", gap: "8px" }}>

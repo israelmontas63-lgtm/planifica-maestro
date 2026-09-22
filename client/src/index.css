@@ -1221,11 +1221,11 @@ body {
 }
 
 .pm-menu-group-title {
-  font-size: 0.8125rem; /* 13px */
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--pm-menu-group-title);
+  color: #64748B;
   padding: 2px 8px 4px 8px;
   margin: 0;
 }
@@ -1239,7 +1239,12 @@ body {
   background: transparent;
   cursor: pointer;
   text-align: left;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, opacity 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.pm-touch-row:active {
+  opacity: 0.82;
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .pm-accordion-item {
@@ -1263,6 +1268,9 @@ body {
   font-weight: 600;
   cursor: pointer;
   text-align: left;
+}
+.pm-accordion-btn:active {
+  opacity: 0.85;
 }
 
 .pm-submenu-tree {
@@ -1303,14 +1311,11 @@ body {
 .pm-submenu-item:last-child {
   border-bottom: none;
 }
-.pm-submenu-item:hover {
-  background: var(--pm-menu-item-hover);
-}
 .pm-submenu-item.active {
   font-weight: 600;
 }
 .pm-submenu-item.proximamente {
-  color: var(--pm-menu-text-muted);
+  color: #64748B;
 }
 
 .pm-link-row {
@@ -1330,8 +1335,21 @@ body {
   text-align: left;
   transition: background 0.15s ease;
 }
-.pm-link-row:hover {
-  background: var(--pm-menu-item-hover);
+
+/* Hover protegido solo para dispositivos con puntero fino (mouse) */
+@media (hover: hover) and (pointer: fine) {
+  .pm-submenu-item:hover {
+    background: var(--pm-menu-item-hover);
+  }
+  .pm-link-row:hover {
+    background: var(--pm-menu-item-hover);
+  }
+  .pm-auth-btn:hover {
+    background: rgba(26, 125, 140, 0.08);
+  }
+  .pm-auth-logout-btn:hover {
+    background: #fee2e2;
+  }
 }
 
 .pm-link-icon-box {
@@ -1346,11 +1364,11 @@ body {
 }
 
 .pm-badge-prox {
-  font-size: 0.8125rem; /* 13px */
-  padding: 3px 7px;
+  font-size: 0.75rem; /* 12px */
+  padding: 2px 7px;
   border-radius: 5px;
-  background: var(--pm-menu-separator);
-  color: var(--pm-menu-text-muted);
+  background-color: #E2E8F0;
+  color: #475569;
   font-weight: 600;
   letter-spacing: 0.02em;
   flex-shrink: 0;
@@ -1374,9 +1392,6 @@ body {
   margin-top: 4px;
   transition: background 0.15s ease;
 }
-.pm-auth-btn:hover {
-  background: rgba(26, 125, 140, 0.08);
-}
 
 .pm-auth-logout-btn {
   min-height: 48px;
@@ -1393,16 +1408,39 @@ body {
   margin-top: 4px;
   transition: background 0.15s ease;
 }
-.pm-auth-logout-btn:hover {
-  background: #fee2e2;
-}
 .dark .pm-auth-logout-btn {
   border: 1.5px solid #7f1d1d;
   background: #450a0a;
   color: #fca5a5;
 }
-.dark .pm-auth-logout-btn:hover {
-  background: #5c0f0f;
+
+.pm-menu-scroll-gradient {
+  position: absolute;
+  bottom: 34px;
+  left: 0;
+  right: 0;
+  height: 24px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.95));
+  pointer-events: none;
+  z-index: 5;
+}
+.dark .pm-menu-scroll-gradient {
+  background: linear-gradient(to bottom, rgba(15, 23, 42, 0), rgba(15, 23, 42, 0.95));
+}
+
+.pm-aviso-sin-verificar {
+  background-color: #fef3c7;
+  border: 1px solid #f59e0b;
+  color: #92400e;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .pm-menu-footer {
