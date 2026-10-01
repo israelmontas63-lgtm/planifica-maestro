@@ -2,7 +2,6 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { visualizer } from "rollup-plugin-visualizer";
-import path from "path";
 
 export default defineConfig({
   base: "/",
@@ -10,9 +9,7 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(new Date().toISOString()),
   },
   resolve: {
-    alias: {
-      docx: path.resolve(__dirname, "../server/node_modules/docx"),
-    },
+    alias: {},
   },
   test: {
     globals: true,
