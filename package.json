@@ -7,7 +7,7 @@
   "scripts": {
     "build": "npm run build --prefix client",
     "preview": "npm run preview --prefix client",
-    "deploy": "npm run build && wrangler deploy",
+    "deploy": "node scripts/deploy.js",
     "test": "node --test tests/fase15_pruebas.test.mjs"
   },
   "devDependencies": {
