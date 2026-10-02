@@ -157,26 +157,11 @@ verificar("Header.jsx: Botones de 'Configuración (v2.0)' conectados con onAbrir
   headerCode.includes('onAbrirConfiguracion?.()')
 );
 
-// 4. AUDITORÍA DE UnifiedEntrySelector.jsx
-const entrySelectorPath = path.join(clientSrcDir, "components", "UnifiedEntrySelector.jsx");
-const entrySelectorCode = fs.readFileSync(entrySelectorPath, "utf-8");
-
-verificar("UnifiedEntrySelector.jsx: Tarjeta Por Voz conectada con onDictadoClick", 
-  entrySelectorCode.includes('onClick={onDictadoClick}')
+// 4. AUDITORÍA: Verificación de eliminación de tarjetas redundantes de inicio
+verificar("App.jsx: Tarjetas redundantes y UnifiedEntrySelector eliminados de la pantalla de inicio", 
+  !appCode.includes('UnifiedEntrySelector')
 );
 
-verificar("UnifiedEntrySelector.jsx: Tarjeta Foto conectada con onAbrirCamara", 
-  entrySelectorCode.includes('onClick={onAbrirCamara}')
-);
-
-verificar("UnifiedEntrySelector.jsx: Tarjeta Texto conectada con onAbrirTexto", 
-  entrySelectorCode.includes('onAbrirTexto?.()')
-);
-
-verificar("UnifiedEntrySelector.jsx: Botones directos de Currículo MINERD y Esquemas conectados", 
-  entrySelectorCode.includes('onClick={onAbrirCurriculo}') && 
-  entrySelectorCode.includes('onClick={onAbrirEsquemas}')
-);
 
 // 5. AUDITORÍA DE WizardStepper.jsx
 const stepperPath = path.join(clientSrcDir, "components", "WizardStepper.jsx");

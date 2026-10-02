@@ -3,7 +3,6 @@ import Header from "./components/Header.jsx";
 import CaptureArea from "./components/CaptureArea.jsx";
 import BottomPanel from "./components/BottomPanel.jsx";
 import WizardStepper from "./components/WizardStepper.jsx";
-import UnifiedEntrySelector from "./components/UnifiedEntrySelector.jsx";
 import { ESQUEMAS, PERIODOS } from "./data/esquemasData.js";
 import { useSpeechRecognition } from "./hooks/useSpeechRecognition.js";
 import { useSpeechSynthesis } from "./hooks/useSpeechSynthesis.js";
@@ -524,17 +523,6 @@ export default function App() {
       />
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '10px 10px 100px 10px', background: 'var(--pm-bg)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {messages.length === 0 && (
-          <UnifiedEntrySelector
-            onDictadoClick={handleDictadoClick}
-            listening={listening}
-            onAbrirCamara={() => fileInputHiddenRef.current?.click()}
-            onAbrirTexto={(prompt, titulo) => handleAbrirTexto(prompt, titulo)}
-            onAbrirCurriculo={() => { setCurriculumOpen(true); setMenuOpen(false); }}
-            onAbrirEsquemas={() => { setSchemaOpen(true); setMenuOpen(false); }}
-          />
-        )}
-        
         {messages.map((m, i) => (
           <div key={i} style={{ 
             alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
