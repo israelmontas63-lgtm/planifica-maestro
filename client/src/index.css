@@ -1434,6 +1434,22 @@ body {
   background: #16a34a;
   border-color: #15803d;
   color: #ffffff;
+  position: relative;
+}
+
+.pm-btn-dictado.listening::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 16px;
+  border: 2.5px solid #16a34a;
+  animation: pmRingPulse 1.4s ease-out infinite;
+  pointer-events: none;
+}
+
+@keyframes pmRingPulse {
+  0% { transform: scale(0.96); opacity: 0.9; }
+  100% { transform: scale(1.26); opacity: 0; }
 }
 
 /* 4. Botón Texto */
@@ -3906,6 +3922,262 @@ body {
 .pm-btn-dismiss:hover {
   background: #e2e8f0;
   color: #1e293b;
+}
+
+/* ═══════════════════════════════════════════
+   FASE A: PANTALLA DE INICIO VIVA (GREETING & TYPEWRITER)
+   ═══════════════════════════════════════════ */
+.pm-home-greeting-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 44px 20px 24px;
+  margin: auto 0;
+  max-width: 520px;
+  align-self: center;
+  animation: pmFadeIn 0.3s ease-out;
+}
+
+.pm-greeting-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(26, 125, 140, 0.08);
+  border: 1px solid rgba(26, 125, 140, 0.2);
+  border-radius: 20px;
+  padding: 6px 14px;
+  margin-bottom: 18px;
+}
+
+.pm-greeting-sun {
+  font-size: 16px;
+}
+
+.pm-greeting-time-text {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #1a7d8c;
+  letter-spacing: -0.01em;
+}
+
+.pm-greeting-typewriter-title {
+  font-family: Georgia, 'Playfair Display', Cambria, 'Times New Roman', serif;
+  font-size: 2.125rem; /* 34px */
+  line-height: 1.25;
+  font-weight: 700;
+  color: #12304a;
+  letter-spacing: -0.02em;
+  margin: 0;
+  min-height: 2.6em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.pm-greeting-serif-text {
+  color: #12304a;
+}
+
+.pm-typewriter-cursor {
+  display: inline-block;
+  color: #1a7d8c;
+  font-weight: 300;
+  margin-left: 2px;
+  animation: pmCursorBlink 0.9s infinite;
+}
+
+@keyframes pmCursorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════
+   FASE A: ONDAS DE SONIDO EN PANTALLA
+   ═══════════════════════════════════════════ */
+.pm-voice-wave-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 3.5px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.pm-wave-bar {
+  width: 4px;
+  border-radius: 3px;
+  background: #0F6E56;
+  animation: pmWaveBar 1.2s ease-in-out infinite alternate;
+}
+.pm-wave-bar.bar-1 { height: 10px; animation-delay: 0.1s; }
+.pm-wave-bar.bar-2 { height: 22px; animation-delay: 0.3s; }
+.pm-wave-bar.bar-3 { height: 16px; animation-delay: 0.2s; }
+.pm-wave-bar.bar-4 { height: 26px; animation-delay: 0.4s; }
+.pm-wave-bar.bar-5 { height: 12px; animation-delay: 0.15s; }
+
+@keyframes pmWaveBar {
+  0% { transform: scaleY(0.35); opacity: 0.55; }
+  100% { transform: scaleY(1.15); opacity: 1; }
+}
+
+.pm-listening-badge {
+  display: inline-block;
+  background: #0F6E56;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  margin-right: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+/* ═══════════════════════════════════════════
+   FASE A: TRES PUNTOS PARPADEANTES EN SUCESIÓN
+   ═══════════════════════════════════════════ */
+.pm-thinking-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.pm-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #1a7d8c;
+  animation: pmDotBlink 1.4s infinite ease-in-out both;
+}
+
+.pm-dot-1 { animation-delay: 0s; }
+.pm-dot-2 { animation-delay: 0.2s; }
+.pm-dot-3 { animation-delay: 0.4s; }
+
+@keyframes pmDotBlink {
+  0%, 80%, 100% {
+    opacity: 0.25;
+    transform: scale(0.85);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+/* ═══════════════════════════════════════════
+   FASE A: BURBUJAS DE MENSAJES Y PÍLDORAS
+   ═══════════════════════════════════════════ */
+.pm-chat-bubble {
+  max-width: 85%;
+  padding: 13px 16px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  word-break: break-word;
+  transition: transform 0.15s ease;
+}
+
+.pm-chat-msg-assistant {
+  align-self: flex-start;
+  background: #f8fafc;
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px 16px 16px 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.pm-chat-msg-user {
+  align-self: flex-end;
+  background: #12304a;
+  color: #ffffff;
+  border: 1px solid #0d2337;
+  border-radius: 16px 16px 4px 16px;
+  box-shadow: 0 2px 10px rgba(18, 48, 74, 0.16);
+}
+
+.pm-quick-replies-container {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pm-quick-replies-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.pm-quick-replies-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pm-quick-reply-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a7d8c;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.pm-quick-reply-pill:hover {
+  background: #f0fdf4;
+  border-color: #1a7d8c;
+  transform: translateY(-1px);
+}
+
+.pm-quick-reply-pill:active {
+  transform: scale(0.97);
+}
+
+.pm-quick-reply-pill.pm-pill-export {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.pm-quick-reply-pill.pm-pill-export:hover {
+  background: #dbeafe;
+}
+
+/* ═══════════════════════════════════════════
+   FASE A: PREFERS-REDUCED-MOTION
+   ═══════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  .pm-home-greeting-container,
+  .pm-typewriter-cursor,
+  .pm-btn-dictado.listening::after,
+  .pm-wave-bar,
+  .pm-dot,
+  .pm-thinking-spinner,
+  .pm-dictado-pulse {
+    animation: none !important;
+    transition: none !important;
+  }
+  .pm-wave-bar {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+  .pm-dot {
+    opacity: 0.85 !important;
+    transform: none !important;
+  }
 }
 
 

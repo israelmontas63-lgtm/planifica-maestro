@@ -3,6 +3,7 @@ import Header from "./components/Header.jsx";
 import CaptureArea from "./components/CaptureArea.jsx";
 import BottomPanel from "./components/BottomPanel.jsx";
 import WizardStepper from "./components/WizardStepper.jsx";
+import HomeGreeting from "./components/HomeGreeting.jsx";
 import { ESQUEMAS, PERIODOS } from "./data/esquemasData.js";
 import { useSpeechRecognition } from "./hooks/useSpeechRecognition.js";
 import { useSpeechSynthesis } from "./hooks/useSpeechSynthesis.js";
@@ -522,25 +523,24 @@ export default function App() {
         }}
       />
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 10px 100px 10px', background: 'var(--pm-bg)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 10px 100px 10px', background: 'var(--pm-bg)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {/* FASE A: Saludo vivo contextual con tipografía serifa y efecto máquina de escribir */}
+        {messages.length === 0 && !cargando && !listening && (
+          <HomeGreeting user={user} />
+        )}
+
         {messages.map((m, i) => (
-          <div key={i} style={{ 
-            alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
-            background: m.role === 'user' ? '#1a7d8c' : '#fff',
-            color: m.role === 'user' ? '#fff' : '#334155',
-            padding: '12px',
-            borderRadius: '12px',
-            maxWidth: '85%',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-            border: m.role === 'assistant' ? '1px solid #e2e8f0' : 'none'
-          }}>
+          <div
+            key={i}
+            className={`pm-chat-bubble ${m.role === 'user' ? 'pm-chat-msg-user' : 'pm-chat-msg-assistant'}`}
+          >
             {m.imageBase64 && (
               <img src={"data:" + m.mediaType + ";base64," + m.imageBase64} alt="Adjunto" style={{ maxWidth: '100%', borderRadius: '8px', marginBottom: '8px' }} />
             )}
-            <div style={{ whiteSpace: 'pre-wrap', fontSize: '14px' }}>{m.text}</div>
+            <div style={{ whiteSpace: 'pre-wrap', fontSize: '14.5px' }}>{m.text}</div>
             
             {m.role === 'assistant' && (
-              <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                 <button
                   type="button"
                   onClick={() => isSpeaking ? stopSpeaking() : handleEscuchar(m.text)}
@@ -593,15 +593,66 @@ export default function App() {
                 />
               </Suspense>
             )}
+
+            {/* FASE A: Píldoras de respuesta rápida para el asistente */}
+            {m.role === 'assistant' && i === messages.length - 1 && !cargando && (
+              <div className="pm-quick-replies-container no-print">
+                <span className="pm-quick-replies-label">Sugerencias rápidas:</span>
+                <div className="pm-quick-replies-row">
+                  <button
+                    type="button"
+                    className="pm-quick-reply-pill"
+                    onClick={() => enviarMensaje("Por favor, agrega adaptaciones curriculares DUA (Diseño Universal para el Aprendizaje) para esta clase.")}
+                  >
+                    💡 ¿Adaptaciones DUA?
+                  </button>
+                  <button
+                    type="button"
+                    className="pm-quick-reply-pill"
+                    onClick={() => enviarMensaje("Dame 2 opciones creativas adicionales para la actividad de inicio.")}
+                  >
+                    🔄 Otra dinámica de inicio
+                  </button>
+                  <button
+                    type="button"
+                    className="pm-quick-reply-pill"
+                    onClick={() => enviarMensaje("Ajusta la distribución del tiempo para una sesión de 45 minutos.")}
+                  >
+                    ⏱️ Ajustar a 45 min
+                  </button>
+                  {m.datosGenerados && (
+                    <button
+                      type="button"
+                      className="pm-quick-reply-pill pm-pill-export"
+                      onClick={() => handleExportar(Object.entries(m.datosGenerados).map(([k,v]) => `${k}\n${v}`).join("\n\n"))}
+                    >
+                      📝 Ver en Word
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         ))}
-        {/* Vista previa en vivo del dictado mientras se habla */}
+
+        {/* FASE A: Vista previa en vivo del dictado con ondas sonoras dinámicas y 'Escuchando…' */}
         {listening && (
-          <div className="pm-dictado-live-preview no-print">
-            <span className="pm-dictado-pulse">🎙️</span>
+          <div className="pm-dictado-live-preview no-print" role="status" aria-live="assertive">
+            <div className="pm-voice-wave-wrapper" aria-hidden="true">
+              <span className="pm-wave-bar bar-1"></span>
+              <span className="pm-wave-bar bar-2"></span>
+              <span className="pm-wave-bar bar-3"></span>
+              <span className="pm-wave-bar bar-4"></span>
+              <span className="pm-wave-bar bar-5"></span>
+            </div>
             <div className="pm-dictado-content">
-              <div className="pm-dictado-hint">Escuchando... Di tu tema o requerimiento pedagógico:</div>
-              <div className="pm-dictado-text">{transcript || <span style={{ color: "#94a3b8", fontStyle: "italic" }}>Habla ahora...</span>}</div>
+              <div className="pm-dictado-hint">
+                <span className="pm-listening-badge">Escuchando…</span>
+                <span>Di el tema, grado o área curricular:</span>
+              </div>
+              <div className="pm-dictado-text">
+                {transcript || <span style={{ color: "#0F6E56", fontStyle: "italic", opacity: 0.8 }}>Habla con confianza, te escucho...</span>}
+              </div>
               <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
                 <button
                   type="button"
@@ -613,6 +664,7 @@ export default function App() {
                     borderRadius: "6px",
                     padding: "6px 12px",
                     fontSize: "13px",
+                    fontWeight: "600",
                     cursor: "pointer"
                   }}
                   onClick={() => {
@@ -636,6 +688,7 @@ export default function App() {
                     borderRadius: "6px",
                     padding: "6px 12px",
                     fontSize: "13px",
+                    fontWeight: "600",
                     cursor: "pointer"
                   }}
                   onClick={() => stop()}
@@ -647,12 +700,18 @@ export default function App() {
           </div>
         )}
 
-        {/* Estado "Pensando..." con streaming en tiempo real y botón Cancelar */}
+        {/* FASE A: Estado "Pensando..." con tres puntos que parpadean en sucesión y texto en vivo */}
         {cargando && (
-          <div className="pm-thinking-card no-print">
+          <div className="pm-thinking-card no-print" role="status" aria-live="polite">
             <div className="pm-thinking-header">
-              <div className="pm-thinking-spinner"></div>
-              <span className="pm-thinking-label">Pensando con IA...</span>
+              <div className="pm-thinking-dots" aria-hidden="true">
+                <span className="pm-dot pm-dot-1"></span>
+                <span className="pm-dot pm-dot-2"></span>
+                <span className="pm-dot pm-dot-3"></span>
+              </div>
+              <span className="pm-thinking-label">
+                {streamingText ? "organizando los momentos de la clase…" : "estoy buscando en el currículo…"}
+              </span>
               <button
                 type="button"
                 className="pm-btn-cancel-thinking"

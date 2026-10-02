@@ -158,6 +158,9 @@ verificar("Header.jsx: Botones de 'Configuración (v2.0)' conectados con onAbrir
 );
 
 // 4. AUDITORÍA: Verificación de eliminación de tarjetas redundantes de inicio
+const appPath = path.join(clientSrcDir, "App.jsx");
+const appCode = fs.readFileSync(appPath, "utf-8");
+
 verificar("App.jsx: Tarjetas redundantes y UnifiedEntrySelector eliminados de la pantalla de inicio", 
   !appCode.includes('UnifiedEntrySelector')
 );
@@ -179,9 +182,6 @@ verificar("WizardStepper.jsx: Paso 3 (Revisar y Exportar) tiene onClick: onRevis
 );
 
 // 6. AUDITORÍA DE App.jsx, CÁMARA Y VOZ DIALOGANTE
-const appPath = path.join(clientSrcDir, "App.jsx");
-const appCode = fs.readFileSync(appPath, "utf-8");
-
 verificar("App.jsx: handleAbrirTexto recibe promptInicial y titulo", 
   appCode.includes('function handleAbrirTexto(promptInicial = "", titulo = "Describe la planificación")') &&
   appCode.includes('setTextoModalPrompt(promptInicial || "")') &&

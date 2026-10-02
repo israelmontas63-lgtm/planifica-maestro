@@ -631,7 +631,7 @@ export default function BottomPanel({
                     </div>
                   </button>
 
-                  {/* Esquemas */}
+                  {/* Cambiar Esquema */}
                   <button
                     type="button"
                     className="pm-link-row pm-touch-row"
@@ -639,16 +639,17 @@ export default function BottomPanel({
                       setMenuOpen(false);
                       onAbrirEsquemas?.();
                     }}
+                    title="Cambiar esquema curricular y período de planificación"
                   >
                     <div style={{ display: "flex", alignItems: "center" }}>
                       <div className="pm-link-icon-box" style={{ backgroundColor: "rgba(39, 174, 96, 0.15)", color: "#27ae60" }}>
                         <ClipboardCheckIcon />
                       </div>
-                      <span>Esquemas</span>
+                      <span>Cambiar Esquema</span>
                     </div>
                   </button>
 
-                  {/* Currículo MINERD */}
+                  {/* Explorar Currículo MINERD */}
                   <button
                     type="button"
                     className="pm-link-row pm-touch-row"
@@ -656,12 +657,13 @@ export default function BottomPanel({
                       setMenuOpen(false);
                       onAbrirCurriculo?.();
                     }}
+                    title="Explorar diseño curricular MINERD y programa CON BASE"
                   >
                     <div style={{ display: "flex", alignItems: "center" }}>
                       <div className="pm-link-icon-box" style={{ backgroundColor: "rgba(26, 125, 140, 0.15)", color: "#1a7d8c" }}>
                         <BookOpenIcon />
                       </div>
-                      <span>Currículo MINERD</span>
+                      <span>Explorar Currículo MINERD</span>
                     </div>
                   </button>
 
