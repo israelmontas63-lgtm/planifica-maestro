@@ -1,68 +1,48 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
+const { enrutarVoz, obtenerEstadoProveedoresVoz } = require("../ia/enrutadorVoz");
 
 /**
- * POST /api/voice/generate
- * Recibe un texto y lo convierte a voz usando ElevenLabs.
+ * Controlador común para generación de voz con respaldo
  */
-router.post('/generate', async (req, res) => {
+async function handleVoz(req, res) {
   try {
-    const { text } = req.body;
+    const text = req.body.text || req.body.texto;
     if (!text) {
-      return res.status(400).json({ error: 'Se requiere texto para generar voz.' });
+      return res.status(400).json({ error: "Se requiere texto para generar voz." });
     }
 
-    const apiKey = process.env.ELEVENLABS_API_KEY;
-    if (!apiKey) {
-      return res.status(200).json({ fallbackLocal: true, message: 'ElevenLabs API key no configurada, usando síntesis de voz nativa del dispositivo.' });
-    }
-
-    // Usaremos la voz de Rachel o cualquier voz en español (ej. un ID predeterminado de ElevenLabs)
-    // ID de voz de ejemplo (Rachel): 21m00Tcm4TlvDq8ikWAM 
-    // ID de voz de ejemplo (Matilda - buena para español): XrExE9yKIg1WjnnlVkGX
-    const VOICE_ID = 'XrExE9yKIg1WjnnlVkGX'; 
-    const url = `https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`;
-
-    // Opcional: Acortar el texto si es muy largo, o enviarlo entero
-    // Las planificaciones son largas, así que ElevenLabs gastará muchos caracteres.
-    // Lo enviamos completo, ElevenLabs lo procesará.
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Accept': 'audio/mpeg',
-        'Content-Type': 'application/json',
-        'xi-api-key': apiKey
-      },
-      body: JSON.stringify({
-        text: text,
-        model_id: 'eleven_multilingual_v2',
-        voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.75
-        }
-      })
+    const resultado = await enrutarVoz({
+      texto: text,
+      env: process.env
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.detail?.message || 'Error en ElevenLabs API');
+    if (resultado.fallbackLocal || !resultado.buffer) {
+      return res.json({
+        fallbackLocal: true,
+        proveedor: "speech_synthesis_local",
+        mensaje: "Usando síntesis nativa del navegador."
+      });
     }
-
-    // Convertimos la respuesta a un buffer y lo enviamos como audio/mpeg
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
 
     res.set({
-      'Content-Type': 'audio/mpeg',
-      'Content-Length': buffer.length
+      "Content-Type": resultado.contentType || "audio/mpeg",
+      "Content-Length": resultado.buffer.length,
+      "X-Voice-Provider": resultado.proveedor || "unknown",
+      "X-Voice-Cached": resultado.desdeCache ? "true" : "false"
     });
-    res.send(buffer);
-
+    res.send(resultado.buffer);
   } catch (err) {
-    console.error('Error generando voz:', err);
-    res.status(500).json({ error: 'Error generando la voz.', detail: err.message });
+    console.error("Error generando voz:", err);
+    res.status(200).json({ fallbackLocal: true, error: err.message });
   }
+}
+
+router.post("/generate", handleVoz);
+router.post("/", handleVoz);
+
+router.get("/estado", (_req, res) => {
+  res.json({ proveedores: obtenerEstadoProveedoresVoz() });
 });
 
 module.exports = router;

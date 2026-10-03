@@ -15,6 +15,10 @@ const {
   obtenerContextoConBase,
   COBERTURA_CON_BASE
 } = require("../curriculum/contextoConBase");
+const { enrutarPeticion, obtenerEstadoProveedores } = require("../ia/enrutadorIA");
+const { generarDesdeBibliotecaOficial } = require("../ia/modoBibliotecaOficial");
+const { clasificarIntencion } = require("../ia/clasificadorIntencion");
+const { buscarEnCurriculo } = require("../curriculum/buscadorCurricular");
 
 const geminiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -353,19 +357,102 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
       };
     });
 
-    console.log(`Generando contenido curricular ultrarrápido con Gemini para esquema: ${nivel}...`);
+    console.log(`Generando contenido curricular mediante Enrutador IA para esquema: ${nivel}...`);
     
-    const geminiResponse = await generarConGeminiRapido({
-      contents: geminiContents,
-      systemInstruction: dynamicSystemPrompt,
-      responseMimeType: "application/json"
+    const ultimoMsg = messages[messages.length - 1] || {};
+    const imageBase64 = ultimoMsg.imageBase64 || null;
+    const mediaType = ultimoMsg.mediaType || null;
+    const textoConsulta = ultimoMsg.text || req.body.tema || "";
+
+    // Clasificación de intención previa a cualquier búsqueda
+    const clasificacion = await clasificarIntencion({
+      texto: textoConsulta,
+      apiKey: process.env.GEMINI_API_KEY
     });
-    
-    const jsonText = geminiResponse.text;
-    const parsedResponse = extraerJsonValido(jsonText);
+
+    // 1. Manejo de consultas ambiguas o no educativas sin imagen
+    if (clasificacion.tipo === "ambigua" && !imageBase64 && clasificacion.confianza >= 0.70) {
+      return res.json({
+        mensaje_chat: "No identifiqué un tema del currículo escolar en tu consulta. ¿Deseas: 1) Planificar una clase del currículo oficial del MINERD, 2) Consultar información general, o 3) Ajustar el tema pedagógico?",
+        plan_completado: false,
+        requiereAclaracion: true,
+        tipoClasificado: "ambigua",
+        confianza: clasificacion.confianza,
+        opciones: [
+          "Planificar una clase oficial MINERD",
+          "Consultar información general",
+          "Ajustar tema pedagógico"
+        ],
+        motivo: clasificacion.motivo
+      });
+    }
+
+    // 2. Consulta curricular: comprobar biblioteca oficial MINERD primero
+    let resBusquedaCurricular = null;
+    if (clasificacion.tipo === "curricular" && !imageBase64) {
+      const temaParaBuscar = req.body.tema || textoConsulta.substring(0, 80);
+      resBusquedaCurricular = buscarEnCurriculo({
+        query: temaParaBuscar,
+        grado: req.body.grado || "",
+        area: req.body.area || ""
+      });
+
+      // Si el tema tiene ambigüedad de grado/área y el usuario no indicó el grado:
+      if (resBusquedaCurricular.requiereDesambiguacion && !req.body.grado) {
+        return res.json({
+          mensaje_chat: resBusquedaCurricular.mensaje,
+          plan_completado: false,
+          requiereDesambiguacion: true,
+          opciones: resBusquedaCurricular.opciones || [],
+          tipoClasificado: "curricular"
+        });
+      }
+
+      // Si no se encuentra en el currículo oficial y el usuario no forzó búsqueda web
+      if (!resBusquedaCurricular.encontrado && !req.body.buscarEnWeb) {
+        return res.json({
+          mensaje_chat: resBusquedaCurricular.mensaje || "No se encontró ese dato en el currículo oficial (No encontré ese tema en la biblioteca oficial). ¿Deseas que lo busque en internet o prefieres ajustar el tema?",
+          plan_completado: false,
+          encontrado: false,
+          sugerirWeb: true,
+          tipoClasificado: "curricular",
+          opciones: [
+            "Buscar este tema en internet",
+            "Ajustar tema pedagógico"
+          ]
+        });
+      }
+    }
+
+    let parsedResponse = null;
+    try {
+      parsedResponse = await enrutarPeticion({
+        tema: req.body.tema || (messages[0]?.text ? messages[0].text.substring(0, 80) : ""),
+        grado: req.body.grado || "",
+        area: req.body.area || "",
+        nivel,
+        esquemaActivo: nivel,
+        periodoActivo: periodo,
+        prompt: dynamicSystemPrompt,
+        contents: geminiContents,
+        imageBase64,
+        mediaType,
+        env: process.env
+      });
+    } catch (routeErr) {
+      console.warn("⚠️ Enrutador IA lanzó excepción, ejecutando fallback oficial:", routeErr.message);
+      parsedResponse = generarDesdeBibliotecaOficial({
+        tema: req.body.tema || (messages[0]?.text ? messages[0].text.substring(0, 80) : ""),
+        grado: req.body.grado || "",
+        area: req.body.area || "",
+        nivel,
+        esquemaActivo: nivel,
+        periodoActivo: periodo
+      });
+    }
+
     if (!parsedResponse) {
-      console.error("Gemini no devolvió JSON válido:", jsonText);
-      return res.status(500).json({ error: "Error de formato de IA." });
+      return res.status(500).json({ error: "Error generando respuesta estructurada." });
     }
 
     // FASE 16 & CON BASE: Garantizar consistencia en la certeza curricular de CON BASE
@@ -414,15 +501,33 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
       estadoCuotaActual = consumo.estado;
     }
 
+    const esWeb = clasificacion.tipo === "web" || req.body.buscarEnWeb;
+    const esMixta = clasificacion.tipo === "mixta";
+    const origenFinal = esWeb
+      ? "fuente_web_no_oficial"
+      : esMixta
+      ? "mixta"
+      : (parsedResponse.origen || (parsedResponse.proveedor_utilizado ? "ia_generativa" : "biblioteca_oficial"));
+
+    const distintivoFinal = esWeb
+      ? "Fuente web (no oficial)"
+      : esMixta
+      ? "Biblioteca oficial + Fuentes web"
+      : (parsedResponse.distintivo || (origenFinal === "biblioteca_oficial" ? "Basado en la biblioteca oficial del MINERD" : null));
+
     res.json({
       ...parsedResponse,
       planId,
       nivel,
       periodo,
       nivelLabel: esquema.label,
-      proveedor: "Google AI Studio (Gemini)",
+      proveedor: parsedResponse.proveedor_utilizado || "Biblioteca Oficial MINERD",
+      es_respaldo: parsedResponse.es_respaldo || false,
+      distintivo: distintivoFinal,
+      origen: origenFinal,
       cuota: estadoCuotaActual,
-      confianzaCurricular: parsedResponse.confianza_curricular || null
+      confianzaCurricular: parsedResponse.confianza_curricular || null,
+      tipoClasificado: clasificacion.tipo
     });
     
   } catch (err) {
@@ -528,22 +633,112 @@ DEBES responder EXCLUSIVAMENTE con un JSON con la siguiente estructura exacta:
 }
 `;
 
-    console.log(`Consultando currículo MINERD ultrarrápido con Gemini para tema: "${tema}" (${grado} - ${area})...`);
- 
-    const geminiResponse = await generarConGeminiRapido({
-      contents: [{ role: "user", parts: [{ text: promptCurricular }] }],
-      responseMimeType: "application/json"
+    // 0. Verificación anti-alucinación con el motor de búsqueda curricular oficial
+    const resBusqueda = buscarEnCurriculo({ query: tema, grado, area });
+    if (!resBusqueda.encontrado && !req.body.buscarEnWeb) {
+      return res.json({
+        encontrado: false,
+        tema,
+        grado,
+        area,
+        mensaje: resBusqueda.mensaje || "No se encontró ese dato en el currículo oficial (No encontré ese tema en la biblioteca oficial). ¿Deseas que lo busque en internet o prefieres ajustar el tema?",
+        sugerirWeb: true,
+        opciones: [
+          "Buscar en internet",
+          "Ajustar tema pedagógico"
+        ]
+      });
+    }
+
+    if (resBusqueda.requiereDesambiguacion && !req.body.grado) {
+      return res.json({
+        encontrado: true,
+        requiereDesambiguacion: true,
+        tema,
+        grado,
+        area,
+        mensaje: resBusqueda.mensaje,
+        opciones: resBusqueda.opciones || []
+      });
+    }
+
+    // 1. Consulta prioritaria determinista a la Biblioteca Oficial MINERD (< 100ms)
+    const resBiblio = generarDesdeBibliotecaOficial({
+      tema,
+      grado,
+      area,
+      nivel,
+      esquemaActivo,
+      periodoActivo
     });
 
-    const parsedResponse = extraerJsonValido(geminiResponse.text);
-    if (!parsedResponse) {
-      console.error("Gemini no devolvió JSON válido en currículo:", geminiResponse.text);
-      return res.status(500).json({ error: "Error de formato de IA." });
+    if (resBiblio && resBiblio.datos_planificacion && Object.keys(resBiblio.datos_planificacion).length > 0 && resBiblio.fuentes?.length > 0) {
+      console.log(`⚡ [consultar-curriculo] Resuelto instantáneamente desde Biblioteca Oficial MINERD para "${tema}"`);
+      return res.json({
+        tema,
+        grado,
+        area,
+        resumen_enfoque: `Contenido curricular oficial del MINERD para ${grado} en el área de ${area}.`,
+        competencias_especificas: [resBiblio.datos_planificacion["3. Competencias Específicas del grado"] || "Competencia curricular oficial."],
+        indicadores_logro: [resBiblio.datos_planificacion["4. Criterios de Desempeño e Indicadores de Logro"] || "Indicador curricular oficial."],
+        contenidos: {
+          conceptuales: resBiblio.datos_planificacion["2. Contenidos Curriculares"] || tema,
+          procedimentales: "Procedimientos de aprendizaje del MINERD",
+          actitudinales: "Valores y actitudes cívicas y académicas"
+        },
+        estrategias_sugeridas: ["Aprendizaje basado en problemas", "Trabajo colaborativo y exploración guiada"],
+        actividades_sugeridas: {
+          inicio: "Recuperación de experiencias previas y motivación.",
+          desarrollo: "Construcción activa del conocimiento y práctica guiada.",
+          cierre: "Metacognición y síntesis de lo aprendido."
+        },
+        datos_planificacion: resBiblio.datos_planificacion,
+        fuentes: resBiblio.fuentes,
+        origen: "biblioteca_oficial",
+        distintivo: "Basado en la biblioteca oficial del MINERD"
+      });
     }
+
+    // 2. Si no está en matrices de Capa 3, consultar a través del Enrutador IA
+    console.log(`Consultando currículo MINERD con Enrutador IA para tema: "${tema}" (${grado} - ${area})...`);
+    let parsedResponse = null;
+    try {
+      parsedResponse = await enrutarPeticion({
+        tema,
+        grado,
+        area,
+        nivel,
+        esquemaActivo,
+        periodoActivo,
+        prompt: promptCurricular,
+        env: process.env
+      });
+    } catch (routeErr) {
+      console.warn("⚠️ Enrutador falló en consultar-curriculo, usando fallback oficial:", routeErr.message);
+      parsedResponse = resBiblio;
+    }
+
+    if (!parsedResponse) {
+      parsedResponse = resBiblio;
+    }
+
     res.json(parsedResponse);
   } catch (err) {
     console.error("Error en consultar-curriculo:", err);
     res.status(500).json({ error: "Error consultando el currículo con IA.", detail: err.message });
+  }
+});
+
+/**
+ * GET /api/plan/estado-ia
+ * Retorna el estado en tiempo real de todos los proveedores de IA y circuito
+ */
+router.get("/estado-ia", (_req, res) => {
+  try {
+    const proveedores = obtenerEstadoProveedores();
+    res.json({ ok: true, proveedores });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

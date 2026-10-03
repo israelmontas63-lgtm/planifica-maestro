@@ -1,16 +1,38 @@
 /**
  * worker/services/voiceProvider.js
  * Proveedor de voz de IA fluida para Planifica Maestro.
- * Soporta cascada: ElevenLabs -> Google Cloud TTS -> Fallback Local
+ * Protege la cuota mensual de ElevenLabs enviando únicamente respuestas cortas (<= 250 caracteres).
+ * Para textos largos o lecturas de planificaciones completas, delega directamente al fallback local del navegador.
  */
+
+export class VoiceProvider {
+  async synthesize(text) {
+    throw new Error("El método synthesize debe ser implementado por una subclase concreta.");
+  }
+}
+
+export class BrowserNativeVoiceProvider extends VoiceProvider {
+  async synthesize(text) {
+    throw new Error("BrowserNativeVoiceProvider requiere ejecución en el cliente con window.speechSynthesis.");
+  }
+}
 
 export async function generateVoice(text, env, options = {}) {
   const { gender = "female" } = options;
-  
-  // 1. ElevenLabs (Voz fluida principal)
+  const textoLimpio = (text || "").trim();
+
+  // Protección de cuota ElevenLabs: solo textos cortos y directos
+  if (textoLimpio.length > 250) {
+    return {
+      fallbackLocal: true,
+      motivo: "Texto largo reservado para voz local del navegador (ahorro de cuota de ElevenLabs)."
+    };
+  }
+
+  // 1. ElevenLabs (Solo si la clave está configurada en secretos)
   if (env && env.ELEVENLABS_API_KEY) {
     try {
-      const voiceId = gender === "male" ? "IKne3meq5aSn9XLyUdCD" : "EXAVITQu4vr4xnSDxMaL"; // Charlie / Sarah (voces gratuitas)
+      const voiceId = gender === "male" ? "IKne3meq5aSn9XLyUdCD" : "EXAVITQu4vr4xnSDxMaL"; // Charlie / Sarah
       const elRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
         method: "POST",
         headers: {
@@ -18,24 +40,22 @@ export async function generateVoice(text, env, options = {}) {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          text: text,
+          text: textoLimpio,
           model_id: "eleven_multilingual_v2",
         })
       });
       if (elRes.ok) {
         return { source: "elevenlabs", audio: await elRes.arrayBuffer() };
       }
-      return { fallbackLocal: true, debug: "ElRes not ok", status: elRes.status };
+      return { fallbackLocal: true, status: elRes.status };
     } catch (e) {
-      return { fallbackLocal: true, debug: "El error", error: e.message };
+      return { fallbackLocal: true, error: e.message };
     }
   }
 
+  // Fallback seguro sin exponer credenciales
   return { 
-    fallbackLocal: true, 
-    keys: Object.keys(env), 
-    hasKey: !!env.ELEVENLABS_API_KEY, 
-    keyType: typeof env.ELEVENLABS_API_KEY,
-    keyVal: env.ELEVENLABS_API_KEY
+    fallbackLocal: true,
+    hasKey: !!(env && env.ELEVENLABS_API_KEY)
   };
 }

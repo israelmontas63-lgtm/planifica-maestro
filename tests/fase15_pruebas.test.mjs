@@ -384,4 +384,84 @@ describe("FASE 20: Vista previa de plantillas vacías por esquema (Fuente única
   });
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// FASE B: Biblioteca Curricular Oficial por Capas, Buscador y Validador
+// ─────────────────────────────────────────────────────────────────────────────
+describe("FASE B: Biblioteca Curricular Oficial por Capas y Anti-Alucinación", () => {
+  const { buscarEnCurriculo } = require("../server/curriculum/buscadorCurricular.js");
+  const { validarEstructuraPlanificacion } = require("../server/curriculum/validadorEstructura.js");
+  const fs = require("node:fs");
+  const path = require("node:path");
+
+  it("8.1 Capa 3: Todos los registros estructurados tienen 'pendiente de validación por experto' y ningún registro está marcado como 'validada'", () => {
+    const rutaCapa3 = path.join(process.cwd(), "server", "curriculo", "capa3_estructurados", "curriculo_estructurado.json");
+    assert.ok(fs.existsSync(rutaCapa3), "El archivo curriculo_estructurado.json debe existir");
+
+    const estructurados = JSON.parse(fs.readFileSync(rutaCapa3, "utf-8"));
+    assert.ok(estructurados.length >= 30, "Deben existir registros curriculares estructurados");
+
+    estructurados.forEach((item) => {
+      assert.strictEqual(
+        item.estado_validacion,
+        "pendiente de validación por experto",
+        `El registro ${item.id} debe estar etiquetado como 'pendiente de validación por experto'`
+      );
+      assert.notStrictEqual(
+        item.estado_validacion,
+        "validada",
+        `El registro ${item.id} no debe estar marcado como 'validada'`
+      );
+      assert.ok(item.pagina_referencia, `El registro ${item.id} debe tener página de referencia`);
+      assert.ok(item.documento_fuente, `El registro ${item.id} debe tener documento fuente`);
+    });
+
+    const problemasPath = path.join(process.cwd(), "server", "curriculo", "capa3_estructurados", "registro_problemas.json");
+    assert.ok(fs.existsSync(problemasPath), "El registro de problemas debe existir sin ocultar errores");
+  });
+
+  it("8.2 Capa 4: El buscador curricular oficial retorna citas exactas y previene alucinaciones", () => {
+    // Caso de búsqueda existente
+    const resConocido = buscarEnCurriculo({ query: "tarjeta de identidad", grado: "1ro", area: "Lengua Española" });
+    assert.strictEqual(resConocido.encontrado, true, "Debe encontrar el contenido oficial de la tarjeta de identidad");
+    assert.ok(resConocido.resultados.length > 0, "Debe devolver al menos un resultado");
+    assert.ok(resConocido.resultados[0].documento.length > 0, "El resultado debe incluir el documento");
+    assert.ok(resConocido.resultados[0].pagina, "El resultado debe incluir la página real");
+    assert.strictEqual(resConocido.resultados[0].estado_validacion, "pendiente de validación por experto");
+
+    // Caso de búsqueda inexistente (debe rechazar inventar)
+    const resInexistente = buscarEnCurriculo({ query: "quimica cuantica de polimeros", grado: "1ro", area: "Matemática" });
+    assert.strictEqual(resInexistente.encontrado, false, "No debe inventar contenido no curricular");
+    assert.ok(resInexistente.mensaje.toLowerCase().includes("no se encontró ese dato en el currículo oficial"), "Debe emitir mensaje anti-alucinación");
+  });
+
+  it("8.3 Capa 5: El validador de estructura exige los 5 bloques obligatorios de MINERD más sección Fuentes con página real", () => {
+    const planCompleto = {
+      competencias: ["Comunicativa: Expresa y comprende ideas..."],
+      contenidos: { conceptuales: ["La noticia"], procedimentales: ["Lectura"], actitudinales: ["Respeto"] },
+      indicadores_logro: ["Comunica sus ideas oralmente"],
+      actividades: { inicio: "Presentación", desarrollo: "Lectura grupal", cierre: "Reflexión" },
+      evaluacion: "Rúbrica de desempeño",
+      fuentes: [{ documento: "Guía Didáctica de Lengua Española", grado: "1er grado", area: "Lengua Española", pagina: "70-72" }]
+    };
+
+    const validacionExitosa = validarEstructuraPlanificacion(planCompleto);
+    assert.strictEqual(validacionExitosa.valido, true, "Una planificación con todos los bloques oficiales debe ser válida");
+    assert.strictEqual(validacionExitosa.bloquesFaltantes.length, 0);
+    assert.strictEqual(validacionExitosa.estado_validacion, "pendiente de validación por experto");
+
+    const planSinFuentes = {
+      competencias: ["Comunicativa"],
+      contenidos: { conceptuales: ["Tema"] },
+      indicadores_logro: ["Indicador"],
+      actividades: { inicio: "A", desarrollo: "B", cierre: "C" },
+      evaluacion: "Prueba"
+    };
+
+    const validacionFallida = validarEstructuraPlanificacion(planSinFuentes);
+    assert.strictEqual(validacionFallida.valido, false, "Una planificación sin sección Fuentes debe ser rechazada");
+    assert.ok(validacionFallida.bloquesFaltantes.some((b) => b.includes("Fuentes")));
+  });
+});
+
+
 

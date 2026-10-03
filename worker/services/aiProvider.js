@@ -41,19 +41,19 @@ export class AiProvider {
   }
 }
 
-export const DEFAULT_GEMINI_MODEL = "gemini-3.6-flash";
-export const FALLBACK_GEMINI_MODEL = "gemini-flash-latest";
+export const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
+export const FALLBACK_GEMINI_MODEL = "gemini-2.5-flash-lite";
 
 /**
- * Obtiene la lista ordenada de modelos Gemini: [principal, respaldo]
+ * Obtiene la lista ordenada de modelos Gemini: [principal, respaldo, seguridad]
  * Configurable mediante la variable de entorno GEMINI_MODEL.
  */
 export function getGeminiModels(env) {
   const primary = (env && env.GEMINI_MODEL ? env.GEMINI_MODEL : DEFAULT_GEMINI_MODEL).trim();
-  if (primary === FALLBACK_GEMINI_MODEL) {
-    return [primary];
-  }
-  return [primary, FALLBACK_GEMINI_MODEL];
+  const models = [primary];
+  if (primary !== FALLBACK_GEMINI_MODEL) models.push(FALLBACK_GEMINI_MODEL);
+  if (!models.includes("gemini-1.5-flash")) models.push("gemini-1.5-flash");
+  return models;
 }
 
 /**

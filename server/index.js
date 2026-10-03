@@ -25,11 +25,28 @@ app.use("/api/plan", planRoutes);
 app.use("/api/ocr", ocrRoutes);
 app.use("/api/export", exportRoutes);
 app.use("/api/voice", voiceRoutes);
+app.use("/api/voz", voiceRoutes);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Planifica Maestro backend escuchando en http://localhost:${PORT}`);
-  if (!process.env.GEMINI_API_KEY) {
-    console.warn("WARNING: GEMINI_API_KEY no esta configurada. Copia .env.example a .env y agrega tu clave.");
+  console.log("=== ESTADO INICIAL DE PROVEEDORES ===");
+  try {
+    const { obtenerEstadoProveedores } = require("./ia/enrutadorIA");
+    const { obtenerEstadoProveedoresVoz } = require("./ia/enrutadorVoz");
+    const provsTexto = obtenerEstadoProveedores();
+    provsTexto.forEach(p => {
+      const tagClave = p.conClave ? "[CONFIGURADO]" : "[FALTA CLAVE]";
+      console.log(`  IA (${p.id}): ${tagClave} - Estado: ${p.estado} - Modelo: ${p.modelo} (${p.activo ? "Activo" : "Inactivo"})`);
+    });
+    const provsVoz = obtenerEstadoProveedoresVoz();
+    provsVoz.forEach(p => {
+      const tagClave = p.conClave ? "[CONFIGURADO]" : "[FALTA CLAVE]";
+      console.log(`  Voz (${p.id}): ${tagClave} - Estado: ${p.estado} (${p.activo ? "Activo" : "Inactivo"})`);
+    });
+  } catch (err) {
+    console.warn("No se pudo obtener el estado inicial de proveedores:", err.message);
   }
+  console.log("=====================================");
 });
+

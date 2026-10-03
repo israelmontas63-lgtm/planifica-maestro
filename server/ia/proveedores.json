@@ -1,0 +1,165 @@
+{
+  "version": "1.0.0",
+  "configuracion_general": {
+    "presupuesto_total_ms": 20000,
+    "limite_consultas_diario": 500,
+    "circuito_fallos_maximos": 3,
+    "circuito_cooldown_error_ms": 60000,
+    "circuito_cooldown_429_rpm_ms": 60000,
+    "circuito_cooldown_429_rpd_ms": 86400000,
+    "circuito_cooldown_429_default_ms": 60000,
+    "circuito_cooldown_429_max_ms": 900000,
+    "zona_horaria_cuota": "America/Los_Angeles",
+    "limite_cache_audio_items": 50,
+    "cache_audio_ttl_ms": 86400000,
+    "bloqueo_proveedores_de_pago": true
+  },
+  "proveedores_texto": [
+    {
+      "id": "gemini_flash",
+      "nombre": "Google Gemini 2.5 Flash",
+      "tipo": "texto",
+      "modelo": "gemini-2.5-flash",
+      "prioridad": 1,
+      "timeout_ms": 10000,
+      "activo": true,
+      "vision_aprobada": true,
+      "texto_aprobado": true,
+      "es_de_pago": false,
+      "requiere_autorizacion": false,
+      "limites_iniciales": {
+        "rpm": 15,
+        "rpd": 1500
+      }
+    },
+    {
+      "id": "gemini_flash_lite",
+      "nombre": "Google Gemini 2.5 Flash-Lite",
+      "tipo": "texto",
+      "modelo": "gemini-2.5-flash-lite",
+      "prioridad": 2,
+      "timeout_ms": 7000,
+      "activo": true,
+      "vision_aprobada": true,
+      "texto_aprobado": true,
+      "es_de_pago": false,
+      "requiere_autorizacion": false,
+      "limites_iniciales": {
+        "rpm": 15,
+        "rpd": 1500
+      }
+    },
+    {
+      "id": "groq_llama",
+      "nombre": "Groq Llama 3.3 70B",
+      "tipo": "texto",
+      "modelo": "llama-3.3-70b-versatile",
+      "prioridad": 3,
+      "timeout_ms": 6000,
+      "activo": false,
+      "vision_aprobada": false,
+      "texto_aprobado": true,
+      "es_de_pago": false,
+      "requiere_autorizacion": false,
+      "limites_iniciales": {
+        "rpm": 30,
+        "rpd": 14400
+      }
+    },
+    {
+      "id": "openrouter_free",
+      "nombre": "OpenRouter Free Gateway",
+      "tipo": "texto",
+      "modelo": "meta-llama/llama-3.3-70b-instruct:free",
+      "prioridad": 4,
+      "timeout_ms": 8000,
+      "activo": false,
+      "vision_aprobada": false,
+      "texto_aprobado": false,
+      "es_de_pago": false,
+      "requiere_autorizacion": false,
+      "limites_iniciales": {
+        "rpm": 20,
+        "rpd": 200
+      }
+    },
+    {
+      "id": "biblioteca_oficial",
+      "nombre": "Biblioteca Oficial MINERD (Sin IA)",
+      "tipo": "texto",
+      "modelo": "minerd-conbase-local",
+      "prioridad": 5,
+      "timeout_ms": 2000,
+      "activo": true,
+      "vision_aprobada": false,
+      "texto_aprobado": true,
+      "es_de_pago": false,
+      "requiere_autorizacion": false,
+      "limites_iniciales": {
+        "rpm": 1000,
+        "rpd": 100000
+      }
+    }
+  ],
+  "proveedores_vision": [
+    {
+      "id": "gemini_flash_vision",
+      "nombre": "Gemini 2.5 Flash Visión",
+      "proveedor_id": "gemini_flash",
+      "vision_aprobada": true,
+      "activo": true
+    }
+  ],
+  "proveedores_busqueda": [
+    {
+      "id": "biblioteca_minerd_search",
+      "nombre": "Buscador Curricular MINERD",
+      "tipo": "curricular_oficial",
+      "prioridad": 1,
+      "activo": true
+    },
+    {
+      "id": "gemini_search_grounding",
+      "nombre": "Gemini Google Search Grounding",
+      "tipo": "web",
+      "prioridad": 2,
+      "activo": true
+    },
+    {
+      "id": "tavily_search",
+      "nombre": "Tavily Search API",
+      "tipo": "web",
+      "prioridad": 3,
+      "activo": false
+    }
+  ],
+  "proveedores_voz": [
+    {
+      "id": "elevenlabs",
+      "nombre": "ElevenLabs Multilingual v2",
+      "prioridad": 1,
+      "max_caracteres": 500,
+      "timeout_ms": 6000,
+      "modelo": "eleven_multilingual_v2",
+      "voice_id": "XrExE9yKIg1WjnnlVkGX",
+      "activo": true
+    },
+    {
+      "id": "gemini_tts",
+      "nombre": "Gemini TTS Preview",
+      "prioridad": 2,
+      "max_caracteres": 4000,
+      "timeout_ms": 8000,
+      "modelo": "gemini-2.5-flash-preview-tts",
+      "voice_name": "Puck",
+      "activo": true
+    },
+    {
+      "id": "speech_synthesis_local",
+      "nombre": "Navegador Web Speech API",
+      "prioridad": 3,
+      "max_caracteres": 10000,
+      "activo": true
+    }
+  ]
+}

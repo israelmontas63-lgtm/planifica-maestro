@@ -446,17 +446,49 @@ async function handleApiRequest(request, env, ctx) {
       });
     }
 
+    let persistencia = (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) ? "supabase" : "en_memoria";
+    let totalDocentes = inMemoryQuotas.size;
+    let totalPlanificaciones = Array.from(inMemoryQuotas.values()).reduce((acc, v) => acc + (v.usadas || 0), 0);
+    let listaDocentes = Array.from(inMemoryQuotas.entries()).map(([k, v]) => ({
+      docenteId: k,
+      usadas: v.usadas,
+      periodo: new Date().toISOString().substring(0, 7),
+    }));
+
+    if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const resUso = await fetch(`${env.SUPABASE_URL}/rest/v1/uso_docentes?select=*`, {
+          headers: {
+            apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+          },
+        });
+        if (resUso.ok) {
+          const rows = await resUso.json();
+          if (Array.isArray(rows) && rows.length > 0) {
+            persistencia = "supabase";
+            totalDocentes = rows.length;
+            totalPlanificaciones = rows.reduce((acc, r) => acc + (r.usadas || 0), 0);
+            listaDocentes = rows.map((r) => ({
+              docenteId: r.docente_id,
+              usadas: r.usadas || 0,
+              periodo: r.periodo || "n/a",
+            }));
+          }
+        }
+      } catch (e) {
+        console.warn("Fallo al consultar uso_docentes en Supabase:", e);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         ok: true,
         stats: {
-          totalDocentes: inMemoryQuotas.size,
-          totalPlanificaciones: Array.from(inMemoryQuotas.values()).reduce((acc, v) => acc + (v.usadas || 0), 0),
-          listaDocentes: Array.from(inMemoryQuotas.entries()).map(([k, v]) => ({
-            docenteId: k,
-            usadas: v.usadas,
-            periodo: new Date().toISOString().substring(0, 7),
-          })),
+          totalDocentes,
+          totalPlanificaciones,
+          listaDocentes,
+          persistencia,
         },
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -1182,11 +1214,11 @@ Genera un JSON estricto con:
     });
   }
 
-  // 11. POST /api/voice/generate (Voz de IA fluida: ElevenLabs -> Google TTS -> Fallback Local)
-  if (path === "/api/voice/generate" && method === "POST") {
+  // 11. POST /api/voice/generate o /api/voz (Voz de IA fluida: ElevenLabs -> Fallback Local)
+  if ((path === "/api/voice/generate" || path === "/api/voz" || path === "/api/voice" || path === "/api/voz/generate") && method === "POST") {
     try {
       const body = await request.json().catch(() => ({}));
-      const text = body.text || "";
+      const text = body.text || body.texto || "";
       if (!text) {
         return new Response(JSON.stringify({ error: "Falta el texto para la voz." }), {
           status: 400,
@@ -1328,6 +1360,8 @@ export default {
       if (
         url.pathname === "/sw.js" ||
         url.pathname === "/manifest.webmanifest" ||
+        url.pathname === "/manifest.json" ||
+        url.pathname.startsWith("/workbox-") ||
         ct.includes("text/html")
       ) {
         const newHeaders = new Headers(response.headers);
