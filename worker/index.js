@@ -2,6 +2,9 @@ import { LEVELS } from "./levels.js";
 import { obtenerContextoConBase } from "./contextoConBase.js";
 import { getAiProvider, getGeminiModels, fetchGeminiWithRetry } from "./services/aiProvider.js";
 import { generateVoice } from "./services/voiceProvider.js";
+import { clasificarIntencion } from "./clasificadorIntencion.js";
+import { generarRespuestaCharlaLocal, SYSTEM_PROMPT_CONVERSACIONAL } from "./modoConversacional.js";
+import { buscarEnGlosario } from "./glosarioDocente.js";
 
 /**
  * Planifica Maestro - Cloudflare Worker Backend
@@ -542,6 +545,80 @@ async function handleApiRequest(request, env, ctx) {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    const ultimoMsg = messages[messages.length - 1] || {};
+    const textoConsulta = ultimoMsg.text || body.tema || "";
+    const imageBase64 = ultimoMsg.imageBase64 || null;
+
+    // Clasificación de intención (0 ms, reglas deterministas)
+    const clasificacion = await clasificarIntencion({ texto: textoConsulta, env });
+
+    // 1. MODO CHARLA (Saludos, cortesías) -> Resolución local inmediata < 50ms ($0)
+    if (clasificacion.categoria === "charla" && !imageBase64) {
+      const respCharla = generarRespuestaCharlaLocal({
+        texto: textoConsulta,
+        nombreDocente: body.nombreDocente || null
+      });
+      return new Response(JSON.stringify(respCharla), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // 2. MODO ACCION DE APP -> Respuesta local inmediata
+    if (clasificacion.categoria === "accion_app" && !imageBase64) {
+      return new Response(JSON.stringify({
+        mensaje_chat: `Entendido. Procesando acción de la aplicación: ${clasificacion.motivo}`,
+        plan_completado: false,
+        modo: "accion_app",
+        categoria: "accion_app",
+        datos_planificacion: null
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // 3. MODO AMBIGUO -> Pregunta con botones de aclaración (sin adivinar)
+    if (clasificacion.categoria === "ambigua" && !imageBase64) {
+      return new Response(JSON.stringify({
+        mensaje_chat: "No identifiqué con claridad el tema escolar en tu consulta. ¿Deseas: 1) Planificar una clase del currículo oficial del MINERD, 2) Consultar información general, o 3) Ajustar el tema pedagógico?",
+        plan_completado: false,
+        requiereAclaracion: true,
+        modo: "ambigua",
+        categoria: "ambigua",
+        tipoClasificado: "ambigua",
+        confianza: clasificacion.confianza,
+        opciones: clasificacion.opciones || [
+          "Planificar una clase oficial MINERD",
+          "Consultar información general",
+          "Ajustar tema pedagógico"
+        ],
+        motivo: clasificacion.motivo
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // 4. MODO CONOCIMIENTO GENERAL -> Conversacional directo sin buscar en currículo oficial
+    if (clasificacion.categoria === "conocimiento_general" && !imageBase64) {
+      const aviso = "\n\n*(Nota: Esta es una explicación pedagógica general, no una cita textual del currículo oficial MINERD. Si deseas llevar este concepto a una actividad de clase o situación de aprendizaje, dime el grado y lo armamos.)*";
+      const glosarioMatch = buscarEnGlosario(textoConsulta);
+      if (!env.GEMINI_API_KEY) {
+        const def = glosarioMatch ? `**${glosarioMatch.termino}**: ${glosarioMatch.definicion}` : `He analizado tu consulta sobre "${textoConsulta}". Como colega te comento que es un concepto clave.`;
+        return new Response(JSON.stringify({
+          mensaje_chat: `${def}${aviso}`,
+          plan_completado: false,
+          modo: "conocimiento_general",
+          categoria: "conocimiento_general",
+          datos_planificacion: null
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
     }
 
     const esquema = LEVELS[nivel] || LEVELS["primario"];

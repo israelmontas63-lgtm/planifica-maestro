@@ -19,6 +19,8 @@ const { enrutarPeticion, obtenerEstadoProveedores } = require("../ia/enrutadorIA
 const { generarDesdeBibliotecaOficial } = require("../ia/modoBibliotecaOficial");
 const { clasificarIntencion } = require("../ia/clasificadorIntencion");
 const { buscarEnCurriculo } = require("../curriculum/buscadorCurricular");
+const { generarRespuestaCharlaLocal, SYSTEM_PROMPT_CONVERSACIONAL } = require("../ia/modoConversacional");
+const { buscarEnGlosario } = require("../curriculum/glosarioDocente");
 
 const geminiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -364,21 +366,43 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
     const mediaType = ultimoMsg.mediaType || null;
     const textoConsulta = ultimoMsg.text || req.body.tema || "";
 
-    // Clasificación de intención previa a cualquier búsqueda
+    // Clasificación de intención previa
     const clasificacion = await clasificarIntencion({
       texto: textoConsulta,
-      apiKey: process.env.GEMINI_API_KEY
+      env: process.env
     });
 
-    // 1. Manejo de consultas ambiguas o no educativas sin imagen
-    if (clasificacion.tipo === "ambigua" && !imageBase64 && clasificacion.confianza >= 0.70) {
+    // 1. MODO CHARLA (Saludos, cortesías, agradecimientos) -> Resolución local inmediata (< 50ms, $0)
+    if (clasificacion.categoria === "charla" && !imageBase64) {
+      const respCharla = generarRespuestaCharlaLocal({
+        texto: textoConsulta,
+        nombreDocente: req.body.nombreDocente || null
+      });
+      return res.json(respCharla);
+    }
+
+    // 2. MODO ACCION DE APP -> Respuesta local inmediata
+    if (clasificacion.categoria === "accion_app" && !imageBase64) {
       return res.json({
-        mensaje_chat: "No identifiqué un tema del currículo escolar en tu consulta. ¿Deseas: 1) Planificar una clase del currículo oficial del MINERD, 2) Consultar información general, o 3) Ajustar el tema pedagógico?",
+        mensaje_chat: `Entendido. Procesando acción de la aplicación: ${clasificacion.motivo}`,
+        plan_completado: false,
+        modo: "accion_app",
+        categoria: "accion_app",
+        datos_planificacion: null
+      });
+    }
+
+    // 3. MODO AMBIGUO -> Pregunta con botones de aclaración (sin adivinar)
+    if (clasificacion.categoria === "ambigua" && !imageBase64) {
+      return res.json({
+        mensaje_chat: "No identifiqué con claridad el tema escolar en tu consulta. ¿Deseas: 1) Planificar una clase del currículo oficial del MINERD, 2) Consultar información general, o 3) Ajustar el tema pedagógico?",
         plan_completado: false,
         requiereAclaracion: true,
+        modo: "ambigua",
+        categoria: "ambigua",
         tipoClasificado: "ambigua",
         confianza: clasificacion.confianza,
-        opciones: [
+        opciones: clasificacion.opciones || [
           "Planificar una clase oficial MINERD",
           "Consultar información general",
           "Ajustar tema pedagógico"
@@ -387,15 +411,52 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
       });
     }
 
-    // 2. Consulta curricular: comprobar biblioteca oficial MINERD primero
+    // 4. MODO CONOCIMIENTO GENERAL -> Conversacional directo sin buscar en currículo oficial
+    if (clasificacion.categoria === "conocimiento_general" && !imageBase64) {
+      const promptGeneral = `${SYSTEM_PROMPT_CONVERSACIONAL}\n\nConsulta del docente: "${textoConsulta}"\n\nResponde como un colega pedagógico cercano. Agrega al final una nota breve recordando que es una explicación general de apoyo, no una prescripción del currículo oficial MINERD, y ofrece llevar el tema a una actividad de clase.`;
+      const aviso = "\n\n*(Nota: Esta es una explicación pedagógica general, no una cita textual del currículo oficial MINERD. Si deseas llevar este concepto a una actividad de clase o situación de aprendizaje, dime el grado y lo armamos.)*";
+
+      try {
+        const respGen = await enrutarPeticion({
+          tema: "Conocimiento General",
+          prompt: promptGeneral,
+          env: process.env
+        });
+        const textoChat = respGen.mensaje_chat || respGen.texto || "Aquí tienes la información solicitada.";
+        return res.json({
+          mensaje_chat: textoChat.includes("currículo oficial") ? textoChat : `${textoChat}${aviso}`,
+          plan_completado: false,
+          modo: "conocimiento_general",
+          categoria: "conocimiento_general",
+          datos_planificacion: null
+        });
+      } catch (e) {
+        const glosarioMatch = buscarEnGlosario(textoConsulta);
+        const def = glosarioMatch ? `**${glosarioMatch.termino}**: ${glosarioMatch.definicion}` : `He revisado tu consulta sobre "${textoConsulta}". Como colega te comento que es un concepto clave.`;
+        return res.json({
+          mensaje_chat: `${def}${aviso}`,
+          plan_completado: false,
+          modo: "conocimiento_general",
+          categoria: "conocimiento_general",
+          datos_planificacion: null
+        });
+      }
+    }
+
+    // 5. MODO CURRICULAR: Consulta o Planificación -> Paralelismo con Promise.all
     let resBusquedaCurricular = null;
-    if (clasificacion.tipo === "curricular" && !imageBase64) {
+    if ((clasificacion.tipo === "curricular" || clasificacion.categoria === "planificacion" || clasificacion.categoria === "consulta_curricular") && !imageBase64) {
       const temaParaBuscar = req.body.tema || textoConsulta.substring(0, 80);
-      resBusquedaCurricular = buscarEnCurriculo({
-        query: temaParaBuscar,
-        grado: req.body.grado || "",
-        area: req.body.area || ""
-      });
+
+      const [resBusqueda, patrones] = await Promise.all([
+        Promise.resolve().then(() => buscarEnCurriculo({
+          query: temaParaBuscar,
+          grado: req.body.grado || "",
+          area: req.body.area || ""
+        })),
+        Promise.resolve().then(() => obtenerResumenPatrones(resolvedDocenteId))
+      ]);
+      resBusquedaCurricular = resBusqueda;
 
       // Si el tema tiene ambigüedad de grado/área y el usuario no indicó el grado:
       if (resBusquedaCurricular.requiereDesambiguacion && !req.body.grado) {
@@ -453,6 +514,11 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
 
     if (!parsedResponse) {
       return res.status(500).json({ error: "Error generando respuesta estructurada." });
+    }
+
+    // Atender saludo en mensajes mixtos (saludo + plan)
+    if (clasificacion.esMixtoConSaludo && parsedResponse.mensaje_chat) {
+      parsedResponse.mensaje_chat = `¡Hola, Profe! Con gusto te preparo la clase:\n\n${parsedResponse.mensaje_chat}`;
     }
 
     // FASE 16 & CON BASE: Garantizar consistencia en la certeza curricular de CON BASE
