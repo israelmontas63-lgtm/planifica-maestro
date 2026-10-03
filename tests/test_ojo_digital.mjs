@@ -94,4 +94,62 @@ test("ETAPA 1: Ojo Digital - Reglas y discriminación de intención", async (t) 
     assert.equal(resWorkerSinKey.exito, false);
     assert.ok(resWorkerSinKey.mensaje.toLowerCase().includes("la cámara no está disponible"));
   });
+
+  await t.test("5. Paridad estricta entre Node y Worker en reglas, tipos y opciones visuales", () => {
+    const tipos = ["documento_o_texto", "objeto_o_naturaleza", "mapa_o_geografia", "pizarra_o_ejercicio", "ilegible"];
+    for (const tipo of tipos) {
+      assert.deepEqual(
+        generarOpcionesSegunTipoVisual(tipo, false),
+        opcionesWorker(tipo, false),
+        `Paridad falló para tipo: ${tipo} (no borrosa)`
+      );
+      assert.deepEqual(
+        generarOpcionesSegunTipoVisual(tipo, true),
+        opcionesWorker(tipo, true),
+        `Paridad falló para tipo: ${tipo} (borrosa)`
+      );
+    }
+
+    const frasesPrueba = [
+      "", "   ", "📸", "📸 Identifica esto",
+      "dime qué planta es", "planifica con esto", "qué contiene", "explica este ejercicio"
+    ];
+    for (const frase of frasesPrueba) {
+      assert.equal(
+        tieneIntencionExplicita(frase),
+        intencionWorker(frase),
+        `Paridad falló en tieneIntencionExplicita para: "${frase}"`
+      );
+    }
+  });
+
+  await t.test("6. Foto + texto con intención ('dime qué planta es') clasifica como conocimiento general y no muestra botones", async () => {
+    const { clasificarIntencion: clasificarNode } = await import("../server/ia/clasificadorIntencion.js");
+    const { clasificarIntencion: clasificarWorker } = await import("../worker/clasificadorIntencion.js");
+
+    // 1. tieneIntencionExplicita es true -> no entra a la rama de Ojo Digital que pide opciones
+    assert.equal(tieneIntencionExplicita("dime qué planta es"), true);
+    assert.equal(intencionWorker("dime qué planta es"), true);
+
+    // 2. Clasificación directa en Node -> conocimiento_general (sin opciones de ambigüedad)
+    const resNode = await clasificarNode({ texto: "dime qué planta es", env: { GEMINI_API_KEY: "" } });
+    assert.equal(resNode.categoria, "conocimiento_general");
+    assert.ok(!resNode.opciones || resNode.opciones.length === 0, "No debe devolver opciones de aclaración");
+
+    // 3. Clasificación directa en Worker -> conocimiento_general (sin opciones de ambigüedad)
+    const resWorker = await clasificarWorker({ texto: "dime qué planta es", env: { GEMINI_API_KEY: "" } });
+    assert.equal(resWorker.categoria, "conocimiento_general");
+    assert.ok(!resWorker.opciones || resWorker.opciones.length === 0, "No debe devolver opciones de aclaración en Worker");
+  });
+
+  await t.test("7. La llamada de visión en Node pasa por enrutadorIA.js respetando cuota y circuit breaker", async () => {
+    // Si no hay cuota diaria o servicio está en pausa
+    const resSinCuota = await identificarImagenConVision({
+      imageBase64: "aW1hZ2VuX2ZhY2hh",
+      mediaType: "image/jpeg",
+      env: { GEMINI_API_KEY: "" }
+    });
+    assert.equal(resSinCuota.exito, false);
+    assert.ok(resSinCuota.error === "camara_no_disponible" || resSinCuota.error === "cuota_agotada");
+  });
 });

@@ -87,7 +87,10 @@ const PATRONES_CONOCIMIENTO_GENERAL = [
   "quien fue", "quien era", "quien es", "cuando nacio", "cuando murio",
   "definicion de", "concepto de", "ley de", "teoria de",
   "fotosintesis", "sistema digestivo", "sistema solar", "arbol", "energia cinetica",
-  "adn", "celula", "atomo", "volcan", "gravedad"
+  "adn", "celula", "atomo", "volcan", "gravedad",
+  "dime que", "dime que es", "que planta", "que flor", "que animal", "que arbol",
+  "que objeto", "que es esto", "que es esta", "que dice aqui", "leeme esto", "explica esta",
+  "identifica", "como se llama", "cuentame sobre"
 ];
 
 const PATRONES_NO_EDUCATIVOS = [

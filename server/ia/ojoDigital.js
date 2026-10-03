@@ -10,9 +10,8 @@
  * 5. Consumir exactamente 1 llamada de visión en gestorGasto.
  */
 
-const { llamarGemini } = require("./adaptadores/geminiAdapter.js");
-const { limpiarYExtraerJson } = require("./enrutadorIA.js");
-const { registrarConsultaRealizada, puedeRealizarConsulta } = require("./gestorGasto.js");
+const { enrutarPeticion } = require("./enrutadorIA.js");
+const { puedeRealizarConsulta } = require("./gestorGasto.js");
 
 const PROMPT_OJO_DIGITAL = `Eres el "Ojo Digital" de Planifica Maestro, un asistente inteligente para docentes del MINERD (República Dominicana).
 Tu misión es identificar y describir con honestidad, objetividad y agudeza visual lo que ves en la imagen:
@@ -133,53 +132,43 @@ async function identificarImagenConVision({
     };
   }
 
-  const modelosVision = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
-  let ultimoError = null;
+  try {
+    const res = await enrutarPeticion({
+      tema: "Identificación de imagen",
+      prompt: PROMPT_OJO_DIGITAL,
+      imageBase64,
+      mediaType,
+      env,
+      signal
+    });
 
-  for (const modelo of modelosVision) {
-    try {
-      const res = await llamarGemini({
-        modelo,
-        apiKey,
-        prompt: PROMPT_OJO_DIGITAL,
-        imageBase64,
-        mediaType,
-        timeoutMs: 9000,
-        signal
-      });
+    if (res && !res.error && res.descripcion) {
+      const esBorrosa = Boolean(res.es_borrosa);
+      const esDelicado = Boolean(res.es_delicado);
+      let descripcion = res.descripcion.trim();
 
-      const parsed = limpiarYExtraerJson(res.texto);
-      if (parsed && parsed.descripcion) {
-        registrarConsultaRealizada();
-
-        const esBorrosa = Boolean(parsed.es_borrosa);
-        const esDelicado = Boolean(parsed.es_delicado);
-        let descripcion = parsed.descripcion.trim();
-
-        if (esDelicado) {
-          descripcion += "\n\n*(⚠️ Aviso importante: La identificación de plantas, hongos o sustancias por fotografía es orientativa. No consumas ni administres nada basándote únicamente en una foto; verifica siempre con guías oficiales o expertos.)*";
-        }
-
-        const tipoVisual = parsed.tipo_visual || (esBorrosa ? "ilegible" : "objeto_o_naturaleza");
-        const opciones = generarOpcionesSegunTipoVisual(tipoVisual, esBorrosa);
-
-        return {
-          exito: true,
-          descripcion,
-          tipo_visual: tipoVisual,
-          es_borrosa: esBorrosa,
-          es_delicado: esDelicado,
-          tema_detectado: parsed.tema_detectado || null,
-          texto_resumen_ocr: parsed.texto_resumen_ocr || null,
-          opciones,
-          proveedor_utilizado: modelo
-        };
+      if (esDelicado) {
+        descripcion += "\n\n*(⚠️ Aviso importante: La identificación de plantas, hongos o sustancias por fotografía es orientativa. No consumas ni administres nada basándote únicamente en una foto; verifica siempre con guías oficiales o expertos.)*";
       }
-    } catch (err) {
-      ultimoError = err;
-      if (err.name === "AbortError") throw err;
-      console.warn(`⚠️ [Ojo Digital] Falló ${modelo}: ${err.message}. Intentando siguiente modelo de visión...`);
+
+      const tipoVisual = res.tipo_visual || (esBorrosa ? "ilegible" : "objeto_o_naturaleza");
+      const opciones = generarOpcionesSegunTipoVisual(tipoVisual, esBorrosa);
+
+      return {
+        exito: true,
+        descripcion,
+        tipo_visual: tipoVisual,
+        es_borrosa: esBorrosa,
+        es_delicado: esDelicado,
+        tema_detectado: res.tema_detectado || null,
+        texto_resumen_ocr: res.texto_resumen_ocr || null,
+        opciones,
+        proveedor_utilizado: res.proveedor_utilizado || "gemini_flash"
+      };
     }
+  } catch (err) {
+    if (err.name === "AbortError") throw err;
+    console.warn(`⚠️ [Ojo Digital] Error en enrutador de visión: ${err.message}`);
   }
 
   return {
