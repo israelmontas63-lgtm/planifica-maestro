@@ -148,9 +148,27 @@ export default function App() {
     }
   };
 
+  const [silenceTimeoutMs, setSilenceTimeoutMs] = useState(() => {
+    try {
+      const saved = localStorage.getItem("pm_silence_timeout_ms");
+      const val = saved ? Number(saved) : 2500;
+      return (!isNaN(val) && val >= 1000 && val <= 10000) ? val : 2500;
+    } catch (e) {
+      return 2500;
+    }
+  });
+
+  const handleGuardarSilenceTimeout = (val) => {
+    const num = Math.max(1000, Math.min(10000, Number(val) || 2500));
+    setSilenceTimeoutMs(num);
+    try {
+      localStorage.setItem("pm_silence_timeout_ms", String(num));
+    } catch (e) {}
+  };
+
   const handleFinDictadoRef = useRef(null);
   const { listening, transcript, isLowConfidence, start, stop, resetTranscript } = useSpeechRecognition({
-    silenceTimeout: 2500,
+    silenceTimeout: silenceTimeoutMs,
     onSilenceStop: (res) => handleFinDictadoRef.current?.(res)
   });
   const { speak, stopSpeaking, isSpeaking } = useSpeechSynthesis();
@@ -1220,6 +1238,8 @@ export default function App() {
           <ConfiguracionModal
             hablarRespuestas={hablarRespuestas}
             setHablarRespuestas={setHablarRespuestas}
+            silenceTimeoutMs={silenceTimeoutMs}
+            setSilenceTimeoutMs={handleGuardarSilenceTimeout}
             onAbrirPerfil={() => { setPerfilOpen(true); setConfiguracionOpen(false); }}
             onCerrar={() => setConfiguracionOpen(false)}
           />

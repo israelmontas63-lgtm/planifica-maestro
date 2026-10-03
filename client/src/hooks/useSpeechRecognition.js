@@ -1,4 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from "react";
+import { evaluarConfianzaVoz } from "../services/evaluadorVoz.js";
+
+export { evaluarConfianzaVoz };
 
 /**
  * Hook de reconocimiento de voz para Web Speech API (Chrome, Edge, Safari, Chrome Android).
@@ -8,14 +11,16 @@ import { useRef, useState, useCallback, useEffect } from "react";
  * - Elimina la duplicación de palabras en Android reconstruyendo solo fragmentos válidos.
  * - Reporta errores amigables (permiso denegado, desconexión de red) en vez de fallar en silencio.
  * - Corte automático por silencio ajustable (default 2500 ms).
- * - Detección de nivel de confianza (confianza baja < 0.65 para permitir confirmación previa).
+ * - Detección de nivel de confianza: trata confianza 0 o ausente como 'desconocida' (no baja)
+ *   para evitar confirmaciones innecesarias en Android Chrome.
  */
+
 export function useSpeechRecognition({ silenceTimeout = 2500, onSilenceStop = null } = {}) {
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [interimTranscript, setInterimTranscript] = useState("");
   const [finalTranscript, setFinalTranscript] = useState("");
-  const [confidence, setConfidence] = useState(1.0);
+  const [confidence, setConfidence] = useState(null);
   const [isLowConfidence, setIsLowConfidence] = useState(false);
   const [error, setError] = useState(null);
 
@@ -56,15 +61,22 @@ export function useSpeechRecognition({ silenceTimeout = 2500, onSilenceStop = nu
     const finalText = confirmedTextRef.current.trim();
     setTranscript(finalText);
 
-    const avgConf = confidenceCountRef.current > 0 ? (confidenceSumRef.current / confidenceCountRef.current) : 1.0;
-    const lowConf = avgConf < 0.65;
-    setConfidence(avgConf);
-    setIsLowConfidence(lowConf);
+    let evalConf;
+    if (confidenceCountRef.current > 0) {
+      const avg = confidenceSumRef.current / confidenceCountRef.current;
+      evalConf = evaluarConfianzaVoz(avg);
+    } else {
+      evalConf = evaluarConfianzaVoz(undefined);
+    }
+
+    setConfidence(evalConf.valor);
+    setIsLowConfidence(evalConf.isLowConfidence);
 
     return {
       text: finalText,
-      confidence: avgConf,
-      isLowConfidence: lowConf
+      confidence: evalConf.valor,
+      isLowConfidence: evalConf.isLowConfidence,
+      estadoConfianza: evalConf.estado
     };
   }, [clearSilenceTimer]);
 
@@ -87,7 +99,7 @@ export function useSpeechRecognition({ silenceTimeout = 2500, onSilenceStop = nu
     clearSilenceTimer();
     confidenceSumRef.current = 0;
     confidenceCountRef.current = 0;
-    setConfidence(1.0);
+    setConfidence(null);
     setIsLowConfidence(false);
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -215,7 +227,7 @@ export function useSpeechRecognition({ silenceTimeout = 2500, onSilenceStop = nu
     setTranscript("");
     setInterimTranscript("");
     setFinalTranscript("");
-    setConfidence(1.0);
+    setConfidence(null);
     setIsLowConfidence(false);
     setError(null);
   }, [clearSilenceTimer]);

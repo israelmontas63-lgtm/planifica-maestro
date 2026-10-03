@@ -6,6 +6,8 @@ export default function ConfiguracionModal({
   onCerrar, 
   hablarRespuestas, 
   setHablarRespuestas, 
+  silenceTimeoutMs = 2500,
+  setSilenceTimeoutMs,
   onAbrirPerfil 
 }) {
   const [limpiado, setLimpiado] = useState(false);
@@ -76,7 +78,47 @@ export default function ConfiguracionModal({
             </label>
           </div>
 
-          {/* 2. Perfil Docente */}
+          {/* 2. Ajuste de Pausa del Micrófono (Corte por Silencio) */}
+          <div style={{
+            background: "#ffffff",
+            border: "1.5px solid #e2e8f0",
+            borderRadius: "12px",
+            padding: "14px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "12px"
+          }}>
+            <div>
+              <strong style={{ fontSize: "14px", color: "#1e293b", display: "block" }}>
+                ⏱️ Pausa de Silencio en Micrófono
+              </strong>
+              <span style={{ fontSize: "12px", color: "#64748b" }}>
+                Tiempo de espera sin hablar antes de procesar el dictado
+              </span>
+            </div>
+            <select
+              value={silenceTimeoutMs}
+              onChange={(e) => setSilenceTimeoutMs?.(Number(e.target.value))}
+              style={{
+                padding: "6px 10px",
+                borderRadius: "8px",
+                border: "1.5px solid #cbd5e1",
+                background: "#f8fafc",
+                fontSize: "13px",
+                fontWeight: "600",
+                color: "#1e293b",
+                cursor: "pointer"
+              }}
+            >
+              <option value={1500}>1.5 s (Rápido)</option>
+              <option value={2500}>2.5 s (Normal - Recomendado)</option>
+              <option value={3500}>3.5 s (Pausado)</option>
+              <option value={5000}>5.0 s (Extendido)</option>
+            </select>
+          </div>
+
+          {/* 3. Perfil Docente */}
           <div style={{
             background: "#ffffff",
             border: "1.5px solid #e2e8f0",

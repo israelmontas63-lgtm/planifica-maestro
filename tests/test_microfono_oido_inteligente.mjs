@@ -50,4 +50,96 @@ test("ETAPA 2: El Micrófono como Oído Inteligente", async (t) => {
     assert.ok(appCode.includes("enviarMensaje(textToSend)"), "Dictado debe enviar a enviarMensaje común");
     assert.ok(appCode.includes("fuePorVozRef.current = true"), "Debe marcar bandera solo para saber si sintetiza respuesta");
   });
+
+  await t.test("6. Ejecución real: evaluarConfianzaVoz maneja 0, undefined, 0.5 y 0.9 correctamente", async () => {
+    const { evaluarConfianzaVoz } = await import("../client/src/services/evaluadorVoz.js");
+
+    // 0: Android no reporta confianza o devuelve 0 -> "desconocida", NO es baja confianza
+    const c0 = evaluarConfianzaVoz(0);
+    assert.equal(c0.valor, null);
+    assert.equal(c0.estado, "desconocida");
+    assert.equal(c0.isLowConfidence, false, "Confianza 0 no debe marcarse como baja para no forzar confirmación en Android");
+
+    // undefined: navegador no expone la propiedad -> "desconocida", NO es baja confianza
+    const cUndef = evaluarConfianzaVoz(undefined);
+    assert.equal(cUndef.valor, null);
+    assert.equal(cUndef.estado, "desconocida");
+    assert.equal(cUndef.isLowConfidence, false, "Confianza ausente no debe marcarse como baja");
+
+    // 0.5: menor a 0.65 -> baja confianza, sí pide confirmación previa
+    const c05 = evaluarConfianzaVoz(0.5);
+    assert.equal(c05.valor, 0.5);
+    assert.equal(c05.estado, "baja");
+    assert.equal(c05.isLowConfidence, true, "0.5 debe ser baja confianza");
+
+    // 0.9: mayor o igual a 0.65 -> alta confianza, envía directo
+    const c09 = evaluarConfianzaVoz(0.9);
+    assert.equal(c09.valor, 0.9);
+    assert.equal(c09.estado, "alta");
+    assert.equal(c09.isLowConfidence, false, "0.9 debe ser alta confianza");
+  });
+
+  await t.test("7. Ejecución real: MockSpeechRecognition simula el ciclo de eventos, corte por silencio y confianza", async () => {
+    const { ControladorVozInteligente, MockSpeechRecognition } = await import("../client/src/services/evaluadorVoz.js");
+
+    let corteEjecutado = null;
+    const controlador = new ControladorVozInteligente({
+      silenceTimeout: 50, // 50ms para prueba rápida
+      onSilenceStop: (res) => {
+        corteEjecutado = res;
+      }
+    });
+
+    // Iniciar escucha
+    controlador.iniciar(MockSpeechRecognition);
+    assert.equal(controlador.listening, true);
+
+    // Caso A: Emite habla con confianza 0 (caso Android)
+    controlador.recognition.emitResult({
+      transcript: "planifica fracciones para 3ro",
+      confidence: 0,
+      isFinal: true
+    });
+
+    assert.equal(controlador.confirmedText, "planifica fracciones para 3ro");
+
+    // Esperar a que el temporizador de silencio dispare el corte
+    await new Promise((resolve) => setTimeout(resolve, 80));
+
+    assert.ok(corteEjecutado !== null, "El temporizador de silencio debió disparar el corte");
+    assert.equal(corteEjecutado.text, "planifica fracciones para 3ro");
+    assert.equal(corteEjecutado.isLowConfidence, false, "Android con confianza 0 no debe activar isLowConfidence");
+    assert.equal(controlador.listening, false, "Debe finalizar escucha al cortar");
+
+    // Caso B: Emite habla con confianza baja (0.4)
+    let corteBaja = null;
+    const ctrlBaja = new ControladorVozInteligente({
+      silenceTimeout: 40,
+      onSilenceStop: (res) => { corteBaja = res; }
+    });
+    ctrlBaja.iniciar(MockSpeechRecognition);
+    ctrlBaja.recognition.emitResult({
+      transcript: "murmullo incomprensible",
+      confidence: 0.4,
+      isFinal: true
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    assert.ok(corteBaja !== null);
+    assert.equal(corteBaja.isLowConfidence, true, "Confianza 0.4 debe activar isLowConfidence");
+  });
+
+  await t.test("8. Ajuste de corte por silencio configurable en la app y persistente en localStorage", () => {
+    const configModalPath = path.resolve(__dirname, "../client/src/components/ConfiguracionModal.jsx");
+    const configCode = fs.readFileSync(configModalPath, "utf-8");
+
+    // Selector en interfaz
+    assert.ok(configCode.includes("silenceTimeoutMs"), "ConfiguracionModal debe recibir silenceTimeoutMs");
+    assert.ok(configCode.includes("setSilenceTimeoutMs"), "ConfiguracionModal debe recibir setSilenceTimeoutMs");
+    assert.ok(configCode.includes("Pausa de Silencio en Micrófono"), "Debe tener texto descriptivo en ajustes");
+
+    // Persistencia en App.jsx
+    assert.ok(appCode.includes("pm_silence_timeout_ms"), "App.jsx debe persistir el valor en localStorage");
+    assert.ok(appCode.includes("silenceTimeout: silenceTimeoutMs"), "useSpeechRecognition debe recibir el timeout configurable");
+  });
 });
