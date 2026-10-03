@@ -12,6 +12,7 @@ import {
   esRespuestaCacheable
 } from "./cacheRespuestas.js";
 import { tieneIntencionExplicita, identificarImagenWorker } from "./ojoDigital.js";
+import { corregirTextoPedagogico } from "./correctorTexto.js";
 
 /**
  * Planifica Maestro - Cloudflare Worker Backend
@@ -713,13 +714,21 @@ async function handleApiRequest(request, env, ctx) {
       }
     }
 
+    // Corrección pedagógica unificada (Capa local $0 + Capa contextual)
+    const resultadoCorreccion = await corregirTextoPedagogico({
+      texto: textoConsulta,
+      usarIA: false,
+      env
+    });
+    const textoParaProcesar = resultadoCorreccion.textoCorregido || textoConsulta;
+
     // Clasificación de intención (0 ms, reglas deterministas)
-    const clasificacion = await clasificarIntencion({ texto: textoConsulta, env });
+    const clasificacion = await clasificarIntencion({ texto: textoParaProcesar, env });
 
     // 1. MODO CHARLA (Saludos, cortesías) -> Resolución local inmediata < 50ms ($0)
     if (clasificacion.categoria === "charla") {
       const respCharla = generarRespuestaCharlaLocal({
-        texto: textoConsulta,
+        texto: textoParaProcesar,
         nombreDocente: body.nombreDocente || null
       });
       if (imageBase64) {

@@ -23,6 +23,7 @@ const { buscarEnCurriculo } = require("../curriculum/buscadorCurricular");
 const { generarRespuestaCharlaLocal, SYSTEM_PROMPT_CONVERSACIONAL } = require("../ia/modoConversacional");
 const { buscarEnGlosario } = require("../curriculum/glosarioDocente");
 const { tieneIntencionExplicita, identificarImagenConVision } = require("../ia/ojoDigital");
+const { corregirTextoPedagogico } = require("../ia/correctorTexto");
 const { puedeRealizarConsulta } = require("../ia/gestorGasto");
 const crypto = require("crypto");
 
@@ -530,16 +531,25 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
       }
     }
 
+    // Corrección pedagógica unificada (Capa local $0 + Capa contextual)
+    const resultadoCorreccion = await corregirTextoPedagogico({
+      texto: textoConsulta,
+      usarIA: false,
+      env: process.env,
+      signal: req.abortSignal || null
+    });
+    const textoParaProcesar = resultadoCorreccion.textoCorregido || textoConsulta;
+
     // Clasificación de intención previa
     const clasificacion = await clasificarIntencion({
-      texto: textoConsulta,
+      texto: textoParaProcesar,
       env: process.env
     });
 
     // 1. MODO CHARLA (Saludos, cortesías, agradecimientos) -> Resolución local inmediata (< 50ms, $0)
     if (clasificacion.categoria === "charla") {
       const respCharla = generarRespuestaCharlaLocal({
-        texto: textoConsulta,
+        texto: textoParaProcesar,
         nombreDocente: req.body.nombreDocente || null
       });
       if (imageBase64) {
