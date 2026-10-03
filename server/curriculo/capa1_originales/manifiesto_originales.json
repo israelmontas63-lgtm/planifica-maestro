@@ -1,0 +1,41 @@
+[
+  {
+    "id": "Guia_Multigrado_Matematicas",
+    "nombre_archivo": "Guia_Multigrado_Matematicas.pdf",
+    "ruta": "server\\curriculo\\capa1_originales\\primario\\con_base\\Guia_Multigrado_Matematicas.pdf",
+    "institucion": "MINERD / CON BASE",
+    "nivel": "primario",
+    "grado": "multigrado",
+    "area": "Matemática",
+    "tamanio_bytes": 29530257,
+    "sha256": "3d377468e36ceb91e611393fe240e6683f1c95c2b8170a5d316ad4f22b07f22a",
+    "fecha_registro": "2026-10-02T02:14:23.211Z",
+    "url_fuente": "https://ministeriodeeducacion.gob.do/docs/direccion-general-de-curriculo"
+  },
+  {
+    "id": "Guia_Didactica_LenguaEsp__Multigrado_WEB",
+    "nombre_archivo": "Guia_Didactica_LenguaEsp__Multigrado_WEB.pdf",
+    "ruta": "server\\curriculo\\capa1_originales\\primario\\con_base\\Guia_Didactica_LenguaEsp__Multigrado_WEB.pdf",
+    "institucion": "MINERD / CON BASE",
+    "nivel": "primario",
+    "grado": "multigrado",
+    "area": "Lengua Española",
+    "tamanio_bytes": 5264096,
+    "sha256": "a2f64b35c24b27e2db1a7bbed1ad1ba3feaddb37e4e3254c1cbe87a3b2608c52",
+    "fecha_registro": "2026-10-02T02:14:23.241Z",
+    "url_fuente": "https://ministeriodeeducacion.gob.do/docs/direccion-general-de-curriculo"
+  },
+  {
+    "id": "Guia_Matematica_WEB",
+    "nombre_archivo": "Guia_Matematica_WEB.pdf",
+    "ruta": "server\\curriculo\\capa1_originales\\primario\\con_base\\Guia_Matematica_WEB.pdf",
+    "institucion": "MINERD / CON BASE",
+    "nivel": "primario",
+    "grado": "1er_ciclo",
+    "area": "Matemática",
+    "tamanio_bytes": 20909468,
+    "sha256": "1c5f1af7eb1ad495016f11fe8b9f4f762b7668592f4b1c57bcca4c54b8bbe48d",
+    "fecha_registro": "2026-10-02T02:14:23.326Z",
+    "url_fuente": "https://ministeriodeeducacion.gob.do/docs/direccion-general-de-curriculo"
+  }
+]

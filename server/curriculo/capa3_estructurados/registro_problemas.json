@@ -1,0 +1,44 @@
+[
+  {
+    "documento": "Guía Didáctica de Lengua Española (MINERD / CON BASE)",
+    "registro_id": "matriz_lengua_secuencia_5_segundo",
+    "campo_faltante": "pagina_referencia, competencias_especificas, contenidos, indicadores_logro",
+    "detalle": "Descartado sin rellenar huecos. No se encontraron en el texto oficial los campos requeridos: pagina_referencia, competencias_especificas, contenidos, indicadores_logro.",
+    "fecha": "2026-10-03T15:48:56.617Z"
+  },
+  {
+    "documento": "Guía Didáctica de Lengua Española (MINERD / CON BASE)",
+    "registro_id": "matriz_lengua_secuencia_5_tercero",
+    "campo_faltante": "competencias_especificas, contenidos, indicadores_logro",
+    "detalle": "Descartado sin rellenar huecos. No se encontraron en el texto oficial los campos requeridos: competencias_especificas, contenidos, indicadores_logro.",
+    "fecha": "2026-10-03T15:48:56.619Z"
+  },
+  {
+    "documento": "Guia Didactica LenguaEsp  Multigrado WEB",
+    "registro_id": "Guia_Didactica_LenguaEsp__Multigrado_WEB_pag_8",
+    "campo_faltante": "competencias_especificas, contenidos, indicadores_logro",
+    "detalle": "Página de inserción curricular incompleta en documento oficial. Descartada sin inventar datos. Faltaron: competencias_especificas, contenidos, indicadores_logro.",
+    "fecha": "2026-10-03T15:48:56.628Z"
+  },
+  {
+    "documento": "Guia Didactica LenguaEsp  Multigrado WEB",
+    "registro_id": "Guia_Didactica_LenguaEsp__Multigrado_WEB_pag_20",
+    "campo_faltante": "competencias_especificas, contenidos, indicadores_logro",
+    "detalle": "Página de inserción curricular incompleta en documento oficial. Descartada sin inventar datos. Faltaron: competencias_especificas, contenidos, indicadores_logro.",
+    "fecha": "2026-10-03T15:48:56.628Z"
+  },
+  {
+    "documento": "Guia Matematica WEB",
+    "registro_id": "Guia_Matematica_WEB_pag_10",
+    "campo_faltante": "grado, competencias_especificas, contenidos",
+    "detalle": "Página de inserción curricular incompleta en documento oficial. Descartada sin inventar datos. Faltaron: grado, competencias_especificas, contenidos.",
+    "fecha": "2026-10-03T15:48:56.640Z"
+  },
+  {
+    "documento": "Guia Multigrado Matematicas",
+    "registro_id": "Guia_Multigrado_Matematicas_pag_10",
+    "campo_faltante": "competencias_especificas, contenidos",
+    "detalle": "Página de inserción curricular incompleta en documento oficial. Descartada sin inventar datos. Faltaron: competencias_especificas, contenidos.",
+    "fecha": "2026-10-03T15:48:56.655Z"
+  }
+]

@@ -1,0 +1,18 @@
+{
+  "total_registros_estructurados": 78,
+  "total_registros_con_problemas_omitidos": 6,
+  "fecha_generacion": "2026-10-03T15:48:56.664Z",
+  "areas_cubiertas": [
+    "Lengua Española",
+    "Matemática"
+  ],
+  "grados_cubiertos": [
+    "1er grado",
+    "2do grado",
+    "3er grado"
+  ],
+  "niveles_cubiertos": [
+    "primario"
+  ],
+  "estado_general_validacion": "pendiente de validación por experto"
+}

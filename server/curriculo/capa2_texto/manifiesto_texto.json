@@ -1,0 +1,26 @@
+[
+  {
+    "documento_id": "Guia_Multigrado_Matematicas",
+    "archivo_json": "Guia_Multigrado_Matematicas.json",
+    "titulo": "Guia Multigrado Matematicas",
+    "total_paginas": 372,
+    "area": "Matemática",
+    "grado": "multigrado"
+  },
+  {
+    "documento_id": "Guia_Didactica_LenguaEsp__Multigrado_WEB",
+    "archivo_json": "Guia_Didactica_LenguaEsp__Multigrado_WEB.json",
+    "titulo": "Guia Didactica LenguaEsp  Multigrado WEB",
+    "total_paginas": 200,
+    "area": "Lengua Española",
+    "grado": "multigrado"
+  },
+  {
+    "documento_id": "Guia_Matematica_WEB",
+    "archivo_json": "Guia_Matematica_WEB.json",
+    "titulo": "Guia Matematica WEB",
+    "total_paginas": 372,
+    "area": "Matemática",
+    "grado": "1er_ciclo"
+  }
+]
