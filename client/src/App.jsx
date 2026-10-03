@@ -148,9 +148,14 @@ export default function App() {
     }
   };
 
-  const { listening, transcript, start, stop } = useSpeechRecognition();
+  const handleFinDictadoRef = useRef(null);
+  const { listening, transcript, isLowConfidence, start, stop, resetTranscript } = useSpeechRecognition({
+    silenceTimeout: 2500,
+    onSilenceStop: (res) => handleFinDictadoRef.current?.(res)
+  });
   const { speak, stopSpeaking, isSpeaking } = useSpeechSynthesis();
   const fuePorVozRef = useRef(false);
+  const [entendidoVoz, setEntendidoVoz] = useState(null);
 
   // Auto-scroll chat
   const chatEndRef = useRef(null);
@@ -463,17 +468,47 @@ export default function App() {
     }
   }
 
+  const handleFinDictado = useCallback((res) => {
+    const textToSend = (typeof res === "string" ? res : res?.text || transcript).trim();
+    if (!textToSend) return;
+
+    if (res?.isLowConfidence) {
+      setEntendidoVoz({
+        texto: textToSend,
+        bajaConfianza: true,
+        enviado: false
+      });
+    } else {
+      fuePorVozRef.current = true;
+      setEntendidoVoz({
+        texto: textToSend,
+        bajaConfianza: false,
+        enviado: true
+      });
+      enviarMensaje(textToSend);
+    }
+  }, [transcript]);
+
+  useEffect(() => {
+    handleFinDictadoRef.current = handleFinDictado;
+  }, [handleFinDictado]);
+
   function handleDictadoClick() {
+    if (isSpeaking) {
+      stopSpeaking();
+    }
     if (listening) {
-      const finalText = stop();
-      const textToSend = (finalText || transcript).trim();
-      if (textToSend) {
-        fuePorVozRef.current = true;
-        enviarMensaje(textToSend);
-      }
+      const res = stop();
+      handleFinDictado(res);
     } else {
       stopSpeaking();
-      start();
+      start((errMsg) => {
+        setErrorGeneracion({
+          message: `${errMsg} Puedes escribir tu consulta directamente con el teclado o consultar el currículo.`,
+          canRetry: false,
+          accionTexto: true
+        });
+      });
     }
   }
 
@@ -493,6 +528,9 @@ export default function App() {
 
   async function handleEscuchar(planText) {
     if (!planText || typeof planText !== "string") return;
+    if (listening) {
+      stop();
+    }
     setEscuchando(true);
     // Sintetizar y reproducir la primera oración de inmediato
     const oraciones = planText.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g) || [planText];
@@ -869,12 +907,8 @@ export default function App() {
                     cursor: "pointer"
                   }}
                   onClick={() => {
-                    const finalText = stop();
-                    const textToSend = (finalText || transcript).trim();
-                    if (textToSend) {
-                      fuePorVozRef.current = true;
-                      enviarMensaje(textToSend);
-                    }
+                    const res = stop();
+                    handleFinDictado(res);
                   }}
                   disabled={!transcript?.trim()}
                 >
@@ -892,12 +926,79 @@ export default function App() {
                     fontWeight: "600",
                     cursor: "pointer"
                   }}
-                  onClick={() => stop()}
+                  onClick={() => {
+                    stop();
+                    resetTranscript();
+                  }}
                 >
                   ✕ Cancelar
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ETAPA 2: Confirmación inteligente 'Entendí: …' */}
+        {entendidoVoz && (
+          <div className="pm-entendido-voz-container no-print" style={{ margin: "10px 0", animation: "fadeIn 0.2s ease" }}>
+            {entendidoVoz.bajaConfianza && !entendidoVoz.enviado ? (
+              <div style={{ padding: "12px 16px", borderRadius: "10px", background: "#fefce8", border: "1px solid #fde047" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: "600", color: "#854d0e" }}>
+                  <span>🎙️ Entendí:</span>
+                  <span style={{ fontStyle: "italic", color: "#1e293b" }}>"{entendidoVoz.texto}"</span>
+                </div>
+                <div style={{ fontSize: "12px", color: "#713f12", marginTop: "4px" }}>
+                  Audio con baja nitidez. Puedes enviarlo directamente, editarlo o cancelar.
+                </div>
+                <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
+                  <button
+                    type="button"
+                    style={{ padding: "6px 14px", borderRadius: "6px", background: "var(--teal, #1a7d8c)", color: "white", border: "none", fontWeight: "600", cursor: "pointer" }}
+                    onClick={() => {
+                      const txt = entendidoVoz.texto;
+                      setEntendidoVoz(null);
+                      fuePorVozRef.current = true;
+                      enviarMensaje(txt);
+                    }}
+                  >
+                    ✅ Enviar
+                  </button>
+                  <button
+                    type="button"
+                    style={{ padding: "6px 14px", borderRadius: "6px", background: "#e2e8f0", color: "#1e293b", border: "none", fontWeight: "600", cursor: "pointer" }}
+                    onClick={() => {
+                      const txt = entendidoVoz.texto;
+                      setEntendidoVoz(null);
+                      handleAbrirTexto(txt, "Editar consulta dictada");
+                    }}
+                  >
+                    ✏️ Editar
+                  </button>
+                  <button
+                    type="button"
+                    style={{ padding: "6px 14px", borderRadius: "6px", background: "#fee2e2", color: "#991b1b", border: "none", fontWeight: "600", cursor: "pointer" }}
+                    onClick={() => setEntendidoVoz(null)}
+                  >
+                    ↩️ Deshacer
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ padding: "8px 14px", borderRadius: "8px", background: "#f0fdf4", border: "1px solid #bbf7d0", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px" }}>
+                <span style={{ color: "#166534" }}>🎙️ Entendí: <em>"{entendidoVoz.texto}"</em></span>
+                <button
+                  type="button"
+                  style={{ background: "none", border: "none", color: "#15803d", textDecoration: "underline", cursor: "pointer", fontWeight: "600", fontSize: "12px" }}
+                  onClick={() => {
+                    const txt = entendidoVoz.texto;
+                    setEntendidoVoz(null);
+                    handleAbrirTexto(txt, "Corregir consulta enviada");
+                  }}
+                >
+                  ✏️ Corregir
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -944,6 +1045,19 @@ export default function App() {
               <div className="pm-error-text">{errorGeneracion.message}</div>
             </div>
             <div className="pm-error-actions">
+              {errorGeneracion.accionTexto && (
+                <button
+                  type="button"
+                  className="pm-btn-retry"
+                  style={{ background: "var(--teal, #1a7d8c)", color: "white" }}
+                  onClick={() => {
+                    setErrorGeneracion(null);
+                    handleAbrirTexto("", "Escribe tu consulta pedagógica");
+                  }}
+                >
+                  ✍️ Escribir consulta
+                </button>
+              )}
               {errorGeneracion.canRetry && (
                 <button
                   type="button"
