@@ -551,6 +551,46 @@ async function handleApiRequest(request, env, ctx) {
     const textoConsulta = ultimoMsg.text || body.tema || "";
     const imageBase64 = ultimoMsg.imageBase64 || null;
 
+    const isStream = Boolean(stream || request.headers.get("accept")?.includes("text/event-stream"));
+
+    function responderWorker({ data, status = 200, estado = "pensando" }) {
+      if (status >= 400 || !isStream) {
+        return new Response(JSON.stringify(data), {
+          status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      const encoder = new TextEncoder();
+      const { readable, writable } = new TransformStream();
+      const writer = writable.getWriter();
+
+      (async () => {
+        try {
+          await writer.write(encoder.encode(`data: ${JSON.stringify({ estado })}\n\n`));
+          if (data.mensaje_chat) {
+            await writer.write(encoder.encode(`data: ${JSON.stringify({ delta: data.mensaje_chat, estado })}\n\n`));
+          }
+          await writer.write(encoder.encode(`data: ${JSON.stringify({ final: data })}\n\n`));
+          await writer.write(encoder.encode("data: [DONE]\n\n"));
+        } catch (e) {
+          console.warn("Error en responderWorker:", e.message);
+        } finally {
+          writer.close();
+        }
+      })();
+
+      return new Response(readable, {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "text/event-stream; charset=utf-8",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive"
+        }
+      });
+    }
+
     // Clasificación de intención (0 ms, reglas deterministas)
     const clasificacion = await clasificarIntencion({ texto: textoConsulta, env });
 
@@ -560,45 +600,42 @@ async function handleApiRequest(request, env, ctx) {
         texto: textoConsulta,
         nombreDocente: body.nombreDocente || null
       });
-      return new Response(JSON.stringify(respCharla), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
+      return responderWorker({ data: respCharla, estado: "charla" });
     }
 
     // 2. MODO ACCION DE APP -> Respuesta local inmediata
     if (clasificacion.categoria === "accion_app" && !imageBase64) {
-      return new Response(JSON.stringify({
-        mensaje_chat: `Entendido. Procesando acción de la aplicación: ${clasificacion.motivo}`,
-        plan_completado: false,
-        modo: "accion_app",
-        categoria: "accion_app",
-        datos_planificacion: null
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      return responderWorker({
+        data: {
+          mensaje_chat: `Entendido. Procesando acción de la aplicación: ${clasificacion.motivo}`,
+          plan_completado: false,
+          modo: "accion_app",
+          categoria: "accion_app",
+          datos_planificacion: null
+        },
+        estado: "pensando"
       });
     }
 
     // 3. MODO AMBIGUO -> Pregunta con botones de aclaración (sin adivinar)
     if (clasificacion.categoria === "ambigua" && !imageBase64) {
-      return new Response(JSON.stringify({
-        mensaje_chat: "No identifiqué con claridad el tema escolar en tu consulta. ¿Deseas: 1) Planificar una clase del currículo oficial del MINERD, 2) Consultar información general, o 3) Ajustar el tema pedagógico?",
-        plan_completado: false,
-        requiereAclaracion: true,
-        modo: "ambigua",
-        categoria: "ambigua",
-        tipoClasificado: "ambigua",
-        confianza: clasificacion.confianza,
-        opciones: clasificacion.opciones || [
-          "Planificar una clase oficial MINERD",
-          "Consultar información general",
-          "Ajustar tema pedagógico"
-        ],
-        motivo: clasificacion.motivo
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      return responderWorker({
+        data: {
+          mensaje_chat: "No identifiqué con claridad el tema escolar en tu consulta. ¿Deseas: 1) Planificar una clase del currículo oficial del MINERD, 2) Consultar información general, o 3) Ajustar el tema pedagógico?",
+          plan_completado: false,
+          requiereAclaracion: true,
+          modo: "ambigua",
+          categoria: "ambigua",
+          tipoClasificado: "ambigua",
+          confianza: clasificacion.confianza,
+          opciones: clasificacion.opciones || [
+            "Planificar una clase oficial MINERD",
+            "Consultar información general",
+            "Ajustar tema pedagógico"
+          ],
+          motivo: clasificacion.motivo
+        },
+        estado: "pensando"
       });
     }
 
@@ -608,15 +645,15 @@ async function handleApiRequest(request, env, ctx) {
       const glosarioMatch = buscarEnGlosario(textoConsulta);
       if (!env.GEMINI_API_KEY) {
         const def = glosarioMatch ? `**${glosarioMatch.termino}**: ${glosarioMatch.definicion}` : `He analizado tu consulta sobre "${textoConsulta}". Como colega te comento que es un concepto clave.`;
-        return new Response(JSON.stringify({
-          mensaje_chat: `${def}${aviso}`,
-          plan_completado: false,
-          modo: "conocimiento_general",
-          categoria: "conocimiento_general",
-          datos_planificacion: null
-        }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        return responderWorker({
+          data: {
+            mensaje_chat: `${def}${aviso}`,
+            plan_completado: false,
+            modo: "conocimiento_general",
+            categoria: "conocimiento_general",
+            datos_planificacion: null
+          },
+          estado: "conversando"
         });
       }
     }
@@ -804,6 +841,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
         (async () => {
           let fullText = "";
           try {
+            await writer.write(encoder.encode(`data: ${JSON.stringify({ estado: "curriculo" })}\n\n`));
             while (true) {
               const { done, value } = await reader.read();
               if (done) break;
@@ -820,7 +858,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                       if (part) {
                         fullText += part;
                         await writer.write(
-                          encoder.encode(`data: ${JSON.stringify({ delta: part })}\n\n`)
+                          encoder.encode(`data: ${JSON.stringify({ delta: part, estado: "curriculo" })}\n\n`)
                         );
                       }
                     } catch (e) {}

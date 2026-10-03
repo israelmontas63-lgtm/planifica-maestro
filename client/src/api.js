@@ -324,9 +324,12 @@ export async function generarPlanificacion({
             if (jsonStr === "[DONE]") continue;
             try {
               const parsed = JSON.parse(jsonStr);
+              if (parsed.estado) {
+                onChunk("", accumulatedText, parsed.estado);
+              }
               if (parsed.delta) {
                 accumulatedText += parsed.delta;
-                onChunk(parsed.delta, accumulatedText);
+                onChunk(parsed.delta, accumulatedText, parsed.estado);
               }
               if (parsed.final) {
                 finalData = parsed.final;

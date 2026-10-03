@@ -70,6 +70,7 @@ export default function App() {
   const [cambiandoARespaldo, setCambiandoARespaldo] = useState(false);
   const timerRespaldoRef = useRef(null);
   const [streamingText, setStreamingText] = useState("");
+  const [modoOperacion, setModoOperacion] = useState("pensando");
   const [errorGeneracion, setErrorGeneracion] = useState(null);
   const abortControllerRef = useRef(null);
   const [exportando, setExportando] = useState(false);
@@ -280,6 +281,7 @@ export default function App() {
     setCargando(true);
     setCambiandoARespaldo(false);
     setStreamingText("");
+    setModoOperacion("pensando");
     abortControllerRef.current = new AbortController();
 
     if (timerRespaldoRef.current) clearTimeout(timerRespaldoRef.current);
@@ -293,8 +295,9 @@ export default function App() {
         nivel,
         periodo,
         signal: abortControllerRef.current.signal,
-        onChunk: (delta, accumulated) => {
+        onChunk: (delta, accumulated, estado) => {
           setStreamingText(accumulated);
+          if (estado) setModoOperacion(estado);
         },
       });
 
@@ -469,10 +472,14 @@ export default function App() {
   }
 
   async function handleEscuchar(planText) {
+    if (!planText || typeof planText !== "string") return;
     setEscuchando(true);
-    const resumen = planText.substring(0, 500);
+    // Sintetizar y reproducir la primera oración de inmediato
+    const oraciones = planText.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g) || [planText];
+    const primeraOracion = (oraciones[0] || "").trim();
+    const resumen = (primeraOracion || planText).substring(0, 500);
     try {
-      const url = await generarVoz(resumen + "...");
+      const url = await generarVoz(resumen);
       setAudioUrl(url);
     } catch (err) {
       console.warn("Voz de IA no disponible, usando síntesis del navegador:", err);
@@ -831,7 +838,11 @@ export default function App() {
               <span className="pm-thinking-label">
                 {cambiandoARespaldo
                   ? "El motor principal está lento, cambiando a respaldo…"
-                  : (streamingText ? "organizando los momentos de la clase…" : "estoy buscando en el currículo…")}
+                  : (modoOperacion === "charla" || modoOperacion === "conversando"
+                      ? (streamingText ? "conversando con el profe…" : "pensando…")
+                      : (modoOperacion === "curriculo"
+                          ? (streamingText ? "organizando los momentos de la clase…" : "estoy buscando en el currículo…")
+                          : (streamingText ? "organizando la respuesta…" : "pensando…")))}
               </span>
               <button
                 type="button"

@@ -425,7 +425,8 @@ async function enrutarPeticion({
   contents = null,
   imageBase64 = null,
   mediaType = null,
-  env = {}
+  env = {},
+  onChunk = null
 }) {
   const config = cargarConfiguracion();
   const configGeneral = config.configuracion_general || {};
@@ -509,7 +510,8 @@ async function enrutarPeticion({
           contents,
           timeoutMs: timeoutIntento,
           imageBase64,
-          mediaType
+          mediaType,
+          onChunk
         });
         resultadoTexto = resGemini.texto;
       } else if (prov.id === "groq_llama") {

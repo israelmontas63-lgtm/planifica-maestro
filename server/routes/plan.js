@@ -241,6 +241,25 @@ router.post("/generate", async (req, res) => {
     const { messages = [], nivel, periodo = "diaria", docenteId = "docente_default" } = req.body;
     const resolvedDocenteId = docenteId || req.headers["x-docente-id"] || "docente_default";
     const isOwner = req.isOwner === true;
+    const isStream = Boolean(req.body.stream || req.headers["accept"]?.includes("text/event-stream"));
+
+    function responder(data, status = 200, estado = "pensando") {
+      if (status >= 400 || !isStream) {
+        return res.status(status).json(data);
+      }
+      if (!res.headersSent) {
+        res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
+      }
+      res.write(`data: ${JSON.stringify({ estado })}\n\n`);
+      if (data.mensaje_chat) {
+        res.write(`data: ${JSON.stringify({ delta: data.mensaje_chat, estado })}\n\n`);
+      }
+      res.write(`data: ${JSON.stringify({ final: data })}\n\n`);
+      res.write("data: [DONE]\n\n");
+      res.end();
+    }
 
     // FASE 14: Control de uso y verificación de cuota por docente (Bypass si es Owner)
     const cheqCuota = verificarYConsumirCuota(resolvedDocenteId, false, isOwner);
@@ -378,23 +397,23 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
         texto: textoConsulta,
         nombreDocente: req.body.nombreDocente || null
       });
-      return res.json(respCharla);
+      return responder(respCharla, 200, "charla");
     }
 
     // 2. MODO ACCION DE APP -> Respuesta local inmediata
     if (clasificacion.categoria === "accion_app" && !imageBase64) {
-      return res.json({
+      return responder({
         mensaje_chat: `Entendido. Procesando acción de la aplicación: ${clasificacion.motivo}`,
         plan_completado: false,
         modo: "accion_app",
         categoria: "accion_app",
         datos_planificacion: null
-      });
+      }, 200, "pensando");
     }
 
     // 3. MODO AMBIGUO -> Pregunta con botones de aclaración (sin adivinar)
     if (clasificacion.categoria === "ambigua" && !imageBase64) {
-      return res.json({
+      return responder({
         mensaje_chat: "No identifiqué con claridad el tema escolar en tu consulta. ¿Deseas: 1) Planificar una clase del currículo oficial del MINERD, 2) Consultar información general, o 3) Ajustar el tema pedagógico?",
         plan_completado: false,
         requiereAclaracion: true,
@@ -408,7 +427,7 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
           "Ajustar tema pedagógico"
         ],
         motivo: clasificacion.motivo
-      });
+      }, 200, "pensando");
     }
 
     // 4. MODO CONOCIMIENTO GENERAL -> Conversacional directo sin buscar en currículo oficial
@@ -423,23 +442,23 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
           env: process.env
         });
         const textoChat = respGen.mensaje_chat || respGen.texto || "Aquí tienes la información solicitada.";
-        return res.json({
+        return responder({
           mensaje_chat: textoChat.includes("currículo oficial") ? textoChat : `${textoChat}${aviso}`,
           plan_completado: false,
           modo: "conocimiento_general",
           categoria: "conocimiento_general",
           datos_planificacion: null
-        });
+        }, 200, "conversando");
       } catch (e) {
         const glosarioMatch = buscarEnGlosario(textoConsulta);
         const def = glosarioMatch ? `**${glosarioMatch.termino}**: ${glosarioMatch.definicion}` : `He revisado tu consulta sobre "${textoConsulta}". Como colega te comento que es un concepto clave.`;
-        return res.json({
+        return responder({
           mensaje_chat: `${def}${aviso}`,
           plan_completado: false,
           modo: "conocimiento_general",
           categoria: "conocimiento_general",
           datos_planificacion: null
-        });
+        }, 200, "conversando");
       }
     }
 
@@ -460,18 +479,18 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
 
       // Si el tema tiene ambigüedad de grado/área y el usuario no indicó el grado:
       if (resBusquedaCurricular.requiereDesambiguacion && !req.body.grado) {
-        return res.json({
+        return responder({
           mensaje_chat: resBusquedaCurricular.mensaje,
           plan_completado: false,
           requiereDesambiguacion: true,
           opciones: resBusquedaCurricular.opciones || [],
           tipoClasificado: "curricular"
-        });
+        }, 200, "curriculo");
       }
 
       // Si no se encuentra en el currículo oficial y el usuario no forzó búsqueda web
       if (!resBusquedaCurricular.encontrado && !req.body.buscarEnWeb) {
-        return res.json({
+        return responder({
           mensaje_chat: resBusquedaCurricular.mensaje || "No se encontró ese dato en el currículo oficial (No encontré ese tema en la biblioteca oficial). ¿Deseas que lo busque en internet o prefieres ajustar el tema?",
           plan_completado: false,
           encontrado: false,
@@ -481,8 +500,15 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
             "Buscar este tema en internet",
             "Ajustar tema pedagógico"
           ]
-        });
+        }, 200, "curriculo");
       }
+    }
+
+    if (isStream && !res.headersSent) {
+      res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+      res.write(`data: ${JSON.stringify({ estado: "curriculo" })}\n\n`);
     }
 
     let parsedResponse = null;
@@ -498,7 +524,12 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
         contents: geminiContents,
         imageBase64,
         mediaType,
-        env: process.env
+        env: process.env,
+        onChunk: isStream ? (delta) => {
+          if (!res.writableEnded) {
+            res.write(`data: ${JSON.stringify({ delta, estado: "curriculo" })}\n\n`);
+          }
+        } : null
       });
     } catch (routeErr) {
       console.warn("⚠️ Enrutador IA lanzó excepción, ejecutando fallback oficial:", routeErr.message);
@@ -581,7 +612,7 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
       ? "Biblioteca oficial + Fuentes web"
       : (parsedResponse.distintivo || (origenFinal === "biblioteca_oficial" ? "Basado en la biblioteca oficial del MINERD" : null));
 
-    res.json({
+    responder({
       ...parsedResponse,
       planId,
       nivel,
@@ -594,10 +625,15 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
       cuota: estadoCuotaActual,
       confianzaCurricular: parsedResponse.confianza_curricular || null,
       tipoClasificado: clasificacion.tipo
-    });
+    }, 200, "curriculo");
     
   } catch (err) {
     console.error(err);
+    if (isStream && res.headersSent) {
+      res.write(`data: ${JSON.stringify({ error: "Error generando la planificación.", detail: err.message })}\n\n`);
+      res.write("data: [DONE]\n\n");
+      return res.end();
+    }
     res.status(500).json({ error: "Error generando la planificación.", detail: err.message });
   }
 });
