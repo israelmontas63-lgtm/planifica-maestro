@@ -65,9 +65,13 @@ function escribirArchivoSeguro(archivoDestino, archivoTmp, archivoBak, datosObje
       } catch (renameErr) {
         ultimoErrorRename = renameErr;
         if (renameErr.code === "EPERM" || renameErr.code === "EBUSY") {
-          // Breve pausa síncrona en Windows (50ms) para permitir liberación de handles
-          const finEspera = Date.now() + 50;
-          while (Date.now() < finEspera) {}
+          // Pausa síncrona real de 50ms sin consumo excesivo de CPU mediante Atomics.wait
+          try {
+            Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
+          } catch (_) {
+            const finEspera = Date.now() + 50;
+            while (Date.now() < finEspera) {}
+          }
         } else {
           break;
         }

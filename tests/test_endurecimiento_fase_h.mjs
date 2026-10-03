@@ -211,7 +211,26 @@ describe("ENDURECIMIENTO FASE H: Circuit Breaker, Persistencia, Privacidad y Pro
       try { fs.unlinkSync(testTmp); } catch (_) {}
     });
 
-    it("3.3 Integración Supabase: detecta credenciales, sincroniza pm_estado_sistema y tolera caídas de red", async () => {
+    it("3.3 Recupera desde .bak si el archivo principal no existe (ausente)", () => {
+      // Garantizar que el archivo principal no exista
+      if (fs.existsSync(testFile)) fs.unlinkSync(testFile);
+      // Crear únicamente el archivo de respaldo .bak con datos válidos
+      const datosBak = { prov_desde_bak: { estado: "CERRADO", fallosConsecutivos: 0 } };
+      fs.writeFileSync(testBak, JSON.stringify(datosBak), "utf-8");
+
+      let cargado = null;
+      assert.doesNotThrow(() => {
+        cargado = leerArchivoSeguro(testFile, testBak, {});
+      }, "Cargar con archivo principal ausente no debe lanzar error si existe .bak");
+
+      assert.ok(cargado && cargado.prov_desde_bak, "Debe haber recuperado los datos desde el archivo .bak");
+      assert.strictEqual(cargado.prov_desde_bak.estado, "CERRADO");
+
+      // Limpiar archivo .bak de prueba
+      try { fs.unlinkSync(testBak); } catch (_) {}
+    });
+
+    it("3.4 Integración Supabase: detecta credenciales, sincroniza pm_estado_sistema y tolera caídas de red", async () => {
       // Sin variables de entorno, tipoPersistencia debe indicar disco o en_memoria
       const tipoDefault = tipoPersistencia();
       assert.ok(["disco", "en_memoria"].includes(tipoDefault));
