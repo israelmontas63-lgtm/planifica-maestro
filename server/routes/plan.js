@@ -534,6 +534,8 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
         mediaType,
         env: process.env,
         signal: clientAbortController.signal,
+        perfilDocente: req.body.perfilDocente || null,
+        docenteId: resolvedDocenteId,
         onChunk: isStream ? (delta) => {
           if (!res.writableEnded) {
             res.write(`data: ${JSON.stringify({ delta, estado: "curriculo" })}\n\n`);

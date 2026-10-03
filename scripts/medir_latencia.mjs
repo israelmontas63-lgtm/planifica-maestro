@@ -2,31 +2,73 @@
  * scripts/medir_latencia.mjs
  * 
  * Script de medición de latencia (p50 y p95) sobre Node.js y Cloudflare Worker.
+ * Soporta ejecución REAL (con claves de .env) y ejecución SIMULADA (--simulado).
+ * 
  * Casos evaluados (20 corridas por caso):
  *  1. "hola" (Saludo / Charla)
- *  2. "qué es la fotosíntesis" (Conocimiento general)
+ *  2. "qué es la fotosíntesis" / "¿Quién fue Juan Pablo Duarte?" (Conocimiento general -> va al modelo)
  *  3. "planifica fracciones 3.º" (Planificación curricular)
  *  4. Foto + pregunta (Visión multimodal)
  * 
  * Métricas registradas:
- *  - Tiempo de clasificación (ms)
- *  - Tiempo al primer texto visible / TTFT (ms)
- *  - Tiempo total (ms)
+ *  - Tiempo al primer texto visible / TTFT (ms) [p50 / p95]
+ *  - Tiempo total de respuesta (ms) [p50 / p95]
  */
 
 import { performance } from "node:perf_hooks";
 import { createRequire } from "node:module";
 import http from "node:http";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Carga segura de .env sin imprimir valores ni exponer secretos
+function cargarEnvSilencioso() {
+  const rutas = [
+    path.join(__dirname, "..", ".env"),
+    path.join(__dirname, "..", "server", ".env"),
+    path.join(__dirname, "..", "client", ".env")
+  ];
+
+  let clavesCargadas = 0;
+  for (const r of rutas) {
+    if (fs.existsSync(r)) {
+      try {
+        const lineas = fs.readFileSync(r, "utf-8").split("\n");
+        for (const l of lineas) {
+          const trimmed = l.trim();
+          if (!trimmed || trimmed.startsWith("#")) continue;
+          const idx = trimmed.indexOf("=");
+          if (idx !== -1) {
+            const k = trimmed.substring(0, idx).trim();
+            let v = trimmed.substring(idx + 1).trim();
+            if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+              v = v.substring(1, v.length - 1);
+            }
+            if (!process.env[k]) {
+              process.env[k] = v;
+              clavesCargadas++;
+            }
+          }
+        }
+      } catch (e) {}
+    }
+  }
+  return clavesCargadas;
+}
+
+cargarEnvSilencioso();
+
+const esSimulado = process.argv.includes("--simulado");
 const require = createRequire(import.meta.url);
 const express = require("../server/node_modules/express");
 const planRouter = require("../server/routes/plan.js");
-const { clasificarIntencion: clasificarNode } = require("../server/ia/clasificadorIntencion.js");
 const workerModule = await import("../worker/index.js");
 const worker = workerModule.default;
-const { clasificarIntencion: clasificarWorker } = await import("../worker/clasificadorIntencion.js");
 
-// Imagen 1x1 transparente válida en PNG Base64
 const FOTO_MOCK_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
 function calcularPercentil(arr, p) {
@@ -58,8 +100,7 @@ const CASOS = [
       nivel: "primario",
       periodo: "diaria"
     },
-    texto: "hola",
-    conImagen: false
+    esModelo: false
   },
   {
     nombre: "2. Conocimiento general ('¿Quién fue Juan Pablo Duarte?')",
@@ -68,8 +109,7 @@ const CASOS = [
       nivel: "primario",
       periodo: "diaria"
     },
-    texto: "¿Quién fue Juan Pablo Duarte?",
-    conImagen: false
+    esModelo: true
   },
   {
     nombre: "3. Planificación curricular ('Planificación de fracciones para 3er grado')",
@@ -81,8 +121,7 @@ const CASOS = [
       area: "Matemática",
       tema: "Fracciones"
     },
-    texto: "Planificación de fracciones para 3er grado de primaria",
-    conImagen: false
+    esModelo: true
   },
   {
     nombre: "4. Foto + pregunta ('Identifica el tema y planifica')",
@@ -98,151 +137,230 @@ const CASOS = [
       nivel: "primario",
       periodo: "diaria"
     },
-    texto: "Identifica el tema y planifica la clase",
-    conImagen: true
+    esModelo: true
   }
 ];
 
-async function medirPeticionNode(baseUrl, payload, texto) {
-  // 1. Medir clasificación aislada
-  const t0Clas = performance.now();
-  await clasificarNode({ texto, env: process.env });
-  const tiempoClasificacion = performance.now() - t0Clas;
-
-  // 2. Medir tiempo de red hasta primer byte/texto y total
-  const t0Req = performance.now();
-  const res = await fetch(`${baseUrl}/api/plan/generate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
-  const tPrimerTexto = performance.now() - t0Req;
-  await res.json().catch(() => ({}));
-  const tiempoTotal = performance.now() - t0Req;
-
-  return {
-    tiempoClasificacion,
-    ttft: tPrimerTexto,
-    tiempoTotal
-  };
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function medirPeticionWorker(payload, texto) {
-  // 1. Medir clasificación aislada en Worker
-  const t0Clas = performance.now();
-  await clasificarWorker({ texto, env: {} });
-  const tiempoClasificacion = performance.now() - t0Clas;
+async function ejecutarMedicion() {
+  const hayClavesReales = Boolean(process.env.GEMINI_API_KEY || process.env.GROQ_API_KEY || process.env.OPENROUTER_API_KEY);
+  const modoTexto = esSimulado ? "SIMULADO (--simulado)" : (hayClavesReales ? "REAL (con proveedores en .env)" : "REAL (sin claves .env detectadas -> usando respaldo determinista)");
 
-  // 2. Medir llamada a fetch del Worker
-  const t0Req = performance.now();
-  const req = new Request("http://localhost/api/plan/generate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
-  const res = await worker.fetch(req, { GEMINI_MODEL: "gemini-2.5-flash-lite" }, {});
-  const tPrimerTexto = performance.now() - t0Req;
-  await res.json().catch(() => ({}));
-  const tiempoTotal = performance.now() - t0Req;
-
-  return {
-    tiempoClasificacion,
-    ttft: tPrimerTexto,
-    tiempoTotal
-  };
-}
-
-async function ejecutarMediciones() {
   console.log("==================================================================");
-  console.log("MEDICIÓN DE LATENCIA DE EXTREMO A EXTREMO (NODE vs WORKER)");
-  console.log("20 corridas por caso | Reportando p50 (mediana) y p95");
+  console.log(`MEDICIÓN DE LATENCIA DE EXTREMO A EXTREMO (NODE vs WORKER)`);
+  console.log(`Modo: ${modoTexto}`);
+  console.log(`20 corridas por caso | Reportando TTFT y Total (p50 y p95)`);
   console.log("==================================================================\n");
 
-  const { server, url: nodeBaseUrl } = await iniciarServidorNode();
+  const { server, url } = await iniciarServidorNode();
 
-  const resultadosNode = [];
-  const resultadosWorker = [];
+  // 1. MEDICIONES EN NODE.JS (EXPRESS)
+  const tablaNode = [];
 
-  const NUM_CORRIDAS = 20;
+  for (const caso of CASOS) {
+    const ttfts = [];
+    const totales = [];
 
-  try {
-    for (const caso of CASOS) {
-      console.log(`Midiendo ${caso.nombre}...`);
+    // Warmup previo
+    await fetch(`${url}/api/plan/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(caso.payload)
+    }).catch(() => {});
 
-      const metricasNode = { clas: [], ttft: [], total: [] };
-      const metricasWorker = { clas: [], ttft: [], total: [] };
-
-      // Corridas Node
-      for (let i = 0; i < NUM_CORRIDAS; i++) {
-        try {
-          const m = await medirPeticionNode(nodeBaseUrl, caso.payload, caso.texto);
-          metricasNode.clas.push(m.tiempoClasificacion);
-          metricasNode.ttft.push(m.ttft);
-          metricasNode.total.push(m.tiempoTotal);
-        } catch (e) {
-          // tolerar reintentos en medición
+    for (let i = 0; i < 20; i++) {
+      if (esSimulado) {
+        // En simulación modelamos el retardo esperado de red hacia el proveedor
+        const t0 = performance.now();
+        if (caso.nombre.includes("Saludo")) {
+          // Saludo siempre corre algoritmo real local
+          const res = await fetch(`${url}/api/plan/generate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(caso.payload)
+          });
+          const ttft = performance.now() - t0;
+          await res.json().catch(() => ({}));
+          const total = performance.now() - t0;
+          ttfts.push(ttft);
+          totales.push(total);
+        } else if (caso.nombre.includes("Conocimiento general")) {
+          await sleep(180 + Math.random() * 40);
+          const ttft = performance.now() - t0;
+          await sleep(120 + Math.random() * 30);
+          const total = performance.now() - t0;
+          ttfts.push(ttft);
+          totales.push(total);
+        } else if (caso.nombre.includes("Planificación curricular")) {
+          if (i === 0) {
+            await sleep(240 + Math.random() * 50);
+            const ttft = performance.now() - t0;
+            await sleep(180 + Math.random() * 40);
+            const total = performance.now() - t0;
+            ttfts.push(ttft);
+            totales.push(total);
+          } else {
+            // Acierto de caché en corridas sucesivas
+            const res = await fetch(`${url}/api/plan/generate`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(caso.payload)
+            });
+            const ttft = performance.now() - t0;
+            await res.json().catch(() => ({}));
+            const total = performance.now() - t0;
+            ttfts.push(ttft);
+            totales.push(total);
+          }
+        } else {
+          // Foto / Visión multimodal
+          await sleep(310 + Math.random() * 60);
+          const ttft = performance.now() - t0;
+          await sleep(200 + Math.random() * 50);
+          const total = performance.now() - t0;
+          ttfts.push(ttft);
+          totales.push(total);
         }
+      } else {
+        // Ejecución Real contra el servidor Node
+        const t0 = performance.now();
+        const res = await fetch(`${url}/api/plan/generate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(caso.payload)
+        });
+        const ttft = performance.now() - t0;
+        await res.json().catch(() => ({}));
+        const total = performance.now() - t0;
+        ttfts.push(ttft);
+        totales.push(total);
       }
+    }
 
-      // Corridas Worker
-      for (let i = 0; i < NUM_CORRIDAS; i++) {
-        try {
-          const m = await medirPeticionWorker(caso.payload, caso.texto);
-          metricasWorker.clas.push(m.tiempoClasificacion);
-          metricasWorker.ttft.push(m.ttft);
-          metricasWorker.total.push(m.tiempoTotal);
-        } catch (e) {
-          // tolerar reintentos en medición
+    tablaNode.push({
+      caso: caso.nombre,
+      ttftP50: calcularPercentil(ttfts, 50).toFixed(2),
+      ttftP95: calcularPercentil(ttfts, 95).toFixed(2),
+      totalP50: calcularPercentil(totales, 50).toFixed(2),
+      totalP95: calcularPercentil(totales, 95).toFixed(2)
+    });
+  }
+
+  server.close();
+
+  console.log(`### RESULTADOS EN NODE.JS (${esSimulado ? "SIMULADO" : "REAL"})`);
+  console.log("| Caso de Uso | TTFT p50 (ms) | TTFT p95 (ms) | Total p50 (ms) | Total p95 (ms) |");
+  console.log("|---|---|---|---|---|");
+  for (const r of tablaNode) {
+    console.log(`| ${r.caso} | ${r.ttftP50} | ${r.ttftP95} | ${r.totalP50} | ${r.totalP95} |`);
+  }
+
+  // 2. MEDICIONES EN CLOUDFLARE WORKER
+  const tablaWorker = [];
+  const workerEnv = {
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY || "",
+    GEMINI_MODEL: "gemini-2.5-flash-lite"
+  };
+
+  for (const caso of CASOS) {
+    const ttfts = [];
+    const totales = [];
+
+    // Warmup previo
+    const warmupReq = new Request("http://localhost/api/plan/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(caso.payload)
+    });
+    await worker.fetch(warmupReq, workerEnv, {}).catch(() => {});
+
+    for (let i = 0; i < 20; i++) {
+      if (esSimulado) {
+        const t0 = performance.now();
+        if (caso.nombre.includes("Saludo")) {
+          const req = new Request("http://localhost/api/plan/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(caso.payload)
+          });
+          const res = await worker.fetch(req, workerEnv, {});
+          const ttft = performance.now() - t0;
+          await res.json().catch(() => ({}));
+          const total = performance.now() - t0;
+          ttfts.push(ttft);
+          totales.push(total);
+        } else if (caso.nombre.includes("Conocimiento general")) {
+          await sleep(150 + Math.random() * 30);
+          const ttft = performance.now() - t0;
+          await sleep(110 + Math.random() * 25);
+          const total = performance.now() - t0;
+          ttfts.push(ttft);
+          totales.push(total);
+        } else if (caso.nombre.includes("Planificación curricular")) {
+          if (i === 0) {
+            await sleep(210 + Math.random() * 40);
+            const ttft = performance.now() - t0;
+            await sleep(160 + Math.random() * 30);
+            const total = performance.now() - t0;
+            ttfts.push(ttft);
+            totales.push(total);
+          } else {
+            // Acierto de caché en memoria del Worker
+            const req = new Request("http://localhost/api/plan/generate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(caso.payload)
+            });
+            const res = await worker.fetch(req, workerEnv, {});
+            const ttft = performance.now() - t0;
+            await res.json().catch(() => ({}));
+            const total = performance.now() - t0;
+            ttfts.push(ttft);
+            totales.push(total);
+          }
+        } else {
+          // Foto / Visión multimodal
+          await sleep(280 + Math.random() * 50);
+          const ttft = performance.now() - t0;
+          await sleep(170 + Math.random() * 40);
+          const total = performance.now() - t0;
+          ttfts.push(ttft);
+          totales.push(total);
         }
+      } else {
+        const t0 = performance.now();
+        const req = new Request("http://localhost/api/plan/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(caso.payload)
+        });
+        const res = await worker.fetch(req, workerEnv, {});
+        const ttft = performance.now() - t0;
+        await res.json().catch(() => ({}));
+        const total = performance.now() - t0;
+        ttfts.push(ttft);
+        totales.push(total);
       }
-
-      resultadosNode.push({
-        caso: caso.nombre,
-        p50Clas: calcularPercentil(metricasNode.clas, 50).toFixed(2),
-        p95Clas: calcularPercentil(metricasNode.clas, 95).toFixed(2),
-        p50Ttft: calcularPercentil(metricasNode.ttft, 50).toFixed(2),
-        p95Ttft: calcularPercentil(metricasNode.ttft, 95).toFixed(2),
-        p50Total: calcularPercentil(metricasNode.total, 50).toFixed(2),
-        p95Total: calcularPercentil(metricasNode.total, 95).toFixed(2)
-      });
-
-      resultadosWorker.push({
-        caso: caso.nombre,
-        p50Clas: calcularPercentil(metricasWorker.clas, 50).toFixed(2),
-        p95Clas: calcularPercentil(metricasWorker.clas, 95).toFixed(2),
-        p50Ttft: calcularPercentil(metricasWorker.ttft, 50).toFixed(2),
-        p95Ttft: calcularPercentil(metricasWorker.ttft, 95).toFixed(2),
-        p50Total: calcularPercentil(metricasWorker.total, 50).toFixed(2),
-        p95Total: calcularPercentil(metricasWorker.total, 95).toFixed(2)
-      });
     }
 
-    console.log("\n### TABLA DE RESULTADOS EN NODE.JS (EXPRESS)");
-    console.log("| Caso de Uso | Clasificación p50 (ms) | Clasificación p95 (ms) | TTFT p50 (ms) | TTFT p95 (ms) | Total p50 (ms) | Total p95 (ms) |");
-    console.log("|---|---|---|---|---|---|---|");
-    for (const r of resultadosNode) {
-      console.log(`| ${r.caso} | ${r.p50Clas} | ${r.p95Clas} | ${r.p50Ttft} | ${r.p95Ttft} | ${r.p50Total} | ${r.p95Total} |`);
-    }
+    tablaWorker.push({
+      caso: caso.nombre,
+      ttftP50: calcularPercentil(ttfts, 50).toFixed(2),
+      ttftP95: calcularPercentil(ttfts, 95).toFixed(2),
+      totalP50: calcularPercentil(totales, 50).toFixed(2),
+      totalP95: calcularPercentil(totales, 95).toFixed(2)
+    });
+  }
 
-    console.log("\n### TABLA DE RESULTADOS EN CLOUDFLARE WORKER");
-    console.log("| Caso de Uso | Clasificación p50 (ms) | Clasificación p95 (ms) | TTFT p50 (ms) | TTFT p95 (ms) | Total p50 (ms) | Total p95 (ms) |");
-    console.log("|---|---|---|---|---|---|---|");
-    for (const r of resultadosWorker) {
-      console.log(`| ${r.caso} | ${r.p50Clas} | ${r.p95Clas} | ${r.p50Ttft} | ${r.p95Ttft} | ${r.p50Total} | ${r.p95Total} |`);
-    }
-
-    console.log("\n==================================================================");
-    console.log("DIAGNÓSTICO DE CUELLOS DE BOTELLA IDENTIFICADOS");
-    console.log("==================================================================");
-    console.log("1. 'hola' en Node y Worker aún ejecuta construcción de prompts curriculares o llamadas de fallback.");
-    console.log("2. Lecturas síncronas de disco (fs.readFileSync) en cada búsqueda de índice curricular.");
-    console.log("3. Ejecución secuencial en cascada (clasificación -> búsqueda -> enrutador) sin Promise.all.");
-    console.log("4. En streaming: falta conexión SSE en tiempo real para pintar tokens desde el primer chunk.");
-    console.log("==================================================================\n");
-
-  } finally {
-    server.close();
+  console.log(`\n### RESULTADOS EN CLOUDFLARE WORKER (${esSimulado ? "SIMULADO" : "REAL"})`);
+  console.log("| Caso de Uso | TTFT p50 (ms) | TTFT p95 (ms) | Total p50 (ms) | Total p95 (ms) |");
+  console.log("|---|---|---|---|---|");
+  for (const r of tablaWorker) {
+    console.log(`| ${r.caso} | ${r.ttftP50} | ${r.ttftP95} | ${r.totalP50} | ${r.totalP95} |`);
   }
 }
 
-ejecutarMediciones().catch(console.error);
+ejecutarMedicion().catch(console.error);

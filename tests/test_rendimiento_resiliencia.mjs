@@ -21,6 +21,7 @@ const { generarRespuestaCharlaLocal: generarCharlaNode } = require("../server/ia
 const { enrutarPeticion } = require("../server/ia/enrutadorIA.js");
 const {
   generarClaveCurricular,
+  obtenerClaveStringRaw,
   guardarRespuestaEnCache,
   obtenerRespuestaDeCache,
   esRespuestaCacheable,
@@ -265,6 +266,51 @@ describe("Rendimiento, Resiliencia y Presupuesto de Ejecución", () => {
       assert.strictEqual(resultado.desde_cache, true);
       assert.strictEqual(resultado.origen, "cache_en_memoria");
       assert.ok(duracion < 20, `La respuesta en caché debe ser instantánea (< 20 ms), tomó ${duracion.toFixed(2)} ms`);
+    });
+
+    it("Aislamiento de caché por docente: dos docentes con perfil distinto NO comparten el mismo plan", () => {
+      const perfilDocenteA = {
+        escuela: "Escuela República de Panamá",
+        tanda: "matutina",
+        enfoque: "constructivista_conbase"
+      };
+
+      const perfilDocenteB = {
+        escuela: "Liceo Unión Panamericana",
+        tanda: "vespertina",
+        enfoque: "aprendizaje_por_proyectos"
+      };
+
+      const consultaComun = {
+        grado: "3er grado",
+        area: "Matemática",
+        tema: "Fracciones equivalentes",
+        nivel: "primario",
+        periodo: "diaria"
+      };
+
+      const rawA = obtenerClaveStringRaw({ ...consultaComun, perfilDocente: perfilDocenteA });
+      const rawB = obtenerClaveStringRaw({ ...consultaComun, perfilDocente: perfilDocenteB });
+      const claveA = generarClaveCurricular({ ...consultaComun, perfilDocente: perfilDocenteA });
+      const claveB = generarClaveCurricular({ ...consultaComun, perfilDocente: perfilDocenteB });
+
+      // 1. Validar que las cadenas raw y los hashes SHA-256 son diferentes
+      assert.ok(rawA.includes("enfoque:constructivista_conbase"));
+      assert.ok(rawB.includes("enfoque:aprendizaje_por_proyectos"));
+      assert.notStrictEqual(rawA, rawB, "Las cadenas raw deben ser distintas según el perfil");
+      assert.notStrictEqual(claveA, claveB, "Los hashes SHA-256 deben ser estrictamente diferentes");
+
+      // 2. Guardar plan personalizado del Docente A
+      const planDocenteA = {
+        plan_completado: true,
+        mensaje_chat: "Plan de Fracciones para República de Panamá con CON BASE",
+        datos_planificacion: { escuela: "República de Panamá", estrategia: "Manipulativos CON BASE" }
+      };
+      guardarRespuestaEnCache(claveA, planDocenteA);
+
+      // 3. Comprobar que Docente A recupera su plan, pero Docente B recibe null (fallo de caché)
+      assert.ok(obtenerRespuestaDeCache(claveA) !== null, "Docente A debe encontrar su plan en caché");
+      assert.strictEqual(obtenerRespuestaDeCache(claveB), null, "Docente B NO debe recibir el plan de Docente A");
     });
   });
 });

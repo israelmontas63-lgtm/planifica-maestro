@@ -14,15 +14,31 @@ const TTL_DEFAULT_MS = 60 * 60 * 1000; // 1 hora
 
 const cacheCurricular = new Map(); // hash -> { datos, expiraEn }
 
-function generarClaveCurricular({ grado = "", area = "", tema = "", nivel = "", periodo = "" }) {
+function obtenerClaveStringRaw({ grado = "", area = "", tema = "", nivel = "", periodo = "", perfilDocente = null, docenteId = "" }) {
   if (!tema || typeof tema !== "string" || !tema.trim()) return null;
-  const raw = [
+
+  let perfilIdentificador = "";
+  if (perfilDocente && typeof perfilDocente === "object") {
+    const clavesOrdenadas = Object.keys(perfilDocente).sort();
+    const partes = clavesOrdenadas.map(k => `${k}:${String(perfilDocente[k])}`);
+    perfilIdentificador = partes.join(";");
+  } else if (docenteId) {
+    perfilIdentificador = String(docenteId);
+  }
+
+  return [
     (grado || "").trim().toLowerCase(),
     (area || "").trim().toLowerCase(),
     (tema || "").trim().toLowerCase(),
     (nivel || "").trim().toLowerCase(),
-    (periodo || "").trim().toLowerCase()
+    (periodo || "").trim().toLowerCase(),
+    perfilIdentificador.trim().toLowerCase()
   ].join("|");
+}
+
+function generarClaveCurricular(params) {
+  const raw = obtenerClaveStringRaw(params);
+  if (!raw) return null;
   return crypto.createHash("sha256").update(raw).digest("hex");
 }
 
@@ -86,6 +102,7 @@ function tamanoCacheCurricular() {
 
 module.exports = {
   generarClaveCurricular,
+  obtenerClaveStringRaw,
   esRespuestaCacheable,
   obtenerRespuestaDeCache,
   guardarRespuestaEnCache,

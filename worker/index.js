@@ -645,11 +645,12 @@ async function handleApiRequest(request, env, ctx) {
       });
     }
 
-    // 4. MODO CONOCIMIENTO GENERAL -> Conversacional directo sin buscar en currículo oficial
+    // 4. MODO CONOCIMIENTO GENERAL -> Conversacional directo con modelo sin buscar en currículo oficial
     if (clasificacion.categoria === "conocimiento_general" && !imageBase64) {
       const aviso = "\n\n*(Nota: Esta es una explicación pedagógica general, no una cita textual del currículo oficial MINERD. Si deseas llevar este concepto a una actividad de clase o situación de aprendizaje, dime el grado y lo armamos.)*";
-      const glosarioMatch = buscarEnGlosario(textoConsulta);
+
       if (!env.GEMINI_API_KEY) {
+        const glosarioMatch = buscarEnGlosario(textoConsulta);
         const def = glosarioMatch ? `**${glosarioMatch.termino}**: ${glosarioMatch.definicion}` : `He analizado tu consulta sobre "${textoConsulta}". Como colega te comento que es un concepto clave.`;
         return responderWorker({
           data: {
@@ -662,6 +663,62 @@ async function handleApiRequest(request, env, ctx) {
           estado: "conversando"
         });
       }
+
+      // Llamar al modelo de IA con prompt conversacional
+      try {
+        const models = getGeminiModels(env);
+        let textoGenerado = "";
+        for (const model of models) {
+          try {
+            const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+            const res = await fetchGeminiWithRetry(geminiUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "x-goog-api-key": env.GEMINI_API_KEY,
+              },
+              body: JSON.stringify({
+                contents: [{ role: "user", parts: [{ text: textoConsulta }] }],
+                systemInstruction: { parts: [{ text: SYSTEM_PROMPT_CONVERSACIONAL }] },
+                generationConfig: { temperature: 0.3 }
+              }),
+              signal: request.signal,
+            });
+            if (res && res.ok) {
+              const data = await res.json();
+              textoGenerado = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+              if (textoGenerado) break;
+            }
+          } catch (e) {}
+        }
+
+        if (textoGenerado) {
+          const finalChat = textoGenerado.includes("currículo oficial") ? textoGenerado : `${textoGenerado}${aviso}`;
+          return responderWorker({
+            data: {
+              mensaje_chat: finalChat,
+              plan_completado: false,
+              modo: "conocimiento_general",
+              categoria: "conocimiento_general",
+              datos_planificacion: null
+            },
+            estado: "conversando"
+          });
+        }
+      } catch (err) {}
+
+      const glosarioMatch = buscarEnGlosario(textoConsulta);
+      const def = glosarioMatch ? `**${glosarioMatch.termino}**: ${glosarioMatch.definicion}` : `He analizado tu consulta sobre "${textoConsulta}". Como colega te comento que es un concepto clave.`;
+      return responderWorker({
+        data: {
+          mensaje_chat: `${def}${aviso}`,
+          plan_completado: false,
+          modo: "conocimiento_general",
+          categoria: "conocimiento_general",
+          datos_planificacion: null
+        },
+        estado: "conversando"
+      });
     }
 
     const esquema = LEVELS[nivel] || LEVELS["primario"];
@@ -674,7 +731,9 @@ async function handleApiRequest(request, env, ctx) {
           area: body.area || "",
           tema: textoConsulta,
           nivel: nivel || "primario",
-          periodo: periodo || "diaria"
+          periodo: periodo || "diaria",
+          perfilDocente: body.perfilDocente || null,
+          docenteId: resolvedDocenteId
         })
       : null;
 

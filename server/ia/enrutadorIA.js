@@ -433,7 +433,9 @@ async function enrutarPeticion({
   mediaType = null,
   env = {},
   onChunk = null,
-  signal = null
+  signal = null,
+  perfilDocente = null,
+  docenteId = ""
 }) {
   const config = cargarConfiguracion();
   const configGeneral = config.configuracion_general || {};
@@ -465,7 +467,9 @@ async function enrutarPeticion({
   }
 
   // 3. Consulta a Caché en Memoria (LRU + TTL) para consultas curriculares idénticas
-  const claveCache = (!imageBase64 && tema) ? generarClaveCurricular({ grado, area, tema, nivel, periodo: periodoActivo }) : null;
+  const claveCache = (!imageBase64 && tema)
+    ? generarClaveCurricular({ grado, area, tema, nivel, periodo: periodoActivo, perfilDocente, docenteId })
+    : null;
   if (claveCache) {
     const respuestaEnCache = obtenerRespuestaDeCache(claveCache);
     if (respuestaEnCache) {

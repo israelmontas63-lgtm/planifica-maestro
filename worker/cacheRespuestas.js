@@ -12,15 +12,31 @@ const TTL_DEFAULT_MS = 60 * 60 * 1000; // 1 hora
 
 const cacheCurricular = new Map(); // hash -> { datos, expiraEn }
 
-export async function generarClaveCurricularSha256({ grado = "", area = "", tema = "", nivel = "", periodo = "" }) {
+export function obtenerClaveStringRawWorker({ grado = "", area = "", tema = "", nivel = "", periodo = "", perfilDocente = null, docenteId = "" }) {
   if (!tema || typeof tema !== "string" || !tema.trim()) return null;
-  const raw = [
+
+  let perfilIdentificador = "";
+  if (perfilDocente && typeof perfilDocente === "object") {
+    const clavesOrdenadas = Object.keys(perfilDocente).sort();
+    const partes = clavesOrdenadas.map(k => `${k}:${String(perfilDocente[k])}`);
+    perfilIdentificador = partes.join(";");
+  } else if (docenteId) {
+    perfilIdentificador = String(docenteId);
+  }
+
+  return [
     (grado || "").trim().toLowerCase(),
     (area || "").trim().toLowerCase(),
     (tema || "").trim().toLowerCase(),
     (nivel || "").trim().toLowerCase(),
-    (periodo || "").trim().toLowerCase()
+    (periodo || "").trim().toLowerCase(),
+    perfilIdentificador.trim().toLowerCase()
   ].join("|");
+}
+
+export async function generarClaveCurricularSha256(params) {
+  const raw = obtenerClaveStringRawWorker(params);
+  if (!raw) return null;
 
   try {
     const msgUint8 = new TextEncoder().encode(raw);
