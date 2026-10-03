@@ -77,8 +77,13 @@ function generarRespuestaCharlaLocal({ texto = "", nombreDocente = null }) {
 
   let respuesta = lista[idx % lista.length];
   if (nombreDocente && typeof nombreDocente === "string" && nombreDocente.trim()) {
-    const primerNombre = nombreDocente.trim().split(" ")[0];
-    respuesta = respuesta.replace(/Profe|colega/i, `Profe ${primerNombre}`);
+    const sinPrefijo = nombreDocente.trim().replace(/^(profe|prof\.|profesor|profesora|maestro|maestra|colega)\s+/i, "");
+    const primerNombre = sinPrefijo.split(" ")[0] || "colega";
+    if (/Profe|colega/i.test(respuesta)) {
+      respuesta = respuesta.replace(/Profe|colega/i, `Profe ${primerNombre}`);
+    } else {
+      respuesta = `¡Hola, Profe ${primerNombre}! ` + respuesta.replace(/^¡/, "");
+    }
   }
 
   return {

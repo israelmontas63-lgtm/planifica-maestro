@@ -9,7 +9,7 @@
     "preview": "npm run preview --prefix client",
     "deploy": "node scripts/deploy.js",
     "indexar-curriculo": "node scripts/extraer_textos.js && node scripts/estructurar_curriculo.js && node scripts/indexar_curriculo.js",
-    "test": "node --test tests/fase15_pruebas.test.mjs tests/test_enrutador_ia.mjs tests/test_clasificador_intencion.mjs tests/test_buscador_curricular.mjs tests/test_enrutador_voz.mjs tests/test_endurecimiento_fase_h.mjs tests/test_pwa_lifecycle.mjs tests/test_two_builds_simulation.mjs tests/test_fase1_integridad.mjs tests/test_conexion_completa_botones.mjs tests/test_eliminacion_cuenta_y_voz.mjs tests/test_comportamiento_voz_camara.mjs",
+    "test": "node --test tests/fase15_pruebas.test.mjs tests/test_enrutador_ia.mjs tests/test_clasificador_intencion.mjs tests/test_buscador_curricular.mjs tests/test_enrutador_voz.mjs tests/test_endurecimiento_fase_h.mjs tests/test_pwa_lifecycle.mjs tests/test_two_builds_simulation.mjs tests/test_fase1_integridad.mjs tests/test_conexion_completa_botones.mjs tests/test_eliminacion_cuenta_y_voz.mjs tests/test_comportamiento_voz_camara.mjs tests/test_rendimiento_resiliencia.mjs",
     "test:all": "npm test"
   },
   "devDependencies": {
