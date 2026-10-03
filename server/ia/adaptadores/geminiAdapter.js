@@ -54,19 +54,33 @@ async function llamarGemini({
     else signal.addEventListener("abort", () => controller.abort(), { once: true });
   }
 
+  const timeoutPrimerToken = 4000;
+  let primerTokenRecibido = false;
+  let falloPorPrimerToken = false;
+  const timerPrimerToken = setTimeout(() => {
+    if (!primerTokenRecibido) {
+      falloPorPrimerToken = true;
+      controller.abort();
+    }
+  }, timeoutPrimerToken);
+
   // Modo Streaming SSE en tiempo real si se provee callback onChunk
   if (typeof onChunk === "function") {
     const streamUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:streamGenerateContent?alt=sse&key=${apiKey}`;
     try {
       const res = await fetch(streamUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Connection": "keep-alive"
+        },
         body: JSON.stringify(cuerpoPeticion),
         signal: controller.signal
       });
       clearTimeout(timer);
 
       if (!res.ok) {
+        clearTimeout(timerPrimerToken);
         const errText = await res.text().catch(() => "");
         const err = new Error(`Error en Gemini (${res.status}): ${errText}`);
         err.status = res.status;
@@ -85,6 +99,12 @@ async function llamarGemini({
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
+
+          if (!primerTokenRecibido) {
+            primerTokenRecibido = true;
+            clearTimeout(timerPrimerToken);
+          }
+
           const chunk = decoder.decode(value, { stream: true });
           const lines = chunk.split("\n");
           for (const line of lines) {
@@ -104,16 +124,27 @@ async function llamarGemini({
           }
         }
       } else {
+        primerTokenRecibido = true;
+        clearTimeout(timerPrimerToken);
         const rawText = await res.text();
         textoCompleto = rawText;
       }
 
+      clearTimeout(timerPrimerToken);
       return {
         texto: textoCompleto,
         modeloUsado: modelo
       };
     } catch (err) {
       clearTimeout(timer);
+      clearTimeout(timerPrimerToken);
+      if (falloPorPrimerToken) {
+        const tokenErr = new Error(`Tiempo de espera al primer token agotado (${timeoutPrimerToken}ms) en ${modelo}`);
+        tokenErr.status = 504;
+        tokenErr.esTimeout = true;
+        tokenErr.esTimeoutPrimerToken = true;
+        throw tokenErr;
+      }
       if (err.name === "AbortError") {
         const timeErr = new Error(`Tiempo de espera agotado (${timeoutMs}ms) en ${modelo}`);
         timeErr.status = 504;
@@ -127,10 +158,15 @@ async function llamarGemini({
   try {
     const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Connection": "keep-alive"
+      },
       body: JSON.stringify(cuerpoPeticion),
       signal: controller.signal
     });
+    primerTokenRecibido = true;
+    clearTimeout(timerPrimerToken);
     clearTimeout(timer);
 
     if (!res.ok) {
@@ -154,6 +190,14 @@ async function llamarGemini({
     };
   } catch (err) {
     clearTimeout(timer);
+    clearTimeout(timerPrimerToken);
+    if (falloPorPrimerToken) {
+      const tokenErr = new Error(`Tiempo de espera al primer token agotado (${timeoutPrimerToken}ms) en ${modelo}`);
+      tokenErr.status = 504;
+      tokenErr.esTimeout = true;
+      tokenErr.esTimeoutPrimerToken = true;
+      throw tokenErr;
+    }
     if (err.name === "AbortError") {
       const timeErr = new Error(`Tiempo de espera agotado (${timeoutMs}ms) en ${modelo}`);
       timeErr.status = 504;

@@ -27,7 +27,8 @@ async function llamarGroq({
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Connection": "keep-alive"
       },
       body: JSON.stringify({
         model: modelo,

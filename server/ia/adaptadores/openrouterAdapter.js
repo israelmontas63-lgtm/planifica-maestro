@@ -29,7 +29,8 @@ async function llamarOpenRouter({
         "Authorization": `Bearer ${apiKey}`,
         "HTTP-Referer": "https://planifica-maestro.israelmontas65.workers.dev",
         "X-Title": "Planifica Maestro",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Connection": "keep-alive"
       },
       body: JSON.stringify({
         model: modelo,

@@ -7,6 +7,12 @@ const { generarDesdeBibliotecaOficial } = require("./modoBibliotecaOficial.js");
 const { registrarLlamada } = require("./registroUso.js");
 const { puedeRealizarConsulta, registrarConsultaRealizada } = require("./gestorGasto.js");
 const { cargarEstadoCircuitos, guardarEstadoCircuitos } = require("./persistenciaEstado.js");
+const {
+  generarClaveCurricular,
+  esRespuestaCacheable,
+  obtenerRespuestaDeCache,
+  guardarRespuestaEnCache
+} = require("./cacheRespuestas.js");
 
 /**
  * server/ia/enrutadorIA.js
@@ -458,7 +464,29 @@ async function enrutarPeticion({
     }
   }
 
-  // 3. Cadena de proveedores ordenados por prioridad
+  // 3. Consulta a Caché en Memoria (LRU + TTL) para consultas curriculares idénticas
+  const claveCache = (!imageBase64 && tema) ? generarClaveCurricular({ grado, area, tema, nivel, periodo: periodoActivo }) : null;
+  if (claveCache) {
+    const respuestaEnCache = obtenerRespuestaDeCache(claveCache);
+    if (respuestaEnCache) {
+      console.log(`⚡ [Caché Curricular] Acierto de caché en memoria para: "${tema}" (${grado} - ${area})`);
+      registrarLlamada({
+        proveedorId: "cache_en_memoria",
+        modelo: "lru_sha256",
+        duracionMs: Date.now() - tiempoInicio,
+        exito: true,
+        esRespaldo: false,
+        origen: "cache_en_memoria"
+      });
+      return {
+        ...respuestaEnCache,
+        desde_cache: true,
+        distintivo: "Recuperado de caché educativa en memoria"
+      };
+    }
+  }
+
+  // 4. Cadena de proveedores ordenados por prioridad
   const proveedores = [...(config.proveedores_texto || [])].sort((a, b) => a.prioridad - b.prioridad);
 
   let intentosRealizados = 0;
@@ -561,6 +589,11 @@ async function enrutarPeticion({
         throw new Error(`El proveedor ${prov.nombre} devolvió una respuesta vacía o no estructurada.`);
       }
 
+      // Guardar en caché si es una planificación completa válida
+      if (claveCache && esRespuestaCacheable(jsonParsed)) {
+        guardarRespuestaEnCache(claveCache, jsonParsed);
+      }
+
       // Éxito comprobado
       registrarExitoCircuito(prov.id);
       registrarConsultaRealizada();
@@ -583,6 +616,10 @@ async function enrutarPeticion({
     } catch (err) {
       const duracionFallo = Date.now() - inicioIntento;
       ultimoError = err;
+
+      if (err.name === "AbortError" && signal && signal.aborted) {
+        throw err;
+      }
 
       // REGLA: Si es error de configuración (400, 401, 403), NO activa el respaldo ni cicla otros proveedores
       const esConfiguracion = err.esConfiguracion || err.status === 400 || err.status === 401 || err.status === 403 || (err.message && (err.message.includes("API key not valid") || err.message.includes("API_KEY_INVALID")));
@@ -619,7 +656,11 @@ async function enrutarPeticion({
         esRespaldo
       });
 
-      console.warn(`⚠️ [Enrutador IA] Falló ${prov.nombre} (${err.message}). Conmutando al siguiente proveedor...`);
+      if (err.esTimeoutPrimerToken) {
+        console.warn(`⚡ [Conmutación Rápida] Proveedor ${prov.nombre} no emitió primer token a tiempo (${err.message}). Conmutando al siguiente proveedor...`);
+      } else {
+        console.warn(`⚠️ [Enrutador IA] Falló ${prov.nombre} (${err.message}). Conmutando al siguiente proveedor...`);
+      }
     }
   }
 

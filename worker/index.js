@@ -5,6 +5,12 @@ import { generateVoice } from "./services/voiceProvider.js";
 import { clasificarIntencion } from "./clasificadorIntencion.js";
 import { generarRespuestaCharlaLocal, SYSTEM_PROMPT_CONVERSACIONAL } from "./modoConversacional.js";
 import { buscarEnGlosario } from "./glosarioDocente.js";
+import {
+  generarClaveCurricularSha256,
+  obtenerRespuestaDeCache,
+  guardarRespuestaEnCache,
+  esRespuestaCacheable
+} from "./cacheRespuestas.js";
 
 /**
  * Planifica Maestro - Cloudflare Worker Backend
@@ -661,6 +667,35 @@ async function handleApiRequest(request, env, ctx) {
     const esquema = LEVELS[nivel] || LEVELS["primario"];
     const instruccionesTemporal = PROFUNDIDAD_TEMPORAL[periodo] || PROFUNDIDAD_TEMPORAL["diaria"];
 
+    // Caché segura en memoria (SHA-256 curricular sin datos personales)
+    const claveCache = (!imageBase64 && textoConsulta)
+      ? await generarClaveCurricularSha256({
+          grado: body.grado || "",
+          area: body.area || "",
+          tema: textoConsulta,
+          nivel: nivel || "primario",
+          periodo: periodo || "diaria"
+        })
+      : null;
+
+    if (claveCache) {
+      const respCache = obtenerRespuestaDeCache(claveCache);
+      if (respCache) {
+        return responderWorker({
+          data: {
+            ...respCache,
+            planId: "plan_" + Date.now(),
+            nivel,
+            periodo,
+            nivelLabel: esquema.label,
+            origen: "cache_en_memoria",
+            cuota: cheqCuota
+          },
+          estado: "curriculo"
+        });
+      }
+    }
+
     // Fecha de la planificación: indicada por el maestro o calculada hoy en hora de República Dominicana
     let fechaPlanificacion = (body.fecha || "").trim();
     if (!fechaPlanificacion) {
@@ -908,6 +943,10 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
               cuota: estadoActualizado,
             };
 
+            if (claveCache && esRespuestaCacheable(parsedFinal)) {
+              guardarRespuestaEnCache(claveCache, parsedFinal);
+            }
+
             await writer.write(encoder.encode(`data: ${JSON.stringify({ final: finalPayload })}\n\n`));
             await writer.write(encoder.encode("data: [DONE]\n\n"));
           } catch (err) {
@@ -998,6 +1037,10 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
           if (parsed.datos_planificacion.fecha) {
             parsed.datos_planificacion.fecha = fechaPlanificacion;
           }
+        }
+
+        if (claveCache && esRespuestaCacheable(parsed)) {
+          guardarRespuestaEnCache(claveCache, parsed);
         }
 
         return new Response(
