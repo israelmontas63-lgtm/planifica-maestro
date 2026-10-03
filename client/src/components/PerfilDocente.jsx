@@ -10,19 +10,19 @@ export default function PerfilDocente({ user, onActualizarPerfil, onCerrar }) {
   const [guardado, setGuardado] = useState(false);
 
   useEffect(() => {
-    const perfil = cargarPerfil();
+    const perfil = cargarPerfil() || {};
     // Priorizar datos de user_metadata de Supabase si existen
-    const userNombre = user?.user_metadata?.nombre || user?.user_metadata?.full_name || perfil.nombre || "";
-    const userEscuela = user?.user_metadata?.escuela || perfil.escuela || "";
+    const userNombre = user?.user_metadata?.nombre || user?.user_metadata?.full_name || perfil?.nombre || "";
+    const userEscuela = user?.user_metadata?.escuela || perfil?.escuela || "";
 
     setNombre(userNombre);
     setEscuela(userEscuela);
-    setFecha(perfil.fecha || new Date().toISOString().split("T")[0]);
-    setFechaManual(perfil.fechaManual || false);
+    setFecha(perfil?.fecha || new Date().toISOString().split("T")[0]);
+    setFechaManual(Boolean(perfil?.fechaManual));
   }, [user]);
 
   const handleGuardar = async () => {
-    const perfilActual = cargarPerfil();
+    const perfilActual = cargarPerfil() || {};
     guardarPerfil({ ...perfilActual, nombre, escuela, fecha, fechaManual });
 
     // FASE 17 - Punto 2: Fusión de perfil en user_metadata de Supabase
@@ -98,6 +98,10 @@ export default function PerfilDocente({ user, onActualizarPerfil, onCerrar }) {
           <button className="perfil-guardar" onClick={handleGuardar}>
             {guardado ? "✓ Guardado y Sincronizado" : "Guardar Perfil"}
           </button>
+
+          <div style={{ textAlign: "center", marginTop: "14px", fontSize: "11px", color: "#64748b", fontWeight: "500" }}>
+            Planifica Maestro PWA — Versión: <span style={{ fontFamily: "monospace", fontWeight: "700", color: "#0f766e" }}>{typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "1.0.0"}</span>
+          </div>
         </div>
       </div>
     </div>

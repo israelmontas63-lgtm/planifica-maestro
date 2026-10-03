@@ -15,8 +15,12 @@ function getPerfilKey(userId) {
   return `pm_perfil_${userId}`;
 }
 
+export function obtenerDocenteId() {
+  return obtenerUsuarioIdActual() || null;
+}
+
 export function cargarPerfil(userIdOverride) {
-  const userId = userIdOverride || obtenerUsuarioIdActual();
+  const userId = userIdOverride || obtenerDocenteId();
   if (!userId) {
     // Sin sesión activa, no hay perfil guardado
     return null;
@@ -28,29 +32,14 @@ export function cargarPerfil(userIdOverride) {
     if (saved) {
       return JSON.parse(saved);
     }
-  } catch (e) {
-    console.warn("Error leyendo perfil de localStorage:", e);
+  } catch (err) {
+    console.error("Error cargando perfil:", err);
   }
-
-  const defaultPerfil = {
-    docenteId: userId,
-    nombre: "",
-    escuela: "",
-    tanda: "",
-    grado: "",
-    materias: [],
-    fecha: new Date().toISOString().split("T")[0]
-  };
-
-  try {
-    localStorage.setItem(key, JSON.stringify(defaultPerfil));
-  } catch (e) {}
-
-  return defaultPerfil;
+  return null;
 }
 
 export function guardarPerfil(perfil, userIdOverride) {
-  const userId = userIdOverride || obtenerUsuarioIdActual();
+  const userId = userIdOverride || obtenerDocenteId();
   if (!userId) {
     console.warn("No se puede guardar perfil sin un usuario autenticado.");
     return;
@@ -58,19 +47,15 @@ export function guardarPerfil(perfil, userIdOverride) {
 
   const key = getPerfilKey(userId);
   const dataToSave = {
-    ...perfil,
+    ...(perfil || {}),
     docenteId: userId,
   };
 
   try {
     localStorage.setItem(key, JSON.stringify(dataToSave));
-  } catch (e) {
-    console.error("Error guardando perfil:", e);
+  } catch (err) {
+    console.error("Error guardando perfil:", err);
   }
-}
-
-export function obtenerDocenteId() {
-  return obtenerUsuarioIdActual() || null;
 }
 
 export function obtenerPerfil(userIdOverride) {

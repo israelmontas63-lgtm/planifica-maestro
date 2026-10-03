@@ -95,12 +95,14 @@ router.get("/owner-stats", (req, res) => {
       });
     }
 
+    const { tipoPersistencia } = require("../ia/persistenciaEstado.js");
     return res.json({
       ok: true,
       stats: {
         totalDocentes,
         totalPlanificaciones,
-        listaDocentes: lista
+        listaDocentes: lista,
+        persistencia: tipoPersistencia()
       }
     });
   } catch (err) {
