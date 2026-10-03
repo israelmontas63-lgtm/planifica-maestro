@@ -12,6 +12,7 @@ import { useAuth } from "./hooks/useAuth.js";
 import { generarPlanificacion, exportarWord, generarVoz, guardarAjustesPlan, obtenerCuotaDocente, obtenerOwnerKey } from "./services/api.js";
 import { registrarAjusteConRespaldoOffline, sincronizarAjustesPendientes } from "./services/offlineSync.js";
 import { guardarPlanEnBiblioteca } from "./services/bibliotecaStorage.js";
+import { comprimirYRedimensionarImagen } from "./services/imageOptimizer.js";
 
 // Modales y componentes secundarios con carga diferida (Lazy Loading) para carga móvil instantánea
 const PlanResult = lazy(() => import("./components/PlanResult.jsx"));
@@ -66,6 +67,8 @@ export default function App() {
   // Chat History
   const [messages, setMessages] = useState([]);
   const [cargando, setCargando] = useState(false);
+  const [cambiandoARespaldo, setCambiandoARespaldo] = useState(false);
+  const timerRespaldoRef = useRef(null);
   const [streamingText, setStreamingText] = useState("");
   const [errorGeneracion, setErrorGeneracion] = useState(null);
   const abortControllerRef = useRef(null);
@@ -76,8 +79,55 @@ export default function App() {
   const [escuchando, setEscuchando] = useState(false);
   const [audioUrl, setAudioUrl] = useState(null);
 
+  // Image states
+  const [escaneandoFoto, setEscaneandoFoto] = useState(false);
+
   // PWA Install prompt state
   const [installPrompt, setInstallPrompt] = useState(null);
+  const [updatePending, setUpdatePending] = useState(false);
+
+  useEffect(() => {
+    const handleUpdatePending = () => {
+      setUpdatePending(true);
+    };
+
+    window.addEventListener("pm:update-pending", handleUpdatePending);
+    return () => {
+      window.removeEventListener("pm:update-pending", handleUpdatePending);
+      if (timerRespaldoRef.current) clearTimeout(timerRespaldoRef.current);
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.__PM_PWA__ = {
+        isBusy: () => Boolean(cargando || escuchando || escaneandoFoto || exportando),
+        saveDraft: () => {
+          try {
+            const draft = {
+              fecha: Date.now(),
+              nivel,
+              periodo,
+              streamingText,
+              messagesCount: messages.length
+            };
+            localStorage.setItem("pm_borrador_emergencia", JSON.stringify(draft));
+          } catch (e) {
+            console.warn("⚠️ Error guardando borrador de emergencia PWA:", e);
+          }
+        }
+      };
+    }
+  }, [cargando, escuchando, escaneandoFoto, exportando, nivel, periodo, streamingText, messages]);
+
+  const aplicarActualizacionPWA = () => {
+    if (typeof window !== "undefined" && typeof window.__PM_PENDING_RELOAD__ === "function") {
+      window.__PM_PENDING_RELOAD__();
+    } else {
+      window.location.reload();
+    }
+  };
 
   useEffect(() => {
     const handleBeforeInstall = (e) => {
@@ -228,8 +278,14 @@ export default function App() {
     }
 
     setCargando(true);
+    setCambiandoARespaldo(false);
     setStreamingText("");
     abortControllerRef.current = new AbortController();
+
+    if (timerRespaldoRef.current) clearTimeout(timerRespaldoRef.current);
+    timerRespaldoRef.current = setTimeout(() => {
+      setCambiandoARespaldo(true);
+    }, 7000);
 
     try {
       const data = await generarPlanificacion({
@@ -258,6 +314,9 @@ export default function App() {
         datosGenerados: planCompleto ? planDatos : null,
         confianzaCurricular: data.confianzaCurricular || null,
         planId: data.planId || null,
+        distintivo: data.distintivo || null,
+        esRespaldo: data.es_respaldo || false,
+        origen: data.origen || null,
       };
       setMessages([...newHistory, newAssistantMsg]);
 
@@ -280,18 +339,22 @@ export default function App() {
         lastHistory: newHistory,
       });
     } finally {
+      if (timerRespaldoRef.current) clearTimeout(timerRespaldoRef.current);
       setCargando(false);
+      setCambiandoARespaldo(false);
       setStreamingText("");
       abortControllerRef.current = null;
     }
   }
 
   function handleCancelarGeneracion() {
+    if (timerRespaldoRef.current) clearTimeout(timerRespaldoRef.current);
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
     setCargando(false);
+    setCambiandoARespaldo(false);
     setStreamingText("");
   }
 
@@ -342,6 +405,22 @@ export default function App() {
     setNotificacionesOpen(false);
     setConfiguracionOpen(false);
     setAyudaOpen(false);
+  }
+
+  async function handleImageFile(file) {
+    if (!file) return;
+    setProcesandoImagen(true);
+    try {
+      const optimizada = await comprimirYRedimensionarImagen(file, 1600, 0.82);
+      await handleImageSelected(optimizada.dataUrl, optimizada.mediaType);
+    } catch (err) {
+      console.warn("Fallo compresión en canvas, usando lectura directa:", err);
+      const reader = new FileReader();
+      reader.onload = () => handleImageSelected(reader.result, file.type || "image/jpeg");
+      reader.readAsDataURL(file);
+    } finally {
+      setProcesandoImagen(false);
+    }
   }
 
   async function handleImageSelected(dataUrl, mediaType) {
@@ -450,6 +529,46 @@ export default function App() {
         </div>
       )}
 
+      {updatePending && (
+        <aside
+          role="status"
+          aria-live="polite"
+          className="pm-update-banner no-print"
+          style={{
+            background: "#0284c7",
+            color: "#ffffff",
+            padding: "8px 16px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            fontSize: "13px",
+            fontWeight: "600",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+            position: "sticky",
+            top: 0,
+            zIndex: 9999
+          }}
+        >
+          <span>🚀 Hay una nueva versión de Planifica Maestro disponible.</span>
+          <button
+            type="button"
+            onClick={aplicarActualizacionPWA}
+            style={{
+              background: "#ffffff",
+              color: "#0369a1",
+              border: "none",
+              padding: "5px 12px",
+              borderRadius: "5px",
+              cursor: "pointer",
+              fontWeight: "700",
+              fontSize: "12px"
+            }}
+          >
+            Actualizar ahora
+          </button>
+        </aside>
+      )}
+
       <Header
         user={user}
         isOwner={isOwner}
@@ -515,10 +634,7 @@ export default function App() {
         style={{ display: "none" }}
         onChange={(e) => {
           const file = e.target.files?.[0];
-          if (!file) return;
-          const reader = new FileReader();
-          reader.onload = () => handleImageSelected(reader.result, file.type);
-          reader.readAsDataURL(file);
+          if (file) handleImageFile(file);
           e.target.value = "";
         }}
       />
@@ -568,6 +684,9 @@ export default function App() {
                 <PlanResult 
                   datosGenerados={m.datosGenerados}
                   confianzaCurricular={m.confianzaCurricular}
+                  distintivo={m.distintivo}
+                  esRespaldo={m.esRespaldo}
+                  origen={m.origen}
                   planId={m.planId}
                   nivel={nivel}
                   periodo={periodo}
@@ -710,7 +829,9 @@ export default function App() {
                 <span className="pm-dot pm-dot-3"></span>
               </div>
               <span className="pm-thinking-label">
-                {streamingText ? "organizando los momentos de la clase…" : "estoy buscando en el currículo…"}
+                {cambiandoARespaldo
+                  ? "El motor principal está lento, cambiando a respaldo…"
+                  : (streamingText ? "organizando los momentos de la clase…" : "estoy buscando en el currículo…")}
               </span>
               <button
                 type="button"

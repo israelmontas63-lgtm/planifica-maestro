@@ -2,11 +2,20 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { visualizer } from "rollup-plugin-visualizer";
+import { execSync } from "node:child_process";
+
+let commitHash = "cf";
+try {
+  commitHash = execSync("git rev-parse --short HEAD").toString().trim();
+} catch (e) {}
+
+const d = new Date();
+const buildVersion = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}-${commitHash}`;
 
 export default defineConfig({
   base: "/",
   define: {
-    __APP_VERSION__: JSON.stringify(new Date().toISOString()),
+    __APP_VERSION__: JSON.stringify(buildVersion),
   },
   resolve: {
     alias: {},
@@ -95,8 +104,14 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
-            urlPattern: /^\/api\/.*/,
+            urlPattern: /^\/api\/.*/i,
             handler: "NetworkOnly",
+            method: "GET",
+          },
+          {
+            urlPattern: /^\/api\/.*/i,
+            handler: "NetworkOnly",
+            method: "POST",
           },
         ],
       },

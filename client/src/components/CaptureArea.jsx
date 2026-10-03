@@ -1,14 +1,20 @@
 import { useRef } from "react";
+import { comprimirYRedimensionarImagen } from "../services/imageOptimizer.js";
 
 export default function CaptureArea({ imageSrc, onImageSelected, onRemoveImage, procesando }) {
   const fileInputRef = useRef(null);
 
-  const handleFile = (e) => {
+  const handleFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => onImageSelected(reader.result, file.type);
-    reader.readAsDataURL(file);
+    try {
+      const optimizada = await comprimirYRedimensionarImagen(file, 1600, 0.82);
+      onImageSelected(optimizada.dataUrl, optimizada.mediaType);
+    } catch (err) {
+      const reader = new FileReader();
+      reader.onload = () => onImageSelected(reader.result, file.type || "image/jpeg");
+      reader.readAsDataURL(file);
+    }
     // Reset file input so selecting the same file works again if needed
     e.target.value = "";
   };

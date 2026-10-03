@@ -242,7 +242,8 @@ const SECCIONES_PLANIFICACION = [
     subitems: [
       { label: "Plan diario general", isGeneral: true, accionKey: "plan_diario_general" },
       { label: "Registro de actividades", isGeneral: false, accionKey: "registro_actividades" },
-      { label: "Horario semanal detallado", isGeneral: false, accionKey: "horario_semanal_detallado" },
+      { label: "Horario semanal", isGeneral: false, accionKey: "horario_semanal_detallado" },
+      { label: "Día y horario detallado", isGeneral: false, accionKey: "registro_actividades" },
       { label: "Notas de aula", isGeneral: false, accionKey: "notas_aula" },
       { label: "Evaluación diaria", isGeneral: false, accionKey: "evaluacion_diaria" }
     ]
@@ -371,7 +372,9 @@ export default function BottomPanel({
       // Diaria
       "Plan diario general": "Plan diario general de clase alineado a la Malla Curricular oficial del MINERD y Guías Didácticas (Intención pedagógica, competencias fundamentales y específicas, contenidos conceptuales/procedimentales/actitudinales, secuencia didáctica con momentos de clase Inicio [10 min], Desarrollo [25 min] y Cierre [10 min], recursos didácticos y evaluación formativa) para: ",
       "Registro de actividades": "Registro oficial de actividades pedagógicas según las Guías Didácticas del MINERD y Momentos de Clase: Detalle estructurado de actividades de Inicio (10-15 min - motivación, saberes previos e intención pedagógica), Desarrollo (25-30 min - construcción activa, práctica guiada e independiente con materiales de la guía) y Cierre (10 min - metacognición y síntesis) articulado a las competencias específicas para: ",
+      "Horario semanal": "Distribución horaria semanal oficial de clases estructurada por bloques pedagógicos y áreas curriculares de la Malla Curricular MINERD (Lengua Española, Matemática, Ciencias de la Naturaleza, Ciencias Sociales) para: ",
       "Horario semanal detallado": "Distribución horaria semanal oficial de clases estructurada por bloques pedagógicos y áreas curriculares de la Malla Curricular MINERD (Lengua Española, Matemática, Ciencias de la Naturaleza, Ciencias Sociales) para: ",
+      "Día y horario detallado": "Detalle de día y horario estructurado por momentos pedagógicos y áreas curriculares para: ",
       "Notas de aula": "Registro de notas de aula y adaptaciones pedagógicas según directrices MINERD: Observaciones cualitativas del desempeño estudiantil, adaptaciones curriculares DUA para atención a la diversidad (NEAE / Necesidades Específicas de Apoyo Educativo) para: ",
       "Evaluación diaria": "Instrumentos y criterios de evaluación diaria formativa vinculados directamente al Registro de Grado Oficial del MINERD: Indicadores de logro evaluados en la sesión, criterios de valoración, evidencias de aprendizaje (producciones escritas, cuadernos de trabajo) e instrumentos técnicos (lista de cotejo, rúbrica analítica) para: ",
       // Semanal
@@ -428,7 +431,11 @@ export default function BottomPanel({
       esquemaVal = "abp";
     } else if (sub.label === "Situación de aprendizaje") {
       esquemaVal = "competencias_situacion";
-    } else if (sub.label === "Secuencia de actividades") {
+    } else if (
+      sub.label === "Secuencia de actividades" ||
+      sub.label === "Registro de actividades" ||
+      sub.label === "Día y horario detallado"
+    ) {
       esquemaVal = "secuencia_didactica";
     }
 
@@ -437,11 +444,29 @@ export default function BottomPanel({
 
     const titulosPorSubitem = {
       "Plan diario general": "Plan Diario General (Malla Curricular MINERD)",
+      "Registro de actividades": "Registro de Actividades y Momentos de Clase (Guías MINERD)",
+      "Horario semanal": "Horario Semanal por Áreas Curriculares (MINERD)",
+      "Horario semanal detallado": "Horario Semanal y Distribución por Áreas",
+      "Día y horario detallado": "Día y Horario Detallado (Bloques Pedagógicos MINERD)",
+      "Notas de aula": "Notas de Aula y Adaptaciones Curriculares (DUA/NEAE)",
+      "Evaluación diaria": "Evaluación Diaria y Registro de Grado Oficial MINERD",
       "Plan semanal general": "Plan Semanal General (Áreas, Actividades y Recursos)",
+      "Distribución por áreas": "Distribución por Áreas Curriculares",
+      "Actividades de la semana": "Actividades de la Semana (Lunes a Viernes)",
+      "Recursos y materiales": "Recursos Didácticos y Materiales de la Semana",
       "Plan mensual general": "Plan Mensual General",
       "Plan anual general": "Plan Anual General",
+      "Distribución por períodos": "Distribución por Períodos (P1, P2, P3, P4)",
+      "Proyección del año": "Proyección y Metas del Año Escolar",
       "Nueva unidad": "Nueva Unidad de Aprendizaje",
-      "Nuevo proyecto": "Nuevo Proyecto Pedagógico (ABP)"
+      "Situación de aprendizaje": "Situación de Aprendizaje (MINERD)",
+      "Competencias e indicadores": "Competencias e Indicadores de Logro",
+      "Secuencia de actividades": "Secuencia de Actividades",
+      "Evaluación de la unidad": "Evaluación de la Unidad",
+      "Nuevo proyecto": "Nuevo Proyecto Pedagógico (ABP)",
+      "Proyecto de aula": "Proyecto Participativo de Aula",
+      "Proyecto institucional": "Proyecto Educativo Institucional",
+      "Evaluación del proyecto": "Evaluación del Proyecto"
     };
 
     const promptPredefinido = getPromptParaSubitem(sec.key, sub.label);

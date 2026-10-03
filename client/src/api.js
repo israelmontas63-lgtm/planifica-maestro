@@ -214,6 +214,20 @@ export async function obtenerOwnerStats() {
 }
 
 /**
+ * GET /api/plan/estado-ia
+ * Estado en tiempo real de los proveedores de IA y circuito
+ */
+export async function obtenerEstadoIA() {
+  try {
+    const res = await request("/api/plan/estado-ia", { method: "GET" }, 1);
+    const data = await res.json();
+    return data.proveedores || [];
+  } catch (e) {
+    return [];
+  }
+}
+
+/**
  * GET /api/plan/esquemas
  * Retorna las definiciones oficiales de esquemas
  */

@@ -13,7 +13,10 @@ export default function PlanResult({
   escuchando,
   audioUrl,
   onDatosActualizados,
-  confianzaCurricular
+  confianzaCurricular,
+  distintivo,
+  esRespaldo,
+  origen
 }) {
   const [campos, setCampos] = useState(datosGenerados || {});
   const [editandoCampo, setEditandoCampo] = useState(null);
@@ -146,6 +149,30 @@ export default function PlanResult({
           </p>
         </div>
       </div>
+
+      {/* FASE H: Distintivo transparente de procedencia (Biblioteca Oficial, Respaldo o Web) */}
+      {(distintivo || esRespaldo || origen) && (
+        <div className={`plan-badge-procedencia ${
+          origen === "biblioteca_oficial"
+            ? "pm-badge-oficial"
+            : (origen === "fuente_web_no_oficial" || origen === "web")
+              ? "pm-badge-web"
+              : "pm-badge-respaldo"
+        } no-print`}>
+          <span className="pm-badge-icon">
+            {origen === "biblioteca_oficial" ? "🏛️" : (origen === "fuente_web_no_oficial" || origen === "web") ? "🌐" : "🔄"}
+          </span>
+          <span className="pm-badge-text">
+            {distintivo || (
+              origen === "biblioteca_oficial"
+                ? "Basado en la biblioteca oficial del MINERD"
+                : (origen === "fuente_web_no_oficial" || origen === "web")
+                  ? "Fuente web (no oficial)"
+                  : "Generado con motor de respaldo"
+            )}
+          </span>
+        </div>
+      )}
 
       {/* FASE 16: Banner pedagógico si la certeza curricular es media o baja */}
       {tieneAproximaciones && (

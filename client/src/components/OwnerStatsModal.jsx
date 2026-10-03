@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { obtenerOwnerStats } from "../services/api.js";
+import { obtenerOwnerStats, obtenerEstadoIA } from "../services/api.js";
 
 export default function OwnerStatsModal({ onCerrar }) {
   const [stats, setStats] = useState(null);
+  const [proveedoresIA, setProveedoresIA] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
 
@@ -10,8 +11,12 @@ export default function OwnerStatsModal({ onCerrar }) {
     setCargando(true);
     setErrorMsg(null);
     try {
-      const data = await obtenerOwnerStats();
+      const [data, provs] = await Promise.all([
+        obtenerOwnerStats().catch(() => null),
+        obtenerEstadoIA().catch(() => [])
+      ]);
       setStats(data);
+      setProveedoresIA(provs || []);
     } catch (err) {
       setErrorMsg(err.message || "Error al cargar las métricas.");
     } finally {
@@ -48,6 +53,9 @@ export default function OwnerStatsModal({ onCerrar }) {
           <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "#64748b" }}>
             Visión global del uso de Planifica Maestro en tiempo real
           </p>
+          <div style={{ marginTop: "6px", display: "inline-block", background: "#f1f5f9", padding: "2px 8px", borderRadius: "4px", fontSize: "11px", color: "#475569" }}>
+            Versión PWA: <strong style={{ fontFamily: "monospace", color: "#0f766e" }}>{typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "1.0.0"}</strong>
+          </div>
         </div>
 
         {cargando && (
@@ -129,6 +137,102 @@ export default function OwnerStatsModal({ onCerrar }) {
                       </span>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+
+            {/* FASE H: Estado del Sistema (Proveedores de IA y Circuit Breaker) */}
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                <h4 style={{ margin: 0, fontSize: "13px", color: "#334155" }}>⚡ Estado del Sistema (Motores de IA):</h4>
+                <span style={{ fontSize: "11px", color: "#64748b" }}>
+                  {stats?.persistencia === "en_memoria" ? "Modo memoria · Respaldo activo" : "Respaldo automático activo"}
+                </span>
+              </div>
+
+              {stats?.persistencia === "en_memoria" && (
+                <div
+                  role="status"
+                  style={{
+                    background: "#fef3c7",
+                    border: "1px solid #fde68a",
+                    borderRadius: "6px",
+                    padding: "5px 10px",
+                    marginBottom: "8px",
+                    fontSize: "11.5px",
+                    color: "#92400e",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px"
+                  }}
+                >
+                  <span>ℹ️</span>
+                  <span>El contador de gasto opera en memoria (no persistente ante reinicios del servidor).</span>
+                </div>
+              )}
+
+              {proveedoresIA.length === 0 ? (
+                <p style={{ fontSize: "12px", color: "#94a3b8", fontStyle: "italic", textAlign: "center", margin: "10px 0" }}>
+                  Consultando estado de los motores de IA...
+                </p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  {proveedoresIA.map((prov) => {
+                    const estaEnPausa = prov.enPausa;
+                    const estaActivo = prov.activo;
+                    const estadoTexto = !estaActivo
+                      ? "Desactivado (sin clave)"
+                      : estaEnPausa
+                      ? `🛑 En pausa (${prov.segundosPausaRestantes}s)`
+                      : prov.estadoCircuito === "SEMI_ABIERTO"
+                      ? "⚠️ En prueba (Semi-abierto)"
+                      : "✅ Disponible / Activo";
+
+                    const badgeColor = !estaActivo
+                      ? { bg: "#f1f5f9", text: "#64748b" }
+                      : estaEnPausa
+                      ? { bg: "#fee2e2", text: "#991b1b" }
+                      : prov.estadoCircuito === "SEMI_ABIERTO"
+                      ? { bg: "#fef3c7", text: "#92400e" }
+                      : { bg: "#f0fdf4", text: "#166534" };
+
+                    return (
+                      <div
+                        key={prov.id}
+                        style={{
+                          padding: "8px 12px",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: "8px",
+                          background: "#ffffff",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          fontSize: "12px"
+                        }}
+                      >
+                        <div>
+                          <span style={{ fontWeight: "700", color: "#1e293b", display: "block" }}>
+                            {prov.nombre}
+                          </span>
+                          <span style={{ fontSize: "10.5px", color: "#64748b" }}>
+                            Prioridad: {prov.prioridad} {prov.visionAprobada ? "· 👁️ Visión aprobada" : ""}
+                          </span>
+                        </div>
+                        <span
+                          style={{
+                            background: badgeColor.bg,
+                            color: badgeColor.text,
+                            fontWeight: "700",
+                            padding: "2px 8px",
+                            borderRadius: "10px",
+                            fontSize: "11px"
+                          }}
+                        >
+                          {estadoTexto}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>

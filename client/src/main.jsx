@@ -7,36 +7,25 @@ import "@fontsource/inter/500.css";
 import "@fontsource/inter/600.css";
 import "@fontsource/inter/700.css";
 import "./index.css";
-import { registerSW } from 'virtual:pwa-register';
+import { initPWA } from "./services/pwaManager.js";
 
-if ("serviceWorker" in navigator) {
-  registerSW({
-    immediate: true,
-    onRegisteredSW(_url, registration) {
-      if (!registration) return;
-      
-      let lastCheck = 0;
-      const check = () => {
-        const now = Date.now();
-        if (now - lastCheck >= 60000) {
-          lastCheck = now;
-          registration.update().catch(() => {});
-        }
-      };
-      
-      // Comprobar al abrir
-      check();
-      // Comprobar al volver a la app (visibilitychange)
-      document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible") check();
-      });
-      window.addEventListener("focus", check);
-      window.addEventListener("online", check);
-      // Comprobar cada 30 minutos
-      setInterval(check, 30 * 60 * 1000);
-    },
-  });
-}
+// Inicializar el orquestador del ciclo de vida de la PWA
+initPWA({
+  isBusy: () => {
+    return typeof window !== "undefined" && window.__PM_PWA__?.isBusy?.();
+  },
+  saveDraft: () => {
+    if (typeof window !== "undefined" && window.__PM_PWA__?.saveDraft) {
+      window.__PM_PWA__.saveDraft();
+    }
+  },
+  onUpdatePending: (reloadFn) => {
+    if (typeof window !== "undefined") {
+      window.__PM_PENDING_RELOAD__ = reloadFn;
+      window.dispatchEvent(new CustomEvent("pm:update-pending"));
+    }
+  }
+});
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
