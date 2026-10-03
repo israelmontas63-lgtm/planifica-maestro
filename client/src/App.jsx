@@ -326,6 +326,11 @@ export default function App() {
         distintivo: data.distintivo || null,
         esRespaldo: data.es_respaldo || false,
         origen: data.origen || null,
+        opciones: data.opciones || null,
+        modo: data.modo || null,
+        tipoVisual: data.tipo_visual || null,
+        esBorrosa: data.es_borrosa || false,
+        esDelicado: data.es_delicado || false,
       };
       setMessages([...newHistory, newAssistantMsg]);
 
@@ -445,8 +450,9 @@ export default function App() {
     setProcesandoImagen(true);
     try {
       const base64 = dataUrl.split(",")[1];
-      const promptMultimodal = "📸 Analiza esta imagen con visión pedagógica avanzada como un docente experto: 1) Identifica y transcribe el contenido del libro, pizarra, ejercicio o guía didáctica. 2) Determina el tema central, área curricular y grado escolar según el diseño curricular del MINERD. 3) Genera de inmediato la planificación didáctica completa para este contenido según el esquema y período activo.";
-      await enviarMensaje(promptMultimodal, base64, mediaType, aspectRatio);
+      // Si el docente ya había dictado o escrito una instrucción previa, se envía; si no, va vacío para que el Ojo Digital lo identifique primero
+      const textoPrevio = (transcript || "").trim();
+      await enviarMensaje(textoPrevio, base64, mediaType, aspectRatio);
     } catch (err) {
       setErrorGeneracion({
         message: err.friendlyMessage || err.message || "Error procesando la imagen.",
@@ -759,8 +765,38 @@ export default function App() {
               </Suspense>
             )}
 
-            {/* FASE A: Píldoras de respuesta rápida para el asistente */}
-            {m.role === 'assistant' && i === messages.length - 1 && !cargando && (
+            {/* FASE 1: Opciones interactivas del Ojo Digital / Clasificador de intención */}
+            {m.role === 'assistant' && m.opciones && m.opciones.length > 0 && i === messages.length - 1 && !cargando && (
+              <div className="pm-intencion-opciones-container no-print" style={{ margin: "10px 0 6px 0" }}>
+                <span className="pm-quick-replies-label" style={{ display: "block", marginBottom: "6px", fontWeight: "600", fontSize: "12px", color: "var(--teal, #1a7d8c)" }}>¿Qué te gustaría hacer?</span>
+                <div className="pm-quick-replies-row" style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  {m.opciones.map((op, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      className="pm-quick-reply-pill pm-btn-opcion-intencion"
+                      style={{
+                        padding: "6px 14px",
+                        borderRadius: "20px",
+                        border: "1px solid var(--teal, #1a7d8c)",
+                        backgroundColor: "#f0fdfa",
+                        color: "#0f766e",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease"
+                      }}
+                      onClick={() => enviarMensaje(op)}
+                    >
+                      👉 {op}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* FASE A: Píldoras de respuesta rápida para planificación generada */}
+            {m.role === 'assistant' && (!m.opciones || m.opciones.length === 0) && m.datosGenerados && i === messages.length - 1 && !cargando && (
               <div className="pm-quick-replies-container no-print">
                 <span className="pm-quick-replies-label">Sugerencias rápidas:</span>
                 <div className="pm-quick-replies-row">

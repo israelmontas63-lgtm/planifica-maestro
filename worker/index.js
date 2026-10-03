@@ -11,6 +11,7 @@ import {
   guardarRespuestaEnCache,
   esRespuestaCacheable
 } from "./cacheRespuestas.js";
+import { tieneIntencionExplicita, identificarImagenWorker } from "./ojoDigital.js";
 
 /**
  * Planifica Maestro - Cloudflare Worker Backend
@@ -597,20 +598,143 @@ async function handleApiRequest(request, env, ctx) {
       });
     }
 
+    // ETAPA 1: Si hay imagen y no hay instrucción explícita del docente, la identificamos primero (Ojo Digital)
+    if (imageBase64 && !tieneIntencionExplicita(textoConsulta)) {
+      const idRes = await identificarImagenWorker({
+        imageBase64,
+        mediaType: ultimoMsg.mediaType || "image/jpeg",
+        env
+      });
+
+      if (!idRes.exito) {
+        return responderWorker({
+          data: {
+            mensaje_chat: idRes.mensaje || "La cámara no está disponible ahora (límite de visión alcanzado o sin conexión con el servicio). Por favor, prueba más tarde o escribe tu consulta.",
+            plan_completado: false,
+            modo: "error_camara",
+            error: idRes.error || "camara_no_disponible"
+          },
+          estado: "pensando"
+        });
+      }
+
+      return responderWorker({
+        data: {
+          mensaje_chat: idRes.descripcion,
+          plan_completado: false,
+          modo: "identificacion_visual",
+          categoria: "identificacion_visual",
+          tipo_visual: idRes.tipo_visual,
+          es_borrosa: idRes.es_borrosa,
+          es_delicado: idRes.es_delicado,
+          tema_detectado: idRes.tema_detectado,
+          opciones: idRes.opciones,
+          datos_planificacion: null
+        },
+        estado: "conversando"
+      });
+    }
+
+    // Atender opción de Ojo Digital: "Usarla como material de clase"
+    if (textoConsulta.toLowerCase().includes("usarla como material de clase") || textoConsulta.toLowerCase().includes("usar como material")) {
+      return responderWorker({
+        data: {
+          mensaje_chat: "¡Excelente idea pedagógica! Para adaptar las actividades al nivel exacto de tus estudiantes, ¿para qué grado escolar te gustaría preparar esta sesión?",
+          plan_completado: false,
+          modo: "pregunta_grado_material",
+          categoria: "planificacion",
+          opciones: [
+            "1ro de Primaria",
+            "2do de Primaria",
+            "3ro de Primaria",
+            "4to de Primaria",
+            "5to de Primaria",
+            "6to de Primaria"
+          ],
+          datos_planificacion: null
+        },
+        estado: "conversando"
+      });
+    }
+
+    // Atender opción de Ojo Digital: "Leer el texto de la imagen"
+    if (textoConsulta.toLowerCase().includes("leer el texto de la imagen") || textoConsulta.toLowerCase().includes("leer el texto") || textoConsulta.toLowerCase().includes("extraer texto")) {
+      const msgConFoto = [...messages].reverse().find((m) => m.imageBase64);
+      if (msgConFoto) {
+        try {
+          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`;
+          const res = await fetchGeminiWithRetry(geminiUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": env.GEMINI_API_KEY
+            },
+            body: JSON.stringify({
+              contents: [{
+                role: "user",
+                parts: [
+                  { text: "Eres un asistente de lectura pedagógica. Transcribe con exactitud, buena ortografía y puntuación clara todo el texto legible visible en esta imagen. Si hay títulos, subtítulos o listas, organízalos ordenadamente en párrafos. No inventes texto no visible." },
+                  { inlineData: { mimeType: msgConFoto.mediaType || "image/jpeg", data: msgConFoto.imageBase64 } }
+                ]
+              }],
+              generationConfig: { temperature: 0.1 }
+            })
+          });
+          let textoExtraido = "No se detectó texto legible en la imagen.";
+          if (res && res.ok) {
+            const d = await res.json();
+            textoExtraido = d.candidates?.[0]?.content?.parts?.[0]?.text || textoExtraido;
+          }
+          return responderWorker({
+            data: {
+              mensaje_chat: `📄 **Texto extraído de la imagen:**\n\n${textoExtraido}\n\n¿Qué te gustaría hacer con este material?`,
+              plan_completado: false,
+              modo: "texto_extraido",
+              categoria: "accion_app",
+              opciones: [
+                "Planificar una clase con esta lectura",
+                "Crear preguntas de comprensión",
+                "Buscar en el currículo"
+              ],
+              datos_planificacion: null
+            },
+            estado: "conversando"
+          });
+        } catch (ocrErr) {
+          return responderWorker({
+            data: {
+              mensaje_chat: "La cámara no está disponible ahora para leer el texto. Puedes dictarlo o escribir el tema directamente.",
+              plan_completado: false,
+              modo: "error_camara"
+            },
+            estado: "conversando"
+          });
+        }
+      }
+    }
+
     // Clasificación de intención (0 ms, reglas deterministas)
     const clasificacion = await clasificarIntencion({ texto: textoConsulta, env });
 
     // 1. MODO CHARLA (Saludos, cortesías) -> Resolución local inmediata < 50ms ($0)
-    if (clasificacion.categoria === "charla" && !imageBase64) {
+    if (clasificacion.categoria === "charla") {
       const respCharla = generarRespuestaCharlaLocal({
         texto: textoConsulta,
         nombreDocente: body.nombreDocente || null
       });
+      if (imageBase64) {
+        respCharla.mensaje_chat = `${respCharla.mensaje_chat}\n\nVeo la foto que adjuntaste. ¿Qué te gustaría hacer con ella?`;
+        respCharla.opciones = [
+          "Identificar qué hay en la foto",
+          "Usarla como material de clase",
+          "Buscar en el currículo"
+        ];
+      }
       return responderWorker({ data: respCharla, estado: "charla" });
     }
 
     // 2. MODO ACCION DE APP -> Respuesta local inmediata
-    if (clasificacion.categoria === "accion_app" && !imageBase64) {
+    if (clasificacion.categoria === "accion_app") {
       return responderWorker({
         data: {
           mensaje_chat: `Entendido. Procesando acción de la aplicación: ${clasificacion.motivo}`,
@@ -624,7 +748,7 @@ async function handleApiRequest(request, env, ctx) {
     }
 
     // 3. MODO AMBIGUO -> Pregunta con botones de aclaración (sin adivinar)
-    if (clasificacion.categoria === "ambigua" && !imageBase64) {
+    if (clasificacion.categoria === "ambigua") {
       return responderWorker({
         data: {
           mensaje_chat: "No identifiqué con claridad el tema escolar en tu consulta. ¿Deseas: 1) Planificar una clase del currículo oficial del MINERD, 2) Consultar información general, o 3) Ajustar el tema pedagógico?",
@@ -646,15 +770,14 @@ async function handleApiRequest(request, env, ctx) {
     }
 
     // 4. MODO CONOCIMIENTO GENERAL -> Conversacional directo con modelo sin buscar en currículo oficial
-    if (clasificacion.categoria === "conocimiento_general" && !imageBase64) {
+    if (clasificacion.categoria === "conocimiento_general") {
       const aviso = "\n\n*(Nota: Esta es una explicación pedagógica general, no una cita textual del currículo oficial MINERD. Si deseas llevar este concepto a una actividad de clase o situación de aprendizaje, dime el grado y lo armamos.)*";
 
       if (!env.GEMINI_API_KEY) {
-        const glosarioMatch = buscarEnGlosario(textoConsulta);
-        const def = glosarioMatch ? `**${glosarioMatch.termino}**: ${glosarioMatch.definicion}` : `He analizado tu consulta sobre "${textoConsulta}". Como colega te comento que es un concepto clave.`;
+        const avisoHonesto = "La consulta de conocimiento general requiere conexión con el modelo de inteligencia artificial. En este momento el servicio externo no está disponible o no tiene cuota configurada. Puedes consultar contenidos directamente del currículo oficial o escribir tu consulta pedagógica.";
         return responderWorker({
           data: {
-            mensaje_chat: `${def}${aviso}`,
+            mensaje_chat: avisoHonesto,
             plan_completado: false,
             modo: "conocimiento_general",
             categoria: "conocimiento_general",
@@ -707,11 +830,10 @@ async function handleApiRequest(request, env, ctx) {
         }
       } catch (err) {}
 
-      const glosarioMatch = buscarEnGlosario(textoConsulta);
-      const def = glosarioMatch ? `**${glosarioMatch.termino}**: ${glosarioMatch.definicion}` : `He analizado tu consulta sobre "${textoConsulta}". Como colega te comento que es un concepto clave.`;
+      const avisoHonesto = "La consulta de conocimiento general requiere conexión con el modelo de inteligencia artificial. En este momento el servicio externo no está disponible o no tiene cuota configurada. Puedes consultar contenidos directamente del currículo oficial o escribir tu consulta pedagógica.";
       return responderWorker({
         data: {
-          mensaje_chat: `${def}${aviso}`,
+          mensaje_chat: avisoHonesto,
           plan_completado: false,
           modo: "conocimiento_general",
           categoria: "conocimiento_general",

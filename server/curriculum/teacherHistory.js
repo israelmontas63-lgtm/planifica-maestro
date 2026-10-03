@@ -38,11 +38,12 @@ function guardarHistorial(historial) {
 /**
  * Registra una nueva planificación generada en el historial
  */
-function registrarPlan({ nivel, periodo, esquemaLabel, area, grado, tema, datosPlanificacion }) {
+function registrarPlan({ docenteId = "anon", nivel, periodo, esquemaLabel, area, grado, tema, datosPlanificacion }) {
   const historial = cargarHistorial();
   
   const nuevoRegistro = {
     id: "plan_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7),
+    docenteId: (docenteId || "anon").trim(),
     fecha: new Date().toISOString(),
     nivel: nivel || "primario",
     periodo: periodo || "diaria",
@@ -61,6 +62,12 @@ function registrarPlan({ nivel, periodo, esquemaLabel, area, grado, tema, datosP
   }
   guardarHistorial(historial);
   return nuevoRegistro;
+}
+
+function cargarHistorialDocente(docenteId) {
+  if (!docenteId) return [];
+  const historial = cargarHistorial();
+  return historial.filter((p) => p.docenteId === docenteId);
 }
 
 /**
@@ -148,5 +155,6 @@ module.exports = {
   registrarPlan,
   registrarAjustesManuales,
   obtenerResumenPatrones,
-  cargarHistorial
+  cargarHistorial,
+  cargarHistorialDocente
 };

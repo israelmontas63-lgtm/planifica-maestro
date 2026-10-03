@@ -5,7 +5,8 @@ const { GoogleGenAI } = require("@google/genai");
 const {
   registrarPlan,
   registrarAjustesManuales,
-  obtenerResumenPatrones
+  obtenerResumenPatrones,
+  cargarHistorialDocente
 } = require("../curriculum/teacherHistory");
 const {
   consultarEstadoCuota,
@@ -21,6 +22,43 @@ const { clasificarIntencion } = require("../ia/clasificadorIntencion");
 const { buscarEnCurriculo } = require("../curriculum/buscadorCurricular");
 const { generarRespuestaCharlaLocal, SYSTEM_PROMPT_CONVERSACIONAL } = require("../ia/modoConversacional");
 const { buscarEnGlosario } = require("../curriculum/glosarioDocente");
+const { tieneIntencionExplicita, identificarImagenConVision } = require("../ia/ojoDigital");
+const { puedeRealizarConsulta } = require("../ia/gestorGasto");
+const crypto = require("crypto");
+
+const rateLimitPorDispositivo = new Map();
+const rateLimitPorIp = new Map();
+
+function verificarRateLimit({ devId, ip, isOwner }) {
+  if (isOwner) return { permitido: true };
+  const ahora = Date.now();
+  
+  if (ip) {
+    let registroIp = rateLimitPorIp.get(ip);
+    if (!registroIp || ahora > registroIp.resetAt) {
+      registroIp = { count: 0, resetAt: ahora + 60000 };
+      rateLimitPorIp.set(ip, registroIp);
+    }
+    registroIp.count++;
+    if (registroIp.count > 60) {
+      return { permitido: false, motivo: "Demasiadas solicitudes desde esta dirección IP. Espera un momento antes de continuar." };
+    }
+  }
+
+  if (devId) {
+    let registroDev = rateLimitPorDispositivo.get(devId);
+    if (!registroDev || ahora > registroDev.resetAt) {
+      registroDev = { count: 0, resetAt: ahora + 60000 };
+      rateLimitPorDispositivo.set(devId, registroDev);
+    }
+    registroDev.count++;
+    if (registroDev.count > 25) {
+      return { permitido: false, motivo: "Demasiadas peticiones consecutivas desde este dispositivo. Espera unos segundos." };
+    }
+  }
+
+  return { permitido: true };
+}
 
 const geminiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
@@ -238,10 +276,23 @@ Devuelve SIEMPRE tu respuesta en formato JSON estrictamente estructurado con est
 
 router.post("/generate", async (req, res) => {
   try {
-    const { messages = [], nivel, periodo = "diaria", docenteId = "docente_default" } = req.body;
-    const resolvedDocenteId = docenteId || req.headers["x-docente-id"] || "docente_default";
+    const rawId = (req.body.docenteId || req.headers["x-docente-id"] || req.headers["x-device-id"] || "").trim();
+    const resolvedDocenteId = (rawId && rawId !== "docente_default") ? rawId : (req.headers["x-device-id"] || ("anon_" + crypto.randomUUID()));
     const isOwner = req.isOwner === true;
     const isStream = Boolean(req.body.stream || req.headers["accept"]?.includes("text/event-stream"));
+
+    const clientIp = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress || "127.0.0.1";
+    const rl = verificarRateLimit({ devId: resolvedDocenteId, ip: clientIp, isOwner });
+    if (!rl.permitido) {
+      return res.status(429).json({ error: rl.motivo });
+    }
+
+    if (!isOwner && !puedeRealizarConsulta(500)) {
+      return res.status(429).json({
+        error: "El servicio ha alcanzado su límite diario global de consultas para proteger el presupuesto. Intenta nuevamente mañana.",
+        limiteAlcanzado: true
+      });
+    }
 
     const clientAbortController = new AbortController();
     req.on("close", () => {
@@ -389,8 +440,95 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
     
     const ultimoMsg = messages[messages.length - 1] || {};
     const imageBase64 = ultimoMsg.imageBase64 || null;
-    const mediaType = ultimoMsg.mediaType || null;
-    const textoConsulta = ultimoMsg.text || req.body.tema || "";
+    const mediaType = ultimoMsg.mediaType || "image/jpeg";
+    const textoConsulta = (ultimoMsg.text || req.body.tema || "").trim();
+
+    // 0. Si viene una foto SIN intención explícita previa: Identificar primero (Ojo Digital) y ofrecer opciones
+    if (imageBase64 && !tieneIntencionExplicita(textoConsulta)) {
+      const idRes = await identificarImagenConVision({
+        imageBase64,
+        mediaType,
+        env: process.env,
+        signal: clientAbortController.signal
+      });
+
+      if (!idRes.exito) {
+        return responder({
+          mensaje_chat: idRes.mensaje || "La cámara no está disponible ahora (límite de visión alcanzado o sin conexión con el servicio). Por favor, prueba más tarde o escribe tu consulta.",
+          plan_completado: false,
+          modo: "error_camara",
+          error: idRes.error || "camara_no_disponible"
+        }, 200, "pensando");
+      }
+
+      return responder({
+        mensaje_chat: idRes.descripcion,
+        plan_completado: false,
+        modo: "identificacion_visual",
+        categoria: "identificacion_visual",
+        tipo_visual: idRes.tipo_visual,
+        es_borrosa: idRes.es_borrosa,
+        es_delicado: idRes.es_delicado,
+        tema_detectado: idRes.tema_detectado,
+        opciones: idRes.opciones,
+        datos_planificacion: null
+      }, 200, "conversando");
+    }
+
+    // Atender opción de Ojo Digital: "Usarla como material de clase"
+    if (textoConsulta.toLowerCase().includes("usarla como material de clase") || textoConsulta.toLowerCase().includes("usar como material")) {
+      return responder({
+        mensaje_chat: "¡Excelente idea pedagógica! Para adaptar las actividades al nivel exacto de tus estudiantes, ¿para qué grado escolar te gustaría preparar esta sesión?",
+        plan_completado: false,
+        modo: "pregunta_grado_material",
+        categoria: "planificacion",
+        opciones: [
+          "1ro de Primaria",
+          "2do de Primaria",
+          "3ro de Primaria",
+          "4to de Primaria",
+          "5to de Primaria",
+          "6to de Primaria"
+        ],
+        datos_planificacion: null
+      }, 200, "conversando");
+    }
+
+    // Atender opción de Ojo Digital: "Leer el texto de la imagen"
+    if (textoConsulta.toLowerCase().includes("leer el texto de la imagen") || textoConsulta.toLowerCase().includes("leer el texto") || textoConsulta.toLowerCase().includes("extraer texto")) {
+      const msgConFoto = [...messages].reverse().find(m => m.imageBase64);
+      if (msgConFoto) {
+        try {
+          const resOcr = await enrutarPeticion({
+            tema: "Extracción de texto OCR",
+            prompt: "Eres un asistente de lectura pedagógica. Transcribe con exactitud, buena ortografía y puntuación clara todo el texto legible visible en esta imagen. Si hay títulos, subtítulos o listas, organízalos ordenadamente en párrafos. No inventes texto no visible.",
+            imageBase64: msgConFoto.imageBase64,
+            mediaType: msgConFoto.mediaType || "image/jpeg",
+            env: process.env,
+            signal: clientAbortController.signal
+          });
+          const textoExtraido = resOcr.mensaje_chat || resOcr.texto || "No se detectó texto legible en la imagen.";
+          return responder({
+            mensaje_chat: `📄 **Texto extraído de la imagen:**\n\n${textoExtraido}\n\n¿Qué te gustaría hacer con este material?`,
+            plan_completado: false,
+            modo: "texto_extraido",
+            categoria: "accion_app",
+            opciones: [
+              "Planificar una clase con esta lectura",
+              "Crear preguntas de comprensión",
+              "Buscar en el currículo"
+            ],
+            datos_planificacion: null
+          }, 200, "conversando");
+        } catch (ocrErr) {
+          return responder({
+            mensaje_chat: "La cámara no está disponible ahora para leer el texto. Puedes dictarlo o escribir el tema directamente.",
+            plan_completado: false,
+            modo: "error_camara"
+          }, 200, "conversando");
+        }
+      }
+    }
 
     // Clasificación de intención previa
     const clasificacion = await clasificarIntencion({
@@ -399,16 +537,24 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
     });
 
     // 1. MODO CHARLA (Saludos, cortesías, agradecimientos) -> Resolución local inmediata (< 50ms, $0)
-    if (clasificacion.categoria === "charla" && !imageBase64) {
+    if (clasificacion.categoria === "charla") {
       const respCharla = generarRespuestaCharlaLocal({
         texto: textoConsulta,
         nombreDocente: req.body.nombreDocente || null
       });
+      if (imageBase64) {
+        respCharla.mensaje_chat = `${respCharla.mensaje_chat}\n\nVeo la foto que adjuntaste. ¿Qué te gustaría hacer con ella?`;
+        respCharla.opciones = [
+          "Identificar qué hay en la foto",
+          "Usarla como material de clase",
+          "Buscar en el currículo"
+        ];
+      }
       return responder(respCharla, 200, "charla");
     }
 
     // 2. MODO ACCION DE APP -> Respuesta local inmediata
-    if (clasificacion.categoria === "accion_app" && !imageBase64) {
+    if (clasificacion.categoria === "accion_app") {
       return responder({
         mensaje_chat: `Entendido. Procesando acción de la aplicación: ${clasificacion.motivo}`,
         plan_completado: false,
@@ -419,7 +565,7 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
     }
 
     // 3. MODO AMBIGUO -> Pregunta con botones de aclaración (sin adivinar)
-    if (clasificacion.categoria === "ambigua" && !imageBase64) {
+    if (clasificacion.categoria === "ambigua") {
       return responder({
         mensaje_chat: "No identifiqué con claridad el tema escolar en tu consulta. ¿Deseas: 1) Planificar una clase del currículo oficial del MINERD, 2) Consultar información general, o 3) Ajustar el tema pedagógico?",
         plan_completado: false,
@@ -438,14 +584,16 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
     }
 
     // 4. MODO CONOCIMIENTO GENERAL -> Conversacional directo sin buscar en currículo oficial
-    if (clasificacion.categoria === "conocimiento_general" && !imageBase64) {
-      const promptGeneral = `${SYSTEM_PROMPT_CONVERSACIONAL}\n\nConsulta del docente: "${textoConsulta}"\n\nResponde como un colega pedagógico cercano. Agrega al final una nota breve recordando que es una explicación general de apoyo, no una prescripción del currículo oficial MINERD, y ofrece llevar el tema a una actividad de clase.`;
+    if (clasificacion.categoria === "conocimiento_general") {
+      const promptGeneral = `${SYSTEM_PROMPT_CONVERSACIONAL}\n\nConsulta del docente: "${textoConsulta}"\n\nResponde como un colega pedagógico cercano. Agrega al final una nota breve recordando que es una explicación general de apoyo, no una prescripción del currículo oficial MINERD, y ofrece llevar el tema a una actividad de clase. Si se requiere buscar en la web datos recientes que no conozcas, pide permiso al docente antes de buscar.`;
       const aviso = "\n\n*(Nota: Esta es una explicación pedagógica general, no una cita textual del currículo oficial MINERD. Si deseas llevar este concepto a una actividad de clase o situación de aprendizaje, dime el grado y lo armamos.)*";
 
       try {
         const respGen = await enrutarPeticion({
           tema: "Conocimiento General",
           prompt: promptGeneral,
+          imageBase64,
+          mediaType,
           env: process.env,
           signal: clientAbortController.signal
         });
@@ -458,10 +606,8 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
           datos_planificacion: null
         }, 200, "conversando");
       } catch (e) {
-        const glosarioMatch = buscarEnGlosario(textoConsulta);
-        const def = glosarioMatch ? `**${glosarioMatch.termino}**: ${glosarioMatch.definicion}` : `He revisado tu consulta sobre "${textoConsulta}". Como colega te comento que es un concepto clave.`;
         return responder({
-          mensaje_chat: `${def}${aviso}`,
+          mensaje_chat: "⚠️ No se pudo establecer conexión con el modelo de inteligencia artificial para responder tu consulta de conocimiento general. Por favor, verifica tu conexión o intenta nuevamente más tarde.\n\n*(Nota: Esta respuesta requiere conexión activa con el modelo y no sustituye la consulta al currículo oficial MINERD.)*",
           plan_completado: false,
           modo: "conocimiento_general",
           categoria: "conocimiento_general",
@@ -472,7 +618,7 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
 
     // 5. MODO CURRICULAR: Consulta o Planificación -> Paralelismo con Promise.all
     let resBusquedaCurricular = null;
-    if ((clasificacion.tipo === "curricular" || clasificacion.categoria === "planificacion" || clasificacion.categoria === "consulta_curricular") && !imageBase64) {
+    if (clasificacion.tipo === "curricular" || clasificacion.categoria === "planificacion" || clasificacion.categoria === "consulta_curricular") {
       const temaParaBuscar = req.body.tema || textoConsulta.substring(0, 80);
 
       const [resBusqueda, patrones] = await Promise.all([
@@ -591,6 +737,7 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
     let planId = null;
     if (parsedResponse.plan_completado && parsedResponse.datos_planificacion) {
       const reg = registrarPlan({
+        docenteId: resolvedDocenteId,
         nivel,
         periodo,
         esquemaLabel: esquema.label,
@@ -655,9 +802,23 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
  */
 router.get("/cuota", (req, res) => {
   const isOwner = req.isOwner === true;
-  const docenteId = req.query.docenteId || req.headers["x-docente-id"] || "docente_default";
+  const docenteId = req.query.docenteId || req.headers["x-pm-device-id"] || req.headers["x-device-id"] || req.headers["x-docente-id"] || "docente_default";
   const estado = consultarEstadoCuota(docenteId, isOwner);
   res.json(estado);
+});
+
+/**
+ * GET /api/plan/historial
+ * Retorna las planificaciones guardadas para el docente o dispositivo actual
+ */
+router.get("/historial", (req, res) => {
+  try {
+    const rawId = (req.query.docenteId || req.headers["x-pm-device-id"] || req.headers["x-device-id"] || req.headers["x-docente-id"] || "anon").trim();
+    const historial = cargarHistorialDocente(rawId);
+    res.json({ ok: true, historial });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 /**

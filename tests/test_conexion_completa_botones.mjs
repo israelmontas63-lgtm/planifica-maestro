@@ -193,9 +193,9 @@ verificar("App.jsx: TextoModal conectado a onConsultarCurriculo",
   appCode.includes('setCurriculumOpen(true);')
 );
 
-verificar("App.jsx: Cámara inteligente envía prompt de visión pedagógica avanzada", 
-  appCode.includes('📸 Analiza esta imagen con visión pedagógica avanzada') &&
-  appCode.toLowerCase().includes('determina el tema central, área curricular y grado escolar')
+verificar("App.jsx: Cámara inteligente conecta con tubería de intención y Ojo Digital", 
+  appCode.includes('handleImageSelected') &&
+  appCode.includes('enviarMensaje(textoPrevio, base64')
 );
 
 verificar("App.jsx: Dictado por voz activa respuesta hablada (asistente dialogante)", 
