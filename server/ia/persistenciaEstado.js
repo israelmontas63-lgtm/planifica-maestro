@@ -12,8 +12,23 @@
 
 const fs = require("fs");
 const path = require("path");
+const os = require("os");
 
-const DATA_DIR = path.join(__dirname, "..", "data");
+function resolverDirectorioData() {
+  if (process.env.PM_DATA_DIR) {
+    return process.env.PM_DATA_DIR;
+  }
+  if (process.env.NODE_ENV === "test") {
+    const dirTest = path.join(os.tmpdir(), "planifica_maestro_test_data");
+    try {
+      if (!fs.existsSync(dirTest)) fs.mkdirSync(dirTest, { recursive: true });
+    } catch (e) {}
+    return dirTest;
+  }
+  return path.join(__dirname, "..", "data");
+}
+
+const DATA_DIR = resolverDirectorioData();
 const ARCHIVO_CIRCUITOS = path.join(DATA_DIR, "estado_circuitos.json");
 const ARCHIVO_CIRCUITOS_BAK = path.join(DATA_DIR, "estado_circuitos.json.bak");
 const ARCHIVO_CIRCUITOS_TMP = path.join(DATA_DIR, "estado_circuitos.json.tmp");
@@ -25,14 +40,15 @@ const ARCHIVO_GASTO_TMP = path.join(DATA_DIR, "gasto_diario.json.tmp");
 let avisoDiscoRegistrado = false;
 
 function asegurarDirectorioData() {
+  const dir = resolverDirectorioData();
   try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
     }
     return true;
   } catch (err) {
     if (!avisoDiscoRegistrado) {
-      console.warn("⚠️ [Persistencia] No se pudo crear o acceder al directorio server/data/ (posible sistema de solo lectura). Operando en memoria:", err.message);
+      console.warn("⚠️ [Persistencia] No se pudo crear o acceder al directorio data/ (posible sistema de solo lectura). Operando en memoria:", err.message);
       avisoDiscoRegistrado = true;
     }
     return false;

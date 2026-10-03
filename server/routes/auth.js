@@ -73,7 +73,8 @@ router.get("/owner-stats", (req, res) => {
   }
 
   try {
-    const dataPath = path.join(__dirname, "../data/uso_docentes.json");
+    const dataDir = process.env.PM_DATA_DIR || (process.env.NODE_ENV === "test" ? path.join(require("os").tmpdir(), "planifica_maestro_test_data") : path.join(__dirname, "../data"));
+    const dataPath = path.join(dataDir, "uso_docentes.json");
     let raw = {};
     if (fs.existsSync(dataPath)) {
       raw = JSON.parse(fs.readFileSync(dataPath, "utf-8"));

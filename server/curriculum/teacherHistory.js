@@ -1,7 +1,19 @@
 const fs = require("fs");
 const path = require("path");
+const os = require("os");
 
-const DATA_FILE = path.join(__dirname, "../data/historial_docente.json");
+function resolverDirectorioData() {
+  if (process.env.PM_DATA_DIR) return process.env.PM_DATA_DIR;
+  if (process.env.NODE_ENV === "test") {
+    const dirTest = path.join(os.tmpdir(), "planifica_maestro_test_data");
+    try { if (!fs.existsSync(dirTest)) fs.mkdirSync(dirTest, { recursive: true }); } catch (e) {}
+    return dirTest;
+  }
+  return path.join(__dirname, "../data");
+}
+
+const DATA_DIR = resolverDirectorioData();
+const DATA_FILE = path.join(DATA_DIR, "historial_docente.json");
 
 function cargarHistorial() {
   try {
