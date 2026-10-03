@@ -1,12 +1,14 @@
 /**
  * server/ia/clasificadorIntencion.js
  * 
- * Clasificador de intención pedagógica previo a cualquier búsqueda.
- * Distingue entre:
- * - "curricular": Debe resolverse estrictamente con la biblioteca oficial del MINERD.
- * - "web": Consulta informativa general que requiere búsqueda web.
- * - "mixta": Estructura curricular oficial complementada con datos web actuales.
- * - "ambigua": Fuera de lo educativo o ambigua; requiere aclaración con el maestro.
+ * Portero de Intención Pedagógica Multicapa (Capa 1: Reglas $0 + Capa 2: Enrutador IA).
+ * Clasifica cada mensaje en una de 6 categorías:
+ * - "charla": Saludos, despedidas, fórmulas de cortesía, agradecimientos o conversación informal.
+ * - "conocimiento_general": Explicaciones conceptuales, científicas o históricas no estructuradas como clase.
+ * - "planificacion": Solicitud explícita de diseñar o estructurar una clase, momento didáctico o unidad.
+ * - "consulta_curricular": Preguntas sobre normativas, indicadores, competencias o mallas del MINERD.
+ * - "accion_app": Comandos de control sobre la aplicación (biblioteca, perfil, descarga docx, esquemas).
+ * - "ambigua": Mensajes fragmentarios, vagos, domésticos o no educativos que requieren aclaración.
  */
 
 function normalizarTexto(txt) {
@@ -28,32 +30,70 @@ function contienePalabraOFrase(textoNorm, patron) {
   return regex.test(` ${textoNorm} `);
 }
 
-// Palabras y expresiones clave para la Capa 1 (determinista y costo $0)
-const PATRONES_CURRICULARES = [
+// ── PATRONES DETERMINISTAS PARA CAPA 1 (0 ms, $0.00) ──
+
+const PATRONES_CHARLA_EXACTOS = new Set([
+  "hola", "buenas", "buen dia", "buenos dias", "buenas tardes", "buenas noches",
+  "saludos", "que tal", "como estas", "como esta", "como te va", "que lo que",
+  "klk", "dimelo", "como tu ta", "como tu estas", "gracias", "muchas gracias",
+  "mil gracias", "te lo agradezco", "adios", "chao", "hasta luego", "hasta manana",
+  "hasta pronto", "nos vemos", "cuidate", "saludos cordiales", "muy amable"
+]);
+
+const PATRONES_CHARLA = [
+  "hola", "buen dia", "buenos dias", "buenas tardes", "buenas noches", "saludos",
+  "que tal", "como estas", "como esta", "como te va", "que lo que", "klk", "dimelo",
+  "gracias", "muchas gracias", "mil gracias", "adios", "chao", "hasta luego",
+  "hasta manana", "hasta pronto", "cuidate", "saludos cordiales", "muy amable"
+];
+
+const PATRONES_ACCION_APP = [
+  "abre mi biblioteca", "abrir biblioteca", "abrir mi biblioteca", "ver biblioteca",
+  "mis planificaciones", "ver planificaciones", "ver mis planes", "mostrar planes",
+  "cambia el esquema", "cambiar esquema", "cambiar a conbase", "cambia a conbase",
+  "cambiar a minerd", "cambia a minerd", "abre mi perfil", "abrir perfil",
+  "editar perfil", "ver mi perfil", "descarga en word", "descargar en word",
+  "exportar a docx", "exportar a word", "descargar docx", "limpiar chat",
+  "borrar chat", "reiniciar chat", "cerrar sesion"
+];
+
+const PATRONES_CONSULTA_CURRICULAR = [
+  "que indicadores", "cuales indicadores", "indicadores de logro", "indicador de logro",
+  "que competencias", "cuales competencias", "competencias fundamentales", "competencias especificas",
+  "que dice el curriculo", "segun el curriculo", "en el curriculo", "adecuacion curricular",
+  "diseno curricular", "cuales son los contenidos", "que contenidos tiene",
+  "contenidos conceptuales", "contenidos procedimentales", "contenidos actitudinales",
+  "malla curricular", "matriz curricular", "registro de grado", "ordenanza de evaluacion",
+  "criterios de evaluacion oficial"
+];
+
+const PATRONES_PLANIFICACION = [
   "planificacion", "planificar", "planifica", "plan de clase", "plan diario", "plan semanal",
-  "plan mensual", "plan anual", "secuencia didactica", "unidad de aprendizaje",
-  "competencia", "competencias", "indicador de logro", "indicadores de logro",
-  "grado", "1er grado", "2do grado", "3er grado", "4to grado", "5to grado", "6to grado",
+  "plan mensual", "plan anual", "plan de manana", "secuencia didactica", "unidad de aprendizaje",
+  "situacion de aprendizaje", "actividad de inicio", "actividad de desarrollo", "actividad de cierre",
+  "momentos de la clase", "hazme un plan", "crea un plan", "disena un plan", "preparame una clase",
+  "elabora una clase", "estructura una clase", "rubrica de evaluacion", "instrumento de evaluacion",
+  "para 1er grado", "para 2do grado", "para 3er grado", "para 4to grado", "para 5to grado", "para 6to grado",
+  "1er grado", "2do grado", "3er grado", "4to grado", "5to grado", "6to grado",
   "1ro", "2do", "3ro", "4to", "5to", "6to", "primer grado", "segundo grado", "tercer grado",
-  "cuarto grado", "quinto grado", "sexto grado", "primaria", "secundaria", "nivel inicial",
-  "area curricular", "lengua espanola", "matematica", "ciencias de la naturaleza", "ciencias sociales",
-  "minerd", "conbase", "con base", "adecuacion curricular", "diseno curricular",
-  "situacion de aprendizaje", "actividad de inicio", "desarrollo", "cierre", "momentos de la clase",
-  "rubrica", "instrumento de evaluacion", "evaluacion formativa", "criterios de evaluacion",
+  "cuarto grado", "quinto grado", "sexto grado", "primaria", "secundaria"
+];
+
+const PATRONES_TEMAS_CURRICULARES = [
   "fracciones", "suma", "resta", "multiplicacion", "division", "geometria",
   "la tarjeta de identidad", "la receta", "la noticia", "el cuento", "el informe de lectura",
   "el articulo expositivo", "texto instructivo", "letrero", "conteo", "recta numerica",
-  "ciencias naturales", "sociales", "naturales", "educacion fisica", "educacion artistica",
-  "formacion integral humana y religiosa", "fihr", "dua", "neae"
+  "ciencias de la naturaleza", "lengua espanola", "matematica", "ciencias sociales"
 ];
 
-const PATRONES_WEB = [
-  "quien fue", "quien era", "quien es", "cuando nacio", "cuando murio", "cuando ocurrio",
-  "que paso en", "que es", "definicion de", "concepto de", "noticias", "noticia de hoy",
-  "datos actuales", "datos recientes", "actualidad", "hoy en dia", "clima actual",
-  "poblacion actual", "busca en internet", "buscar en la web", "buscar en internet",
-  "busca en la web", "googlea", "biografia de", "presidente de", "capital de",
-  "estadisticas de", "precio de", "ultimas noticias", "historia de"
+const PATRONES_CONOCIMIENTO_GENERAL = [
+  "que es un ", "que es una ", "que es la ", "que es el ", "que son los ", "que son las ",
+  "que es ", "explicame la ", "explicame el ", "explicame como ", "explicame que ",
+  "por que el cielo", "por que llueve", "por que ocurre", "como funciona",
+  "quien fue", "quien era", "quien es", "cuando nacio", "cuando murio",
+  "definicion de", "concepto de", "ley de", "teoria de",
+  "fotosintesis", "sistema digestivo", "sistema solar", "arbol", "energia cinetica",
+  "adn", "celula", "atomo", "volcan", "gravedad"
 ];
 
 const PATRONES_NO_EDUCATIVOS = [
@@ -63,191 +103,260 @@ const PATRONES_NO_EDUCATIVOS = [
   "juego de pelota", "loteria", "chismes"
 ];
 
+const OPCIONES_ACLARACION = [
+  "Planificar una clase oficial MINERD",
+  "Consultar el currículo oficial",
+  "Hacer una pregunta general"
+];
+
 /**
- * Capa 1: Clasificación determinista basada en reglas lingüísticas normalizadas
+ * Capa 1: Clasificación determinista basada en reglas lingüísticas normalizadas ($0)
  */
 function clasificarPorReglas(texto) {
   const norm = normalizarTexto(texto);
   if (!norm) {
     return {
+      categoria: "ambigua",
       tipo: "ambigua",
       confianza: 0.9,
-      motivo: "Texto vacío o sin caracteres válidos."
+      motivo: "Texto vacío o sin caracteres válidos.",
+      esMixtoConSaludo: false,
+      opciones: OPCIONES_ACLARACION
     };
   }
 
-  // 1. Detectar patrones no educativos o fuera de contexto
+  // 1. Detectar patrones no educativos o domésticos evidentes
   const esNoEducativo = PATRONES_NO_EDUCATIVOS.some(p => contienePalabraOFrase(norm, p));
-  // Excepción si explícitamente pide planificar la receta como género textual curricular del MINERD
   const pidePlanReceta = contienePalabraOFrase(norm, "plan") && (contienePalabraOFrase(norm, "grado") || contienePalabraOFrase(norm, "lengua") || contienePalabraOFrase(norm, "texto instructivo"));
   if (esNoEducativo && !pidePlanReceta) {
     return {
+      categoria: "ambigua",
       tipo: "ambigua",
-      confianza: 0.9,
-      motivo: "Consulta identificada como tema general/doméstico fuera del ámbito curricular directo."
+      confianza: 0.92,
+      motivo: "Consulta identificada como tema doméstico/no educativo fuera del ámbito escolar.",
+      esMixtoConSaludo: false,
+      opciones: OPCIONES_ACLARACION
     };
   }
 
-  // 2. Conteo de coincidencias
-  let puntosCurriculares = 0;
-  let puntosWeb = 0;
-
-  for (const pat of PATRONES_CURRICULARES) {
-    if (contienePalabraOFrase(norm, pat)) {
-      puntosCurriculares += 1;
-    }
-  }
-
-  for (const pat of PATRONES_WEB) {
-    if (contienePalabraOFrase(norm, pat)) {
-      puntosWeb += 1;
-    }
-  }
-
-  // Si tiene señales claras de ambos -> Mixta
-  // Ej: "Planificación del ciclo del agua con datos actuales"
-  if (puntosCurriculares >= 1 && puntosWeb >= 1) {
+  // 2. Acciones de app
+  const tieneAccionApp = PATRONES_ACCION_APP.some(p => contienePalabraOFrase(norm, p));
+  if (tieneAccionApp) {
     return {
+      categoria: "accion_app",
+      tipo: "accion_app",
+      confianza: 0.95,
+      motivo: "Comando de acción sobre la aplicación o navegación.",
+      esMixtoConSaludo: false
+    };
+  }
+
+  // 3. Evaluar señales de cada categoría
+  const tieneCharla = PATRONES_CHARLA.some(p => contienePalabraOFrase(norm, p)) || PATRONES_CHARLA_EXACTOS.has(norm);
+  const tienePlanificacion = PATRONES_PLANIFICACION.some(p => contienePalabraOFrase(norm, p));
+  const tieneConsultaCurricular = PATRONES_CONSULTA_CURRICULAR.some(p => contienePalabraOFrase(norm, p));
+  const tieneTemaCurricular = PATRONES_TEMAS_CURRICULARES.some(p => contienePalabraOFrase(norm, p));
+  const tieneConocimientoGeneral = PATRONES_CONOCIMIENTO_GENERAL.some(p => contienePalabraOFrase(norm, p));
+
+  // 4. Caso Mixto: Saludo + Planificación (ej. "hola, planifícame fracciones para 3.º")
+  if (tieneCharla && (tienePlanificacion || (tieneTemaCurricular && (norm.includes("3") || norm.includes("grado") || norm.includes("para"))))) {
+    return {
+      categoria: "planificacion",
+      tipo: "curricular",
+      confianza: 0.95,
+      motivo: "Mensaje mixto con saludo y solicitud explícita de planificación pedagógica.",
+      esMixtoConSaludo: true
+    };
+  }
+
+  // Caso Mixto: Curricular + Datos Actuales / Web (compatibilidad con test existente)
+  const pideDatosActuales = contienePalabraOFrase(norm, "datos actuales") || contienePalabraOFrase(norm, "noticias recientes");
+  if ((tienePlanificacion || tieneTemaCurricular) && pideDatosActuales) {
+    return {
+      categoria: "planificacion",
       tipo: "mixta",
       confianza: 0.85,
-      motivo: "Contiene tanto solicitud de planificación pedagógica como requerimiento de datos informativos o actuales."
+      motivo: "Planificación pedagógica complementada con datos actuales.",
+      esMixtoConSaludo: false
     };
   }
 
-  // Si tiene fuerte señal curricular
-  if (puntosCurriculares >= 1 && puntosWeb === 0) {
+  // 5. Saludo / Charla pura
+  if (tieneCharla && !tienePlanificacion && !tieneConsultaCurricular && !tieneTemaCurricular && !tieneConocimientoGeneral) {
     return {
+      categoria: "charla",
+      tipo: "charla",
+      confianza: 0.95,
+      motivo: "Mensaje de saludo, cortesía o conversación informal.",
+      esMixtoConSaludo: false
+    };
+  }
+
+  // 6. Consulta Curricular específica
+  if (tieneConsultaCurricular) {
+    return {
+      categoria: "consulta_curricular",
       tipo: "curricular",
-      confianza: puntosCurriculares >= 2 ? 0.95 : 0.85,
-      motivo: "Contiene términos técnicos y de diseño curricular específicos del MINERD."
+      confianza: 0.92,
+      motivo: "Consulta directa sobre contenidos, normativas o indicadores de la malla curricular MINERD.",
+      esMixtoConSaludo: false
     };
   }
 
-  // Si tiene fuerte señal web/informativa general
-  if (puntosWeb >= 1 && puntosCurriculares === 0) {
+  // 7. Planificación Curricular
+  if (tienePlanificacion || (tieneTemaCurricular && norm.split(" ").length <= 5)) {
     return {
-      tipo: "web",
-      confianza: 0.9,
-      motivo: "Consulta de información general, histórica o de datos factuales para búsqueda abierta."
+      categoria: "planificacion",
+      tipo: "curricular",
+      confianza: tienePlanificacion && tieneTemaCurricular ? 0.98 : 0.90,
+      motivo: "Solicitud directa de diseño pedagógico, clase o unidad de aprendizaje.",
+      esMixtoConSaludo: false
     };
   }
 
-  // Si no coincide con ninguna regla fuerte
-  if (norm.startsWith("que ") || norm.startsWith("quien ") || norm.startsWith("donde ") || norm.startsWith("por que ")) {
+  // 8. Conocimiento General
+  if (tieneConocimientoGeneral) {
     return {
+      categoria: "conocimiento_general",
       tipo: "web",
-      confianza: 0.75,
-      motivo: "Pregunta informativa general."
+      confianza: 0.90,
+      motivo: "Consulta conceptual o informativa general.",
+      esMixtoConSaludo: false
     };
   }
 
+  // 9. Frases interrogativas generales
+  if (norm.startsWith("que ") || norm.startsWith("quien ") || norm.startsWith("donde ") || norm.startsWith("por que ") || norm.startsWith("como ")) {
+    return {
+      categoria: "conocimiento_general",
+      tipo: "web",
+      confianza: 0.80,
+      motivo: "Pregunta informativa general.",
+      esMixtoConSaludo: false
+    };
+  }
+
+  // 10. Fallback determinista: ambigua
   return {
+    categoria: "ambigua",
     tipo: "ambigua",
-    confianza: 0.4,
-    motivo: "Baja certeza con reglas deterministas, requiere verificación."
+    confianza: 0.45,
+    motivo: "Texto ambiguo o fragmentario sin indicios pedagógicos claros.",
+    esMixtoConSaludo: false,
+    opciones: OPCIONES_ACLARACION
   };
 }
 
 /**
- * Capa 2: Fallback con modelo rápido (Gemini Flash-Lite) si la confianza de las reglas es baja (< 0.70)
+ * Capa 2: Clasificación con IA a través de enrutadorIA.js
+ * Cumple estrictamente con:
+ * - Pasar por enrutadorIA (respaldo, circuit breaker, control de cuota en gestorGasto).
+ * - Cero llamadas directas a raw fetch o claves directas.
+ * - Si no hay cuota o circuit breaker abierto, fallback seguro a reglas locales.
  */
-async function clasificarConIA({ texto, apiKey, timeoutMs = 2500 }) {
-  if (!apiKey) return null;
+async function clasificarConIA({ texto, env = process.env, timeoutMs = 2500 }) {
+  let enrutarPeticion = null;
+  try {
+    const routerMod = require("./enrutadorIA.js");
+    enrutarPeticion = routerMod.enrutarPeticion;
+  } catch (e) {
+    return null;
+  }
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`;
-  const prompt = `Analiza la siguiente consulta de un docente de escuela y clasifícala estrictamente en una de estas 4 categorías:
-1. "curricular": Si pide diseñar una planificación, clase, actividad o contenido propio del currículo escolar (MINERD).
-2. "web": Si es una pregunta de conocimiento general, hechos históricos, personas, definiciones o datos actuales.
-3. "mixta": Si pide una clase curricular pero solicita datos actuales, noticias o fuentes de la web.
-4. "ambigua": Si es algo no educativo, confuso, o no se entiende qué solicita.
+  if (!enrutarPeticion) return null;
+
+  const promptClasificacion = `Analiza la siguiente consulta de un docente y clasifícala estrictamente en una de estas 6 categorías:
+1. "charla": Saludos, despedidas, fórmulas de cortesía, agradecimientos o conversación informal.
+2. "conocimiento_general": Conceptos, hechos históricos, definiciones o ciencia que no son una clase ni requieren el currículo oficial.
+3. "planificacion": Si solicita estructurar, diseñar o elaborar una clase, actividad, momento didáctico o unidad escolar.
+4. "consulta_curricular": Preguntas sobre normativas, indicadores de logro, competencias o contenidos del currículo oficial MINERD.
+5. "accion_app": Comandos de control de la app (biblioteca, perfil, descargar word, cambiar esquema/periodo).
+6. "ambigua": Si es algo no educativo, doméstico, confuso o fragmentario.
 
 Consulta: "${texto}"
 
 Responde ÚNICAMENTE un objeto JSON válido con esta interfaz:
 {
-  "tipo": "curricular" | "web" | "mixta" | "ambigua",
+  "categoria": "charla" | "conocimiento_general" | "planificacion" | "consulta_curricular" | "accion_app" | "ambigua",
   "confianza": 0.85,
-  "motivo": "explicación breve de 1 frase"
+  "motivo": "explicación breve de 1 frase",
+  "esMixtoConSaludo": false
 }`;
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-
   try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.0,
-          responseMimeType: "application/json"
-        }
-      }),
-      signal: controller.signal
+    const res = await enrutarPeticion({
+      tema: "Clasificación de intención pedagógica",
+      prompt: promptClasificacion,
+      env,
+      timeoutMs: timeoutMs || 2500
     });
 
-    clearTimeout(timer);
-    if (!res.ok) return null;
+    if (res && res.categoria && ["charla", "conocimiento_general", "planificacion", "consulta_curricular", "accion_app", "ambigua"].includes(res.categoria)) {
+      const cat = res.categoria;
+      const mapaTipo = {
+        charla: "charla",
+        conocimiento_general: "web",
+        planificacion: "curricular",
+        consulta_curricular: "curricular",
+        accion_app: "accion_app",
+        ambigua: "ambigua"
+      };
 
-    const data = await res.json();
-    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!raw) return null;
-
-    const parsed = JSON.parse(raw.replace(/```json/gi, "").replace(/```/g, "").trim());
-    if (parsed && ["curricular", "web", "mixta", "ambigua"].includes(parsed.tipo)) {
       return {
-        tipo: parsed.tipo,
-        confianza: typeof parsed.confianza === "number" ? parsed.confianza : 0.8,
-        motivo: parsed.motivo || "Clasificado por Capa 2 IA."
+        categoria: cat,
+        tipo: mapaTipo[cat] || "ambigua",
+        confianza: typeof res.confianza === "number" ? res.confianza : 0.85,
+        motivo: res.motivo || "Clasificado por Enrutador IA.",
+        esMixtoConSaludo: Boolean(res.esMixtoConSaludo),
+        opciones: cat === "ambigua" ? OPCIONES_ACLARACION : undefined
       };
     }
-    return null;
   } catch (err) {
-    clearTimeout(timer);
-    return null; // Nunca bloquear al docente si Capa 2 falla o expira
+    // Si la cuota se agota o hay timeout, fallback transparente a reglas locales
   }
+
+  return null;
 }
 
 /**
  * Clasificador principal de intención
  * 
  * @param {Object} options
- * @param {string} options.texto - Texto de la consulta del docente o transcripción de voz
- * @param {string} [options.temaVision] - Tema previamente identificado por visión si hubo foto
- * @param {string} [options.apiKey] - Clave para Gemini si se necesita Capa 2
- * @param {number} [options.timeoutMs] - Tiempo máximo para Capa 2
- * @returns {Promise<{ tipo: "curricular"|"web"|"mixta"|"ambigua", confianza: number, motivo: string }>}
+ * @param {string} options.texto - Texto de la consulta o transcripción de voz
+ * @param {string} [options.temaVision] - Tema previamente identificado por visión
+ * @param {Object} [options.env] - Variables de entorno (Node o Worker)
+ * @param {number} [options.timeoutMs] - Tiempo límite para Capa 2
+ * @returns {Promise<{ categoria: string, tipo: string, confianza: number, motivo: string, esMixtoConSaludo?: boolean, opciones?: string[] }>}
  */
-async function clasificarIntencion({ texto = "", temaVision = null, apiKey = null, timeoutMs = 2500 }) {
+async function clasificarIntencion({ texto = "", temaVision = null, env = process.env, apiKey = null, timeoutMs = 2500 }) {
   const textoParaEvaluar = temaVision ? `${temaVision}. ${texto}` : texto;
 
   // 1. Capa 1: Reglas deterministas inmediatas (0 ms, $0.00)
   const resultadoReglas = clasificarPorReglas(textoParaEvaluar);
 
-  // Si la confianza es alta o suficiente (>= 0.70), retornar de inmediato
-  if (resultadoReglas.confianza >= 0.70) {
+  // Si la confianza es alta (>= 0.75), retornar de inmediato sin consultar IA
+  if (resultadoReglas.confianza >= 0.75) {
     return resultadoReglas;
   }
 
-  // 2. Capa 2: Si la confianza es baja y hay apiKey disponible, intentar Gemini Flash-Lite
-  if (apiKey) {
-    try {
-      const resultadoIA = await clasificarConIA({ texto: textoParaEvaluar, apiKey, timeoutMs });
-      if (resultadoIA) {
-        return resultadoIA;
-      }
-    } catch (e) {
-      // Ignorar fallo de IA y caer al resultado de reglas
+  // 2. Capa 2: Si la confianza es baja y no es charla evidente, pasar por enrutadorIA
+  try {
+    const envFinal = env || (apiKey ? { ...process.env, GEMINI_API_KEY: apiKey } : process.env);
+    const resultadoIA = await clasificarConIA({ texto: textoParaEvaluar, env: envFinal, timeoutMs });
+    if (resultadoIA) {
+      return resultadoIA;
     }
+  } catch (e) {
+    // Fallback garantizado a las reglas
   }
 
-  // 3. Fallback garantizado: siempre devolver el resultado de las reglas
+  // 3. Fallback garantizado: siempre devolver el resultado determinista
   return resultadoReglas;
 }
 
 module.exports = {
   clasificarIntencion,
   clasificarPorReglas,
-  normalizarTexto
+  normalizarTexto,
+  OPCIONES_ACLARACION
 };
