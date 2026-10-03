@@ -800,6 +800,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
               systemInstruction: { parts: [{ text: dynamicPrompt }] },
               generationConfig: { temperature: 0.0, responseMimeType: "application/json" },
             }),
+            signal: request.signal,
           });
 
           if (res && res.ok) {
@@ -948,6 +949,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
             systemInstruction: { parts: [{ text: dynamicPrompt }] },
             generationConfig: { temperature: 0.0, responseMimeType: "application/json" },
           }),
+          signal: request.signal,
         });
 
         if (geminiRes && geminiRes.ok) {

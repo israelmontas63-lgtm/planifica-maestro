@@ -70,7 +70,7 @@ export async function fetchGeminiWithRetry(url, options, maxAttempts = 3) {
     try {
       res = await fetch(url, options);
     } catch (netErr) {
-      if (attempt >= maxAttempts) throw netErr;
+      if (attempt >= maxAttempts || netErr.name === "AbortError") throw netErr;
       console.warn(`[Gemini Retry] Error de red en intento ${attempt}/${maxAttempts}: ${netErr.message}. Reintentando en ${delay}ms...`);
       await new Promise((r) => setTimeout(r, delay));
       delay *= 2;

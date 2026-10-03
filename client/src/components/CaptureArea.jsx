@@ -7,13 +7,17 @@ export default function CaptureArea({ imageSrc, onImageSelected, onRemoveImage, 
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Vista previa inmediata ultrarrápida (< 15ms)
+    const reader = new FileReader();
+    reader.onload = () => onImageSelected(reader.result, file.type || "image/jpeg");
+    reader.readAsDataURL(file);
+
     try {
       const optimizada = await comprimirYRedimensionarImagen(file, 1600, 0.82);
       onImageSelected(optimizada.dataUrl, optimizada.mediaType);
     } catch (err) {
-      const reader = new FileReader();
-      reader.onload = () => onImageSelected(reader.result, file.type || "image/jpeg");
-      reader.readAsDataURL(file);
+      // ya se cargó la lectura previa si falló canvas
     }
     // Reset file input so selecting the same file works again if needed
     e.target.value = "";
@@ -32,7 +36,14 @@ export default function CaptureArea({ imageSrc, onImageSelected, onRemoveImage, 
 
       {imageSrc && (
         <div className="pm-capture-preview-card">
-          <img src={imageSrc} alt="Página capturada" className="pm-capture-thumbnail" />
+          <img
+            src={imageSrc}
+            alt="Página capturada"
+            className="pm-capture-thumbnail"
+            loading="lazy"
+            decoding="async"
+            style={{ aspectRatio: "1 / 1", objectFit: "cover" }}
+          />
           <div className="pm-capture-preview-info">
             <span className="pm-capture-tag" style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

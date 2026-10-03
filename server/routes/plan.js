@@ -243,6 +243,13 @@ router.post("/generate", async (req, res) => {
     const isOwner = req.isOwner === true;
     const isStream = Boolean(req.body.stream || req.headers["accept"]?.includes("text/event-stream"));
 
+    const clientAbortController = new AbortController();
+    req.on("close", () => {
+      if (!res.writableEnded) {
+        clientAbortController.abort();
+      }
+    });
+
     function responder(data, status = 200, estado = "pensando") {
       if (status >= 400 || !isStream) {
         return res.status(status).json(data);
@@ -439,7 +446,8 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
         const respGen = await enrutarPeticion({
           tema: "Conocimiento General",
           prompt: promptGeneral,
-          env: process.env
+          env: process.env,
+          signal: clientAbortController.signal
         });
         const textoChat = respGen.mensaje_chat || respGen.texto || "Aquí tienes la información solicitada.";
         return responder({
@@ -525,6 +533,7 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
         imageBase64,
         mediaType,
         env: process.env,
+        signal: clientAbortController.signal,
         onChunk: isStream ? (delta) => {
           if (!res.writableEnded) {
             res.write(`data: ${JSON.stringify({ delta, estado: "curriculo" })}\n\n`);

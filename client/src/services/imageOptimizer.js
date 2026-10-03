@@ -57,20 +57,23 @@ export async function comprimirYRedimensionarImagen(file, maxDimension = 1600, c
 
           const dataUrl = canvas.toDataURL("image/jpeg", calidad);
           const base64 = dataUrl.split(",")[1] || "";
+          const aspectRatio = width && height ? `${width} / ${height}` : "4 / 3";
 
           resolve({
             dataUrl,
             base64,
             mediaType: "image/jpeg",
             ancho: width,
-            alto: height
+            alto: height,
+            aspectRatio
           });
         } catch (err) {
           // Fallback seguro si falla canvas
           resolve({
             dataUrl: e.target.result,
             base64: String(e.target.result).split(",")[1] || "",
-            mediaType: file.type || "image/jpeg"
+            mediaType: file.type || "image/jpeg",
+            aspectRatio: "4 / 3"
           });
         }
       };
@@ -81,3 +84,11 @@ export async function comprimirYRedimensionarImagen(file, maxDimension = 1600, c
     reader.readAsDataURL(file);
   });
 }
+
+/**
+ * Genera una miniatura ultrarrápida (< 15ms) para vista previa inmediata
+ */
+export async function generarMiniaturaRapida(file, maxDimension = 240, calidad = 0.65) {
+  return comprimirYRedimensionarImagen(file, maxDimension, calidad);
+}
+

@@ -249,11 +249,17 @@ export default function App() {
     cargarEstadoInicialCuota();
   }, [user, isOwner]);
 
-  async function enviarMensaje(texto, imageBase64, mediaType) {
+  async function enviarMensaje(texto, imageBase64, mediaType, aspectRatio = null) {
     if (!texto && !imageBase64) return;
 
+    // Si ya había una petición en curso, cancelarla limpiamente para atender la nueva solicitud
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+
     setErrorGeneracion(null);
-    const newUserMsg = { role: "user", text: texto, imageBase64, mediaType };
+    const newUserMsg = { role: "user", text: texto, imageBase64, mediaType, aspectRatio };
     const newHistory = [...messages, newUserMsg];
     setMessages(newHistory);
     setImageSrc(null);
@@ -413,26 +419,34 @@ export default function App() {
   async function handleImageFile(file) {
     if (!file) return;
     setProcesandoImagen(true);
+
+    // Mostrar vista previa inmediata en miniatura mientras transcurre la compresión
+    const readerPrevia = new FileReader();
+    readerPrevia.onload = (e) => {
+      setImageSrc(e.target.result);
+    };
+    readerPrevia.readAsDataURL(file);
+
     try {
       const optimizada = await comprimirYRedimensionarImagen(file, 1600, 0.82);
-      await handleImageSelected(optimizada.dataUrl, optimizada.mediaType);
+      await handleImageSelected(optimizada.dataUrl, optimizada.mediaType, optimizada.aspectRatio);
     } catch (err) {
       console.warn("Fallo compresión en canvas, usando lectura directa:", err);
       const reader = new FileReader();
-      reader.onload = () => handleImageSelected(reader.result, file.type || "image/jpeg");
+      reader.onload = () => handleImageSelected(reader.result, file.type || "image/jpeg", "4/3");
       reader.readAsDataURL(file);
     } finally {
       setProcesandoImagen(false);
     }
   }
 
-  async function handleImageSelected(dataUrl, mediaType) {
+  async function handleImageSelected(dataUrl, mediaType, aspectRatio = null) {
     setImageSrc(dataUrl);
     setProcesandoImagen(true);
     try {
       const base64 = dataUrl.split(",")[1];
       const promptMultimodal = "📸 Analiza esta imagen con visión pedagógica avanzada como un docente experto: 1) Identifica y transcribe el contenido del libro, pizarra, ejercicio o guía didáctica. 2) Determina el tema central, área curricular y grado escolar según el diseño curricular del MINERD. 3) Genera de inmediato la planificación didáctica completa para este contenido según el esquema y período activo.";
-      await enviarMensaje(promptMultimodal, base64, mediaType);
+      await enviarMensaje(promptMultimodal, base64, mediaType, aspectRatio);
     } catch (err) {
       setErrorGeneracion({
         message: err.friendlyMessage || err.message || "Error procesando la imagen.",
@@ -658,7 +672,32 @@ export default function App() {
             className={`pm-chat-bubble ${m.role === 'user' ? 'pm-chat-msg-user' : 'pm-chat-msg-assistant'}`}
           >
             {m.imageBase64 && (
-              <img src={"data:" + m.mediaType + ";base64," + m.imageBase64} alt="Adjunto" style={{ maxWidth: '100%', borderRadius: '8px', marginBottom: '8px' }} />
+              <div
+                className="pm-chat-image-wrapper"
+                style={{
+                  maxWidth: '100%',
+                  aspectRatio: m.aspectRatio || '4 / 3',
+                  minHeight: '120px',
+                  background: '#f1f5f9',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  marginBottom: '8px'
+                }}
+              >
+                <img
+                  src={"data:" + m.mediaType + ";base64," + m.imageBase64}
+                  alt="Adjunto"
+                  loading="lazy"
+                  decoding="async"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    borderRadius: '8px',
+                    display: 'block'
+                  }}
+                />
+              </div>
             )}
             <div style={{ whiteSpace: 'pre-wrap', fontSize: '14.5px' }}>{m.text}</div>
             

@@ -426,7 +426,8 @@ async function enrutarPeticion({
   imageBase64 = null,
   mediaType = null,
   env = {},
-  onChunk = null
+  onChunk = null,
+  signal = null
 }) {
   const config = cargarConfiguracion();
   const configGeneral = config.configuracion_general || {};
@@ -464,6 +465,13 @@ async function enrutarPeticion({
   let ultimoError = null;
 
   for (const prov of proveedores) {
+    if (signal && signal.aborted) {
+      console.log("🛑 [Enrutador IA] Petición cancelada por el cliente (AbortSignal). Deteniendo ejecución.");
+      const abortErr = new Error("Petición cancelada por el cliente.");
+      abortErr.name = "AbortError";
+      throw abortErr;
+    }
+
     if (!prov.activo) continue;
 
     // Protección de gasto: no activar proveedores de pago sin autorización
@@ -511,7 +519,8 @@ async function enrutarPeticion({
           timeoutMs: timeoutIntento,
           imageBase64,
           mediaType,
-          onChunk
+          onChunk,
+          signal
         });
         resultadoTexto = resGemini.texto;
       } else if (prov.id === "groq_llama") {

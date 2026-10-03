@@ -11,7 +11,8 @@ async function llamarGemini({
   timeoutMs = 10000,
   imageBase64 = null,
   mediaType = null,
-  onChunk = null
+  onChunk = null,
+  signal = null
 }) {
   if (!apiKey) {
     const err = new Error("GEMINI_API_KEY no configurada.");
@@ -48,6 +49,10 @@ async function llamarGemini({
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  if (signal) {
+    if (signal.aborted) controller.abort();
+    else signal.addEventListener("abort", () => controller.abort(), { once: true });
+  }
 
   // Modo Streaming SSE en tiempo real si se provee callback onChunk
   if (typeof onChunk === "function") {
