@@ -3,6 +3,11 @@ main = "worker/index.js"
 compatibility_date = "2026-09-01"
 compatibility_flags = ["nodejs_compat"]
 
+[vars]
+ACCESO_ABIERTO = "true"
+GEMINI_MODEL = "gemini-2.5-flash"
+AI_PROVIDER = "gemini"
+
 [assets]
 directory = "./client/dist"
 binding = "ASSETS"
