@@ -592,6 +592,7 @@ async function handleApiRequest(request, env, ctx) {
         data.texto_corregido = resultadoCorreccion.textoCorregido;
         data.correcciones_aplicadas = resultadoCorreccion.cambios || [];
         data.hubo_correcciones = !!resultadoCorreccion.huboCambios;
+        data.cambio_significado = Boolean(resultadoCorreccion.cambioSignificado);
       }
       if (status >= 400 || !isStream) {
         return new Response(JSON.stringify(data), {
@@ -612,7 +613,8 @@ async function handleApiRequest(request, env, ctx) {
               texto_original: resultadoCorreccion.textoOriginal,
               texto_corregido: resultadoCorreccion.textoCorregido,
               correcciones_aplicadas: resultadoCorreccion.cambios || [],
-              hubo_correcciones: true
+              hubo_correcciones: true,
+              cambio_significado: Boolean(resultadoCorreccion.cambioSignificado)
             })}\n\n`));
           }
           await writer.write(encoder.encode(`data: ${JSON.stringify({ estado })}\n\n`));

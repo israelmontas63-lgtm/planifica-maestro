@@ -360,6 +360,7 @@ export default function App() {
         textoCorregido: data.texto_corregido || null,
         correccionesAplicadas: data.correcciones_aplicadas || [],
         huboCorrecciones: Boolean(data.hubo_correcciones),
+        cambioSignificado: Boolean(data.cambio_significado),
       };
       setMessages([...newHistory, newAssistantMsg]);
 
@@ -769,7 +770,7 @@ export default function App() {
             )}
             <div style={{ whiteSpace: 'pre-wrap', fontSize: '14.5px' }}>{m.text}</div>
             
-            {m.role === 'assistant' && m.huboCorrecciones && (
+            {m.role === 'assistant' && m.huboCorrecciones && m.cambioSignificado && (
               <div className="pm-correccion-banner no-print" style={{
                 background: "#f0fdf4",
                 border: "1px solid #bbf7d0",

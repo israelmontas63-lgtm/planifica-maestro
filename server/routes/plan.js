@@ -311,6 +311,7 @@ router.post("/generate", async (req, res) => {
         data.texto_corregido = resultadoCorreccionGlobal.textoCorregido;
         data.correcciones_aplicadas = resultadoCorreccionGlobal.cambios || [];
         data.hubo_correcciones = !!resultadoCorreccionGlobal.huboCambios;
+        data.cambio_significado = Boolean(resultadoCorreccionGlobal.cambioSignificado);
       }
       if (status >= 400 || !isStream) {
         return res.status(status).json(data);
@@ -326,7 +327,8 @@ router.post("/generate", async (req, res) => {
           texto_original: resultadoCorreccionGlobal.textoOriginal,
           texto_corregido: resultadoCorreccionGlobal.textoCorregido,
           correcciones_aplicadas: resultadoCorreccionGlobal.cambios || [],
-          hubo_correcciones: true
+          hubo_correcciones: true,
+          cambio_significado: Boolean(resultadoCorreccionGlobal.cambioSignificado)
         })}\n\n`);
       }
       res.write(`data: ${JSON.stringify({ estado })}\n\n`);

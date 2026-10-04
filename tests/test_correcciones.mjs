@@ -289,4 +289,63 @@ test("ETAPA 3: Correcciones Inteligentes de Texto y Voz Pedagógica", async (t) 
     assert.equal(dataForzar.hubo_correcciones, false);
     assert.equal(dataForzar.correcciones_aplicadas.length, 0);
   });
+
+  await t.test("12. Discriminación semántica: mayúsculas/tildes no alteran significado, homófonos y erratas sí", async () => {
+    // 12a. Tildes y mayúsculas puras -> cambioSignificado === false
+    const casoTildesN = corregirLocalNode("didactica de matematicas");
+    const casoTildesW = corregirLocalWorker("didactica de matematicas");
+    assert.equal(casoTildesN.huboCambios, true);
+    assert.equal(casoTildesN.cambioSignificado, false, "Solo tildes/mayúsculas no deben marcar cambio de significado en Node");
+    assert.equal(casoTildesW.cambioSignificado, false, "Solo tildes/mayúsculas no deben marcar cambio de significado en Worker");
+
+    const casoAcentosN = corregirLocalNode("evaluacion pedagogica en quimica");
+    assert.equal(casoAcentosN.huboCambios, true);
+    assert.equal(casoAcentosN.cambioSignificado, false);
+
+    // 12b. Homófonos y sustituciones de palabras -> cambioSignificado === true
+    const casoHaberN = corregirLocalNode("vamos haber los temas");
+    const casoHaberW = corregirLocalWorker("vamos haber los temas");
+    assert.equal(casoHaberN.cambioSignificado, true, "'vamos haber' -> 'vamos a ver' altera significado en Node");
+    assert.equal(casoHaberW.cambioSignificado, true, "'vamos haber' -> 'vamos a ver' altera significado en Worker");
+
+    const casoTuboN = corregirLocalNode("el docente tubo que salir");
+    assert.equal(casoTuboN.cambioSignificado, true, "'tubo' -> 'tuvo' altera significado");
+
+    const casoTerseroN = corregirLocalNode("plan para tersero");
+    assert.equal(casoTerseroN.cambioSignificado, true, "'tersero' -> '3.º' altera significado");
+
+    // 12c. Contrato API en Worker: cambio_significado viaja en JSON y SSE
+    const workerModule = await import("../worker/index.js");
+    const worker = workerModule.default;
+
+    // Caso solo tildes: cambio_significado = false
+    const reqTildes = new Request("http://localhost/api/plan/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: [{ role: "user", text: "didactica de matematicas" }],
+        nivel: "primario",
+        periodo: "diaria"
+      })
+    });
+    const resTildes = await worker.fetch(reqTildes, { GEMINI_API_KEY: "fake_key", ACCESO_ABIERTO: "true" });
+    const dataTildes = await resTildes.json();
+    assert.equal(dataTildes.hubo_correcciones, true);
+    assert.equal(dataTildes.cambio_significado, false, "La respuesta JSON del Worker debe indicar cambio_significado: false para tildes");
+
+    // Caso homófono: cambio_significado = true
+    const reqHomofono = new Request("http://localhost/api/plan/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: [{ role: "user", text: "vamos haber los planetas" }],
+        nivel: "primario",
+        periodo: "diaria",
+        stream: true
+      })
+    });
+    const resHomofono = await worker.fetch(reqHomofono, { GEMINI_API_KEY: "fake_key", ACCESO_ABIERTO: "true" });
+    const streamHomofono = await resHomofono.text();
+    assert.ok(streamHomofono.includes('"cambio_significado":true'), "El stream SSE debe reportar cambio_significado: true para homófonos");
+  });
 });

@@ -410,18 +410,30 @@ export function corregirTextoPedagogicoLocal(textoOriginal) {
   }
 
   const ambiguedades = cambios.filter((c) => c.tipo === "ambiguedad_levenshtein");
+  const cambioSignificado = normalizarSinTildesNiMayusculas(textoOriginal) !== normalizarSinTildesNiMayusculas(texto);
 
   return {
     textoOriginal,
     textoCorregido: texto,
     cambios,
     huboCambios: texto !== textoOriginal.trim(),
+    cambioSignificado,
     cambioEstructural,
     tipoCambioEstructural,
     detalleConfirmacion,
     tieneAmbiguedad: ambiguedades.length > 0,
     candidatosAmbiguos: ambiguedades
   };
+}
+
+export function normalizarSinTildesNiMayusculas(str) {
+  return (str || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[.,;¿?¡!():]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export async function corregirTextoPedagogico({ texto = "", usarIA = false, env = {}, signal = null }) {

@@ -416,18 +416,30 @@ function corregirTextoPedagogicoLocal(textoOriginal) {
   }
 
   const ambiguedades = cambios.filter((c) => c.tipo === "ambiguedad_levenshtein");
+  const cambioSignificado = normalizarSinTildesNiMayusculas(textoOriginal) !== normalizarSinTildesNiMayusculas(texto);
 
   return {
     textoOriginal,
     textoCorregido: texto,
     cambios,
     huboCambios: texto !== textoOriginal.trim(),
+    cambioSignificado,
     cambioEstructural,
     tipoCambioEstructural,
     detalleConfirmacion,
     tieneAmbiguedad: ambiguedades.length > 0,
     candidatosAmbiguos: ambiguedades
   };
+}
+
+function normalizarSinTildesNiMayusculas(str) {
+  return (str || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[.,;¿?¡!():]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 // ── 7. CAPA CONTEXTUAL CON ENRUTADOR IA (Solo cuando hay ambigüedad real) ──
@@ -460,6 +472,7 @@ Texto: "${resLocal.textoCorregido}"`;
     if (respuestaIA && !respuestaIA.error && respuestaIA.texto) {
       const textoIA = respuestaIA.texto.replace(/^["']|["']$/g, "").trim();
       if (textoIA && textoIA !== resLocal.textoCorregido) {
+        const cambioSignificadoIA = normalizarSinTildesNiMayusculas(resLocal.textoOriginal) !== normalizarSinTildesNiMayusculas(textoIA);
         return {
           ...resLocal,
           textoCorregido: textoIA,
@@ -468,6 +481,7 @@ Texto: "${resLocal.textoCorregido}"`;
             { antes: resLocal.textoCorregido, despues: textoIA, tipo: "contextual_ia" }
           ],
           huboCambios: true,
+          cambioSignificado: cambioSignificadoIA,
           corregidoConIA: true
         };
       }
@@ -486,5 +500,6 @@ module.exports = {
   normalizarGradosHablados,
   VOCABULARIO_MINERD,
   PROCERES_Y_EDUCADORES,
-  SIGLAS_PROTEGIDAS
+  SIGLAS_PROTEGIDAS,
+  normalizarSinTildesNiMayusculas
 };
