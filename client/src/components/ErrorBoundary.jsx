@@ -34,7 +34,7 @@ class ErrorBoundary extends React.Component {
     } catch (e) {
       console.warn('Error al limpiar cache:', e);
     }
-    const destino = window.location.origin + window.location.pathname + '?v=' + Date.now();
+    const destino = window.location.origin;
     window.location.replace(destino);
   };
 

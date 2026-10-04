@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, lazy, Suspense } from "react";
+import { useState, useRef, useEffect, useCallback, lazy, Suspense } from "react";
 import Header from "./components/Header.jsx";
 import CaptureArea from "./components/CaptureArea.jsx";
 import BottomPanel from "./components/BottomPanel.jsx";
