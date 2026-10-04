@@ -559,9 +559,40 @@ async function handleApiRequest(request, env, ctx) {
     const textoConsulta = ultimoMsg.text || body.tema || "";
     const imageBase64 = ultimoMsg.imageBase64 || null;
 
+    const forzarOriginal = Boolean(body.forzarOriginal);
+    const confirmado = Boolean(body.confirmado);
+
+    let resultadoCorreccion = await corregirTextoPedagogico({
+      texto: textoConsulta,
+      usarIA: false,
+      env
+    });
+
+    if (forzarOriginal) {
+      resultadoCorreccion = {
+        textoOriginal: textoConsulta,
+        textoCorregido: textoConsulta,
+        cambios: [],
+        huboCambios: false,
+        cambioEstructural: false,
+        tipoCambioEstructural: null,
+        detalleConfirmacion: null,
+        tieneAmbiguedad: false,
+        candidatosAmbiguos: []
+      };
+    }
+
+    const textoParaProcesar = resultadoCorreccion.textoCorregido || textoConsulta;
+
     const isStream = Boolean(stream || request.headers.get("accept")?.includes("text/event-stream"));
 
     function responderWorker({ data, status = 200, estado = "pensando" }) {
+      if (resultadoCorreccion) {
+        data.texto_original = resultadoCorreccion.textoOriginal;
+        data.texto_corregido = resultadoCorreccion.textoCorregido;
+        data.correcciones_aplicadas = resultadoCorreccion.cambios || [];
+        data.hubo_correcciones = !!resultadoCorreccion.huboCambios;
+      }
       if (status >= 400 || !isStream) {
         return new Response(JSON.stringify(data), {
           status,
@@ -575,6 +606,15 @@ async function handleApiRequest(request, env, ctx) {
 
       (async () => {
         try {
+          if (resultadoCorreccion && resultadoCorreccion.huboCambios) {
+            await writer.write(encoder.encode(`data: ${JSON.stringify({
+              tipo: "correccion",
+              texto_original: resultadoCorreccion.textoOriginal,
+              texto_corregido: resultadoCorreccion.textoCorregido,
+              correcciones_aplicadas: resultadoCorreccion.cambios || [],
+              hubo_correcciones: true
+            })}\n\n`));
+          }
           await writer.write(encoder.encode(`data: ${JSON.stringify({ estado })}\n\n`));
           if (data.mensaje_chat) {
             await writer.write(encoder.encode(`data: ${JSON.stringify({ delta: data.mensaje_chat, estado })}\n\n`));
@@ -596,6 +636,50 @@ async function handleApiRequest(request, env, ctx) {
           "Cache-Control": "no-cache",
           Connection: "keep-alive"
         }
+      });
+    }
+
+    // Validación de ambigüedad en Levenshtein (empate de candidatos: no adivinar)
+    if (resultadoCorreccion.tieneAmbiguedad && !confirmado && !forzarOriginal) {
+      const amb = resultadoCorreccion.candidatosAmbiguos[0];
+      const opciones = (amb.candidatos || []).map(c => `Usar "${c}"`).concat([`Mantener "${amb.antes}"`]);
+      return responderWorker({
+        data: {
+          mensaje_chat: `Noté la palabra "${amb.antes}", que podría referirse a varios términos curriculares. ¿Cuál quisiste decir?`,
+          plan_completado: false,
+          modo: "aclarar_ambiguedad",
+          categoria: "ambigua",
+          requiereAclaracion: true,
+          ambiguedad: amb,
+          opciones,
+          datos_planificacion: null
+        },
+        estado: "pensando"
+      });
+    }
+
+    // Validación de cambios estructurales (grado, área o tema: confirmar antes de actuar)
+    if (resultadoCorreccion.cambioEstructural && !confirmado && !forzarOriginal) {
+      const det = resultadoCorreccion.detalleConfirmacion;
+      const desc = det ? `"${det.antes}" a "${det.despues}" (${resultadoCorreccion.tipoCambioEstructural})` : `en ${resultadoCorreccion.tipoCambioEstructural}`;
+      return responderWorker({
+        data: {
+          mensaje_chat: `He identificado un posible cambio de ${desc}:\n\n**"${resultadoCorreccion.textoCorregido}"**\n\n¿Deseas continuar con esta corrección o mantener tu texto original?`,
+          plan_completado: false,
+          modo: "confirmar_correccion",
+          categoria: "confirmacion",
+          requiereConfirmacion: true,
+          cambio_estructural: {
+            tipo: resultadoCorreccion.tipoCambioEstructural,
+            detalle: det
+          },
+          opciones: [
+            `Sí, continuar con "${resultadoCorreccion.textoCorregido}"`,
+            `No, usar "${resultadoCorreccion.textoOriginal}"`
+          ],
+          datos_planificacion: null
+        },
+        estado: "pensando"
       });
     }
 
@@ -713,14 +797,6 @@ async function handleApiRequest(request, env, ctx) {
         }
       }
     }
-
-    // Corrección pedagógica unificada (Capa local $0 + Capa contextual)
-    const resultadoCorreccion = await corregirTextoPedagogico({
-      texto: textoConsulta,
-      usarIA: false,
-      env
-    });
-    const textoParaProcesar = resultadoCorreccion.textoCorregido || textoConsulta;
 
     // Clasificación de intención (0 ms, reglas deterministas)
     const clasificacion = await clasificarIntencion({ texto: textoParaProcesar, env });

@@ -46,8 +46,8 @@ function obtenerEstadoGasto(limiteDiario = 500) {
   };
 }
 
-function reiniciarContadorParaPruebas() {
-  consultasHoy = 0;
+function reiniciarContadorParaPruebas(cantidad = 0) {
+  consultasHoy = Number(cantidad) || 0;
   fechaActual = new Date().toISOString().substring(0, 10);
   guardarEstadoGasto({ fecha: fechaActual, consultasHoy });
 }

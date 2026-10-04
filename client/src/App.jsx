@@ -272,7 +272,7 @@ export default function App() {
     cargarEstadoInicialCuota();
   }, [user, isOwner]);
 
-  async function enviarMensaje(texto, imageBase64, mediaType, aspectRatio = null) {
+  async function enviarMensaje(texto, imageBase64, mediaType, aspectRatio = null, opcionesExtra = {}) {
     if (!texto && !imageBase64) return;
 
     // Si ya había una petición en curso, cancelarla limpiamente para atender la nueva solicitud
@@ -323,6 +323,8 @@ export default function App() {
         messages: newHistory,
         nivel,
         periodo,
+        forzarOriginal: Boolean(opcionesExtra.forzarOriginal),
+        confirmado: Boolean(opcionesExtra.confirmado),
         signal: abortControllerRef.current.signal,
         onChunk: (delta, accumulated, estado) => {
           setStreamingText(accumulated);
@@ -354,6 +356,10 @@ export default function App() {
         tipoVisual: data.tipo_visual || null,
         esBorrosa: data.es_borrosa || false,
         esDelicado: data.es_delicado || false,
+        textoOriginal: data.texto_original || null,
+        textoCorregido: data.texto_corregido || null,
+        correccionesAplicadas: data.correcciones_aplicadas || [],
+        huboCorrecciones: Boolean(data.hubo_correcciones),
       };
       setMessages([...newHistory, newAssistantMsg]);
 
@@ -763,6 +769,44 @@ export default function App() {
             )}
             <div style={{ whiteSpace: 'pre-wrap', fontSize: '14.5px' }}>{m.text}</div>
             
+            {m.role === 'assistant' && m.huboCorrecciones && (
+              <div className="pm-correccion-banner no-print" style={{
+                background: "#f0fdf4",
+                border: "1px solid #bbf7d0",
+                borderRadius: "8px",
+                padding: "8px 12px",
+                margin: "8px 0 4px 0",
+                fontSize: "13px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: "8px"
+              }}>
+                <span style={{ color: "#166534" }}>
+                  💡 <strong>Entendí:</strong> <em>"{m.textoCorregido}"</em>
+                </span>
+                <button
+                  type="button"
+                  className="pm-btn-deshacer"
+                  onClick={() => enviarMensaje(m.textoOriginal, null, null, null, { forzarOriginal: true })}
+                  style={{
+                    cursor: "pointer",
+                    background: "#ffffff",
+                    border: "1px solid #86efac",
+                    borderRadius: "6px",
+                    padding: "3px 8px",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    color: "#15803d"
+                  }}
+                  title="Revertir y procesar exactamente con tu texto original"
+                >
+                  ↩️ Deshacer / usar mi texto original
+                </button>
+              </div>
+            )}
+            
             {m.role === 'assistant' && (
               <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                 <button
@@ -821,10 +865,12 @@ export default function App() {
               </Suspense>
             )}
 
-            {/* FASE 1: Opciones interactivas del Ojo Digital / Clasificador de intención */}
+            {/* FASE 1: Opciones interactivas del Ojo Digital / Clasificador de intención / Confirmaciones */}
             {m.role === 'assistant' && m.opciones && m.opciones.length > 0 && i === messages.length - 1 && !cargando && (
               <div className="pm-intencion-opciones-container no-print" style={{ margin: "10px 0 6px 0" }}>
-                <span className="pm-quick-replies-label" style={{ display: "block", marginBottom: "6px", fontWeight: "600", fontSize: "12px", color: "var(--teal, #1a7d8c)" }}>¿Qué te gustaría hacer?</span>
+                <span className="pm-quick-replies-label" style={{ display: "block", marginBottom: "6px", fontWeight: "600", fontSize: "12px", color: "var(--teal, #1a7d8c)" }}>
+                  {m.modo === "confirmar_correccion" ? "Confirmar interpretación:" : m.modo === "aclarar_ambiguedad" ? "Seleccionar término exacto:" : "¿Qué te gustaría hacer?"}
+                </span>
                 <div className="pm-quick-replies-row" style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
                   {m.opciones.map((op, idx) => (
                     <button
@@ -842,7 +888,25 @@ export default function App() {
                         cursor: "pointer",
                         transition: "all 0.15s ease"
                       }}
-                      onClick={() => enviarMensaje(op)}
+                      onClick={() => {
+                        if (m.modo === "confirmar_correccion") {
+                          if (op.startsWith("Sí, continuar")) {
+                            enviarMensaje(m.textoCorregido || op, null, null, null, { confirmado: true });
+                          } else {
+                            enviarMensaje(m.textoOriginal || op, null, null, null, { forzarOriginal: true });
+                          }
+                        } else if (m.modo === "aclarar_ambiguedad") {
+                          if (op.startsWith("Mantener")) {
+                            enviarMensaje(m.textoOriginal || op, null, null, null, { forzarOriginal: true });
+                          } else {
+                            const matchTermino = op.match(/Usar "([^"]+)"/);
+                            const valTermino = matchTermino ? matchTermino[1] : op;
+                            enviarMensaje(valTermino, null, null, null, { confirmado: true });
+                          }
+                        } else {
+                          enviarMensaje(op);
+                        }
+                      }}
                     >
                       👉 {op}
                     </button>

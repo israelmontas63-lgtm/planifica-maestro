@@ -14,12 +14,12 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: "15mb" }));
 
-// Ruta pública de autenticación y verificación de clave institucional
+// Middleware de seguridad y detección de propietario en toda la aplicación
+app.use(authMiddleware);
+
+// Rutas de autenticación y verificación institucional
 app.use("/api/auth", authRoutes);
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
-
-// Middleware de seguridad: protege todas las demás APIs sensibles con 401
-app.use(authMiddleware);
 
 app.use("/api/plan", planRoutes);
 app.use("/api/ocr", ocrRoutes);

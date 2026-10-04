@@ -4,10 +4,12 @@
  * Corrector de Texto y Voz Pedagógico Multicapa para Planifica Maestro.
  * 
  * Capa 1 (Local, 0 ms, $0):
- *  - Tildes pedagógicas y mayúsculas de inicio y de asignaturas MINERD.
+ *  - Tildes pedagógicas y mayúsculas de inicio y asignaturas MINERD.
  *  - Homófonos frecuentes de voz ("a ver"/"haber", "hay"/"ahí", "echo"/"hecho", "tubo"/"tuvo", "valla"/"vaya").
- *  - Grados y ordinales hablados a nomenclatura estándar MINERD ("tercero" -> "3.º", "4to" -> "4.º").
- *  - Distancia Levenshtein (<= 2) contra términos clave curriculares.
+ *  - Grados y ordinales hablados o con erratas fonéticas ("tersero", "3ro", "tercero" -> "3.º").
+ *  - Distancia Levenshtein con largo mínimo de palabra (6 letras) y resolución honesta de empates
+ *    (si hay >1 candidato a igual distancia, NO sustituye a ciegas y registra la ambigüedad).
+ *  - Detección de cambios estructurales (grado, área o tema) para solicitar confirmación previa.
  *  - Lista protegida estricta: próceres, educadores, centros escolares y siglas nunca se distorsionan.
  * 
  * Capa 2 (Contextual, conmutada por enrutadorIA):
@@ -100,6 +102,11 @@ const VOCABULARIO_MINERD = [
   "biología"
 ];
 
+// Conjunto de palabras curriculares ya válidas para evitar falsos positivos
+const PALABRAS_VALIDAS_CURRICULARES = new Set(
+  VOCABULARIO_MINERD.flatMap((t) => t.toLowerCase().split(/\s+/)).filter((p) => p.length >= 4)
+);
+
 // Mapa directo de reemplazos de tildes y términos comunes
 const REEMPLAZOS_DIRECTOS = {
   "planificacion": "planificación",
@@ -127,13 +134,9 @@ const REEMPLAZOS_DIRECTOS = {
   "biologia": "biología",
   "metacognicion": "metacognición",
   "metacognitiva": "metacognitiva",
-  "saberes": "saberes",
-  "cotejo": "cotejo",
   "matematica": "Matemática",
   "matematicas": "Matemáticas",
-  "espanola": "Española",
-  "artistica": "Artística",
-  "fisica": "Física"
+  "espanola": "Española"
 };
 
 // ── 3. DISTANCIA LEVENSHTEIN ──
@@ -172,12 +175,12 @@ function esNombreOFraseProtegida(texto, palabra) {
   // 1. Sigla protegida
   if (SIGLAS_PROTEGIDAS.has(pNorm)) return true;
 
-  // 2. Contenido dentro de próceres y educadores
+  // 2. Próceres y educadores
   for (const procer of PROCERES_Y_EDUCADORES) {
     if (procer.toLowerCase().includes(palabra.toLowerCase())) return true;
   }
 
-  // 3. Patrón de escuela o centro educativo
+  // 3. Centros educativos
   const patronEscuela = /(?:escuela|liceo|colegio|instituto|politécnico|centro\s+educativo)\s+([A-ZÁÉÍÓÚÑa-záéíóúñ\s.'"-]+)/i;
   const match = patronEscuela.exec(texto);
   if (match && match[0].toLowerCase().includes(palabra.toLowerCase())) {
@@ -187,7 +190,7 @@ function esNombreOFraseProtegida(texto, palabra) {
   return false;
 }
 
-// ── 4. CORRECCIONES DE HOMÓFONOS Y REGLAS FONÉTICAS DE VOZ ──
+// ── 4. HOMÓFONOS DE VOZ ──
 
 function corregirHomofonosDeVoz(texto) {
   let res = texto;
@@ -251,7 +254,7 @@ function corregirHomofonosDeVoz(texto) {
   return { texto: res, correcciones };
 }
 
-// ── 5. NORMALIZACIÓN DE GRADOS Y ORDINALES HABLADOS MINERD ──
+// ── 5. NORMALIZACIÓN DE GRADOS HABLADOS ──
 
 function normalizarGradosHablados(texto) {
   let res = texto;
@@ -259,11 +262,11 @@ function normalizarGradosHablados(texto) {
 
   const patronesGrados = [
     { regex: /\b(?:1ero|1ro|1°|primer\s+grado|primero\s+de\s+primaria|primero\s+primaria)\b/gi, valor: "1.º" },
-    { regex: /\b(?:2do|2°|segundo\s+grado|segundo\s+de\s+primaria|segundo\s+primaria)\b/gi, valor: "2.º" },
-    { regex: /\b(?:3ro|3ero|3er\s+grado|tercer\s+grado|tercero\s+de\s+primaria|tercero\s+primaria|tercero(?=\s+grado|\s+de\b|\b))\b/gi, valor: "3.º" },
-    { regex: /\b(?:4to|4°|cuarto\s+grado|cuarto\s+de\s+primaria|cuarto\s+primaria)\b/gi, valor: "4.º" },
-    { regex: /\b(?:5to|5°|quinto\s+grado|quinto\s+de\s+primaria|quinto\s+primaria)\b/gi, valor: "5.º" },
-    { regex: /\b(?:6to|6°|sexto\s+grado|sexto\s+de\s+primaria|sexto\s+primaria)\b/gi, valor: "6.º" }
+    { regex: /\b(?:2do|2°|segundo\s+grado|segundo\s+de\s+primaria|segundo\s+primaria|segumdo)\b/gi, valor: "2.º" },
+    { regex: /\b(?:3ro|3ero|3er\s+grado|tercer\s+grado|tercero\s+de\s+primaria|tercero\s+primaria|tersero|terzero|tersel|tercero(?=\s+grado|\s+de\b|\b))\b/gi, valor: "3.º" },
+    { regex: /\b(?:4to|4°|cuarto\s+grado|cuarto\s+de\s+primaria|cuarto\s+primaria|cuartp)\b/gi, valor: "4.º" },
+    { regex: /\b(?:5to|5°|quinto\s+grado|quinto\s+de\s+primaria|quinto\s+primaria|quimto)\b/gi, valor: "5.º" },
+    { regex: /\b(?:6to|6°|sexto\s+grado|sexto\s+de\s+primaria|sexto\s+primaria|sesto)\b/gi, valor: "6.º" }
   ];
 
   for (const { regex, valor } of patronesGrados) {
@@ -276,7 +279,7 @@ function normalizarGradosHablados(texto) {
   return { texto: res, correcciones };
 }
 
-// ── 6. CORRECCIÓN LOCAL PRINCIPAL (Reglas + Levenshtein + Preservación) ──
+// ── 6. CORRECCIÓN LOCAL PRINCIPAL ──
 
 function corregirTextoPedagogicoLocal(textoOriginal) {
   if (!textoOriginal || typeof textoOriginal !== "string") {
@@ -284,34 +287,36 @@ function corregirTextoPedagogicoLocal(textoOriginal) {
       textoOriginal: "",
       textoCorregido: "",
       cambios: [],
-      huboCambios: false
+      huboCambios: false,
+      cambioEstructural: false,
+      tieneAmbiguedad: false,
+      candidatosAmbiguos: []
     };
   }
 
   let texto = textoOriginal;
   const cambios = [];
 
-  // Paso 1: Normalizar homófonos de voz
+  // Paso 1: Homófonos de voz
   const pasoHomofonos = corregirHomofonosDeVoz(texto);
   texto = pasoHomofonos.texto;
   cambios.push(...pasoHomofonos.correcciones);
 
-  // Paso 2: Normalizar números y grados a nomenclatura MINERD
+  // Paso 2: Grados MINERD (incluyendo errores como 'tersero' -> '3.º')
   const pasoGrados = normalizarGradosHablados(texto);
   texto = pasoGrados.texto;
   cambios.push(...pasoGrados.correcciones);
 
-  // Paso 3: Reemplazos directos y tildes pedagógicas
-  // Tokenizamos preservando puntuación
+  // Paso 3: Reemplazos directos y Levenshtein con largo mínimo >= 6
   const palabras = texto.split(/(\s+|[.,;¿?¡!():])/);
 
   for (let i = 0; i < palabras.length; i++) {
     const token = palabras[i];
     if (!token || /^\s+$/.test(token) || /^[.,;¿?¡!():]+$/.test(token)) continue;
 
-    // Verificar si es palabra protegida (nombres, siglas, escuelas)
+    // Verificar si es palabra protegida
     if (esNombreOFraseProtegida(textoOriginal, token)) {
-      continue; // NO TOCAR
+      continue;
     }
 
     const tokenLimpio = token.toLowerCase().trim();
@@ -320,7 +325,6 @@ function corregirTextoPedagogicoLocal(textoOriginal) {
     if (REEMPLAZOS_DIRECTOS[tokenLimpio]) {
       const sustituto = REEMPLAZOS_DIRECTOS[tokenLimpio];
       if (token !== sustituto) {
-        // Preservar mayúscula si el original la tenía
         const conMayus = (token[0] === token[0].toUpperCase())
           ? sustituto.charAt(0).toUpperCase() + sustituto.slice(1)
           : sustituto;
@@ -331,68 +335,107 @@ function corregirTextoPedagogicoLocal(textoOriginal) {
       continue;
     }
 
-    // 3b. Levenshtein contra vocabulario MINERD si longitud >= 5
-    if (tokenLimpio.length >= 5) {
-      let mejorCoincidencia = null;
+    // 3b. Levenshtein contra vocabulario MINERD si longitud >= 6 y no es palabra válida
+    if (tokenLimpio.length >= 6 && !PALABRAS_VALIDAS_CURRICULARES.has(tokenLimpio)) {
+      let mejoresCandidatos = [];
       let menorDistancia = Infinity;
 
       for (const termino of VOCABULARIO_MINERD) {
-        // Solo comparar con palabras individuales del vocabulario
         const partesTermino = termino.split(/\s+/);
         for (const parte of partesTermino) {
           const pMin = parte.toLowerCase();
+          if (pMin.length < 5) continue;
           if (Math.abs(pMin.length - tokenLimpio.length) > 2) continue;
 
           const dist = distanciaLevenshtein(tokenLimpio, pMin);
-          if (dist > 0 && dist <= 2 && dist < menorDistancia) {
-            menorDistancia = dist;
-            mejorCoincidencia = parte;
+          if (dist > 0 && dist <= 2) {
+            if (dist < menorDistancia) {
+              menorDistancia = dist;
+              mejoresCandidatos = [parte];
+            } else if (dist === menorDistancia && !mejoresCandidatos.some((c) => c.toLowerCase() === pMin)) {
+              mejoresCandidatos.push(parte);
+            }
           }
         }
       }
 
-      if (mejorCoincidencia && menorDistancia <= 2) {
+      if (mejoresCandidatos.length === 1 && menorDistancia <= 2) {
+        const mejorCoincidencia = mejoresCandidatos[0];
         const conMayus = (token[0] === token[0].toUpperCase())
           ? mejorCoincidencia.charAt(0).toUpperCase() + mejorCoincidencia.slice(1)
           : mejorCoincidencia.toLowerCase();
 
         cambios.push({ antes: token, despues: conMayus, tipo: "levenshtein_minerd" });
         palabras[i] = conMayus;
+      } else if (mejoresCandidatos.length > 1 && menorDistancia <= 2) {
+        // Empate a igual distancia: NO sustituir a ciegas; registrar ambigüedad
+        cambios.push({
+          antes: token,
+          tipo: "ambiguedad_levenshtein",
+          candidatos: mejoresCandidatos,
+          distancia: menorDistancia
+        });
       }
     }
   }
 
   texto = palabras.join("");
 
-  // Paso 4: Mayúscula al inicio de la frase si corresponde
-  if (texto.length > 0 && /^[a-záéíóúñ]/.test(texto)) {
+  // Paso 4: Mayúscula al inicio de la frase si corresponde y el original no iniciaba en minúscula intencional
+  if (texto.length > 0 && /^[a-záéíóúñ]/.test(texto) && /^[A-ZÁÉÍÓÚÑ]/.test(textoOriginal.trim())) {
+    texto = texto.charAt(0).toUpperCase() + texto.slice(1);
+  } else if (texto.length > 0 && /^[a-záéíóúñ]/.test(texto) && !/^(?:que|como|para|de|en|por)\b/i.test(textoOriginal.trim())) {
     texto = texto.charAt(0).toUpperCase() + texto.slice(1);
   }
 
-  // Limpiar espacios múltiples
   texto = texto.replace(/[ \t]+/g, " ").trim();
+
+  // Paso 5: Clasificar si hubo cambios estructurales (grado, área o tema)
+  const cambioGrado = cambios.find((c) => c.tipo === "grado_minerd");
+  const cambioArea = cambios.find((c) =>
+    (c.despues && ["Matemática", "Matemáticas", "Española", "Sociales", "Naturaleza", "Artística", "Física"].includes(c.despues))
+  );
+  const cambioTema = cambios.find((c) => c.tipo === "levenshtein_minerd");
+
+  let cambioEstructural = false;
+  let tipoCambioEstructural = null;
+  let detalleConfirmacion = null;
+
+  if (cambioGrado) {
+    cambioEstructural = true;
+    tipoCambioEstructural = "grado escolar";
+    detalleConfirmacion = cambioGrado;
+  } else if (cambioArea) {
+    cambioEstructural = true;
+    tipoCambioEstructural = "área curricular";
+    detalleConfirmacion = cambioArea;
+  } else if (cambioTema) {
+    cambioEstructural = true;
+    tipoCambioEstructural = "tema pedagógico";
+    detalleConfirmacion = cambioTema;
+  }
+
+  const ambiguedades = cambios.filter((c) => c.tipo === "ambiguedad_levenshtein");
 
   return {
     textoOriginal,
     textoCorregido: texto,
     cambios,
-    huboCambios: texto !== textoOriginal.trim()
+    huboCambios: texto !== textoOriginal.trim(),
+    cambioEstructural,
+    tipoCambioEstructural,
+    detalleConfirmacion,
+    tieneAmbiguedad: ambiguedades.length > 0,
+    candidatosAmbiguos: ambiguedades
   };
 }
 
 // ── 7. CAPA CONTEXTUAL CON ENRUTADOR IA (Solo cuando hay ambigüedad real) ──
 
 async function corregirTextoPedagogico({ texto = "", usarIA = false, env = process.env, signal = null }) {
-  // Primero aplicar siempre la capa local ($0 costo, 0 ms)
   const resLocal = corregirTextoPedagogicoLocal(texto);
 
-  // Si no se pide IA o no hay cuota o el texto quedó bien resuelto localmente:
-  if (!usarIA || !puedeRealizarConsulta(300)) {
-    return resLocal;
-  }
-
-  // Si el texto es muy corto o ya fue corregido limpiamente sin ambigüedad restante:
-  if (resLocal.textoCorregido.length < 8) {
+  if (!usarIA || !puedeRealizarConsulta(300) || resLocal.textoCorregido.length < 8) {
     return resLocal;
   }
 
@@ -418,7 +461,7 @@ Texto: "${resLocal.textoCorregido}"`;
       const textoIA = respuestaIA.texto.replace(/^["']|["']$/g, "").trim();
       if (textoIA && textoIA !== resLocal.textoCorregido) {
         return {
-          textoOriginal: texto,
+          ...resLocal,
           textoCorregido: textoIA,
           cambios: [
             ...resLocal.cambios,
@@ -429,9 +472,7 @@ Texto: "${resLocal.textoCorregido}"`;
         };
       }
     }
-  } catch (err) {
-    // Falla silenciosa y segura de la capa IA: retorno garantizado de la capa local
-  }
+  } catch (err) {}
 
   return resLocal;
 }

@@ -271,6 +271,8 @@ export async function generarPlanificacion({
   messages,
   nivel,
   periodo,
+  forzarOriginal = false,
+  confirmado = false,
   signal,
   onChunk,
 }) {
@@ -280,6 +282,8 @@ export async function generarPlanificacion({
     nivel,
     periodo,
     docenteId,
+    forzarOriginal: Boolean(forzarOriginal),
+    confirmado: Boolean(confirmado),
     permitirBusquedaWeb: true,
     stream: Boolean(onChunk),
   };

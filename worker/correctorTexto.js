@@ -95,6 +95,11 @@ export const VOCABULARIO_MINERD = [
   "biología"
 ];
 
+// Conjunto de palabras curriculares ya válidas para evitar falsos positivos
+export const PALABRAS_VALIDAS_CURRICULARES = new Set(
+  VOCABULARIO_MINERD.flatMap((t) => t.toLowerCase().split(/\s+/)).filter((p) => p.length >= 4)
+);
+
 const REEMPLAZOS_DIRECTOS = {
   "planificacion": "planificación",
   "planificame": "planifícame",
@@ -121,13 +126,9 @@ const REEMPLAZOS_DIRECTOS = {
   "biologia": "biología",
   "metacognicion": "metacognición",
   "metacognitiva": "metacognitiva",
-  "saberes": "saberes",
-  "cotejo": "cotejo",
   "matematica": "Matemática",
   "matematicas": "Matemáticas",
-  "espanola": "Española",
-  "artistica": "Artística",
-  "fisica": "Física"
+  "espanola": "Española"
 };
 
 // ── 3. DISTANCIA LEVENSHTEIN ──
@@ -253,11 +254,11 @@ export function normalizarGradosHablados(texto) {
 
   const patronesGrados = [
     { regex: /\b(?:1ero|1ro|1°|primer\s+grado|primero\s+de\s+primaria|primero\s+primaria)\b/gi, valor: "1.º" },
-    { regex: /\b(?:2do|2°|segundo\s+grado|segundo\s+de\s+primaria|segundo\s+primaria)\b/gi, valor: "2.º" },
-    { regex: /\b(?:3ro|3ero|3er\s+grado|tercer\s+grado|tercero\s+de\s+primaria|tercero\s+primaria|tercero(?=\s+grado|\s+de\b|\b))\b/gi, valor: "3.º" },
-    { regex: /\b(?:4to|4°|cuarto\s+grado|cuarto\s+de\s+primaria|cuarto\s+primaria)\b/gi, valor: "4.º" },
-    { regex: /\b(?:5to|5°|quinto\s+grado|quinto\s+de\s+primaria|quinto\s+primaria)\b/gi, valor: "5.º" },
-    { regex: /\b(?:6to|6°|sexto\s+grado|sexto\s+de\s+primaria|sexto\s+primaria)\b/gi, valor: "6.º" }
+    { regex: /\b(?:2do|2°|segundo\s+grado|segundo\s+de\s+primaria|segundo\s+primaria|segumdo)\b/gi, valor: "2.º" },
+    { regex: /\b(?:3ro|3ero|3er\s+grado|tercer\s+grado|tercero\s+de\s+primaria|tercero\s+primaria|tersero|terzero|tersel|tercero(?=\s+grado|\s+de\b|\b))\b/gi, valor: "3.º" },
+    { regex: /\b(?:4to|4°|cuarto\s+grado|cuarto\s+de\s+primaria|cuarto\s+primaria|cuartp)\b/gi, valor: "4.º" },
+    { regex: /\b(?:5to|5°|quinto\s+grado|quinto\s+de\s+primaria|quinto\s+primaria|quimto)\b/gi, valor: "5.º" },
+    { regex: /\b(?:6to|6°|sexto\s+grado|sexto\s+de\s+primaria|sexto\s+primaria|sesto)\b/gi, valor: "6.º" }
   ];
 
   for (const { regex, valor } of patronesGrados) {
@@ -278,7 +279,12 @@ export function corregirTextoPedagogicoLocal(textoOriginal) {
       textoOriginal: "",
       textoCorregido: "",
       cambios: [],
-      huboCambios: false
+      huboCambios: false,
+      cambioEstructural: false,
+      tipoCambioEstructural: null,
+      detalleConfirmacion: null,
+      tieneAmbiguedad: false,
+      candidatosAmbiguos: []
     };
   }
 
@@ -290,12 +296,12 @@ export function corregirTextoPedagogicoLocal(textoOriginal) {
   texto = pasoHomofonos.texto;
   cambios.push(...pasoHomofonos.correcciones);
 
-  // Paso 2: Grados MINERD
+  // Paso 2: Grados MINERD (incluyendo errores como 'tersero' -> '3.º')
   const pasoGrados = normalizarGradosHablados(texto);
   texto = pasoGrados.texto;
   cambios.push(...pasoGrados.correcciones);
 
-  // Paso 3: Reemplazos directos y tildes pedagógicas
+  // Paso 3: Reemplazos directos y Levenshtein con largo mínimo >= 6
   const palabras = texto.split(/(\s+|[.,;¿?¡!():])/);
 
   for (let i = 0; i < palabras.length; i++) {
@@ -309,7 +315,7 @@ export function corregirTextoPedagogicoLocal(textoOriginal) {
 
     const tokenLimpio = token.toLowerCase().trim();
 
-    // 3a. Reemplazo directo
+    // 3a. Reemplazo directo en diccionario común
     if (REEMPLAZOS_DIRECTOS[tokenLimpio]) {
       const sustituto = REEMPLAZOS_DIRECTOS[tokenLimpio];
       if (token !== sustituto) {
@@ -323,50 +329,98 @@ export function corregirTextoPedagogicoLocal(textoOriginal) {
       continue;
     }
 
-    // 3b. Levenshtein contra vocabulario MINERD
-    if (tokenLimpio.length >= 5) {
-      let mejorCoincidencia = null;
+    // 3b. Levenshtein contra vocabulario MINERD si longitud >= 6 y no es palabra válida
+    if (tokenLimpio.length >= 6 && !PALABRAS_VALIDAS_CURRICULARES.has(tokenLimpio)) {
+      let mejoresCandidatos = [];
       let menorDistancia = Infinity;
 
       for (const termino of VOCABULARIO_MINERD) {
         const partesTermino = termino.split(/\s+/);
         for (const parte of partesTermino) {
           const pMin = parte.toLowerCase();
+          if (pMin.length < 5) continue;
           if (Math.abs(pMin.length - tokenLimpio.length) > 2) continue;
 
           const dist = distanciaLevenshtein(tokenLimpio, pMin);
-          if (dist > 0 && dist <= 2 && dist < menorDistancia) {
-            menorDistancia = dist;
-            mejorCoincidencia = parte;
+          if (dist > 0 && dist <= 2) {
+            if (dist < menorDistancia) {
+              menorDistancia = dist;
+              mejoresCandidatos = [parte];
+            } else if (dist === menorDistancia && !mejoresCandidatos.some((c) => c.toLowerCase() === pMin)) {
+              mejoresCandidatos.push(parte);
+            }
           }
         }
       }
 
-      if (mejorCoincidencia && menorDistancia <= 2) {
+      if (mejoresCandidatos.length === 1 && menorDistancia <= 2) {
+        const mejorCoincidencia = mejoresCandidatos[0];
         const conMayus = (token[0] === token[0].toUpperCase())
           ? mejorCoincidencia.charAt(0).toUpperCase() + mejorCoincidencia.slice(1)
           : mejorCoincidencia.toLowerCase();
 
         cambios.push({ antes: token, despues: conMayus, tipo: "levenshtein_minerd" });
         palabras[i] = conMayus;
+      } else if (mejoresCandidatos.length > 1 && menorDistancia <= 2) {
+        // Empate a igual distancia: NO sustituir a ciegas; registrar ambigüedad
+        cambios.push({
+          antes: token,
+          tipo: "ambiguedad_levenshtein",
+          candidatos: mejoresCandidatos,
+          distancia: menorDistancia
+        });
       }
     }
   }
 
   texto = palabras.join("");
 
-  // Paso 4: Mayúscula inicial
-  if (texto.length > 0 && /^[a-záéíóúñ]/.test(texto)) {
+  // Paso 4: Mayúscula al inicio de la frase si corresponde y el original no iniciaba en minúscula intencional
+  if (texto.length > 0 && /^[a-záéíóúñ]/.test(texto) && /^[A-ZÁÉÍÓÚÑ]/.test(textoOriginal.trim())) {
+    texto = texto.charAt(0).toUpperCase() + texto.slice(1);
+  } else if (texto.length > 0 && /^[a-záéíóúñ]/.test(texto) && !/^(?:que|como|para|de|en|por)\b/i.test(textoOriginal.trim())) {
     texto = texto.charAt(0).toUpperCase() + texto.slice(1);
   }
 
   texto = texto.replace(/[ \t]+/g, " ").trim();
 
+  // Paso 5: Clasificar si hubo cambios estructurales (grado, área o tema)
+  const cambioGrado = cambios.find((c) => c.tipo === "grado_minerd");
+  const cambioArea = cambios.find((c) =>
+    (c.despues && ["Matemática", "Matemáticas", "Española", "Sociales", "Naturaleza", "Artística", "Física"].includes(c.despues))
+  );
+  const cambioTema = cambios.find((c) => c.tipo === "levenshtein_minerd");
+
+  let cambioEstructural = false;
+  let tipoCambioEstructural = null;
+  let detalleConfirmacion = null;
+
+  if (cambioGrado) {
+    cambioEstructural = true;
+    tipoCambioEstructural = "grado escolar";
+    detalleConfirmacion = cambioGrado;
+  } else if (cambioArea) {
+    cambioEstructural = true;
+    tipoCambioEstructural = "área curricular";
+    detalleConfirmacion = cambioArea;
+  } else if (cambioTema) {
+    cambioEstructural = true;
+    tipoCambioEstructural = "tema pedagógico";
+    detalleConfirmacion = cambioTema;
+  }
+
+  const ambiguedades = cambios.filter((c) => c.tipo === "ambiguedad_levenshtein");
+
   return {
     textoOriginal,
     textoCorregido: texto,
     cambios,
-    huboCambios: texto !== textoOriginal.trim()
+    huboCambios: texto !== textoOriginal.trim(),
+    cambioEstructural,
+    tipoCambioEstructural,
+    detalleConfirmacion,
+    tieneAmbiguedad: ambiguedades.length > 0,
+    candidatosAmbiguos: ambiguedades
   };
 }
 

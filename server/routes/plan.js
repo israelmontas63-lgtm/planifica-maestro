@@ -277,6 +277,7 @@ Devuelve SIEMPRE tu respuesta en formato JSON estrictamente estructurado con est
 
 router.post("/generate", async (req, res) => {
   try {
+    const { messages = [], nivel, periodo = "diaria" } = req.body || {};
     const rawId = (req.body.docenteId || req.headers["x-docente-id"] || req.headers["x-device-id"] || "").trim();
     const resolvedDocenteId = (rawId && rawId !== "docente_default") ? rawId : (req.headers["x-device-id"] || ("anon_" + crypto.randomUUID()));
     const isOwner = req.isOwner === true;
@@ -302,7 +303,15 @@ router.post("/generate", async (req, res) => {
       }
     });
 
+    let resultadoCorreccionGlobal = null;
+
     function responder(data, status = 200, estado = "pensando") {
+      if (resultadoCorreccionGlobal) {
+        data.texto_original = resultadoCorreccionGlobal.textoOriginal;
+        data.texto_corregido = resultadoCorreccionGlobal.textoCorregido;
+        data.correcciones_aplicadas = resultadoCorreccionGlobal.cambios || [];
+        data.hubo_correcciones = !!resultadoCorreccionGlobal.huboCambios;
+      }
       if (status >= 400 || !isStream) {
         return res.status(status).json(data);
       }
@@ -310,6 +319,15 @@ router.post("/generate", async (req, res) => {
         res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
         res.setHeader("Cache-Control", "no-cache");
         res.setHeader("Connection", "keep-alive");
+      }
+      if (resultadoCorreccionGlobal && resultadoCorreccionGlobal.huboCambios) {
+        res.write(`data: ${JSON.stringify({
+          tipo: "correccion",
+          texto_original: resultadoCorreccionGlobal.textoOriginal,
+          texto_corregido: resultadoCorreccionGlobal.textoCorregido,
+          correcciones_aplicadas: resultadoCorreccionGlobal.cambios || [],
+          hubo_correcciones: true
+        })}\n\n`);
       }
       res.write(`data: ${JSON.stringify({ estado })}\n\n`);
       if (data.mensaje_chat) {
@@ -444,6 +462,71 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
     const mediaType = ultimoMsg.mediaType || "image/jpeg";
     const textoConsulta = (ultimoMsg.text || req.body.tema || "").trim();
 
+    const forzarOriginal = Boolean(req.body.forzarOriginal);
+    const confirmado = Boolean(req.body.confirmado);
+
+    let resultadoCorreccion = await corregirTextoPedagogico({
+      texto: textoConsulta,
+      usarIA: false,
+      env: process.env,
+      signal: req.abortSignal || null
+    });
+
+    if (forzarOriginal) {
+      resultadoCorreccion = {
+        textoOriginal: textoConsulta,
+        textoCorregido: textoConsulta,
+        cambios: [],
+        huboCambios: false,
+        cambioEstructural: false,
+        tipoCambioEstructural: null,
+        detalleConfirmacion: null,
+        tieneAmbiguedad: false,
+        candidatosAmbiguos: []
+      };
+    }
+
+    resultadoCorreccionGlobal = resultadoCorreccion;
+    const textoParaProcesar = resultadoCorreccion.textoCorregido || textoConsulta;
+
+    // Validación de ambigüedad en Levenshtein (empate de candidatos: no adivinar)
+    if (resultadoCorreccion.tieneAmbiguedad && !confirmado && !forzarOriginal) {
+      const amb = resultadoCorreccion.candidatosAmbiguos[0];
+      const opciones = (amb.candidatos || []).map(c => `Usar "${c}"`).concat([`Mantener "${amb.antes}"`]);
+      return responder({
+        mensaje_chat: `Noté la palabra "${amb.antes}", que podría referirse a varios términos curriculares. ¿Cuál quisiste decir?`,
+        plan_completado: false,
+        modo: "aclarar_ambiguedad",
+        categoria: "ambigua",
+        requiereAclaracion: true,
+        ambiguedad: amb,
+        opciones,
+        datos_planificacion: null
+      }, 200, "pensando");
+    }
+
+    // Validación de cambios estructurales (grado, área o tema: confirmar antes de actuar)
+    if (resultadoCorreccion.cambioEstructural && !confirmado && !forzarOriginal) {
+      const det = resultadoCorreccion.detalleConfirmacion;
+      const desc = det ? `"${det.antes}" a "${det.despues}" (${resultadoCorreccion.tipoCambioEstructural})` : `en ${resultadoCorreccion.tipoCambioEstructural}`;
+      return responder({
+        mensaje_chat: `He identificado un posible cambio de ${desc}:\n\n**"${resultadoCorreccion.textoCorregido}"**\n\n¿Deseas continuar con esta corrección o mantener tu texto original?`,
+        plan_completado: false,
+        modo: "confirmar_correccion",
+        categoria: "confirmacion",
+        requiereConfirmacion: true,
+        cambio_estructural: {
+          tipo: resultadoCorreccion.tipoCambioEstructural,
+          detalle: det
+        },
+        opciones: [
+          `Sí, continuar con "${resultadoCorreccion.textoCorregido}"`,
+          `No, usar "${resultadoCorreccion.textoOriginal}"`
+        ],
+        datos_planificacion: null
+      }, 200, "pensando");
+    }
+
     // 0. Si viene una foto SIN intención explícita previa: Identificar primero (Ojo Digital) y ofrecer opciones
     if (imageBase64 && !tieneIntencionExplicita(textoConsulta)) {
       const idRes = await identificarImagenConVision({
@@ -530,15 +613,6 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
         }
       }
     }
-
-    // Corrección pedagógica unificada (Capa local $0 + Capa contextual)
-    const resultadoCorreccion = await corregirTextoPedagogico({
-      texto: textoConsulta,
-      usarIA: false,
-      env: process.env,
-      signal: req.abortSignal || null
-    });
-    const textoParaProcesar = resultadoCorreccion.textoCorregido || textoConsulta;
 
     // Clasificación de intención previa
     const clasificacion = await clasificarIntencion({

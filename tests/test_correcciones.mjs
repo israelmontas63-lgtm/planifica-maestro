@@ -142,4 +142,151 @@ test("ETAPA 3: Correcciones Inteligentes de Texto y Voz Pedagógica", async (t) 
     const tPromedio = tTotal / 50;
     assert.ok(tPromedio < 5, `Tiempo promedio (${tPromedio.toFixed(2)} ms) debe ser menor a 5 ms`);
   });
+
+  await t.test("8. Pruebas negativas del corrector: frases correctas que NO deben cambiar (mínimo 15 casos)", () => {
+    const frasesCorrectas = [
+      "hay que revisar el plan",
+      "ha hecho la tarea",
+      "voy a ver",
+      "el tubo de ensayo",
+      "vaya con cuidado",
+      "competencias fundamentales",
+      "indicadores de logro",
+      "situación de aprendizaje",
+      "secuencia didáctica",
+      "contenidos conceptuales",
+      "recuperación de saberes previos",
+      "rúbrica analítica",
+      "lista de cotejo",
+      "biodiversidad en ciencias",
+      "adecuación curricular",
+      "unidad de aprendizaje",
+      "fotosíntesis en las plantas",
+      "metacognición en el aula"
+    ];
+
+    assert.ok(frasesCorrectas.length >= 15, "Deben ser al menos 15 frases");
+
+    for (const f of frasesCorrectas) {
+      const resN = corregirLocalNode(f);
+      const resW = corregirLocalWorker(f);
+
+      // Si empieza con minúscula, la función puede capitalizar la primera letra al inicio de oración
+      const esperado = f.charAt(0).toUpperCase() + f.slice(1);
+      assert.equal(resN.textoCorregido, esperado, `Node alteró frase válida: "${f}" -> "${resN.textoCorregido}"`);
+      assert.equal(resW.textoCorregido, esperado, `Worker alteró frase válida: "${f}" -> "${resW.textoCorregido}"`);
+      assert.equal(resN.cambios.length, 0, `Node no debe registrar cambios para: "${f}"`);
+      assert.equal(resW.cambios.length, 0, `Worker no debe registrar cambios para: "${f}"`);
+    }
+  });
+
+  await t.test("9. Levenshtein con largo mínimo >= 6 y resolución de empates / ambigüedades", () => {
+    // Palabras menores a 6 caracteres NO se alteran por Levenshtein (ej. "caso", "mapa", "guia", "meta")
+    const resCorta = corregirLocalNode("crear una guia de actividades");
+    assert.equal(resCorta.textoCorregido, "Crear una guia de actividades");
+
+    // Detección de empate a igual distancia mínima (ambigüedad Levenshtein)
+    // "didactic" (largo 8) tiene distancia 2 tanto con "didáctica" como con "didáctico"
+    // La función debe registrar tipo: 'ambiguedad_levenshtein', registrar ambos candidatos y NO cambiar la palabra a ciegas
+    const resAmbN = corregirLocalNode("clase con enfoque didactic");
+    const resAmbW = corregirLocalWorker("clase con enfoque didactic");
+    assert.ok(resAmbN.tieneAmbiguedad, "Node debe reportar tieneAmbiguedad = true ante empates");
+    assert.ok(resAmbW.tieneAmbiguedad, "Worker debe reportar tieneAmbiguedad = true ante empates");
+    assert.ok(resAmbN.candidatosAmbiguos.length > 0, "Debe incluir candidatos ambiguos");
+    assert.ok(resAmbN.candidatosAmbiguos[0].candidatos.includes("didáctica"));
+    assert.ok(resAmbN.candidatosAmbiguos[0].candidatos.includes("didáctico"));
+    assert.ok(resAmbN.textoCorregido.includes("didactic"), "No debe sustituir a ciegas si hay empate");
+  });
+
+  await t.test("10. Confirmación de cambios estructurales (grado, área o tema)", () => {
+    // Cambio de grado con errata fonética: 'tersero' -> '3.º'
+    const resTersero = corregirLocalNode("actividad para tersero de primaria");
+    assert.ok(resTersero.cambioEstructural, "Debe marcar cambioEstructural = true para 'tersero'");
+    assert.equal(resTersero.tipoCambioEstructural, "grado escolar");
+    assert.ok(resTersero.textoCorregido.includes("3.º"));
+
+    // Otro grado con errata: 'segumdo' -> '2.º'
+    const resSegundo = corregirLocalNode("plan de clase para segumdo grado");
+    assert.ok(resSegundo.cambioEstructural, "Debe marcar cambioEstructural para 'segumdo'");
+    assert.equal(resSegundo.tipoCambioEstructural, "grado escolar");
+    assert.ok(resSegundo.textoCorregido.includes("2.º"));
+
+    // Frase sin cambios estructurales
+    const resNormal = corregirLocalNode("hola buenos días profesor");
+    assert.equal(resNormal.cambioEstructural, false);
+  });
+
+  await t.test("11. Contrato de respuesta y streaming con transparencia total (Node y Worker)", async () => {
+    // 11a. Worker: verificar respuesta JSON con corrección
+    const workerModule = await import("../worker/index.js");
+    const worker = workerModule.default;
+
+    const reqWorker = new Request("http://localhost/api/plan/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: [{ role: "user", text: "hola profe didactica" }],
+        nivel: "primario",
+        periodo: "diaria"
+      })
+    });
+
+    const resWorker = await worker.fetch(reqWorker, {
+      GEMINI_API_KEY: "fake_key",
+      ACCESO_ABIERTO: "true"
+    });
+
+    const dataWorker = await resWorker.json();
+    assert.equal(dataWorker.texto_original, "hola profe didactica");
+    assert.equal(dataWorker.texto_corregido, "Hola profe didáctica");
+    assert.equal(dataWorker.hubo_correcciones, true);
+    assert.ok(Array.isArray(dataWorker.correcciones_aplicadas));
+    assert.ok(dataWorker.correcciones_aplicadas.length > 0);
+
+    // 11b. Worker: verificar streaming SSE emite evento { tipo: "correccion", ... }
+    const reqStream = new Request("http://localhost/api/plan/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: [{ role: "user", text: "hola profe didactica" }],
+        nivel: "primario",
+        periodo: "diaria",
+        stream: true
+      })
+    });
+
+    const resStream = await worker.fetch(reqStream, {
+      GEMINI_API_KEY: "fake_key",
+      ACCESO_ABIERTO: "true"
+    });
+
+    const textStream = await resStream.text();
+    assert.ok(textStream.includes('"tipo":"correccion"'));
+    assert.ok(textStream.includes('"texto_original":"hola profe didactica"'));
+    assert.ok(textStream.includes('"texto_corregido":"Hola profe didáctica"'));
+    assert.ok(textStream.includes('"hubo_correcciones":true'));
+
+    // 11c. Opción forzarOriginal desactiva la corrección
+    const reqForzar = new Request("http://localhost/api/plan/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: [{ role: "user", text: "hola profe didactica" }],
+        nivel: "primario",
+        periodo: "diaria",
+        forzarOriginal: true
+      })
+    });
+
+    const resForzar = await worker.fetch(reqForzar, {
+      GEMINI_API_KEY: "fake_key",
+      ACCESO_ABIERTO: "true"
+    });
+
+    const dataForzar = await resForzar.json();
+    assert.equal(dataForzar.texto_original, "hola profe didactica");
+    assert.equal(dataForzar.texto_corregido, "hola profe didactica");
+    assert.equal(dataForzar.hubo_correcciones, false);
+    assert.equal(dataForzar.correcciones_aplicadas.length, 0);
+  });
 });

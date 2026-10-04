@@ -26,6 +26,8 @@ function authMiddleware(req, res, next) {
     req.path === "/auth/verify" ||
     req.path === "/api/auth/owner-verify" ||
     req.path === "/auth/owner-verify" ||
+    req.path === "/api/auth/owner-stats" ||
+    req.path === "/auth/owner-stats" ||
     req.path === "/api/plan/esquemas" ||
     req.path === "/plan/esquemas"
   );
