@@ -79,6 +79,7 @@ export default function App() {
   // Voice states
   const [escuchando, setEscuchando] = useState(false);
   const [audioUrl, setAudioUrl] = useState(null);
+  const globalAudioRef = useRef(null);
 
   // Image states
   const [escaneandoFoto, setEscaneandoFoto] = useState(false);
@@ -551,19 +552,49 @@ export default function App() {
     }
   }
 
-  async function handleEscuchar(planText) {
+  async function handleEscuchar(planText, origen = "chat") {
     if (!planText || typeof planText !== "string") return;
     if (listening) {
       stop();
     }
+
+    // Interbloqueo estricto: Detener cualquier audio global anterior y síntesis previa
+    if (globalAudioRef.current) {
+      globalAudioRef.current.pause();
+      globalAudioRef.current.currentTime = 0;
+      globalAudioRef.current.src = "";
+    }
+    stopSpeaking();
+
     setEscuchando(true);
-    // Sintetizar y reproducir la primera oración de inmediato
+    // Sintetizar y reproducir la primera oración de inmediato (límite 500 caracteres)
     const oraciones = planText.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g) || [planText];
     const primeraOracion = (oraciones[0] || "").trim();
     const resumen = (primeraOracion || planText).substring(0, 500);
+
     try {
       const url = await generarVoz(resumen);
-      setAudioUrl(url);
+
+      if (origen === "plan") {
+        // En planes completos: PlanResult gestiona su propio reproductor con controles visibles
+        setAudioUrl(url);
+      } else {
+        // En respuestas de chat o cámara: PlanResult no debe recibir audio para no sonar doble
+        setAudioUrl(null);
+        if (globalAudioRef.current) {
+          globalAudioRef.current.src = url;
+          const playPromise = globalAudioRef.current.play();
+          if (playPromise !== undefined) {
+            playPromise.catch((playErr) => {
+              console.warn("Reproductor global bloqueado por el navegador, activando síntesis local:", playErr);
+              speak(resumen, (notice) => {
+                setNotificacionSync(notice);
+                setTimeout(() => setNotificacionSync(null), 4000);
+              });
+            });
+          }
+        }
+      }
     } catch (err) {
       console.warn("Voz de IA no disponible, usando síntesis del navegador:", err);
       speak(resumen, (notice) => {
@@ -845,7 +876,7 @@ export default function App() {
                   periodo={periodo}
                   onExportar={(datos) => handleExportar(Object.entries(datos).map(([k,v]) => `${k}\n${v}`).join("\n\n"))} 
                   exportando={exportando}
-                  onEscuchar={(datos) => handleEscuchar(Object.values(datos).join(" ").substring(0, 500))}
+                  onEscuchar={(datos) => handleEscuchar(Object.values(datos).join(" ").substring(0, 500), "plan")}
                   escuchando={escuchando}
                   audioUrl={audioUrl}
                   onDatosActualizados={(nuevosDatos) => {
@@ -1318,6 +1349,14 @@ export default function App() {
           />
         </Suspense>
       )}
+
+      {/* Reproductor de audio global único para respuestas del asistente y cámara */}
+      <audio
+        ref={globalAudioRef}
+        style={{ display: "none" }}
+        onEnded={() => setEscuchando(false)}
+        onError={() => setEscuchando(false)}
+      />
     </div>
   );
 }
