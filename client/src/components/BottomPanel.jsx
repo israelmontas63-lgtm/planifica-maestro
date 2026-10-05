@@ -319,6 +319,7 @@ export default function BottomPanel({
   nivelActivo,
   onSeleccionarEsquema,
   listening,
+  duracionTexto,
   onDictadoClick,
   onAbrirTexto,
   onAbrirCamara,
@@ -886,10 +887,10 @@ export default function BottomPanel({
             setMenuOpen(false);
             onDictadoClick?.();
           }}
-          title="Dictar tema de planificación por voz"
+          title={listening ? `Escuchando (${duracionTexto || "0:00"}). Toca para finalizar dictado` : "Dictar tema de planificación por voz"}
         >
           <MicIcon />
-          <span>{listening ? "Escuchando..." : "Voz"}</span>
+          <span>{listening ? `Escuchando (${duracionTexto || "0:00"})` : "Voz"}</span>
         </button>
 
         <button

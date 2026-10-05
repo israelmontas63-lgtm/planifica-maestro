@@ -4,7 +4,7 @@
   "worker/constantsOjoDigital.js": "341bc2c2e0b02cab1b56fb93bcd50a3853d5aab08d73a1ab6979315e855cc7a0",
   "worker/index.js": "38fd1030e7038a78a8d718a220c5c4d9eab24ecbaf93a24361af7bc22062d3ef",
   "server/routes/plan.js": "8379a85aec85d99f8355f58d410993fd0fb1a05b2c31a5e2eb29a6de6a1c671c",
-  "client/src/App.jsx": "47cf8f74d6aa07255b273bdd4ed2aa9606fdcf4428a9f628df29965dfa6e0632",
+  "client/src/App.jsx": "c18258b32cd53b85457a6d242316525a9a89cedde54ef4b0f967320ffe9f4fe8",
   "client/src/components/CaptureArea.jsx": "e848517a03e9ec16dffa07d6ef3dbec21400480763bfa16e4b58907dfc9c1556",
   "worker/correctorTexto.js": "ec5c0eae26f45b9b164fe6884453f2c5488a3e6d600b55fa43b47bb901092bbc",
   "server/ia/correctorTexto.js": "90e27d364ad12c290e340b7d895f0ea43443ad80926c5a8d284b5626164faca2"

@@ -111,8 +111,9 @@ export default function ConfiguracionModal({
                 cursor: "pointer"
               }}
             >
+              <option value={0}>Manual (sin corte automático) - Por defecto</option>
               <option value={1500}>1.5 s (Rápido)</option>
-              <option value={2500}>2.5 s (Normal - Recomendado)</option>
+              <option value={2500}>2.5 s (Normal)</option>
               <option value={3500}>3.5 s (Pausado)</option>
               <option value={5000}>5.0 s (Extendido)</option>
             </select>

@@ -15,7 +15,7 @@ export { evaluarConfianzaVoz };
  *   para evitar confirmaciones innecesarias en Android Chrome.
  */
 
-export function useSpeechRecognition({ silenceTimeout = 2500, onSilenceStop = null } = {}) {
+export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null, onFiveMinuteLimit = null } = {}) {
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [interimTranscript, setInterimTranscript] = useState("");
@@ -23,15 +23,22 @@ export function useSpeechRecognition({ silenceTimeout = 2500, onSilenceStop = nu
   const [confidence, setConfidence] = useState(null);
   const [isLowConfidence, setIsLowConfidence] = useState(false);
   const [error, setError] = useState(null);
+  const [duracionSegundos, setDuracionSegundos] = useState(0);
 
   const recognitionRef = useRef(null);
   const confirmedTextRef = useRef("");
+  const accumulatedTextRef = useRef("");
+  const sessionFinalRef = useRef("");
   const isExplicitStopRef = useRef(false);
   const silenceTimerRef = useRef(null);
   const silenceTimeoutRef = useRef(silenceTimeout);
   const onSilenceStopRef = useRef(onSilenceStop);
+  const onFiveMinuteLimitRef = useRef(onFiveMinuteLimit);
   const confidenceSumRef = useRef(0);
   const confidenceCountRef = useRef(0);
+  const rapidRestartsRef = useRef(0);
+  const lastRestartTimeRef = useRef(0);
+  const onErrorCallbackRef = useRef(null);
 
   useEffect(() => {
     silenceTimeoutRef.current = silenceTimeout;
@@ -40,6 +47,10 @@ export function useSpeechRecognition({ silenceTimeout = 2500, onSilenceStop = nu
   useEffect(() => {
     onSilenceStopRef.current = onSilenceStop;
   }, [onSilenceStop]);
+
+  useEffect(() => {
+    onFiveMinuteLimitRef.current = onFiveMinuteLimit;
+  }, [onFiveMinuteLimit]);
 
   const clearSilenceTimer = useCallback(() => {
     if (silenceTimerRef.current) {
@@ -58,8 +69,16 @@ export function useSpeechRecognition({ silenceTimeout = 2500, onSilenceStop = nu
     }
     setListening(false);
     setInterimTranscript("");
-    const finalText = confirmedTextRef.current.trim();
+
+    const finalText = [accumulatedTextRef.current, sessionFinalRef.current]
+      .filter(Boolean)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    confirmedTextRef.current = finalText;
     setTranscript(finalText);
+    setFinalTranscript(finalText);
 
     let evalConf;
     if (confidenceCountRef.current > 0) {
@@ -82,6 +101,7 @@ export function useSpeechRecognition({ silenceTimeout = 2500, onSilenceStop = nu
 
   const resetSilenceTimer = useCallback(() => {
     clearSilenceTimer();
+    // Solo arma el temporizador si silenceTimeout > 0 (opcional en configuración)
     if (silenceTimeoutRef.current && silenceTimeoutRef.current > 0) {
       silenceTimerRef.current = setTimeout(() => {
         if (recognitionRef.current) {
@@ -94,6 +114,167 @@ export function useSpeechRecognition({ silenceTimeout = 2500, onSilenceStop = nu
     }
   }, [clearSilenceTimer, stop]);
 
+  // Manejador del temporizador de duración y tope de seguridad de 5 minutos
+  useEffect(() => {
+    let interval = null;
+    if (listening) {
+      interval = setInterval(() => {
+        setDuracionSegundos((prev) => {
+          const siguiente = prev + 1;
+          // Tope de seguridad de 5 minutos (300 segundos)
+          if (siguiente >= 300) {
+            console.warn("Tope de seguridad de 5 minutos alcanzado en dictado por voz");
+            const res = stop();
+            onFiveMinuteLimitRef.current?.(res);
+          }
+          return siguiente;
+        });
+      }, 1000);
+    } else {
+      setDuracionSegundos(0);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [listening, stop]);
+
+  const formatearDuracion = (segundos) => {
+    const mins = Math.floor(segundos / 60);
+    const secs = segundos % 60;
+    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  };
+
+  const initRecognitionInstance = useCallback(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return null;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "es-419";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event) => {
+      let finalStr = "";
+      let interimStr = "";
+
+      for (let i = 0; i < event.results.length; i++) {
+        const item = event.results[i];
+        const piece = item[0]?.transcript || "";
+        if (item.isFinal) {
+          finalStr += piece;
+          if (typeof item[0]?.confidence === "number" && item[0].confidence > 0) {
+            confidenceSumRef.current += item[0].confidence;
+            confidenceCountRef.current++;
+          }
+        } else {
+          interimStr += piece;
+        }
+      }
+
+      const finalClean = finalStr.trim();
+      const interimClean = interimStr.trim();
+      sessionFinalRef.current = finalClean;
+
+      const fullFinal = [accumulatedTextRef.current, finalClean].filter(Boolean).join(" ").replace(/\s+/g, " ");
+      const fullPreview = [fullFinal, interimClean].filter(Boolean).join(" ").replace(/\s+/g, " ");
+
+      confirmedTextRef.current = fullFinal;
+      setFinalTranscript(fullFinal);
+      setInterimTranscript(interimClean);
+      setTranscript(fullPreview);
+
+      // Reiniciar corte por silencio solo si está configurado (> 0)
+      resetSilenceTimer();
+    };
+
+    recognition.onerror = (e) => {
+      clearSilenceTimer();
+      if (e.error === "no-speech" || e.error === "aborted") {
+        setInterimTranscript("");
+        return;
+      }
+
+      let errorMsg = "Error en el reconocimiento de voz. Puedes escribir tu consulta directamente.";
+      if (e.error === "not-allowed") {
+        errorMsg = "Permiso de micrófono denegado. Habilítalo en los ajustes del navegador o escribe tu consulta.";
+      } else if (e.error === "network") {
+        errorMsg = "Error de red o conexión con el servicio de voz. Puedes reintentar o escribir tu consulta.";
+      } else if (e.error === "audio-capture") {
+        errorMsg = "No se detectó entrada de audio en el micrófono. Verifica que no esté en uso por otra app.";
+      } else if (e.error === "service-not-allowed") {
+        errorMsg = "El servicio de reconocimiento no está habilitado en este navegador o modo PWA.";
+      } else if (e.error === "language-not-supported") {
+        errorMsg = "El idioma de voz no está soportado en este dispositivo.";
+      }
+
+      console.warn("SpeechRecognition error:", e.error);
+      setError(errorMsg);
+      onErrorCallbackRef.current?.(errorMsg, e.error);
+
+      // En errores terminales (permiso denegado), detener escucha
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+        isExplicitStopRef.current = true;
+        setListening(false);
+        setInterimTranscript("");
+      }
+    };
+
+    recognition.onend = () => {
+      clearSilenceTimer();
+
+      // Si el usuario tocó parar conscientemente o hubo error terminal, no reiniciar
+      if (isExplicitStopRef.current) {
+        setListening(false);
+        setInterimTranscript("");
+        const fullFinal = [accumulatedTextRef.current, sessionFinalRef.current].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+        setTranscript(fullFinal);
+        return;
+      }
+
+      // Consolidar el texto de la sesión actual en el acumulador sin duplicar
+      if (sessionFinalRef.current) {
+        accumulatedTextRef.current = [accumulatedTextRef.current, sessionFinalRef.current].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+        sessionFinalRef.current = "";
+      }
+
+      // Límite de reinicios rápidos seguidos (< 2500ms) para evitar bucles infinitos
+      const now = Date.now();
+      if (now - lastRestartTimeRef.current < 2500) {
+        rapidRestartsRef.current += 1;
+      } else {
+        rapidRestartsRef.current = 0;
+      }
+      lastRestartTimeRef.current = now;
+
+      if (rapidRestartsRef.current >= 5) {
+        console.warn("Límite de reinicios automáticos consecutivos alcanzado (5). Deteniendo micrófono.");
+        setListening(false);
+        setInterimTranscript("");
+        setTranscript(accumulatedTextRef.current);
+        return;
+      }
+
+      // Reinicio automático transparente para mantener el micrófono activo el tiempo que el usuario necesite
+      try {
+        const nextInstance = initRecognitionInstance();
+        if (nextInstance) {
+          recognitionRef.current = nextInstance;
+          nextInstance.start();
+          setListening(true);
+          resetSilenceTimer();
+        } else {
+          setListening(false);
+        }
+      } catch (err) {
+        console.warn("Error al reiniciar SpeechRecognition automáticamente:", err);
+        setListening(false);
+      }
+    };
+
+    return recognition;
+  }, [clearSilenceTimer, resetSilenceTimer]);
+
   const start = useCallback(async (onErrorCallback) => {
     setError(null);
     clearSilenceTimer();
@@ -101,6 +282,9 @@ export function useSpeechRecognition({ silenceTimeout = 2500, onSilenceStop = nu
     confidenceCountRef.current = 0;
     setConfidence(null);
     setIsLowConfidence(false);
+    onErrorCallbackRef.current = onErrorCallback;
+    rapidRestartsRef.current = 0;
+    lastRestartTimeRef.current = 0;
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -135,87 +319,19 @@ export function useSpeechRecognition({ silenceTimeout = 2500, onSilenceStop = nu
     }
 
     isExplicitStopRef.current = false;
+    accumulatedTextRef.current = "";
+    sessionFinalRef.current = "";
     confirmedTextRef.current = "";
     setTranscript("");
     setInterimTranscript("");
     setFinalTranscript("");
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = "es-419";
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.maxAlternatives = 1;
-
-    recognition.onresult = (event) => {
-      let finalStr = "";
-      let interimStr = "";
-
-      for (let i = 0; i < event.results.length; i++) {
-        const item = event.results[i];
-        const piece = item[0]?.transcript || "";
-        if (item.isFinal) {
-          finalStr += piece;
-          if (typeof item[0]?.confidence === "number" && item[0].confidence > 0) {
-            confidenceSumRef.current += item[0].confidence;
-            confidenceCountRef.current++;
-          }
-        } else {
-          interimStr += piece;
-        }
-      }
-
-      const finalClean = finalStr.trim();
-      const interimClean = interimStr.trim();
-
-      confirmedTextRef.current = finalClean;
-      setFinalTranscript(finalClean);
-      setInterimTranscript(interimClean);
-
-      const fullPreview = [finalClean, interimClean].filter(Boolean).join(" ");
-      setTranscript(fullPreview);
-
-      // Reiniciar corte por silencio cada vez que el usuario pronuncia algo
-      resetSilenceTimer();
-    };
-
-    recognition.onerror = (e) => {
-      clearSilenceTimer();
-      if (e.error === "no-speech" || e.error === "aborted") {
-        setListening(false);
-        setInterimTranscript("");
-        return;
-      }
-
-      let errorMsg = "Error en el reconocimiento de voz. Puedes escribir tu consulta directamente.";
-      if (e.error === "not-allowed") {
-        errorMsg = "Permiso de micrófono denegado. Habilítalo en los ajustes del navegador o escribe tu consulta.";
-      } else if (e.error === "network") {
-        errorMsg = "Error de red o conexión con el servicio de voz. Puedes reintentar o escribir tu consulta.";
-      } else if (e.error === "audio-capture") {
-        errorMsg = "No se detectó entrada de audio en el micrófono. Verifica que no esté en uso por otra app.";
-      } else if (e.error === "service-not-allowed") {
-        errorMsg = "El servicio de reconocimiento no está habilitado en este navegador o modo PWA.";
-      } else if (e.error === "language-not-supported") {
-        errorMsg = "El idioma de voz no está soportado en este dispositivo.";
-      }
-
-      console.warn("SpeechRecognition error:", e.error);
-      setError(errorMsg);
-      onErrorCallback?.(errorMsg, e.error);
-      setListening(false);
-      setInterimTranscript("");
-    };
-
-    recognition.onend = () => {
-      clearSilenceTimer();
-      setListening(false);
-      setInterimTranscript("");
-      setTranscript(confirmedTextRef.current.trim());
-    };
+    setDuracionSegundos(0);
 
     try {
-      recognition.start();
+      const recognition = initRecognitionInstance();
+      if (!recognition) return;
       recognitionRef.current = recognition;
+      recognition.start();
       setListening(true);
       resetSilenceTimer();
     } catch (err) {
@@ -223,10 +339,12 @@ export function useSpeechRecognition({ silenceTimeout = 2500, onSilenceStop = nu
       setError("No se pudo iniciar el dictado por voz. Puedes escribir tu consulta.");
       setListening(false);
     }
-  }, [clearSilenceTimer, resetSilenceTimer]);
+  }, [clearSilenceTimer, initRecognitionInstance, resetSilenceTimer]);
 
   const resetTranscript = useCallback(() => {
     clearSilenceTimer();
+    accumulatedTextRef.current = "";
+    sessionFinalRef.current = "";
     confirmedTextRef.current = "";
     confidenceSumRef.current = 0;
     confidenceCountRef.current = 0;
@@ -236,6 +354,7 @@ export function useSpeechRecognition({ silenceTimeout = 2500, onSilenceStop = nu
     setConfidence(null);
     setIsLowConfidence(false);
     setError(null);
+    setDuracionSegundos(0);
   }, [clearSilenceTimer]);
 
   useEffect(() => {
@@ -257,6 +376,8 @@ export function useSpeechRecognition({ silenceTimeout = 2500, onSilenceStop = nu
     confidence,
     isLowConfidence,
     error,
+    duracionSegundos,
+    tiempoTranscurrido: formatearDuracion(duracionSegundos),
     start,
     stop,
     resetTranscript,

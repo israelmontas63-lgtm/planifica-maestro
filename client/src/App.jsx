@@ -152,15 +152,18 @@ export default function App() {
   const [silenceTimeoutMs, setSilenceTimeoutMs] = useState(() => {
     try {
       const saved = localStorage.getItem("pm_silence_timeout_ms");
-      const val = saved ? Number(saved) : 2500;
-      return (!isNaN(val) && val >= 1000 && val <= 10000) ? val : 2500;
+      if (saved !== null) {
+        const val = Number(saved);
+        return (!isNaN(val) && val >= 0 && val <= 10000) ? val : 0;
+      }
+      return 0; // Por defecto: 0 = Manual (sin corte automático)
     } catch (e) {
-      return 2500;
+      return 0;
     }
   });
 
   const handleGuardarSilenceTimeout = (val) => {
-    const num = Math.max(1000, Math.min(10000, Number(val) || 2500));
+    const num = Math.max(0, Math.min(10000, Number(val) || 0));
     setSilenceTimeoutMs(num);
     try {
       localStorage.setItem("pm_silence_timeout_ms", String(num));
@@ -168,9 +171,24 @@ export default function App() {
   };
 
   const handleFinDictadoRef = useRef(null);
-  const { listening, transcript, isLowConfidence, start, stop, resetTranscript } = useSpeechRecognition({
+  const handleFiveMinuteLimit = useCallback((res) => {
+    setNotificacionSync("⏱️ El dictado se detuvo automáticamente tras 5 minutos continuos por seguridad.");
+    setTimeout(() => setNotificacionSync(null), 6000);
+    handleFinDictadoRef.current?.(res);
+  }, []);
+
+  const {
+    listening,
+    transcript,
+    isLowConfidence,
+    tiempoTranscurrido,
+    start,
+    stop,
+    resetTranscript
+  } = useSpeechRecognition({
     silenceTimeout: silenceTimeoutMs,
-    onSilenceStop: (res) => handleFinDictadoRef.current?.(res)
+    onSilenceStop: (res) => handleFinDictadoRef.current?.(res),
+    onFiveMinuteLimit: handleFiveMinuteLimit
   });
   const { speak, stopSpeaking, isSpeaking } = useSpeechSynthesis();
   const fuePorVozRef = useRef(false);
@@ -1217,6 +1235,7 @@ export default function App() {
         nivelActivo={nivel}
         onSeleccionarEsquema={(p, n) => { setPeriodo(p); setNivel(n); }}
         listening={listening}
+        duracionTexto={tiempoTranscurrido}
         onDictadoClick={handleDictadoClick}
         onAbrirCamara={() => fileInputHiddenRef.current?.click()}
         menuOpen={menuOpen}
