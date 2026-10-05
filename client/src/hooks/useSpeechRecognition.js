@@ -188,14 +188,20 @@ export function useSpeechRecognition({ silenceTimeout = 2500, onSilenceStop = nu
 
       let errorMsg = "Error en el reconocimiento de voz. Puedes escribir tu consulta directamente.";
       if (e.error === "not-allowed") {
-        errorMsg = "Permiso de micrófono denegado. Habilítalo en el navegador o escribe tu consulta.";
+        errorMsg = "Permiso de micrófono denegado. Habilítalo en los ajustes del navegador o escribe tu consulta.";
       } else if (e.error === "network") {
-        errorMsg = "Error de red con el servicio de voz. Puedes usar el botón de escribir texto.";
+        errorMsg = "Error de red o conexión con el servicio de voz. Puedes reintentar o escribir tu consulta.";
+      } else if (e.error === "audio-capture") {
+        errorMsg = "No se detectó entrada de audio en el micrófono. Verifica que no esté en uso por otra app.";
+      } else if (e.error === "service-not-allowed") {
+        errorMsg = "El servicio de reconocimiento no está habilitado en este navegador o modo PWA.";
+      } else if (e.error === "language-not-supported") {
+        errorMsg = "El idioma de voz no está soportado en este dispositivo.";
       }
 
       console.warn("SpeechRecognition error:", e.error);
       setError(errorMsg);
-      onErrorCallback?.(errorMsg);
+      onErrorCallback?.(errorMsg, e.error);
       setListening(false);
       setInterimTranscript("");
     };

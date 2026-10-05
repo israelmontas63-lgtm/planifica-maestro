@@ -528,9 +528,10 @@ export default function App() {
       handleFinDictado(res);
     } else {
       stopSpeaking();
-      start((errMsg) => {
+      start((errMsg, rawCode) => {
         setErrorGeneracion({
           message: `${errMsg} Puedes escribir tu consulta directamente con el teclado o consultar el currículo.`,
+          codigoTecnico: rawCode || null,
           canRetry: false,
           accionTexto: true
         });
@@ -1156,7 +1157,17 @@ export default function App() {
           <div className="pm-error-card no-print">
             <div className="pm-error-content">
               <span className="pm-error-icon">⚠️</span>
-              <div className="pm-error-text">{errorGeneracion.message}</div>
+              <div className="pm-error-text">
+                <div>{errorGeneracion.message}</div>
+                {errorGeneracion.codigoTecnico && (
+                  <details style={{ marginTop: '6px', fontSize: '11px', color: '#64748b' }}>
+                    <summary style={{ cursor: 'pointer', fontWeight: '500' }}>Ver detalles técnicos</summary>
+                    <div style={{ marginTop: '4px', fontFamily: 'monospace', background: '#f1f5f9', padding: '4px 8px', borderRadius: '4px' }}>
+                      Código de evento: {errorGeneracion.codigoTecnico}
+                    </div>
+                  </details>
+                )}
+              </div>
             </div>
             <div className="pm-error-actions">
               {errorGeneracion.accionTexto && (
