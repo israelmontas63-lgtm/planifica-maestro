@@ -2,11 +2,11 @@
  * client/src/services/imageOptimizer.js
  * 
  * Optimización y compresión de fotos capturadas en móviles para visión IA.
- * Reduce fotos de 12-48 MP a max 1600px en formato JPEG comprimido (82% calidad).
+ * Reduce fotos de 12-48 MP a max 1280px en formato JPEG comprimido (80% calidad).
  * Previene sobrecarga de red en 3G/4G y asegura legibilidad de texto para OCR.
  */
 
-export async function comprimirYRedimensionarImagen(file, maxDimension = 1600, calidad = 0.82) {
+export async function comprimirYRedimensionarImagen(file, maxDimension = 1280, calidad = 0.8) {
   if (!file) {
     throw new Error("No se proporcionó ningún archivo de imagen.");
   }

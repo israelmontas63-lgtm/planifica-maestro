@@ -4,7 +4,7 @@
  */
 
 async function llamarGemini({
-  modelo = "gemini-2.5-flash",
+  modelo = "gemini-3.5-flash-lite",
   apiKey,
   prompt,
   contents,

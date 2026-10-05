@@ -8,16 +8,14 @@ export default function CaptureArea({ imageSrc, onImageSelected, onRemoveImage, 
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Vista previa inmediata ultrarrápida (< 15ms)
-    const reader = new FileReader();
-    reader.onload = () => onImageSelected(reader.result, file.type || "image/jpeg");
-    reader.readAsDataURL(file);
-
     try {
-      const optimizada = await comprimirYRedimensionarImagen(file, 1600, 0.82);
-      onImageSelected(optimizada.dataUrl, optimizada.mediaType);
+      const optimizada = await comprimirYRedimensionarImagen(file, 1280, 0.8);
+      onImageSelected(optimizada.dataUrl, optimizada.mediaType, optimizada.aspectRatio);
     } catch (err) {
-      // ya se cargó la lectura previa si falló canvas
+      console.warn("Fallo compresión canvas, usando lectura directa:", err);
+      const reader = new FileReader();
+      reader.onload = () => onImageSelected(reader.result, file.type || "image/jpeg", "4/3");
+      reader.readAsDataURL(file);
     }
     // Reset file input so selecting the same file works again if needed
     e.target.value = "";

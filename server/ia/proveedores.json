@@ -17,9 +17,9 @@
   "proveedores_texto": [
     {
       "id": "gemini_flash",
-      "nombre": "Google Gemini 2.5 Flash",
+      "nombre": "Google Gemini 3.5 Flash",
       "tipo": "texto",
-      "modelo": "gemini-2.5-flash",
+      "modelo": "gemini-3.5-flash",
       "prioridad": 1,
       "timeout_ms": 10000,
       "activo": true,
@@ -34,9 +34,9 @@
     },
     {
       "id": "gemini_flash_lite",
-      "nombre": "Google Gemini 2.5 Flash-Lite",
+      "nombre": "Google Gemini 3.5 Flash-Lite",
       "tipo": "texto",
-      "modelo": "gemini-2.5-flash-lite",
+      "modelo": "gemini-3.5-flash-lite",
       "prioridad": 2,
       "timeout_ms": 7000,
       "activo": true,

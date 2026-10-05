@@ -19,7 +19,7 @@ function obtenerProveedorVisionAprobado() {
         const provTexto = (cfg.proveedores_texto || []).find(p => p.id === activoVision.proveedor_id);
         return {
           id: activoVision.id,
-          modelo: activoVision.modelo || provTexto?.modelo || "gemini-2.5-flash",
+          modelo: activoVision.modelo || provTexto?.modelo || "gemini-3.5-flash-lite",
           vision_aprobada: true
         };
       }
@@ -27,7 +27,7 @@ function obtenerProveedorVisionAprobado() {
       return provs.find(p => p.vision_aprobada && p.activo) || null;
     }
   } catch (e) {}
-  return { id: "gemini_flash", modelo: "gemini-2.5-flash", vision_aprobada: true };
+  return { id: "gemini_flash", modelo: "gemini-3.5-flash-lite", vision_aprobada: true };
 }
 
 /**
@@ -55,7 +55,7 @@ router.post("/scan", async (req, res) => {
     }
 
     const geminiClient = new GoogleGenAI({ apiKey });
-    const model = provVision.modelo || "gemini-2.5-flash";
+    const model = provVision.modelo || "gemini-3.5-flash-lite";
 
     const promptVision = `Eres un docente experto del currículo del MINERD de la República Dominicana.
 Examina minuciosamente esta imagen (página de libro, cuaderno, pizarra o guía didáctica).

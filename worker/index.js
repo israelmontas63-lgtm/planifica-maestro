@@ -11,7 +11,7 @@ import {
   guardarRespuestaEnCache,
   esRespuestaCacheable
 } from "./cacheRespuestas.js";
-import { tieneIntencionExplicita, identificarImagenWorker } from "./ojoDigital.js";
+import { tieneIntencionExplicita, identificarImagenWorker, getGeminiVisionModels } from "./ojoDigital.js";
 import { corregirTextoPedagogico } from "./correctorTexto.js";
 
 /**
@@ -696,10 +696,12 @@ async function handleApiRequest(request, env, ctx) {
       if (!idRes.exito) {
         return responderWorker({
           data: {
-            mensaje_chat: idRes.mensaje || "La cámara no está disponible ahora (límite de visión alcanzado o sin conexión con el servicio). Por favor, prueba más tarde o escribe tu consulta.",
+            mensaje_chat: idRes.mensaje,
             plan_completado: false,
             modo: "error_camara",
-            error: idRes.error || "camara_no_disponible"
+            error: idRes.error || "camara_no_disponible",
+            motivo: idRes.motivo || "error_servicio",
+            codigo_http: idRes.codigo_http || null
           },
           estado: "pensando"
         });
@@ -749,29 +751,37 @@ async function handleApiRequest(request, env, ctx) {
       const msgConFoto = [...messages].reverse().find((m) => m.imageBase64);
       if (msgConFoto) {
         try {
-          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`;
-          const res = await fetchGeminiWithRetry(geminiUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-goog-api-key": env.GEMINI_API_KEY
-            },
-            body: JSON.stringify({
-              contents: [{
-                role: "user",
-                parts: [
-                  { text: "Eres un asistente de lectura pedagógica. Transcribe con exactitud, buena ortografía y puntuación clara todo el texto legible visible en esta imagen. Si hay títulos, subtítulos o listas, organízalos ordenadamente en párrafos. No inventes texto no visible." },
-                  { inlineData: { mimeType: msgConFoto.mediaType || "image/jpeg", data: msgConFoto.imageBase64 } }
-                ]
-              }],
-              generationConfig: { temperature: 0.1 }
-            })
-          });
-          let textoExtraido = "No se detectó texto legible en la imagen.";
-          if (res && res.ok) {
-            const d = await res.json();
-            textoExtraido = d.candidates?.[0]?.content?.parts?.[0]?.text || textoExtraido;
+          const visionModels = getGeminiVisionModels(env);
+          let textoExtraido = "";
+          const cleanOcrBase64 = String(msgConFoto.imageBase64).replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, "").trim();
+          for (const vModel of visionModels) {
+            try {
+              const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${vModel}:generateContent`;
+              const res = await fetchGeminiWithRetry(geminiUrl, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "x-goog-api-key": env.GEMINI_API_KEY
+                },
+                body: JSON.stringify({
+                  contents: [{
+                    role: "user",
+                    parts: [
+                      { text: "Eres un asistente de lectura pedagógica. Transcribe con exactitud, buena ortografía y puntuación clara todo el texto legible visible en esta imagen. Si hay títulos, subtítulos o listas, organízalos ordenadamente en párrafos. No inventes texto no visible." },
+                      { inlineData: { mimeType: msgConFoto.mediaType || "image/jpeg", data: cleanOcrBase64 } }
+                    ]
+                  }],
+                  generationConfig: { temperature: 0.1 }
+                })
+              });
+              if (res && res.ok) {
+                const d = await res.json();
+                textoExtraido = d.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                if (textoExtraido) break;
+              }
+            } catch (err) {}
           }
+          if (!textoExtraido) textoExtraido = "No se detectó texto legible en la imagen.";
           return responderWorker({
             data: {
               mensaje_chat: `📄 **Texto extraído de la imagen:**\n\n${textoExtraido}\n\n¿Qué te gustaría hacer con este material?`,
