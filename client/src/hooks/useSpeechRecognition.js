@@ -35,10 +35,14 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
   const onSilenceStopRef = useRef(onSilenceStop);
   const onFiveMinuteLimitRef = useRef(onFiveMinuteLimit);
   const confidenceSumRef = useRef(0);
+  const IDIOMAS_FALLBACK = ["es-DO", "es-419", "es-ES", "es"];
+  const idiomaIndexRef = useRef(0);
+  const lastErrorRef = useRef(null);
   const confidenceCountRef = useRef(0);
   const rapidRestartsRef = useRef(0);
   const lastRestartTimeRef = useRef(0);
   const onErrorCallbackRef = useRef(null);
+  const activeStreamRef = useRef(null);
 
   useEffect(() => {
     silenceTimeoutRef.current = silenceTimeout;
@@ -66,6 +70,10 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
       try {
         recognitionRef.current.stop();
       } catch (e) {}
+    }
+    if (activeStreamRef.current) {
+      activeStreamRef.current.getTracks().forEach((track) => track.stop());
+      activeStreamRef.current = null;
     }
     setListening(false);
     setInterimTranscript("");
@@ -149,10 +157,15 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
     if (!SpeechRecognition) return null;
 
     const recognition = new SpeechRecognition();
-    recognition.lang = "es-419";
+    const langElegido = IDIOMAS_FALLBACK[idiomaIndexRef.current] || "es-DO";
+    recognition.lang = langElegido;
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      console.log(`🎙️ [SpeechRecognition] onstart (escuchando con idioma: ${langElegido})`);
+    };
 
     recognition.onresult = (event) => {
       let finalStr = "";
@@ -183,6 +196,7 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
       setFinalTranscript(fullFinal);
       setInterimTranscript(interimClean);
       setTranscript(fullPreview);
+      console.log("🎙️ [SpeechRecognition] onresult:", fullPreview);
 
       // Reiniciar corte por silencio solo si está configurado (> 0)
       resetSilenceTimer();
@@ -190,9 +204,27 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
 
     recognition.onerror = (e) => {
       clearSilenceTimer();
+      lastErrorRef.current = e.error;
+      console.log("🎙️ [SpeechRecognition] onerror:", e.error);
+
       if (e.error === "no-speech" || e.error === "aborted") {
         setInterimTranscript("");
         return;
+      }
+
+      if (e.error === "language-not-supported" && idiomaIndexRef.current < IDIOMAS_FALLBACK.length - 1) {
+        idiomaIndexRef.current += 1;
+        const nextLang = IDIOMAS_FALLBACK[idiomaIndexRef.current];
+        console.warn(`🎙️ [SpeechRecognition] Idioma no soportado, probando fallback: ${nextLang}`);
+        try {
+          const next = initRecognitionInstance();
+          if (next) {
+            recognitionRef.current = next;
+            next.start();
+            setListening(true);
+            return;
+          }
+        } catch (err) {}
       }
 
       let errorMsg = "Error en el reconocimiento de voz. Puedes escribir tu consulta directamente.";
@@ -222,6 +254,7 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
 
     recognition.onend = () => {
       clearSilenceTimer();
+      console.log("🎙️ [SpeechRecognition] onend (último error:", lastErrorRef.current, ")");
 
       // Si el usuario tocó parar conscientemente o hubo error terminal, no reiniciar
       if (isExplicitStopRef.current) {
@@ -238,14 +271,19 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
         sessionFinalRef.current = "";
       }
 
-      // Límite de reinicios rápidos seguidos (< 2500ms) para evitar bucles infinitos
-      const now = Date.now();
-      if (now - lastRestartTimeRef.current < 2500) {
-        rapidRestartsRef.current += 1;
-      } else {
-        rapidRestartsRef.current = 0;
+      // El 'no-speech' es una pausa natural o silencio, NO debe contar como fallo rápido
+      const eraNoSpeech = lastErrorRef.current === "no-speech";
+      lastErrorRef.current = null;
+
+      if (!eraNoSpeech) {
+        const now = Date.now();
+        if (now - lastRestartTimeRef.current < 2500) {
+          rapidRestartsRef.current += 1;
+        } else {
+          rapidRestartsRef.current = 0;
+        }
+        lastRestartTimeRef.current = now;
       }
-      lastRestartTimeRef.current = now;
 
       if (rapidRestartsRef.current >= 5) {
         console.warn("Límite de reinicios automáticos consecutivos alcanzado (5). Deteniendo micrófono.");
@@ -294,11 +332,13 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
       return;
     }
 
-    // Solicitar permiso de micrófono previamente para disparar el diálogo del sistema en Android
+    // Solicitar permiso de micrófono y mantener el stream activo durante el dictado
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach((track) => track.stop());
+        if (!activeStreamRef.current) {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          activeStreamRef.current = stream;
+        }
       } catch (micErr) {
         let msg = "No se pudo acceder al micrófono o el permiso está bloqueado. Por favor actívalo en los ajustes o escribe tu consulta.";
         if (micErr.name === "NotAllowedError" || micErr.name === "PermissionDeniedError") {
@@ -364,6 +404,10 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
         try {
           recognitionRef.current.abort();
         } catch (e) {}
+      }
+      if (activeStreamRef.current) {
+        activeStreamRef.current.getTracks().forEach((track) => track.stop());
+        activeStreamRef.current = null;
       }
     };
   }, [clearSilenceTimer]);
