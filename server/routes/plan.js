@@ -247,6 +247,8 @@ Para cualquier proceso de planificación, análisis o estructuración de clases,
 2. ADAPTACIÓN: Si el usuario da instrucciones específicas (ej. "usa estrategias lúdicas", "enfócalo en trabajo colaborativo"), DEBES reflejarlo en el contenido generado.
 3. GENERACIÓN CURRICULAR REAL: Genera contenido real, riguroso y alineado al MINERD (competencias fundamentales, específicas, indicadores de logro, conceptuales, procedimentales, actitudinales, actividades, recursos, evaluación).
 4. MAPEO EXACTO: El contenido generado debe mapearse exactamente a los bloques del esquema seleccionado por el usuario.
+5. ADAPTACIÓN DE IDIOMA: Detecta el idioma del mensaje del usuario y redacta 'mensaje_chat' en ese mismo idioma. Las planificaciones curriculares se mantienen en español oficial del MINERD salvo solicitud expresa de planificar en lengua extranjera.
+6. RIGOR DOCUMENTAL: Cita la guía oficial y el grado correspondiente. Jamás mezcles contenidos de asignaturas distintas.
 
 ## 5. CAPACIDAD MULTIMODAL (VISIÓN PEDAGÓGICA Y CÁMARA INTELIGENTE)
 Si el usuario envía una imagen de una pizarra, libro de texto, cuaderno, ejercicio o guía didáctica:
@@ -275,9 +277,13 @@ Devuelve SIEMPRE tu respuesta en formato JSON estrictamente estructurado con est
 }
 `;
 
-router.post("/generate", async (req, res) => {
+const handleGeneratePlan = async (req, res) => {
   try {
-    const { messages = [], nivel, periodo = "diaria" } = req.body || {};
+    let { messages = [], nivel = "primario", periodo = "diaria" } = req.body || {};
+    if ((!messages || messages.length === 0) && (req.body.tema || req.body.prompt)) {
+      const query = req.body.prompt || `Planifica el tema: ${req.body.tema} (${req.body.grado || ""} - ${req.body.area || ""})`;
+      messages = [{ role: "user", text: query }];
+    }
     const rawId = (req.body.docenteId || req.headers["x-docente-id"] || req.headers["x-device-id"] || "").trim();
     const resolvedDocenteId = (rawId && rawId !== "docente_default") ? rawId : (req.headers["x-device-id"] || ("anon_" + crypto.randomUUID()));
     const isOwner = req.isOwner === true;
@@ -297,7 +303,7 @@ router.post("/generate", async (req, res) => {
     }
 
     const clientAbortController = new AbortController();
-    req.on("close", () => {
+    res.on("close", () => {
       if (!res.writableEnded) {
         clientAbortController.abort();
       }
@@ -507,9 +513,10 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
       }, 200, "pensando");
     }
 
-    // Validación de cambios estructurales (grado, área o tema: confirmar antes de actuar)
-    if (resultadoCorreccion.cambioEstructural && !confirmado && !forzarOriginal) {
-      const det = resultadoCorreccion.detalleConfirmacion;
+    // Validación de cambios estructurales (solo confirmar si hay ambigüedad real; normalizaciones estándar de grado como 'tercer grado' -> '3.º' se aplican directamente)
+    const det = resultadoCorreccion.detalleConfirmacion;
+    const esNormalizacionGrado = det && det.tipo === "grado_minerd";
+    if (resultadoCorreccion.cambioEstructural && !esNormalizacionGrado && !confirmado && !forzarOriginal) {
       const desc = det ? `"${det.antes}" a "${det.despues}" (${resultadoCorreccion.tipoCambioEstructural})` : `en ${resultadoCorreccion.tipoCambioEstructural}`;
       return responder({
         mensaje_chat: `He identificado un posible cambio de ${desc}:\n\n**"${resultadoCorreccion.textoCorregido}"**\n\n¿Deseas continuar con esta corrección o mantener tu texto original?`,
@@ -650,6 +657,40 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
       }, 200, "pensando");
     }
 
+    // 2.5 MODO BÚSQUEDA WEB -> Tavily / Búsqueda en tiempo real con fuentes
+    if (clasificacion.categoria === "busqueda_web") {
+      try {
+        const { buscarEnTavily } = require("../ia/adaptadores/tavilyAdapter");
+        const queryLimpia = textoConsulta
+          .replace(/^(?:por\s+favor\s+)?(?:busca|buscar|investiga|investigar)\s+(?:en\s+la\s+web\s+|en\s+internet\s+|en\s+google\s+|sobre\s+|acerca\s+de\s+)?/i, "")
+          .trim() || textoConsulta;
+
+        const resBusqueda = await buscarEnTavily({ query: queryLimpia, maxResults: 4 });
+        if (resBusqueda.ok && resBusqueda.resultados && resBusqueda.resultados.length > 0) {
+          let msg = `🔍 **Resultados de búsqueda en la web sobre "${queryLimpia}":**\n\n`;
+          if (resBusqueda.respuestaDirecta) {
+            msg += `${resBusqueda.respuestaDirecta}\n\n`;
+          }
+          msg += `**Fuentes y noticias encontradas:**\n\n`;
+          resBusqueda.resultados.forEach((r, idx) => {
+            msg += `${idx + 1}. **[${r.titulo}](${r.url})**\n${r.resumen}\n\n`;
+          });
+          msg += `*(Fuentes web consultadas en tiempo real. Si deseas incorporar estos datos en una planificación de clase del MINERD, dime el grado y área.)*`;
+
+          return responder({
+            mensaje_chat: msg,
+            plan_completado: false,
+            modo: "busqueda_web",
+            categoria: "busqueda_web",
+            fuentes: resBusqueda.resultados,
+            datos_planificacion: null
+          }, 200, "conversando");
+        }
+      } catch (errBusq) {
+        console.warn("Aviso: Tavily search falló, continuando con flujo alternativo:", errBusq.message);
+      }
+    }
+
     // 3. MODO AMBIGUO -> Pregunta con botones de aclaración (sin adivinar)
     if (clasificacion.categoria === "ambigua") {
       return responder({
@@ -728,8 +769,8 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
         }, 200, "curriculo");
       }
 
-      // Si no se encuentra en el currículo oficial y el usuario no forzó búsqueda web
-      if (!resBusquedaCurricular.encontrado && !req.body.buscarEnWeb) {
+      // Si no se encuentra en el índice local y fue una consulta directa (no pedido de planificación)
+      if (!resBusquedaCurricular.encontrado && !req.body.buscarEnWeb && clasificacion.categoria === "consulta_curricular") {
         return responder({
           mensaje_chat: resBusquedaCurricular.mensaje || "No se encontró ese dato en el currículo oficial (No encontré ese tema en la biblioteca oficial). ¿Deseas que lo busque en internet o prefieres ajustar el tema?",
           plan_completado: false,
@@ -743,6 +784,36 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
         }, 200, "curriculo");
       }
     }
+
+    // Determinar documento curricular oficial según grado, ciclo y asignatura
+    const areaNorm = (req.body.area || "").toLowerCase();
+    const gradoNorm = (req.body.grado || "").toLowerCase();
+    const esSecundaria = (typeof nivel === "string" && nivel.includes("secundari")) || gradoNorm.includes("secundaria");
+
+    let docReferencia = "Adecuación Curricular del Nivel Primario (MINERD)";
+    if (esSecundaria) {
+      docReferencia = "Adecuación Curricular del Nivel Secundario (MINERD, 2023)";
+    } else if (gradoNorm.includes("1") || gradoNorm.includes("2") || gradoNorm.includes("3") || gradoNorm.includes("primer ciclo")) {
+      if (areaNorm.includes("lengua")) {
+        docReferencia = "Guía Didáctica de Lengua Española (MINERD / CON BASE)";
+      } else if (areaNorm.includes("matem")) {
+        docReferencia = "Guía Didáctica de Matemática (MINERD / CON BASE)";
+      } else {
+        docReferencia = "Adecuación Curricular del Nivel Primario - Primer Ciclo (MINERD)";
+      }
+    } else {
+      docReferencia = "Adecuación Curricular del Nivel Primario - Segundo Ciclo (MINERD)";
+    }
+
+    const groundingDirectivasMINERD = `
+## DIRECTIVAS DE REFERENCIA CURRICULAR OFICIAL (MINERD):
+- Documento oficial de referencia: "${docReferencia}".
+- Cita este documento oficial y las páginas correspondientes en las fuentes y en la justificación curricular.
+- MENSAJES AL MAESTRO SIN JERGA TÉCNICA: En 'mensaje_chat', exprésate de manera profesional, cálida y natural: "Preparé la planificación con el currículo oficial del MINERD para esta materia y grado."
+- NUNCA digas "no hay guía CON BASE" para Ciencias Sociales, Ciencias de la Naturaleza ni otras materias.
+- Solo si de verdad no existiera documento oficial para esa materia/grado, advierte de forma simple: "No encontré una guía oficial para esta materia en este grado; conviene que revises la planificación."
+- RIGOR DISCIPLINAR: Jamás mezcles contenidos de asignaturas ajenas (prohibido mezclar Lengua o "La Noticia" con Ciencias Sociales o Matemáticas). Lo que sea propuesta didáctica del modelo indícalo con naturalidad.
+`;
 
     if (isStream && !res.headersSent) {
       res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
@@ -760,7 +831,7 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
         nivel,
         esquemaActivo: nivel,
         periodoActivo: periodo,
-        prompt: dynamicSystemPrompt,
+        prompt: dynamicSystemPrompt + "\n" + groundingDirectivasMINERD,
         contents: geminiContents,
         imageBase64,
         mediaType,
@@ -788,6 +859,15 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
 
     if (!parsedResponse) {
       return res.status(500).json({ error: "Error generando respuesta estructurada." });
+    }
+
+    if (!parsedResponse.fuentes || parsedResponse.fuentes.length === 0) {
+      parsedResponse.fuentes = [{
+        documento: docReferencia,
+        area: req.body.area || "General",
+        grado: req.body.grado || "General",
+        pagina: "Adecuación Curricular MINERD"
+      }];
     }
 
     // Atender saludo en mensajes mixtos (saludo + plan)
@@ -878,9 +958,11 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
       res.write("data: [DONE]\n\n");
       return res.end();
     }
-    res.status(500).json({ error: "Error generando la planificación.", detail: err.message });
   }
-});
+};
+
+router.post("/generate", handleGeneratePlan);
+router.post("/", handleGeneratePlan);
 
 /**
  * GET /api/plan/cuota
