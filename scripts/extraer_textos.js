@@ -27,9 +27,23 @@ async function extraerTextos() {
 
   for (const doc of manifiesto) {
     const filePath = path.resolve(doc.ruta);
-    if (!fs.existsSync(filePath)) {
-      console.warn(`⚠️ Archivo no encontrado: ${filePath}`);
-      continue;
+    const outPath = path.join(capa2Dir, `${doc.id}.json`);
+    if (fs.existsSync(outPath)) {
+      try {
+        const existente = JSON.parse(fs.readFileSync(outPath, "utf-8"));
+        if (existente && existente.paginas && existente.paginas.length > 0) {
+          console.log(`⚡ Reutilizando texto ya extraído para: ${doc.id} (${existente.paginas.length} págs).`);
+          resultadosManifiesto.push({
+            documento_id: doc.id,
+            archivo_json: `${doc.id}.json`,
+            titulo: existente.titulo,
+            total_paginas: existente.paginas.length,
+            area: existente.area,
+            grado: existente.grado,
+          });
+          continue;
+        }
+      } catch (e) {}
     }
 
     console.log(`🔍 Procesando: ${doc.nombre_archivo}...`);
@@ -102,7 +116,6 @@ async function extraerTextos() {
       paginas,
     };
 
-    const outPath = path.join(capa2Dir, `${doc.id}.json`);
     fs.writeFileSync(outPath, JSON.stringify(docCapa2, null, 2));
 
     resultadosManifiesto.push({

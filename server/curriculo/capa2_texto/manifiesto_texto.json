@@ -16,11 +16,75 @@
     "grado": "multigrado"
   },
   {
-    "documento_id": "Guia_Matematica_WEB",
-    "archivo_json": "Guia_Matematica_WEB.json",
-    "titulo": "Guia Matematica WEB",
-    "total_paginas": 372,
-    "area": "Matemática",
-    "grado": "1er_ciclo"
+    "documento_id": "adecuacion_curricular_primaria_2023",
+    "archivo_json": "adecuacion_curricular_primaria_2023.json",
+    "titulo": "adecuacion curricular nivel primario completo",
+    "total_paginas": 404,
+    "area": "Todas las áreas",
+    "grado": "1ro a 6to"
+  },
+  {
+    "documento_id": "adecuacion_curricular_secundaria_2023",
+    "archivo_json": "adecuacion_curricular_secundaria_2023.json",
+    "titulo": "adecuacion curricular nivel secundario 2023",
+    "total_paginas": 520,
+    "area": "Todas las áreas",
+    "grado": "1ro a 6to de Secundaria"
+  },
+  {
+    "documento_id": "diseno_curricular_inicial",
+    "archivo_json": "diseno_curricular_inicial.json",
+    "titulo": "diseno curricular nivel inicial",
+    "total_paginas": 210,
+    "area": "Dimensiones Integradas",
+    "grado": "0 a 6 años"
+  },
+  {
+    "documento_id": "diseno_curricular_primaria_primer_ciclo",
+    "archivo_json": "diseno_curricular_primaria_primer_ciclo.json",
+    "titulo": "diseno curricular primaria primer ciclo 1 a 3",
+    "total_paginas": 422,
+    "area": "Todas las áreas",
+    "grado": "1ro, 2do y 3ro"
+  },
+  {
+    "documento_id": "naturaleza_areas_curriculares_2020",
+    "archivo_json": "naturaleza_areas_curriculares_2020.json",
+    "titulo": "naturaleza de las areas curriculares 2020",
+    "total_paginas": 111,
+    "area": "Fundamentos Curriculares",
+    "grado": "Todos"
+  },
+  {
+    "documento_id": "registro_grado_secundaria_1ro",
+    "archivo_json": "registro_grado_secundaria_1ro.json",
+    "titulo": "registro grado secundaria 1ro",
+    "total_paginas": 177,
+    "area": "Evaluación e Indicadores",
+    "grado": "1ro de Secundaria"
+  },
+  {
+    "documento_id": "registro_grado_secundaria_2do",
+    "archivo_json": "registro_grado_secundaria_2do.json",
+    "titulo": "registro grado secundaria 2do",
+    "total_paginas": 176,
+    "area": "Evaluación e Indicadores",
+    "grado": "2do de Secundaria"
+  },
+  {
+    "documento_id": "registro_grado_secundaria_3ro",
+    "archivo_json": "registro_grado_secundaria_3ro.json",
+    "titulo": "registro grado secundaria 3ro",
+    "total_paginas": 176,
+    "area": "Evaluación e Indicadores",
+    "grado": "3ro de Secundaria"
+  },
+  {
+    "documento_id": "unicef_con_base_manual_organizacion",
+    "archivo_json": "unicef_con_base_manual_organizacion.json",
+    "titulo": "unicef con base manual organizacion linea base",
+    "total_paginas": 68,
+    "area": "Alfabetización y Matemática Inicial",
+    "grado": "1er ciclo (CON BASE)"
   }
 ]

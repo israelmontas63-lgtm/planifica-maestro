@@ -1,7 +1,31 @@
 {
-  "total_fragmentos": 998,
-  "fragmentos_estructurados": 78,
-  "fragmentos_texto": 920,
-  "fecha_generacion": "2026-10-03T15:48:56.909Z",
+  "total_fragmentos": 2455,
+  "fragmentos_estructurados": 59,
+  "fragmentos_texto": 2396,
+  "duplicados_descartados": 233,
+  "ruido_editorial_descartado": 25,
+  "distribucion_por_nivel": {
+    "primario": 1399,
+    "secundario": 795,
+    "inicial": 176,
+    "general": 85
+  },
+  "distribucion_por_documento": {
+    "Guía Didáctica de Lengua Española (MINERD / CON BASE)": 16,
+    "Guía Didáctica de Matemática (MINERD / CON BASE)": 18,
+    "Guia Didactica LenguaEsp  Multigrado WEB": 198,
+    "Guia Matematica WEB": 19,
+    "Adecuación Curricular del Nivel Primario (MINERD)": 389,
+    "Adecuación Curricular del Nivel Secundario (MINERD, 2023)": 504,
+    "Diseño Curricular del Nivel Inicial (MINERD)": 176,
+    "Diseño Curricular Nivel Primario - Primer Ciclo (MINERD)": 340,
+    "Guia Multigrado Matematicas": 362,
+    "Naturaleza de las Áreas Curriculares (MINERD)": 85,
+    "Registro de Grado - 1er Grado Secundaria (MINERD)": 167,
+    "Registro de Grado - 2do Grado Secundaria (MINERD)": 71,
+    "Registro de Grado - 3er Grado Secundaria (MINERD)": 53,
+    "Manual de Organización del Programa CON BASE (MINERD / UNICEF)": 57
+  },
+  "fecha_generacion": "2026-10-08T04:06:01.110Z",
   "estado_general_validacion": "pendiente de validación por experto"
 }

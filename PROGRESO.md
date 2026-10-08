@@ -1,15 +1,16 @@
 # PROGRESO: CIERRE DEL CEREBRO DE PLANIFICA MAESTRO
 
 ## Estado General
-- **Paso actual**: FASE 2 COMPLETADA — EL MODELO OFICIAL DE PLANIFICACIÓN (Word CON BASE Oficial con matriz de 17 filas en A4 horizontal, Perfil Docente Ampliado, Selector Multigrado y Selector de Modelo de IA).
-- **Siguiente paso**: FASE 3 (Indexación de 9 PDFs Oficiales de MINERD y Limpieza de Duplicados).
+- **Paso actual**: FASE 3 COMPLETADA — INDEXACIÓN DE 9 PDFS OFICIALES DE MINERD Y LIMPIEZA DE DUPLICADOS (2,264 páginas extraídas en Capa 2, 2,455 fragmentos limpios indexados en Capa 4 con desduplicación SHA-256, buscador curricular calibrado para todos los ciclos y niveles con citas exactas, 164/164 tests en verde).
+- **Siguiente paso**: FASE 4 — PERSISTENCIA CLOUDFLARE D1 / SUPABASE RLS Y PREPARACIÓN BETA.
 - **Bloques de Trabajo Global**:
   - PASO 1 — Commit seguro y respaldo (TERMINADO: commits f987009, 551c08e, 43d7808).
   - PASO 2 — Recopilación en cuadro único y resolución de contradicciones (TERMINADO).
   - PASO 3 / 3B / 3C — Conducta pedagógica y robustecimiento (TERMINADO).
   - PASO 4 / 4B — Auditoría técnica integral y verificaciones (TERMINADO).
   - PASO 5 — Propuesta formal de orden de trabajo para la Beta (TERMINADO).
-  - FASE 2 — Modelo Oficial de Planificación (TERMINADO: Generador Word CON BASE A4 horizontal con 17 filas y sombreado #CDEEF6, Perfil Docente ampliado con tanda/sección/regional/distrito, Selector Multigrado articulado 1º-2º/3º-4º/5º-6º, Selector IA Gemini 3.1 Flash-Lite vs 3.5 Flash; 146/146 tests en verde y build de PWA verificado).
+  - FASE 2 — Modelo Oficial de Planificación (TERMINADO: Word CON BASE A4 horizontal con 17 filas y sombreado #CDEEF6, Perfil Docente ampliado, Selector Multigrado, Selector IA Gemini 3.1 Flash-Lite vs 3.5 Flash; 146/146 tests).
+  - FASE 3 — Indexación Curricular Completa y Desduplicación (TERMINADO: 2,264 páginas de 9 PDFs oficiales MINERD en Capa 2, descarte de 383 fragmentos redundantes de Guía Matemática WEB, 2,455 fragmentos únicos indexados en Capa 4 con hash SHA-256, buscador curricular multi-nivel calibrado con citas exactas de página; 164/164 tests en verde y build PWA verificado).
 
 ## Commits Realizados
 - `378c1b1`: `fix(conducta): salvaguarda de saludo directo y defensa en código para imagen ilegible`

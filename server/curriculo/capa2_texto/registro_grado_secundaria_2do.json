@@ -1,0 +1,718 @@
+{
+  "documento_id": "registro_grado_secundaria_2do",
+  "titulo": "registro grado secundaria 2do",
+  "institucion": "MINERD",
+  "nivel": "secundario",
+  "grado": "2do de Secundaria",
+  "area": "Evaluación e Indicadores",
+  "url_fuente": "https://ministeriodeeducacion.gob.do/docs/direccion-general-de-curriculo",
+  "sha256": "97ad2603ba1fdfec42ca7d8907b2bba69e34bd88b0fa6f349a71ba3978c45d21",
+  "total_paginas": 176,
+  "fecha_extraccion": "2026-10-08T04:04:11.778Z",
+  "paginas": [
+    {
+      "numero": 1,
+      "texto": "AÑO ESCOLAR 20______ 20______\nSECCIÓN\nRegistro Escolar"
+    },
+    {
+      "numero": 2,
+      "texto": "CRÉDITOS\nMinisterio de Educación de la República Dominicana\nViceministerio de Servicios Técnicos y Pedagógicos\nElaboración y Revisión:\nDirección General de Educación Secundaria\nDirección General de Currículo\nDiseño y Diagramación\nUnidad de Artes y Diagramación\nde la Dirección Medios Educativos"
+    },
+    {
+      "numero": 3,
+      "texto": "A la comunidad educativa\nEl Ministerio de Educación de la República Dominicana pone a disposición el Registro de Grado\ndel Nivel Secundario y sus orientaciones apegado a las Ordenanzas 04-2021 y la 02-2022 que\nestablecen el proceso de Adecuación Curricular para la educación pública y privada.\nEstas ordenanzas orientan los procesos pedagógicos y de gestión curricular del nivel secundario\ndesde un estilo democrático y participativo, de interacción armoniosa entre los diferentes actores\neducativos, vinculado al proyecto de centro y a las características del contexto.\nLa Adecuación Curricular de este Nivel tiene como finalidad lograr direccionalidad, coherencia,\ncriterios de flexibilidad y apertura que garanticen que los adolescentes, jóvenes y adultos aprendan\nen correspondencia con sus niveles cognitivos y en el contexto en que se desarrollan.\nEn este Diseño cada año académico se asume como terminal y está estructurado para que cada\nárea curricular desempeñe un rol primordial en el desarrollo de las Competencias Fundamentales\na través de las Competencias Específicas.\nEn cada ciclo y grado, los estudiantes van afianzando un conjunto de capacidades al movilizar de\nmanera idónea e integrada saberes: conceptos, procedimientos, actitudes y valores para resolver\nsituaciones de su realidad, además de elaborar su proyecto de vida a corto y mediano plazo.\nLa gestión de los aprendizajes se focaliza en el desarrollo de las competencias colocando al\nestudiante en la realidad de su contexto y su vinculación con los Ejes Transversales, que plantea el\ncurrículo a través de las situaciones de aprendizaje para lo cual se planifican y ejecutan actividades\nconcatenadas en secuencias didácticas de enseñanza, aprendizaje y evaluación.\nEl registro de grado es el documento que permite visualizar los avances de los estudiantes durante\nsu proceso de formación, haciendo énfasis en la evaluación formativa y sumativa para determinar\nlos niveles de desempeño de las competencias específicas y su contribución al desarrollo de las\ncompetencias fundamentales.\nCada docente que interviene en un grado es responsable de registrar la asistencia, la evaluación\nformativa y sumativa de la asignatura que imparte, además de ofrecer información oportuna a los\nestudiantes y las familias sobre los niveles de avance en el desarrollo de las competencias.\nEl equipo de gestión del centro educativo, apoyado y orientado por el equipo técnico distrital es\nresponsable de acompañar a los docentes en el manejo y buen uso del registro de grado, además\nde salvaguardar este instrumento como documento histórico del proceso educativo.\nEl Registro de grado se presenta a toda la comunidad educativa para recoger el proceso de\nevaluación de los aprendizajes durante el período de validación de la adecuación curricular. Este\ndocumento posibilita recolectar las evidencias de la valoración de la práctica pedagógica para\nincorporar las mejoras en el proceso de enseñanza y aprendizaje.\nEste registro de grado es una versión preliminar en validación.\n3"
+    },
+    {
+      "numero": 4,
+      "texto": ""
+    },
+    {
+      "numero": 5,
+      "texto": "ÍNDICE\nDATOS DEL CENTRO EDUCATIVO ............................................................................................................7\nDATOS DEL ESTUDIANTE ..........................................................................................................................9\nDatos para emergencias........................................................................................................................................12\nParentesco ................................................................................................................................................................. 13\nREGISTRO DE ASISTENCIA Y PUNTUALIDAD ...................................................................................... 14\nLengua Española ..................................................................................................................................................... 15\nLenguas Extranjeras - Inglés.............................................................................................................................. 20\nLenguas Extranjeras - Francés .......................................................................................................................... 25\nMatemática ............................................................................................................................................................... 30\nCiencias Sociales .................................................................................................................................................... 35\nCiencias de la naturaleza – Ciencias de la Vida ........................................................................................40\nEducación Artística ............................................................................................................................................... 45\nEducación Física..................................................................................................................................................... 48\nFormación Integral Humana y Religiosa ........................................................................................................ 51\nAsistencia evaluaciones completivas ............................................................................................................. 54\nAsistencia evaluaciones extraordinarias ........................................................................................................57\nEVALUACIÓN DE LOS APRENDIZAJES................................................................................................. 60\nCALIFICACIONES DE RENDIMIENTO .................................................................................................... 63\nLengua Española .................................................................................................................................................... 66\nLenguas Extranjeras - Inglés.............................................................................................................................. 76\nLenguas Extranjeras - Francés .......................................................................................................................... 86\nMatemática ............................................................................................................................................................... 96\nCiencias Sociales .................................................................................................................................................. 106\nCiencias de la Naturaleza – Ciencias de la Vida ........................................................................................116\nEducación Artística ..............................................................................................................................................126\nEducación Física....................................................................................................................................................136\nFormación Integral Humana y Religiosa ......................................................................................................146"
+    },
+    {
+      "numero": 6,
+      "texto": "PROMOCIÓN DEL GRADO ..................................................................................................................... 156\nLengua Española ................................................................................................................................................... 157\nLenguas Extranjeras - Inglés.............................................................................................................................168\nLenguas Extranjeras - Francés .........................................................................................................................159\nMatemática ............................................................................................................................................................. 160\nCiencias Sociales ....................................................................................................................................................161\nCiencias de la Naturaleza – Ciencias de la Vida .......................................................................................162\nEducación Artística ..............................................................................................................................................163\nEducación Física....................................................................................................................................................164\nFormación Integral Humana y Religiosa ......................................................................................................165\nREGISTRO DE EXPERIENCIAS...............................................................................................................166\nREGISTRO DE ACOMPAÑANTES A LA PRÁCTICA PEDAGÓGICA ...................................................170\nESTADÍSTICAS DE FIN DE AÑO ESCOLAR.......................................................................................... 174"
+    },
+    {
+      "numero": 7,
+      "texto": "Datos del Centro Educativo\nNombre del centro\nDirección\nCorreo electrónico Teléfono\nCódigo de gestión\nSIGERD Código de cartografía\nDirector del centro\nCorreo electrónico Teléfono\nDocente encargado\nde curso\nCorreo electrónico Teléfono\nSector Público Privado Semioficial\nZona Urbana Urbana marginal Urbana turística\nRural Rural aislada Rural turística\nJornada Jee Matutina Vespertina Nocturna\nRegional Distrito"
+    },
+    {
+      "numero": 8,
+      "texto": "8"
+    },
+    {
+      "numero": 9,
+      "texto": "DATOS\nDEL ESTUDIANTE\n9"
+    },
+    {
+      "numero": 10,
+      "texto": "NOMBRE(S) Y APELLIDO(S):\nen orden alfabético\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nDatos generales del estudiante\nSexo Del acta de nacimiento\nNo. Cédula\no Pasaporte RNE Dirección donde reside\nFemenino \nMasculino\nDía\nMes\nAño\nLibro\nFolio\nEdad\nPromovido=aprobado en el grado y el año anterior. Repitente=reprobado en el mismo grado y en el año escolar anterior.\n10"
+    },
+    {
+      "numero": 11,
+      "texto": "Reingreso= no estuvo matriculado el año escolar anterior. Aplazado= promovido con una o dos asignaturas pendientes.\nCondición inicial del estudiante\nCorreo Electrónico Promovido Repitente Reingreso Aplazado\nTOTALES\n11"
+    },
+    {
+      "numero": 12,
+      "texto": "DATOS PARA EMERGENCIAS\nDE SALUD LLAMAR A:\nEnfermedades o\nalérgico a:\nMedicamentos\nque usa Nombre y Apellido Teléfono Parentesco persona\ncon la que vive\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39 z\n40\n12"
+    },
+    {
+      "numero": 13,
+      "texto": "PARENTESCO\nPADRE MADRE TUTOR\nNombre(s) y\nApellido(s) Teléfono Nombre(s) y\nApellido(s) Teléfono Nombre(s) y\nApellido(s) Teléfono\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\n13"
+    },
+    {
+      "numero": 14,
+      "texto": "REGISTRO DE ASISTENCIA Y PUNTUALIDAD\nPara la asistencia diaria a clase se utilizará la siguiente leyenda:\nPresente (P)\nTardanza (T)\nAusencia (A)\nExcusa (E)\nTres tardanzas se convierten en una ausencia, además, luego de dos ausencias consecutivas sin\nexcusas, el director del centro educativo tiene la obligación de dirigirse a los padres o tutores para\nestablecer las causas de las ausencias o deserción, si estas no son satisfactorias el director les\norientará para que los estudiantes sean enviados al centro educativo y de no cumplirse se apoderará\ndel caso al Consejo Nacional de la Niñez y la Adolescencia, dejando constancia escrita de este\nproceso.\nExcusas justificadas:\n• Enfermedades debidamente certificadas\n• Accidentes que produzcan incapacidad temporal\n• Muerte del padre, madre, tutor o hermano\n• Otras causas de fuerza mayor, consideradas validas por el equipo de dirección del centro educativo\nAl finalizar cada mes se escribirá el total de asistencia que obtuvo cada estudiante en la columna\nencabezada con (T) y en la columna de (%) el porcentaje de la misma.\nPara obtener el porcentaje (%) se divide el total de asistencia que obtuvo cada estudiante en la\ncolumna encabezada con (T) entre los días trabajados en el mes, por cien (100).\nSi un estudiante se retira del centro educativo, durante el transcurso del año escolar, a partir de\nesa fecha y hasta finalizar el año escolar, en el renglón correspondiente al registro de asistencia, se\ntrazará una línea de color azul.\nRECOMENDACIONES\n• El llenado del registro de grado debe realizarse con lapicero de tinta azul.\n• El trabajo en el registro de grado debe estar libre de borrones y tachaduras.\n• Los profesores deben cumplir con lo prescrito en este Registro, como\nobligatorio en cada hora de clase.\n• Luego de asentadas las calificaciones de fin de año de cada asignatura, se\nprocederá a cubrir con cinta transparente.\n14"
+    },
+    {
+      "numero": 15,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nLENGUA ESPAÑOLA\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n15"
+    },
+    {
+      "numero": 16,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nLENGUA ESPAÑOLA\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n16"
+    },
+    {
+      "numero": 17,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nLENGUA ESPAÑOLA\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n17"
+    },
+    {
+      "numero": 18,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nLENGUA ESPAÑOLA\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n18"
+    },
+    {
+      "numero": 19,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nLENGUA ESPAÑOLA\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n19"
+    },
+    {
+      "numero": 20,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nLENGUAS EXTRANJERAS - INGLÉS\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n20"
+    },
+    {
+      "numero": 21,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nLENGUAS EXTRANJERAS - INGLÉS\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n21"
+    },
+    {
+      "numero": 22,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nLENGUAS EXTRANJERAS - INGLÉS\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n22"
+    },
+    {
+      "numero": 23,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nLENGUAS EXTRANJERAS - INGLÉS\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n23"
+    },
+    {
+      "numero": 24,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nLENGUAS EXTRANJERAS - INGLÉS\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n24"
+    },
+    {
+      "numero": 25,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nLENGUAS EXTRANJERAS - FRANCÉS\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n25"
+    },
+    {
+      "numero": 26,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nLENGUAS EXTRANJERAS - FRANCÉS\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n26"
+    },
+    {
+      "numero": 27,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nLENGUAS EXTRANJERAS - FRANCÉS\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n27"
+    },
+    {
+      "numero": 28,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nLENGUAS EXTRANJERAS - FRANCÉS\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n28"
+    },
+    {
+      "numero": 29,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nLENGUAS EXTRANJERAS - FRANCÉS\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n29"
+    },
+    {
+      "numero": 30,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nMATEMÁTICA\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n30"
+    },
+    {
+      "numero": 31,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nMATEMÁTICA\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n31"
+    },
+    {
+      "numero": 32,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nMATEMÁTICA\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n32"
+    },
+    {
+      "numero": 33,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nMATEMÁTICA\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n33"
+    },
+    {
+      "numero": 34,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nMATEMÁTICA\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n34"
+    },
+    {
+      "numero": 35,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nCIENCIAS SOCIALES\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n35"
+    },
+    {
+      "numero": 36,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nCIENCIAS SOCIALES\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n36"
+    },
+    {
+      "numero": 37,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nCIENCIAS SOCIALES\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n37"
+    },
+    {
+      "numero": 38,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nCIENCIAS SOCIALES\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n38"
+    },
+    {
+      "numero": 39,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nCIENCIAS SOCIALES\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n39"
+    },
+    {
+      "numero": 40,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nCIENCIAS DE LA NATURALEZA: CIENCIAS DE LA VIDA\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n40"
+    },
+    {
+      "numero": 41,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nCIENCIAS DE LA NATURALEZA: CIENCIAS DE LA VIDA\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n41"
+    },
+    {
+      "numero": 42,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nCIENCIAS DE LA NATURALEZA: CIENCIAS DE LA VIDA\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n42"
+    },
+    {
+      "numero": 43,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nCIENCIAS DE LA NATURALEZA: CIENCIAS DE LA VIDA\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n43"
+    },
+    {
+      "numero": 44,
+      "texto": "1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T % 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 T %\nDÍAS\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nCIENCIAS DE LA NATURALEZA: CIENCIAS DE LA VIDA\nDOCENTE\nMes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS\n44"
+    },
+    {
+      "numero": 45,
+      "texto": "1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T %\nDías\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\n45\nEDUCACIÓN ARTÍSTICA\nDOCENTE\nMes Mes Mes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS DÍAS TRABAJADOS DÍAS TRABAJADOS"
+    },
+    {
+      "numero": 46,
+      "texto": "1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T %\nDías\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\n46\nEDUCACIÓN ARTÍSTICA\nDOCENTE\nMes Mes Mes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS DÍAS TRABAJADOS DÍAS TRABAJADOS"
+    },
+    {
+      "numero": 47,
+      "texto": "1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T %\nDías\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\n47\nEDUCACIÓN ARTÍSTICA\nDOCENTE\nMes Mes Mes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS DÍAS TRABAJADOS DÍAS TRABAJADOS"
+    },
+    {
+      "numero": 48,
+      "texto": "1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T %\nDías\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\n48\nEDUCACIÓN FÍSICA\nDOCENTE\nMes Mes Mes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS DÍAS TRABAJADOS DÍAS TRABAJADOS"
+    },
+    {
+      "numero": 49,
+      "texto": "1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T %\nDías\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\n49\nEDUCACIÓN FÍSICA\nDOCENTE\nMes Mes Mes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS DÍAS TRABAJADOS DÍAS TRABAJADOS"
+    },
+    {
+      "numero": 50,
+      "texto": "1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T %\nDías\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\n50\nEDUCACIÓN FÍSICA\nDOCENTE\nMes Mes Mes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS DÍAS TRABAJADOS DÍAS TRABAJADOS"
+    },
+    {
+      "numero": 51,
+      "texto": "1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T %\nDías\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\n51\nFORMACIÓN INTEGRAL HUMANA Y RELIGIOSA\nDOCENTE\nMes Mes Mes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS DÍAS TRABAJADOS DÍAS TRABAJADOS"
+    },
+    {
+      "numero": 52,
+      "texto": "1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T %\nDías\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\n52\nFORMACIÓN INTEGRAL HUMANA Y RELIGIOSA\nDOCENTE\nMes Mes Mes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS DÍAS TRABAJADOS DÍAS TRABAJADOS"
+    },
+    {
+      "numero": 53,
+      "texto": "1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T % 1 2 3 4 5 6 7 8 9 10 T %\nDías\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\n53\nFORMACIÓN INTEGRAL HUMANA Y RELIGIOSA\nDOCENTE\nMes Mes Mes Mes\nDÍAS TRABAJADOS DÍAS TRABAJADOS DÍAS TRABAJADOS DÍAS TRABAJADOS"
+    },
+    {
+      "numero": 54,
+      "texto": "ASISTENCIA A EVALUACIONES COMPLETIVAS\nMES ___________________\nDocente: Docente: Docente:\nLENGUA ESPAÑOLA LENGUAS EXTRANJERAS: INGLÉS LENGUAS EXTRANJERAS: FRANCÉS\n1 2 3 4 5 6 7 8 9 10 1 2 3 4 5 6 7 8 9 10 1 2 3 4 5 6 7 8 9 10\nDías\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\n54"
+    },
+    {
+      "numero": 55,
+      "texto": "ASISTENCIA A EVALUACIONES COMPLETIVAS\nMES ___________________\nDocente: Docente: Docente:\nMATEMÁTICA CIENCIAS SOCIALES CIENCIAS DE LA NATURALEZA:\nCIENCIAS DE LA VIDA\n1 2 3 4 5 6 7 8 9 10 1 2 3 4 5 6 7 8 9 10 1 2 3 4 5 6 7 8 9 10\nDías\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\n55"
+    },
+    {
+      "numero": 56,
+      "texto": "ASISTENCIA A EVALUACIONES COMPLETIVAS\nMES ___________________\nDocente: Docente: Docente:\nEDUCACIÓN ARTÍSTICA EDUCACIÓN FÍSICA FORMACIÓN INTEGRAL HUMANA Y RELIGIOSA\n1 2 3 4 5 6 7 8 9 10 1 2 3 4 5 6 7 8 9 10 1 2 3 4 5 6 7 8 9 10\nDías\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\n56"
+    },
+    {
+      "numero": 57,
+      "texto": "ASISTENCIA A EVALUACIONES EXTRAORDINARIAS\nMES ___________________\nDocente: Docente: Docente:\nLENGUA ESPAÑOLA LENGUAS EXTRANJERAS: INGLÉS LENGUAS EXTRANJERAS: FRANCÉS\n1 2 3 4 5 6 7 8 9 10 1 2 3 4 5 6 7 8 9 10 1 2 3 4 5 6 7 8 9 10\nDías\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\n57"
+    },
+    {
+      "numero": 58,
+      "texto": "ASISTENCIA A EVALUACIONES EXTRAORDINARIAS\nMES ___________________\nDocente: Docente: Docente:\nMATEMÁTICA CIENCIAS SOCIALES CIENCIAS DE LA NATURALEZA:\nCIENCIAS DE LA VIDA\n1 2 3 4 5 6 7 8 9 10 1 2 3 4 5 6 7 8 9 10 1 2 3 4 5 6 7 8 9 10\nDías\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\n58"
+    },
+    {
+      "numero": 59,
+      "texto": "ASISTENCIA A EVALUACIONES EXTRAORDINARIAS\nMES ___________________\nDocente: Docente: Docente:\nEDUCACIÓN ARTÍSTICA EDUCACIÓN FÍSICA FORMACIÓN INTEGRAL HUMANA Y RELIGIOSA\n1 2 3 4 5 6 7 8 9 10 1 2 3 4 5 6 7 8 9 10 1 2 3 4 5 6 7 8 9 10\nDías\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\n59"
+    },
+    {
+      "numero": 60,
+      "texto": "EVALUACIÓN DE LOS APRENDIZAJES\nEste Registro de Grado está en coherencia con el Adecuación Curricular del Nivel\nSecundario para la educación pública y privada.\nSe asume que la evaluación es un proceso sistemático y continuo de recogida y análisis\nde informaciones relevantes con la finalidad de que los actores educativos reconozcan\ny aprecien la eficacia de la enseñanza y la calidad de los aprendizajes, considerando\nlos resultados para la toma de decisiones en sentido general y la mejora de la práctica\neducativa.\nLa evaluación de las competencias fundamentales se realiza a lo largo de todo el proceso\nformativo, éstas se hacen operativas a través de las competencias específicas, las que se\nevalúan a través de los indicadores de logro.\nPara evaluar las competencias específicas se utilizarán como referentes los indicadores de\nlogro consignados en la Adecuación Curricular, los cuales caracterizan las competencias\ny se refieren a sus aspectos claves. Son pistas, señales, rasgos que evidencian el nivel\nde desarrollo y dominio de las competencias y sus manifestaciones en un contexto\ndeterminado. Estos permiten afirmar si se han logrado los aprendizajes esperados para\ncada grado y asignatura.\nAl inicio de cada proceso formativo, tomará en cuenta la evaluación diagnóstica, valorando\nel nivel de dominio o desempeño de las competencias desarrolladas y las experiencias que\nposeen en relación con los aprendizajes por lograr.\nLa evaluación formativa o de proceso se realiza durante el desarrollo de las actividades\nde enseñanza y aprendizaje, con la finalidad de reconocer cómo los estudiantes van\ndesarrollando sus competencias. Proporciona información sobre lo que sucede y lo que\ndebería suceder para el logro de las competencias.\n60"
+    },
+    {
+      "numero": 61,
+      "texto": "Valoración de las competencias específicas\nEn el proceso de evaluación formativa, las valoraciones de los aprendizajes se traducirán en\ncalificaciones parciales.\nLas calificaciones parciales se reportan en cuatro períodos como lo establezca el calendario\nescolar. Los períodos serán organizados de la siguiente manera:\n• P1= Primer reporte de evaluación\n• P2= Segundo reporte\n• P3= Tercer reporte\n• P4= Cuarto reporte\nEl registro de la valoración de las competencias específicas se realizará dentro de las casillas\n(P1, P2, P3 y/o P4) con una calificación numérica de 0 a 100, en relación con el nivel de\ndesempeño logrado por el estudiante como resultado del proceso evaluativo en función al\nperiodo o ciclo formativo.\nLas calificaciones de las competencias específicas por debajo de 70 puntos serán recuperadas\na través de actividades complementarias o tutorías para que el estudiante presente las\nevidencias de aprendizajes de los aspectos no alcanzados en los indicadores de logro, que les\npermita el desarrollo de las competencias.\nLas calificaciones de los estudiantes que participan del proceso de recuperación pedagógica\n(RP) se plasman en las casillas posterior a los dos periodos correspondientes.\nPara cada período formativo el docente selecciona de la malla curricular las competencias,\nlos mediadores y los indicadores de logro o desempeño, y con estos últimos elabora los\ninstrumentos de evaluación.\nLos estudiantes deben conocer con antelación la descripción de las competencias a desarrollar,\nel desempeño a mostrar, así como los criterios, técnicas y tipos de instrumentos con los cuales\nse les va a evaluar.\nEl docente debe propiciar la reflexión metacognitiva y la retroalimentación, la cual puede\ndarse entre pares.\n61"
+    },
+    {
+      "numero": 62,
+      "texto": "Evaluar por competencias implica utilizar técnicas e instrumentos diversos acordes con las\ncompetencias que se requieren evaluar. De acuerdo con el Diseño curricular, en el proceso de\nevaluación de los aprendizajes se podrán utilizar:\nTécnicas\n- Observación\n- Entrevista\nInstrumentos de recogida de evidencias\n- Portafolio\n- Diario reflexivo\n- Registros diarios\nInstrumentos de evaluación de evidencias\n- Lista de cotejo o control\n- Escala de valoración\n- Escala estimativa\n- Rúbrica\n- Escalas y pautas de observación y\nactitudinales\nCada docente diseña su plan de evaluación acorde a la estrategia de enseñanza y de aprendizaje\nque contempla su planificación.\nLa planificación del docente, instrumentos de evaluación, informes de aprendizajes, registro\nanecdótico, portafolio del docente y las actas finales y cualquier otro documento que evidencie\nel proceso de enseñanza, aprendizaje y evaluación quedan vinculados a los registros de grado.\nLos instrumentos de evaluación permiten que los diferentes agentes evaluadores valoren las\nevidencias de conocimientos, productos o desempeño del estudiante en favor del desarrollo\nde las competencias específicas al resolver situaciones del contexto.\nDurante cada período formativo el docente utiliza diversos instrumentos de evaluación para\nvalorar las evidencias de aprendizajes, tomando en cuenta las competencias específicas, los\nindicadores de logro, los mediadores abordados y las técnicas de evaluación.\n62"
+    },
+    {
+      "numero": 63,
+      "texto": "CALIFICACIONES\nDE RENDIMIENTO\n63"
+    },
+    {
+      "numero": 64,
+      "texto": "CALIFICACIONES DE RENDIMIENTO\nCada año académico se asume como terminal para los fines de organización del proceso\npedagógico, la aprobación, promoción y/o reprobación de asignaturas o repitencia de grado.\nLa Evaluación sumativa se registra al final de cada proceso de aprendizaje. Permite comparar\nlos aprendizajes iniciales con los aprendizajes logrados. Se determina el desarrollo de las\ncompetencias durante el proceso.\nCalificación final de una asignatura\nEjemplo de evaluación de una asignatura:\nLENGUA ESPAÑOLA\nCompetencias\nSe comunica con\nclaridad en diferentes\ncontextos, siguiendo los\nprocesos de compresión\ny producción oral\ny escrita, con\ncreatividad, al emplear\nadecuadamente un tipo\nde texto (funcional o\nliterario), las TIC, así\ncomo otros recursos y\nmedios.\nUtiliza secuencias\nargumentativas\n(hechos, ejemplos,\nanalogías, argumentos\ny contraargumentos),\nen discursos orales\ny escritos, creando\nnuevos conocimientos\na partir de procesos\nde comprensión y\nproducción de textos\norales y escritos\nabordados con temas y\nproblemas sociales de\nsu realidad.\nIdentifica problemas\nde su vida estudiantil o\ncotidiana, a través de un\ntipo de texto específico\ny apropiado, como\npunto de partida para su\nestudio y solución.\nDemuestra\nconocimiento de\nprocesos investigativos\ncientíficos sencillos y\ndel uso de tecnología\nde acuerdo con su\ngrado, a través de\ntextos científicos y\nespecialmente los de\nsecuencia expositivo-\nexplicativa.\nP1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP\n1 75 80 60 65 25 90 89 91 84 96 80 90 70 60 75 10 85 82\n2\nPara calcular el 70% se suma todas las calificaciones de los periodos (P) y sus recuperaciones\npedagógicas (RP) de las primeras 4 competencias específicas y se multiplica por el resultado de\ndividir el 70% (0.70) entre 16, que es equivalente a 0.04375.\n70% de las primeras cuatro competencias específicas es igual a:\n(75+80+60+65+25+90+89+91+84+96+80+90+70+60+75+10+85+82)* (0.70/16) =1307*0.04375 = 57.18 = 57\n64"
+    },
+    {
+      "numero": 65,
+      "texto": "LENGUA ESPAÑOLA\nCompetencias\n \nAnaliza textos variados de\nmanera oral o escrita que\nponen de relieve hechos\ny tradiciones históricas\nrelevantes, identificando\nnuevas relaciones sociales\nal reconocer y valorar\nel patrimonio natural y\nsociocultural dominicano.\nExplica con claridad\nsituaciones sobre salud,\nmedio ambiente y la\ncomunidad, mediante textos\nde diferentes secuencias\ny géneros, a través de\nherramientas tecnológicas y\notros medios y recursos.\nDemuestra conocimiento y\ncomprensión de sí mismo\ny de los demás al expresar\nsu percepción del mundo, a\ntravés de un tipo de texto,\nfavorable a las situaciones y\na las personas.\n70%\n30%\nCalificación final\nP1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP\n1 90 70 90 95 91 84 80 88 75 85 82 90 57 26 83\n2\nPara calcular el 30% se suma todas las calificaciones de los periodos (P) y sus recuperaciones\npedagógicas (RP) de las últimas 3 competencias específicas y se multiplica por el resultado de\ndividir el 30% (0.30) entre 12, que es equivalente a 0.025.\nPara el 30% de las tres competencias restantes tenemos=\n(90+70+90+95+91+84+80+88+75+85+82+90) *(0.30/12) =1020*0.025 =25.5=26\nLa calificación final se calcula sumando ambos resultados de los porcentajes, esto es:\n57+26=83.\nPara aprobar una asignatura se requiere que al finalizar el grado el estudiante tenga una\ncalificación igual o superior a los setenta (70) puntos.\nReprueba la asignatura, el estudiante que al finalizar los cuatro periodos evaluativos y antes\nde iniciar las evaluaciones completivas haya acumulado menos del 80% de asistencia a\nclases sin causas justificadas. El estudiante pasa al proceso de evaluación completivo.\n65"
+    },
+    {
+      "numero": 66,
+      "texto": "Competencias e indicadores: LENGUA ESPAÑOLA\nÁrea: Lengua Española Nivel: Secundario - Primer Ciclo Grado: 2do.\nCompetencias\nFundamentales\nCompetencias Específicas\n(CE) del Grado Indicadores de Logro (IL)\nCompetencia\nComunicativa\nCE1-LE-Comunica sus ideas\ny experiencias de manera\nadecuada en diferentes\nsituaciones, mediante un\ngénero textual (funcional o\nliterario) abordado desde la\ncomprensión y producción\noral y escrita, mostrando\ncreatividad y destrezas\nen el uso la lengua,\nherramientas tecnológicas y\nrecursos diversos.\nIL-1-Expresa sus ideas, a través de textos, de manera oral y/o\nescrita, creando un ambiente cultural e interactivo, desde una\nperspectiva social.\nIL-2-Emplea la lengua haciendo uso de las diferentes funciones\ntextuales, a través de su expresión personal, creando\nestructuras para forjar el conocimiento en medios diversos.\nIL-3-Valora los recursos de la lengua y los utiliza al responder\npreguntas inferenciales y críticas en la comprensión de\nsentidos.\nCompetencia\nPensamiento\nLógico, Crítico y\nCreativo\nCE2-LE-Produce textos\norales y escritos variados\na partir de inferencias de\ncomprensión y producción\ntextual, demostrando un\npensamiento estructurado,\nderivando en conclusiones\nrazonables y lógicas.\nIL-4-Demuestra capacidad en el uso de secuencias\nargumentativas, en la construcción de discursos con temas de\nsu realidad, así como del contexto local, nacional y mundial.\nIL-5-Reconstruye conocimientos sobre situaciones sociales, a\npartir de inferencias en la comprensión y producción de textos\nfuncionales y literarios.\nIL-6-Expone informaciones con juicios y puntos de vista\npertinentes, en la construcción de pensamiento estructurado\nque derivan en conclusiones lógicas, acciones y respeto de\nopiniones.\nCompetencia\nÉtica y\nCiudadana\nCE3-LE-Usa textos\nvariados de secuencia\nargumentativa, con\nlos que conoce y\ncuestiona prácticas\nsociales de ciudadanía\nen el entorno local,\nnacional e internacional,\nconfrontándolas con los\nvalores universales, en\ndiscursos analíticos y\npropositivos.\nIL-7-Presenta nuevas relaciones sociales, en reconocimiento\ny valoración de lo natural y sociocultural, haciendo uso de\ntextos, tales como análisis, comentarios, argumentos, entre\notros.\nIL-8-Conoce y cuestiona las prácticas sociales de ciudadanía en\nel entorno local y su confrontación con los valores universales,\na través de textos de secuencia argumentativa.\nIL-9-Elabora proyectos colaborativos, utilizando textos\nvariados y apropiados, para la construcción de una ciudadanía\nque busca soluciones a problemas.\nCompetencia\nCientífica y\nTecnológica\nCE4-LE-Utiliza textos\nde secuencia expositivo\nexplicativa de manera\noral y escrita, en la\ndivulgación de hallazgos\ncientíficos y sociales,\nasí como de los avances\ntecnológicos a lo largo\ndel tiempo, haciendo uso\nde variadas herramientas\nque proporcionan\nlas Tecnologías de\nla Información y la\nComunicación, TIC.\nIL-10-Expone conocimientos sobre procesos de investigación\nen el campo de la ciencia, mediante textos variados y haciendo\nuso de medios y herramientas tecnológicas.\nIL-11-Analiza textos de secuencia expositivo-explicativa\nrelacionados con investigaciones científicas sencillas, para\nla comprensión de problemas o situaciones de su entorno\nescolar, familiar, comunitario.\nIL-12-Redacta textos expositivo-explicativos, sobre hallazgos\ncientíficos y sociales, haciendo uso de las convenciones de\nlengua y su divulgación en diferentes contextos.\n66"
+    },
+    {
+      "numero": 67,
+      "texto": "Área: Lengua Española Nivel: Secundario - Primer Ciclo Grado: 2do.\nCompetencias\nFundamentales\nCompetencias Específicas\n(CE) del Grado Indicadores de Logro (IL)\nCompetencia\nResolución de\nProblemas\nCE5-LE-Utiliza textos\nespecíficos variados\n(orales y escritos) que\napoyan el desarrollo de una\ninvestigación de carácter\ncientífico, seleccionando\ninformación con criterios\nde relevancia, pertinencia,\nvalidez y confiabilidad.\nIL-13-Identifica problemas o conflictos del centro educativo\ny comunitario, a través de un tipo de texto específico y\napropiado.\nIL-14-Utiliza textos específicos variados que apoyan la solución\nde problemas, facilitando la investigación, búsqueda de\ninformación, con criterios de relevancia, pertinencia, validez y\nconfiabilidad.\nIL-15-Presenta informes de investigación, que evidencian la\nsolución de problemas en un contexto determinado.\nCompetencia\nAmbiental y de\nla Salud\nCE6-LE-Usa textos\nvariados en la divulgación\ny promoción de situaciones\nde salud y ambiente,\nabordando temas y\nproblemas de actualidad,\nmediante el uso de\nherramientas tecnológicas,\nentre otras.\nIL-16-Caracteriza problemáticas relacionadas con salud y\nambiente que afectan el quehacer social, haciendo uso textos\ndiversos y apoyándose en recursos y medios y variados.\nIL-17-Escribe textos sobre la Flora y la fauna dominicanas,\nla salud y el ambiente, identificando especies endémicas,\npreparación de alimentos sanos, problemas ambientales de\nactualidad, proceso de reciclaje, zonas protegidas, para una\nmejor salud integral, ambiente favorable al desarrollo humano.\nIL-18-Aplica conocimientos sobre la conservación de la salud,\nla naturaleza y sus ecosistemas, redactando textos variados,\npara su divulgación en actividades de intercomunicación\ndentro y fuera del aula.\nCompetencia\nDesarrollo\nPersonal y\nEspiritual\nCE7-LE-Utiliza textos\nliterarios como\nmanifestación de la lengua\ny recurso para promover\nvalores universales y\nfortalecer la dimensión\nhumanista.\nIL-19-Utiliza un género textual para la comprensión de sí mismo\ny de los demás, en variadas situaciones de comunicación.\nIL-20-Escribe textos literarios para el cultivo de valores\nuniversales y reforzar la dimensión humanista y el desarrollo\nfísico y espiritual.\nIL-21-Canalizar emociones y sentimientos mediante lecturas y\nescrituras reflexivas, fortaleciendo las relaciones humanas, el\nrespeto y la dignidad de las personas.\nUsar el código para las competencias y el indicador, tomando en cuenta su planificación diseñada y ejecutada.\nSe debe agregar, solo los aspectos específicos trabajados.\n67"
+    },
+    {
+      "numero": 68,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP1 CE1-LE:\nCE2-LE:\nCE3-LE:\nCE4-LE:\nCE5-LE:\nCE6-LE:\nCE7-LE:\n68"
+    },
+    {
+      "numero": 69,
+      "texto": "Período Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP2 CE1-LE:\nCE2-LE:\nCE3-LE:\nCE4-LE:\nCE5-LE:\nCE6-LE:\nCE7-LE:\n69"
+    },
+    {
+      "numero": 70,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP3 CE1-LE:\nCE2-LE:\nCE3-LE:\nCE4-LE:\nCE5-LE:\nCE6-LE:\nCE7-LE:\n70"
+    },
+    {
+      "numero": 71,
+      "texto": "Período Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP4 CE1-LE:\nCE2-LE:\nCE3-LE:\nCE4-LE:\nCE5-LE:\nCE6-LE:\nCE7-LE:\n71"
+    },
+    {
+      "numero": 72,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Estrategias y técnicas de evaluación Observaciones o comentarios\nP1\nP2\n72"
+    },
+    {
+      "numero": 73,
+      "texto": "Período Estrategias y técnicas de evaluación Observaciones o comentarios\nP3\nP4\n73"
+    },
+    {
+      "numero": 74,
+      "texto": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nLENGUA ESPAÑOLA\nCompetencias\n \nComunica sus ideas y\nexperiencias de manera\nadecuada en diferentes\nsituaciones, mediante un\ngénero textual (funcional o\nliterario) abordado desde la\ncomprensión y producción\noral y escrita, mostrando\ncreatividad y destrezas en el\nuso la lengua, herramientas\ntecnológicas y recursos\ndiversos.\nProduce textos orales\ny escritos variados a\npartir de inferencias de\ncomprensión y producción\ntextual, demostrando un\npensamiento estructurado,\nderivando en conclusiones\nrazonables y lógicas.\nUsa textos variados de\nsecuencia argumentativa,\ncon los que conoce y\ncuestiona prácticas sociales\nde ciudadanía en el entorno\nlocal, nacional e internacional,\nconfrontándolas con los\nvalores universales, en\ndiscursos analíticos y\npropositivos.\nUtiliza textos de secuencia\nexpositivo explicativa de\nmanera oral y escrita, en la\ndivulgación de hallazgos\ncientíficos y sociales, así como\nde los avances tecnológicos a\nlo largo del tiempo, haciendo\nuso de variadas herramientas\nque proporcionan las\nTecnologías de la Información\ny la Comunicación, TIC.\nP1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP\n74"
+    },
+    {
+      "numero": 75,
+      "texto": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nLENGUA ESPAÑOLA\nCompetencias\n \nUtiliza textos específicos\nvariados (orales y escritos)\nque apoyan el desarrollo de\nuna investigación de carácter\ncientífico, seleccionando\ninformación con criterios de\nrelevancia, pertinencia, validez\ny confiabilidad.\nUsa textos variados en la\ndivulgación y promoción\nde situaciones de salud\ny ambiente, abordando\ntemas y problemas de\nactualidad, mediante el uso\nde herramientas tecnológicas,\nentre otras.\nUtiliza textos literarios como\nmanifestación de la lengua y\nrecurso para promover valores\nuniversales y fortalecer la\ndimensión humanista.\n70%\n30%\nCalificación final\nP1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP\n75"
+    },
+    {
+      "numero": 76,
+      "texto": "Competencias e indicadores: LENGUAS EXTRANJERAS - INGLÉS\nÁrea: Lenguas Extranjeras - Inglés (LEI) Nivel: Secundario - Primer Ciclo Grado: 2do.\nCompetencias\nFundamentales\nCompetencias Específicas\n(CE) del Grado Indicadores de Logro (IL)\nCompetencia\nComunicativa\nCE1-LEI- Comprende y\nexpresa ideas, sentimientos\ny valores culturales en\ndistintas situaciones de\ncomunicación, utilizando\nel idioma inglés de forma\nbreve y sencilla con la\nfinalidad de informar,\nofrecer ayuda, sugerir,\ncomprar, describir\nplanes futuros, y narrar\nexperiencias, con relación\na necesidades concretas y\ntemas cotidianos.\nIL-1-Responde de forma adecuada a preguntas e indicaciones,\na partir de la escucha de discursos y lectura de textos breves\ny sencillos cuya finalidad es informar sobre actividades\ncotidianas, describir estados anímicos y físicos, solicitar ayuda,\ncomprar, expresar deseo o interés, dar consejos y sugerencias,\nexpresar planes y narrar, siempre que se le hable de forma\npausada y clara.\nIL-2-Produce oralmente con pausas y reformulaciones, una\nserie de frases y oraciones básicas enlazadas por conectores\nsencillos, con la intención de informar sobre actividades\ncotidianas, describir estados anímicos y físicos, solicitar ayuda,\ncomprar, expresar deseo o interés, dar consejos y sugerencias,\nexpresar planes y narrar.\nIL-3-Escribe una serie de frases y oraciones sencillas, enlazadas\npor conectores, con el propósito de informar sobre actividades\ncotidianas, describir estados anímicos y físicos, solicitar ayuda,\ncomprar, expresar deseo o interés, dar consejos y sugerencias,\nexpresar planes y narrar, aunque con algunos errores básicos.\nCompetencia\nPensamiento\nLógico, Crítico y\nCreativo\nCE2-LEI-Interactúa de\nforma oral y escrita en el\nidioma inglés empleando\nrazonamiento lógico-verbal\ny estrategias de desempeño\nde manera creativa y crítica\nen distintas situaciones\nde comunicación donde\nnarra experiencias, da\nsugerencias y consejos\ny expresa planes en\nexpresiones breves y\nsencillas.\nIL-4-Narra hechos y experiencias de forma creativa, utilizando\nfrases y oraciones breves y sencillas.\nIL-5-Describe situaciones manteniendo una secuencia lógica.\nIL-6-Describe objetos y fenómenos que ocurren, utilizando\nfrases y oraciones breves y sencillas.\nCompetencia\nÉtica y\nCiudadana\nCE3-LEI-Se comunica\nen el idioma inglés de\nforma breve y sencilla,\ncon cortesía, asertividad y\nrespeto, reconociendo las\ndiferencias individuales más\ncomunes, y la identidad\nsocial y cultural propias de\nla comunidad local y global.\nIL-7-Interactúa de forma breve y sencilla en el idioma inglés,\ncon cortesía, asertividad y respeto.\nIL-8-Reconoce las diferencias individuales y la identidad social\ny cultural propia y de otros países relativa a gestos, compras,\ncelebraciones, actividades de tiempo libre, puntualidad y\nlugares de interés.\nIL-9-Sostiene la conversación al interactuar en forma oral y\nescrita, utilizando frases y oraciones estratégicas breves y\nsencillas para mantener la interacción.\n76"
+    },
+    {
+      "numero": 77,
+      "texto": "Área: Lenguas Extranjeras - Inglés (LEI) Nivel: Secundario - Primer Ciclo Grado: 2do.\nCompetencias\nFundamentales\nCompetencias Específicas\n(CE) del Grado Indicadores de Logro (IL)\nCompetencia\nCientífica y\nTecnológica\nCE4-LEI-Se comunica\nen el idioma inglés\ncon el propósito de\nsolicitar y ofrecer ayuda,\nexpresar interés y dar\nsugerencias sobre asuntos\ncientíficos, tecnológicos\ny de otra índole, en\nsituaciones inmediatas de\ncomunicación.\nIL-10-Interactúa con el propósito de solicitar y ofrecer ayuda\nsobre temas científicos, tecnológicos y de otra índole, de\nforma presencial o virtual, utilizando frases y oraciones breves\ny sencillas.\nIL-11-Expresa ideas y sugerencias sobre temas científicos,\ntecnológicos y de otra índole, de forma presencial o virtual,\nutilizando frases y oraciones breves y sencillas.\nIL-12-Interactúa con el propósito de pedir y dar consejos\ny sugerencias sobre temas científicos, tecnológicos y de\notra índole, de forma presencial o virtual, utilizando frases y\noraciones breves y sencillas.\nCompetencia\nResolución de\nProblemas\nCE3-LEI-Interactúa en\ninglés ante diversas\ncircunstancias y problemas\ncomunes de su entorno\ninmediato en las que\nsolicita u ofrece ayuda,\nda consejos y sugerencias\npertinentes y emplea\nestrategias de desempeño\noral y escrito para lograr\nla claridad del mensaje,\naunque el interlocutor deba\nhacer cierto esfuerzo oral y\nescrito para comprenderle.\nIL-13-Interactúa de forma oral y escrita para solicitar o dar\nayuda, consejos y sugerencias sobre actividades cotidianas,\nintereses y estados de ánimo, utilizando frases y oraciones\nbreves y sencillas.\nIL-14-Da consejos y sugerencias pertinentes a cada situación\nespecífica que se plantea, utilizando frases y oraciones breves\ny sencillas.\nIL-15-Describe problemas referentes a los temas específicos\nque está desarrollando de su cotidianidad, utilizando frases y\noraciones breves y sencillas.\nCompetencia\nAmbiental y de\nla Salud\nCE6-LEI-Muestra\npreferencia por\nopciones que impactan\npositivamente la salud\ny el medio ambiente al\ninteractuar en inglés sobre\nsus actividades cotidianas\ny en situaciones de compra,\nasí como al describir\nestados anímicos y físicos.\nIL-16-Ofrece información sobre actividades cotidianas que\nimpactan positivamente la salud y el medio ambiente,\nutilizando frases y oraciones breves y sencillas.\nIL-17-Describe estados anímicos y físicos propios y de otras\npersonas, utilizando frases y oraciones breves y sencillas.\nIL-18-Interactúa de forma adecuada en situaciones de compra,\nutilizando frases y oraciones breves y sencillas, practicando\nhábitos juiciosos de consumo que sean saludables y amigables\ncon el medio ambiente.\nCompetencia\nDesarrollo\nPersonal y\nEspiritual\nCE7-LEI-Interactúa en el\nidioma inglés, con cortesía,\nhonestidad, asertividad,\nactitud de respeto y\naceptación al referirse\na sí mismo/a y a las\ndemás personas, al hacer\nsugerencias y al describir\nexperiencias, planes,\nestados anímicos y físicos.\nIL-19-Describe estados anímicos y físicos, mostrando empatía\npor los sentimientos y necesidades de los y las demás.\nIL-20-Hace sugerencias, mostrando disposición para ayudar a\nlas personas que lo necesitan.\nIL-21-Proponen medios para la eliminación del abuso y la\ndiscriminación en la familia, la escuela, la comunidad y la\nsociedad, utilizando frases y oraciones breves y sencillas.\nUsar el código para las competencias y el indicador, tomando en cuenta su planificación diseñada y ejecutada.\nSe debe agregar, solo los aspectos específicos trabajados.\n77"
+    },
+    {
+      "numero": 78,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP1 CE1-LE:\nCE2-LE:\nCE3-LE:\nCE4-LE:\nCE5-LE:\nCE6-LE:\nCE7-LE:\n78"
+    },
+    {
+      "numero": 79,
+      "texto": "Período Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP2 CE1-LE:\nCE2-LE:\nCE3-LE:\nCE4-LE:\nCE5-LE:\nCE6-LE:\nCE7-LE:\n79"
+    },
+    {
+      "numero": 80,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP3 CE1-LE:\nCE2-LE:\nCE3-LE:\nCE4-LE:\nCE5-LE:\nCE6-LE:\nCE7-LE:\n80"
+    },
+    {
+      "numero": 81,
+      "texto": "Período Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP4 CE1-LE:\nCE2-LE:\nCE3-LE:\nCE4-LE:\nCE5-LE:\nCE6-LE:\nCE7-LE:\n81"
+    },
+    {
+      "numero": 82,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Estrategias y técnicas de evaluación Observaciones o comentarios\nP1\nP2\n82"
+    },
+    {
+      "numero": 83,
+      "texto": "Período Estrategias y técnicas de evaluación Observaciones o comentarios\nP3\nP4\n83"
+    },
+    {
+      "numero": 84,
+      "texto": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nLENGUAS EXTRANJERAS - INGLÉS\nCompetencias\n \nComprende y expresa ideas,\nsentimientos y valores\nculturales en distintas\nsituaciones de comunicación,\nutilizando el idioma inglés\nde forma breve y sencilla\ncon la finalidad de informar,\nofrecer ayuda, sugerir,\ncomprar, describir planes\nfuturos, y narrar experiencias,\ncon relación a necesidades\nconcretas y temas cotidianos.\nInteractúa de forma oral y\nescrita en el idioma inglés\nempleando razonamiento\nlógico-verbal y estrategias\nde desempeño de manera\ncreativa y crítica en distintas\nsituaciones de comunicación\ndonde narra experiencias,\nda sugerencias y consejos y\nexpresa planes en expresiones\nbreves y sencillas.\nSe comunica en el idioma\ninglés de forma breve\ny sencilla, con cortesía,\nasertividad y respeto,\nreconociendo las diferencias\nindividuales más comunes, y\nla identidad social y cultural\npropias de la comunidad local\ny global.\nSe comunica en el idioma\ninglés con el propósito de\nsolicitar y ofrecer ayuda,\nexpresar interés y dar\nsugerencias sobre asuntos\ncientíficos, tecnológicos y de\notra índole, en situaciones\ninmediatas de comunicación.\nP1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP\n84"
+    },
+    {
+      "numero": 85,
+      "texto": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nLENGUAS EXTRANJERAS - INGLÉS\nCompetencias\nInteractúa en inglés ante diversas\ncircunstancias y problemas\ncomunes de su entorno inmediato\nen las que solicita u ofrece\nayuda, da consejos y sugerencias\npertinentes y emplea estrategias\nde desempeño oral y escrito para\nlograr la claridad del mensaje,\naunque el interlocutor deba hacer\ncierto esfuerzo oral y escrito para\ncomprenderle.\nMuestra preferencia por opciones\nque impactan positivamente\nla salud y el medio ambiente\nal interactuar en inglés sobre\nsus actividades cotidianas y en\nsituaciones de compra, así como\nal describir estados anímicos y\nfísicos.\nInteractúa en el idioma inglés,\ncon cortesía, honestidad,\nasertividad, actitud de respeto\ny aceptación al referirse a sí\nmismo/a y a las demás personas,\nal hacer sugerencias y al describir\nexperiencias, planes, estados\nanímicos y físicos. \n70%\n30%\nCalificación final\nP1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP\n85"
+    },
+    {
+      "numero": 86,
+      "texto": "Competencias e indicadores: LENGUAS EXTRANJERAS - FRANCÉS\nÁrea: Lenguas Extranjeras - Francés (LEF) Nivel: Secundario - Primer Ciclo Grado: 2do.\nCompetencias\nFundamentales\nCompetencias Específicas\n(CE) del Grado Indicadores de Logro (IL)\nCompetencia\nComunicativa\nCE1-LEF- Comprende y\nexpresa ideas, sentimientos\ny valores culturales en\ndistintas situaciones de\ncomunicación, utilizando\nel idioma francés, con la\nfinalidad de dar información\npersonal, expresar\npreferencias, describir\nviviendas e informar sobre\nactividades cotidianas,\ncon relación a necesidades\ninmediatas y temas muy\ncotidianos.\nIL-1 -Responde de forma adecuada a preguntas e indicaciones,\na partir de la escucha de discursos y textos escritos muy\nbreves y sencillos cuya intención es dar información personal,\nexpresar preferencias, expresar planes, describir viviendas y\nhablar sobre actividades cotidianas, siempre que se le hable\nde forma muy pausada y clara, y se le repita o se le permita\nreleer y rectificar en caso de que así lo requiera.\nIL-2 -- Produce oralmente, aunque con muchas pausas y\nreformulaciones, discursos muy breves y sencillos, con la\nintención de dar información personal, expresar preferencias,\ndescribir viviendas y hablar sobre actividades cotidianas,\nutilizando un repertorio muy limitado de frases y oraciones\naprendidas que el oyente puede comprender, aunque con\ncierto esfuerzo\nIL-3 - Escribe textos muy breves y sencillos, utilizando un\nrepertorio aprendido de frases y oraciones aisladas, con el\npropósito dar información personal, expresar preferencias,\ndescribir viviendas y hablar sobre actividades cotidianas,\naunque con errores gramaticales básicos.\nCompetencia\nPensamiento\nLógico, Crítico y\nCreativo\nCE2-LEF- Interactúa en\nel idioma francés con el\npropósito de describir la\nvivienda y expresar gustos\ny preferencias, empleando\nestrategias de desempeño,\nen distintas situaciones de\ncomunicación.\nIL-4- Interactúa en el idioma francés de forma lógica, critica y\ncreativa al expresar gustos y preferencias, utilizando palabras\ny frases muy breves y sencillas.\nIL-5 - Interactúa de forma oral y escrita en distintas situaciones\nde comunicación utilizando frases y oraciones muy breves y\nsencillas en francés.\nIL-6 - Utiliza el pensamiento crítico, la creatividad, estrategias\nde desempeño y aprendizaje, en distintas situaciones de\ncomunicación.\nCompetencia\nÉtica y\nCiudadana\nCE3-LEF- Se comunica\ncon las demás personas\nen el idioma francés, de\nforma oral y escrita, en\nintercambios muy sencillos,\ncon cortesía, asertividad y\nrespeto, identificando las\ndiferencias individuales y la\nidentidad social y cultural\npropia y de otros países,\nrelativa a profesiones,\nactividades recreativas,\nla familia, la vivienda y el\nmanejo del tiempo.\nIL-7 - Interactúa de forma muy breve y directa, en intercambios\nmuy sencillos, con cortesía, asertividad y respeto.\nIL-8 - Identifica las diferencias individuales, así como la\nidentidad social y cultural propia y de los países francófonos,\nrelativa a profesiones, actividades recreativas, la familia, la\nvivienda y el manejo del tiempo.\nIL- 9 -Se comunica con las demás personas en francés, con\ncortesía, asertividad y respeto al referirse a profesiones,\nactividades recreativas, la familia, la vivienda y el manejo del\ntiempo.\n86"
+    },
+    {
+      "numero": 87,
+      "texto": "Área: Lenguas Extranjeras - Francés (LEF) Nivel: Secundario - Primer Ciclo Grado: 2do.\nCompetencias\nFundamentales\nCompetencias Específicas\n(CE) del Grado Indicadores de Logro (IL)\nCompetencia\nCientífica y\nTecnológica\nCE4-LEF- Se comunica\nen el idioma francés\nen forma oral o escrita\ncon el propósito de\nintercambiar información,\nen formato presencial\no virtual, sobre asuntos\ncientíficos, tecnológicos\ny de otra índole, en\ndistintas situaciones de\ncomunicación.\nIL-10- Utiliza las TIC en las actividades informativas, formativas\ny recreativas que realiza.\nIL1- 11 - Interpreta ideas científicas y tecnológicas simples,\nutilizando frases y oraciones muy breves y sencillas de forma\noral y escrita en formato presencial o virtual.\nIL-12 - Intercambia información, de forma presencial o virtual,\nutilizando frases y oraciones muy breves y sencillas, sobre\nasuntos científicos, tecnológicos y de otra índole, en distintas\nsituaciones de comunicación.\nCompetencia\nResolución de\nProblemas\nCE5-LEF-5- Interactúa\nen el idioma francés con\nel propósito de solicitar\ny ofrecer información\npersonal, empleando\nestrategias de desempeño\nen distintas situaciones de\ncomunicación.\nIL-13- Ofrece soluciones a problemas tanto personal como de\notros, de forma oral y escrita, utilizando frases y oraciones\nmuy breves y sencillas.\nIL-14 - Interactúa de forma oral y escrita en distintas situaciones\nde comunicación utilizando frases y oraciones muy breves y\nsencillas en francés.\nIL-15- Describe viviendas y actividades cotidianas utilizando\nfrases y oraciones muy breves y sencillas.\nCompetencia\nAmbiental y de\nla Salud\nCE6-LEF-Interactúa en\nel idioma francés con el\npropósito de hablar sobre\nactividades cotidianas,\nexpresando preferencia\npor opciones que impactan\npositivamente la salud\ny el medio ambiente, en\ndistintas situaciones de\ncomunicación.\nIL 16 -Intercambia información, en francés, sobre temas\nambientales y de salud, utilizando frases y oraciones muy\nbreves y sencillas\nIL-17 – Expresa preferencias que impactan positivamente la\nsalud y el medio ambiente, utilizando frases y oraciones muy\nbreves y sencillas.\nIL-18 - Practica el cuidado de la salud, el entorno y el ambiente,\nvalorando las opciones más favorables para sí mismo y los\ndemás, a partir de la adopción de modos de vida y actividades\ncotidianas que describe en expresiones muy breves y sencillas\nen francés.\nCompetencia\nDesarrollo\nPersonal y\nEspiritual\nCE7-LEF- Se comunica\nen el idioma francés, con\ncortesía, honestidad,\nasertividad, actitud de\nrespeto y aceptación, con\nel propósito de solicitar\ny ofrecer información\npersonal y cuando expresa\npreferencias.\nIL-19-Solicita y ofrece información personal propia y de\notros, con cortesía, de forma oral y escrita, utilizando frases y\noraciones muy breves y sencillas.\nIL-20 -Expresa preferencias con cortesía, asertividad, actitud\nde respeto, honestidad y aceptación, utilizando frases y\noraciones muy breves y sencillas.\nIL-21 Interactúa en francés en forma oral y escrita en diversas\nsituaciones de comunicación, con cortesía, honestidad,\nasertividad, actitud de respeto y aceptación.\nUsar el código para las competencias y el indicador, tomando en cuenta su planificación diseñada y ejecutada.\nSe debe agregar, solo los aspectos específicos trabajados.\n87"
+    },
+    {
+      "numero": 88,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP1 CE1-LEF:\nCE2-LEF:\nCE3-LEF:\nCE4-LEF:\nCE5-LEF:\nCE6-LEF:\nCE7-LEF:\n88"
+    },
+    {
+      "numero": 89,
+      "texto": "Período Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP2 CE1-LEF:\nCE2-LEF:\nCE3-LEF:\nCE4-LEF:\nCE5-LEF:\nCE6-LEF:\nCE7-LEF:\n89"
+    },
+    {
+      "numero": 90,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP3 CE1-LEF:\nCE2-LEF:\nCE3-LEF:\nCE4-LEF:\nCE5-LEF:\nCE6-LEF:\nCE7-LEF:\n90"
+    },
+    {
+      "numero": 91,
+      "texto": "Período Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP4 CE1-LEF:\nCE2-LEF:\nCE3-LEF:\nCE4-LEF:\nCE5-LEF:\nCE6-LEF:\nCE7-LEF:\n91"
+    },
+    {
+      "numero": 92,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Estrategias y técnicas de evaluación Observaciones o comentarios\nP1\nP2\n92"
+    },
+    {
+      "numero": 93,
+      "texto": "Período Estrategias y técnicas de evaluación Observaciones o comentarios\nP3\nP4\n93"
+    },
+    {
+      "numero": 94,
+      "texto": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nLENGUAS EXTRANJERAS - FRANCÉS\nCompetencias\n \nComprende y expresa ideas,\nsentimientos y valores culturales\nen distintas situaciones de\ncomunicación, utilizando\nel idioma francés, con la\nfinalidad de dar información\npersonal, expresar preferencias,\ndescribir viviendas e informar\nsobre actividades cotidianas,\ncon relación a necesidades\ninmediatas y temas muy\ncotidianos.\nInteractúa en el idioma francés\ncon el propósito de describir\nla vivienda y expresar gustos\ny preferencias, empleando\nestrategias de desempeño,\nen distintas situaciones de\ncomunicación.\nSe comunica con las demás\npersonas en el idioma francés,\nde forma oral y escrita, en\nintercambios muy sencillos, con\ncortesía, asertividad y respeto,\nidentificando las diferencias\nindividuales y la identidad social\ny cultural propia y de otros\npaíses, relativa a profesiones,\nactividades recreativas, la familia,\nla vivienda y el manejo del\ntiempo.\nSe comunica en el idioma\nfrancés en forma oral o\nescrita con el propósito de\nintercambiar información, en\nformato presencial o virtual,\nsobre asuntos científicos,\ntecnológicos y de otra índole,\nen distintas situaciones de\ncomunicación.\nP1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP\n94"
+    },
+    {
+      "numero": 95,
+      "texto": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nLENGUAS EXTRANJERAS - FRANCÉS\nCompetencias\n \nInteractúa en el idioma francés con\nel propósito de solicitar y ofrecer\ninformación personal, empleando\nestrategias de desempeño\nen distintas situaciones de\ncomunicación\nSe comunica en el idioma\nfrancés con el propósito de\nexpresar preferencias que\nimpactan positivamente la\nsalud y el medio ambiente,\nen distintas situaciones de\ncomunicación.\nSe comunica en el idioma\nfrancés, con cortesía,\nhonestidad, asertividad, actitud\nde respeto y aceptación, con el\npropósito de solicitar y ofrecer\ninformación personal y cuando\nexpresa preferencias \n70%\n30%\nCalificación final\nP1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP\n95"
+    },
+    {
+      "numero": 96,
+      "texto": "Competencias e indicadores: MATEMÁTICA\nÁrea: MATEMÁTICA (MAT) Nivel: Secundario - Primer Ciclo Grado: 2do.\nCompetencias\nFundamentales\nCompetencias Específicas\n(CE) del Grado Indicadores de Logro (IL)\nCompetencia\nComunicativa\nCE1-MAT-Explica sus ideas\nhaciendo uso de los reales\ncomo sistema numérico y\nlos vincula a situaciones\nque impliquen tasa de\ninterés y finanzas para\ngenerar ingresos.\nIL-1 Lee informaciones en diferentes contextos y a partir de los\nconocimientos que posee sobre los números reales, números\nirracionales, expresiones algebraicas, finanzas, geometría y\nestadística.\nIL-2 Expresa los resultados de un proyecto de investigación\nen la que se evidencie la aplicación de los números reales,\nnúmeros irracionales, expresiones algebraicas, finanzas,\ngeometría y estadística.\nIL-3 Interpreta situaciones de la comunidad empleando en su\nlenguaje los números reales, números irracionales, expresiones\nalgebraicas, finanzas, geometría y estadística.\nCompetencia\nPensamiento\nLógico, Crítico y\nCreativo\nCE2-MAT-Argumenta con\nsentido lógico aplicando\nlos conocimientos sobre\nlos reales a partir de\nsituaciones algebraicas\ndiversas.\nIL-4 Toma decisiones lógicas a partir del análisis sobre\nsituaciones del entorno en la que se apliquen los principios de\nnúmeros reales, números irracionales, algebraicos, finanzas,\ngeometría y estadística para su resolución.\nIL-5 Modela aplicando el pensamiento lógico, situaciones del\ncontexto a partir de los conceptos de experimentos aleatorios\nsimple, algebraico, geométrico y estadísticos.\nIL-6 Razona y analiza las posibles soluciones de un estudio\nde caso referido a una situación, algebraica, financiera,\ngeométrica y estadística.\nCompetencia\nResolución de\nProblemas\nCE3-MAT-Interpreta y\nresuelve diferentes tipos de\nproblemas que impliquen\nlos reales vinculándolos a\nsituaciones de la geometría.\nIL-7 Resuelve un estudio de caso del contexto que implique\nel conocimiento acerca de los números reales, irracionales,\nálgebra, finanza, geometría y estadística, respetando diferentes\ncriterios de resolución de problema.\nIL-8 Resuelve a partir de un modelos algebraicos, geométricos\ny estadísticos situaciones que se presentan en la comunidad\ny el entorno.\nIL-9 Resuelve un problema del contexto en el que se apliquen\nlos conocimientos de álgebra, finanza, geometría y estadística.\nCompetencia\nCientífica y\nTecnológica\nCE4-MAT-Utiliza\nherramientas tecnológicas\nen la resolución de\nproblemas que implique la\nnumeración y la estadística\npara datos agrupados.\nIL-10 Identifica herramientas y aplicaciones tecnológicas para\ninterpretar soluciones de situaciones diversas a partir de los\nconocimientos sobre números reales, álgebra, geometría,\nfinanzas y estadística.\nIL-11 Utiliza en la presentación de un informe de investigación\nlos conocimientos sobre numeración, álgebra, geometría y\nestadística aplicando recursos de la tecnología.\nIL-12 Aplica herramientas tecnológicas para resolver una\nsituación particular de la comunidad, utilizando numeración,\nálgebra, finanza, geometría y estadística.\n96"
+    },
+    {
+      "numero": 97,
+      "texto": "Área: MATEMÁTICA (MAT) Nivel: Secundario - Primer Ciclo Grado: 2do.\nCompetencias\nFundamentales\nCompetencias Específicas\n(CE) del Grado Indicadores de Logro (IL)\nCompetencia\nÉtica y\nCiudadana\nCE5-MAT-Muestra\nautonomía en la búsqueda\nde soluciones a situaciones\nque impliquen los\nconocimientos de números\nreales respetando diferentes\ncriterios de solución.\nIL-13 Asume con una actitud ética la solución de situaciones\nproblemáticas del entorno, que se refieran a numeración,\nálgebra, finanzas, geometría y estadística.\nIL-14 Emplea los conocimientos sobre numeración, álgebra,\ngeometría, finanza y estadística a la solución de un estudio de\ncaso en la comunidad.\nIL-15 Aplica a partir de un informe escrito procedimientos\nnuméricos, algebraicos, geométricos y estadísticos en la\nrepresentación de problemas y situaciones de la comunidad.\nCompetencia\nAmbiental y de\nla Salud\nCE6-MAT-Evalúa los\nconocimientos obtenidos\nde números reales para dar\nrespuesta a situaciones que\npermitan contribuir a una\nvida saludable.\nIL-16 Analiza empleando la numeración, el álgebra, la finanza,\nla geometría y la estadística un proyecto de investigación en\nla que se identifiquen algunos factores que puedan afectar la\nsalud de las personas en comunidad.\nIL-17 Aplica a través de la puesta en común de un trabajo en\nequipo los conocimientos sobre numeración, álgebra, finanza,\ngeometría y estadística para dar posibles soluciones ante\nsituaciones de salud que se presentan en la comunidad.\nIL-18 Representa a partir de informaciones numéricas,\nalgebraicas, geométricas y estadísticas en un estudio de caso\ndel contexto modelos de intervención sobre medio ambiente\ny la salud de una comunidad.\nCompetencia\nDesarrollo\nPersonal y\nEspiritual\nCE7-MAT-Muestra\nautonomía en la búsqueda\nde soluciones a situaciones\nque impliquen los\nconocimientos de números\nreales respetando diferentes\ncriterios de solución.\nIL-19 Elabora un reporte de investigación de la comunidad\npara dar soluciones particulares a situaciones de desarrollo\npersonal y espiritual aplicando los conocimientos sobre\nnumeración, álgebra, finanza, geometría y estadística.\nIL-20 Presenta en una puesta en común los resultados de un\ninforme de investigación sobre desarrollo personal y espiritual\nen la que se apliquen los conocimientos sobre numeración,\nálgebra, geometría, finanza y estadística.\nIL-21 A partir de un estudio de caso sobre numeración,\nálgebra, finanza, geometría y estadística identifica la solución\na situaciones personal y espiritual que se dan en la comunidad.\nUsar el código para las competencias y el indicador, tomando en cuenta su planificación diseñada y ejecutada.\nSe debe agregar, solo los aspectos específicos trabajados.\n97"
+    },
+    {
+      "numero": 98,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP1 CE1-MAT:\nCE2-MAT:\nCE3-MAT:\nCE4-MAT:\nCE5-MAT:\nCE6-MAT:\nCE7-MAT:\n98"
+    },
+    {
+      "numero": 99,
+      "texto": "Período Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP2 CE1-MAT:\nCE2-MAT:\nCE3-MAT:\nCE4-MAT:\nCE5-MAT:\nCE6-MAT:\nCE7-MAT:\n99"
+    },
+    {
+      "numero": 100,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP3 CE1-MAT:\nCE2-MAT:\nCE3-MAT:\nCE4-MAT:\nCE5-MAT:\nCE6-MAT:\nCE7-MAT:\n100"
+    },
+    {
+      "numero": 101,
+      "texto": "Período Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP4 CE1-MAT:\nCE2-MAT:\nCE3-MAT:\nCE4-MAT:\nCE5-MAT:\nCE6-MAT:\nCE7-MAT:\n101"
+    },
+    {
+      "numero": 102,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Estrategias y técnicas de evaluación Observaciones o comentarios\nP1\nP2\n102"
+    },
+    {
+      "numero": 103,
+      "texto": "Período Estrategias y técnicas de evaluación Observaciones o comentarios\nP3\nP4\n103"
+    },
+    {
+      "numero": 104,
+      "texto": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nMATEMÁTICA\nCompetencias\n \nExplica sus ideas haciendo\nuso de los reales como\nsistema numérico y los\nvincula a situaciones que\nimpliquen tasa de interés\ny finanzas para generar\ningresos.\nArgumenta con sentido\nlógico aplicando los\nconocimientos sobre\nlos reales a partir de\nsituaciones algebraicas\ndiversas.\nInterpreta y resuelve\ndiferentes tipos de\nproblemas que impliquen\nlos reales vinculándolos a\nsituaciones de la geometría.\nUtiliza herramientas\ntecnológicas en la\nresolución de problemas\nque implique la numeración\ny la estadística.\nP1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP\n104"
+    },
+    {
+      "numero": 105,
+      "texto": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nMATEMÁTICA\nCompetencias\n \nMuestra autonomía en la\nbúsqueda de soluciones a\nsituaciones que impliquen los\nconocimientos de números\nreales respetando diferentes\ncriterios de solución.\nEvalúa los conocimientos\nobtenidos de números\nreales para dar respuesta a\nsituaciones que permitan\ncontribuir a una vida\nsaludable.\nMuestra autonomía en la\nbúsqueda de soluciones a\nsituaciones que impliquen los\nconocimientos de números\nreales respetando diferentes\ncriterios de solución.\n70%\n30%\nCalificación final\nP1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP\n105"
+    },
+    {
+      "numero": 106,
+      "texto": "Competencias e indicadores: CIENCIAS SOCIALES\nÁrea: CIENCIAS SOCIALES (CS) Nivel: Secundario - Primer Ciclo Grado: 2do.\nCompetencias\nFundamentales\nCompetencias Específicas\n(CE) del Grado Indicadores de Logro (IL)\nCompetencia\nComunicativa\nCE1-CS- Reconoce en\nproyectos de investigación,\nla autoría de las fuentes\nconsultadas en medios\nimpresos y digitales; con\nla finalidad de realizar\nproducciones de carácter\ncientífico.\nIL-1 - Utiliza de forma crítica las fuentes de información sobre\nla representación de la tierra, diferencias entre mapas y plano,\nespacio geográfico y los componentes de representación de\nlos mapas.\nIL-2 - Identifica fuentes confiables los movimientos de la tierra\ny los puntos geográficos en el mapa terrestre\nIL-3- Utiliza programas antiplagio en la comprobación de las\ninformaciones que recaba.\nCompetencia\nPensamiento\nLógico, Crítico y\nCreativo\nCE2-CS- Contextualiza en\ninvestigaciones realizadas,\nhechos históricos y su\nrelación con el espacio\ngeográfico en el siglo\nXX, con la finalidad de\ncomprender con juicio\ncrítico los cambios que se\nproducen en el tiempo y el\nespacio.\nIL-4- Compara mapas de los cambios ocurridos en el mundo\ncon el neocolonialismo, la descolonización las guerras\nmundiales y la Guerra Fría.\nIL-5- Elabora línea de tiempo sobre los principales\nacontecimientos históricos del siglo estudiados.\nIL-6- Analiza los cambios en el mundo después de la Segunda\nGuerra Mundial y durante la Guerra Fría.\nCompetencia\nÉtica y\nCiudadana\nCE3-CS- Explica proyectos\ne iniciativas que propicien\nla cultura de paz, los valores\nculturales e interculturales\ny el respeto a los derechos\nhumanos; con la finalidad\nde lograr la convivencia\npacífica y armoniosa.\nIL-7 - Comprende la importancia del respeto a los derechos\nhumanos y el respeto a lo establecido en la Constitución en la\nsolución de problemáticas sociales.\nIL-8- Elabora proyectos sencillos sobre los aspectos\nfundamentales de la Constitución dominicana y las\ncaracterísticas del Estado de derecho.\nIL-9- Elabora proyectos sobre el respeto a los derechos\nhumanos.\nCompetencia\nCientífica y\nTecnológica\nCE4-CS- Analiza en\nproyectos de investigación,\nexplicaciones científicas\nde fenómenos naturales y\nsociales, con la finalidad de\naplicarlos a teorías que la\nsustenten.\nIL-10 - Analiza teorías que explican la incidencia de las placas\ntectónicas en los continentes, las causas de sismos, terremotos\ny huracanes.\nIL-11- Explica análisis de autores sobre tratados antes y después\nde las guerras mundiales y los conceptos de norte y sur.\nIL-12- Elabora proyectos sobre educación vial y tributaria.\n106"
+    },
+    {
+      "numero": 107,
+      "texto": "Área: CIENCIAS SOCIALES (CS) Nivel: Secundario - Primer Ciclo Grado: 2do.\nCompetencias\nFundamentales\nCompetencias Específicas\n(CE) del Grado Indicadores de Logro (IL)\nCompetencia\nResolución de\nProblemas\nCE5-CS- Verifica en\nel levantamiento de\ninformaciones, la existencia\nde un problema; con la\nfinalidad de ubicarlo en el\ncontexto social en el que se\nproducen.\nIL-13- Argumenta mediante ensayo e informes de lectura\nsobre las características fundamentales de la cultura moderna\ny postmoderna\nIL-14 - Elabora propuestas sobre prácticas democráticas,\nsolución de conflictos, educación vial y educación tributaria.\nIL-15- Realiza en brochure e infografías, explicaciones sencillas\nde los cambios históricos políticos, económicos y culturales\ndurante los periodos históricos estudiados.\nCompetencia\nAmbiental y de\nla Salud\nCE6-CS- Cuestiona\nacciones humanas que\npueden generar daños a\nestilos de vida saludables y\nal equilibrio ambiental; con\nla finalidad de conocer sus\nefectos en la sociedad y la\nnaturaleza\nIL-16 - Elabora proyectos comunitarios sobre la protección del\nmedioambiente.\nIL-17- Analiza las implicaciones del calentamiento global en el\nplaneta Tierra\nIL-18.-Analiza el impacto social de la incidencia de la\ncontaminación en la República Dominicana.\nCompetencia\nDesarrollo\nPersonal y\nEspiritual\nCE7-CS- Emplea relaciones\narmoniosas y equilibradas,\ncon la finalidad de\npromover la construcción\nde la cultura de paz basada\nen el respeto a su persona y\na los demás\nIL-19 - Practica la búsqueda de soluciones participativas y\ndemocráticas en cualquier espacio social.\nIL-20- Demuestra respeto a las opiniones de las demás\npersonas.\nIL-21 - Propone proyectos comunitarios que benefician a todos\nlos ciudadanos.\nUsar el código para las competencias y el indicador, tomando en cuenta su planificación diseñada y ejecutada.\nSe debe agregar, solo los aspectos específicos trabajados.\n107"
+    },
+    {
+      "numero": 108,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP1 CE1-CS:\nCE2-CS:\nCE3-CS:\nCE4-CS:\nCE5-CS:\nCE6-CS:\nCE7-CS:\n108"
+    },
+    {
+      "numero": 109,
+      "texto": "Período Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP2 CE1-CS:\nCE2-CS:\nCE3-CS:\nCE4-CS:\nCE5-CS:\nCE6-CS:\nCE7-CS:\n109"
+    },
+    {
+      "numero": 110,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP3 CE1-CS:\nCE2-CS:\nCE3-CS:\nCE4-CS:\nCE5-CS:\nCE6-CS:\nCE7-CS:\n110"
+    },
+    {
+      "numero": 111,
+      "texto": "Período Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP4 CE1-CS:\nCE2-CS:\nCE3-CS:\nCE4-CS:\nCE5-CS:\nCE6-CS:\nCE7-CS:\n111"
+    },
+    {
+      "numero": 112,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Estrategias y técnicas de evaluación Observaciones o comentarios\nP1\nP2\n112"
+    },
+    {
+      "numero": 113,
+      "texto": "Período Estrategias y técnicas de evaluación Observaciones o comentarios\nP3\nP4\n113"
+    },
+    {
+      "numero": 114,
+      "texto": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nCIENCIAS SOCIALES\nCompetencias\n \nReconoce en proyectos de\ninvestigación, la autoría\nde las fuentes consultadas\nen medios impresos y\ndigitales; con la finalidad\nde realizar producciones de\ncarácter científico.\nContextualiza en\ninvestigaciones realizadas,\nhechos históricos y su\nrelación con el espacio\ngeográfico en el siglo\nXX, con la finalidad de\ncomprender con juicio\ncrítico los cambios que se\nproducen en el tiempo y el\nespacio.\nExplica proyectos e\niniciativas que propicien la\ncultura de paz, los valores\nculturales e interculturales\ny el respeto a los derechos\nhumanos; con la finalidad\nde lograr la convivencia\npacífica y armoniosa.\nAnaliza en proyectos\nde investigación,\nexplicaciones científicas\nde fenómenos naturales y\nsociales, con la finalidad de\naplicarlos a teorías que la\nsustenten.\nP1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP\n114"
+    },
+    {
+      "numero": 115,
+      "texto": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nCIENCIAS SOCIALES\nCompetencias\n \nAplica mediante\nprocedimientos de\nlevantamiento de\ninformaciones la existencia de\nun problema con el contexto\nen el que producen con la\nfinalidad de comprender su\nincidencia en el tiempo y el\nespacio\nRelaciona en investigaciones\nrealizadas, el impacto de\nacciones humanas que pueden\ngenerar daños a estilos de\nvida saludables y al equilibrio\nambiental; con la finalidad\ncomprobar sus efectos en la\nsociedad y la naturaleza.\nValora relaciones armoniosas\ny equilibradas; con la finalidad\nde promover la construcción\nde una ciudadanía\nresponsable y la defensa de la\ndemocracia.\n70%\n30%\nCalificación final\nP1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP\n115"
+    },
+    {
+      "numero": 116,
+      "texto": "Competencias e indicadores: CIENCIAS DE LA NATURALEZA: CIENCIAS DE LA VIDA\nÁrea: CIENCIAS DE LA NATURALEZA (CN):\nCiencias de la Vida Nivel: Secundario - Primer Ciclo Grado: 2do.\nCompetencias\nFundamentales\nCompetencias Específicas\n(CE) del Grado Indicadores de Logro (IL)\nCompetencia\nComunicativa\nCE1-CN*- Se comunica\nutilizando el Lenguaje\ncientífico y tecnológico\nde ciencias de la vida que\nimplica sus ideas básicas a\nrespuestas a preguntas y\nsituaciones de problemas\nsimulados y reales.\nIL-1- Interpreta efectivamente del Lenguaje científico y\ntecnológico considerando las ideas, contenidos y verificación\nde hipótesis asumiendo una posición crítica ante información\no proceso pseudocientífico.\nIL-2- Produce apropiadamente texto e información científica\no tecnológica.\nIL-3- Utiliza símbolos, términos, ecuaciones elementales\nde ciencia, modelos, gráficas y convenciones científicas y\ntecnológicas adecuadas.\nCompetencia\nPensamiento\nLógico, Crítico y\nCreativo\nCE2-CN- Ofrece\nexplicaciones científicas y\ntecnológicas a problemas\ny fenómenos naturales\nrelacionados a Ciencias de\nla Vida.\nIL-4- Utiliza de procesos básicos, sistemáticos y pertinentes\nen ciencia en la búsqueda de evidencias para dar respuesta a\nproblemas o situaciones.\nIL-5- Aplica adecuadamente de los conceptos, principios,\nideas básicas y modelos presente en problemas y fenómenos.\nIL-6- Formula y critica de las evidencias que dan respuestas a\nproblemas y fenómenos naturales comprendiendo el alcance\nde los modelos, principios e ideas centrales.\nCompetencia\nResolución de\nProblemas\nCE3-CN- Aplica\nprocedimientos científicos\ny tecnológicos, básicos y\norganizados para solucionar\nproblemas o dar respuestas\na fenómenos naturales\nrelacionados con Ciencias\nde la Vida.\nIL-7- Utiliza pertinentemente básicas estrategias,\nprocedimientos, técnicas y herramientas para solución de\nproblemas o diseñar y ejecutar experimentos.\nIL-8- Ejecuta y prueba adecuadamente de experimentos,\nestructuras, herramientas, sistemas y mecanismo para dar\nrespuesta al problema o fenómeno natural.\nIL-9- Construye y aplica apropiadamente de objetos,\nherramientas y estructuras proponiendo mecanismo y modelos\nque le permitan dar respuestas a situaciones y problemas.\nCompetencia\nCientífica y\nTecnológica\nCE4-CN- Analiza la\nnaturaleza de las ciencias\nnaturales y el alcance del\ndesarrollo tecnológico\nen nuestra sociedad\nrelacionada con Ciencias\nde la Vida, sus aportes y\nreflexiones éticas.\nIL-10- Expone apropiadamente producción oral y escrita de\nanálisis comparativo de época reciente en el desarrollo histórico\ny su contexto social del desarrollo de ciencias naturales.\nIL-11- Adecuados argumentos al asumir postura sobre conflicto\nen decisiones ética de la ciencia.\nIL-12- Apropiada representación y acciones de actitudes y\nvalores científicos.\n116"
+    },
+    {
+      "numero": 117,
+      "texto": "Área: CIENCIAS DE LA NATURALEZA (CN):\nCiencias de la Vida Nivel: Secundario - Primer Ciclo Grado: 2do.\nCompetencias\nFundamentales\nCompetencias Específicas\n(CE) del Grado Indicadores de Logro (IL)\nCompetencia\nÉtica y\nCiudadana\nCE5-CN- Se cuestiona\ne identifica problemas\ny situaciones, y les da\nexplicación utilizando ideas\ny procesos fundamentales\nde las Ciencias de la Vida y\nlas ingenierías\nIL-13- Realiza proyectos escolares o practicas experimentales\napropiadamente observando la sistematización y los informes\nde las actividades de investigación.\nIL-14- Aplica apropiadamente proyecto de investigación,\nobservando procesos básicos imprescindibles para su\nrealización.\nIL-15- Formula apropiadamente sus argumentos basados en\nevidencias u información de investigaciones o verificables.\nCompetencia\nAmbiental y de\nla Salud\nCE6-CN- Actúa con\nresponsabilidad crítica y\nautónoma para el cuidado\nde su salud y ambiental\nrelacionada con Ciencias de\nla Vida\nIL-16- Identifica apropiadamente de situaciones o acciones de\nriesgo para su salud o el medio ambiente.\nIL-17- Aplica acciones apropiadas que promueva cuidado de\nsu salud, del medio ambiente y a favor del desarrollo en su\ncomunidad.\nIL-18- Identifica acciones proactivas idóneas a estilo de vida\nsaludable y sostenido con el medio ambiente.\nCompetencia\nDesarrollo\nPersonal y\nEspiritual\nCE7-CN- Gestiona actitudes\nintelectuales, emocionales y\nconductuales proactivas al\ndesarrollo de su proyección\npersonal desde las Ciencias\nde la Vida.\nIL-19- Identifica apropiadamente el desarrollo de su proyecto\nde desarrollo personal con planes organizados a corto y largo\nplazo.\nIL-20- Valora profesiones y oficios de las ciencias naturales e\ningenierías.\nIL-21- Apropiada manifestación de actitudes y valores que\nfortalece su desarrollo personal.\nUsar el código para las competencias y el indicador, tomando en cuenta su planificación diseñada y ejecutada.\nSe debe agregar, solo los aspectos específicos trabajados.\n117"
+    },
+    {
+      "numero": 118,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP1 CE1-CN:\nCE2-CN:\nCE3-CN:\nCE4-CN:\nCE5-CN:\nCE6-CN:\nCE7-CN:\n118"
+    },
+    {
+      "numero": 119,
+      "texto": "Período Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP2 CE1-CN:\nCE2-CN:\nCE3-CN:\nCE4-CN:\nCE5-CN:\nCE6-CN:\nCE7-CN:\n119"
+    },
+    {
+      "numero": 120,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP3 CE1-CN:\nCE2-CN:\nCE3-CN:\nCE4-CN:\nCE5-CN:\nCE6-CN:\nCE7-CN:\n120"
+    },
+    {
+      "numero": 121,
+      "texto": "Período Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP4 CE1-CN:\nCE2-CN:\nCE3-CN:\nCE4-CN:\nCE5-CN:\nCE6-CN:\nCE7-CN:\n121"
+    },
+    {
+      "numero": 122,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Estrategias y técnicas de evaluación Observaciones o comentarios\nP1\nP2\n122"
+    },
+    {
+      "numero": 123,
+      "texto": "Período Estrategias y técnicas de evaluación Observaciones o comentarios\nP3\nP4\n123"
+    },
+    {
+      "numero": 124,
+      "texto": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nCIENCIAS DE LA NATURALEZA: CIENCIAS DE LA VIDA\nCompetencias\n \nSe comunica utilizando\nel Lenguaje científico y\ntecnológico de ciencias\nde la vida que implica sus\nideas básicas a respuestas\na preguntas y situaciones\nde problemas simulados y\nreales.\nOfrece explicaciones\ncientíficas y tecnológicas\na problemas y fenómenos\nnaturales relacionados a\nCiencias de la Vida.\nAplica procedimientos\ncientíficos y tecnológicos,\nbásicos y organizados para\nsolucionar problemas o dar\nrespuestas a fenómenos\nnaturales relacionados con\nCiencias de la Vida.\nSe cuestiona e identifica\nproblemas y situaciones,\ny les da explicación\nutilizando ideas y procesos\nfundamentales de las\nCiencias de la Vida y las\ningenierías\nP1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP\n124"
+    },
+    {
+      "numero": 125,
+      "texto": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nCIENCIAS DE LA NATURALEZA: CIENCIAS DE LA VIDA\nCompetencias\n \nAnaliza la naturaleza de las\nciencias naturales y el alcance\ndel desarrollo tecnológico en\nnuestra sociedad relacionada\ncon Ciencias de la Vida, sus\naportes y reflexiones éticas.\nActúa con responsabilidad\ncrítica y autónoma para\nel cuidado de su salud y\nambiental relacionada con\nCiencias de la Vida.\nGestiona actitudes\nintelectuales, emocionales y\nconductuales proactivas al\ndesarrollo de su proyección\npersonal desde las Ciencias\nde la Vida.\n70%\n30%\nCalificación final\nP1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP\n125"
+    },
+    {
+      "numero": 126,
+      "texto": "Competencias e indicadores: EDUCACIÓN ARTÍSTICA\nÁrea: EDUCACIÓN ARTÍSTICA (EA) Nivel: Secundario - Primer Ciclo Grado: 2do.\nCompetencias\nFundamentales\nCompetencias Específicas\n(CE) del Grado Indicadores de Logro (IL)\nCompetencia\nComunicativa\nCE1-EA Argumenta sobre\nla función de los distintos\nlenguajes artísticos en la\nconstrucción histórica de la\nsociedad en los contextos.\nIL-1- Comprende la función comunicativa de gestos, palabras,\nacciones, formas, colores, sonidos y movimientos en las artes.\nIL-2-Utiliza intencionalmente los lenguajes de las artes para\ncomunicar ideas, vivencias, sentimientos y emociones.\nIL-3- Identifica elementos de los distintos lenguajes de las\nartes, utilizando la terminología apropiada.\nCompetencia\nPensamiento\nLógico, Crítico y\nCreativo\nCE2-EA Elabora propuestas\nartísticas, individuales\ny colectivas, mediante\nel uso de referentes\nestéticos, valorando la\nimportancia del arte como\nmedio de comunicación y\ntransformación social.\nIL-4- Crea obras utilizando conscientemente los lenguajes de\nlas artes.\nIL-5- Aplica criterios semióticos y estéticos al valorar las obras\nartísticas que aprecia o crea.\nIL-6- Identifica similitudes y diferencias en expresiones\nartísticas de distintos géneros y estilos.\nCompetencia\nResolución de\nProblemas\nCE3-EAUtiliza elementos\ntécnicos de distintas\nexpresiones artísticas en\nsus proyectos personales y\ncolectivos comprendiendo\nmensaje, forma y contenido.\nIL-7- Experimenta la síntesis en la creación artística de formas,\nideas, gestos, sonidos, movimientos y color, al realizar obras\nutilizando técnicas, géneros y estilos.\nIL-8- Interpreta y participa en obras artísticas, aportando\nideas, vivencias y emociones, al utilizar diferentes técnicas y\nestilos.\nIL-9- Identifica elementos básicos de los lenguajes artísticos\nen obras propias o de otras personas.\nCompetencia\nCientífica y\nTecnológica\nCE4-EA Interpreta y\ncrea piezas utilizando\nlenguajes artísticos a partir\nde aspectos sociales del\ncontexto y que reflejan su\nidentidad cultural.\nIL-10- Utiliza adecuadamente recursos tecnológicos en sus\ncreaciones.\nIL-11- Asiste a manifestaciones artísticas diversas, dentro y\nfuera de la escuela, realizando visitas físicas o virtuales.\nIL-12- Usa creativamente materiales, espacios y objetos en sus\ncomposiciones artísticas.\n126"
+    },
+    {
+      "numero": 127,
+      "texto": "Área: EDUCACIÓN ARTÍSTICA (EA) Nivel: Secundario - Primer Ciclo Grado: 2do.\nCompetencias\nFundamentales\nCompetencias Específicas\n(CE) del Grado Indicadores de Logro (IL)\nCompetencia\nÉtica y\nCiudadana\nCE5-EA Realiza procesos\ncreativos integrando\nherramientas tecnológicas\ncomo apoyo en\nproducciones artísticas.\nIL-13- Reconoce el valor de los lenguajes artísticos como medio\nde expresión y comunicación\nIL-14- Valora las creaciones artísticas propias y las de otras\npersonas en distintos contextos y según unos criterios dados,\ntanto técnicos como individuales.\nIL-15- Argumenta sobre influencias culturales en expresiones\nartísticas nacionales.\nCompetencia\nAmbiental y de\nla Salud\nCE6-EA Analiza el modo\nde utilización óptima de\nmateriales, recursos y\nespacios propios de las\nartes y sus lenguajes en\nel cuidado de su cuerpo y\nconducta para la mejora de\nsu salud y la de los distintos\nambientes naturales y\necosistemas.\nIL-16- Utiliza adecuadamente materiales del medio y de fácil\nacceso en sus creaciones artísticas y artesanales.\nIL-17- Muestra adecuado uso de sus habilidades corporales, al\ncrear artísticamente.\nIL-18- Crea obras originales, con mensajes orientados al\ncuidado de la salud personal y ambiental.\nCompetencia\nDesarrollo\nPersonal y\nEspiritual\nCE7-EA Utiliza elementos\nde los lenguajes artísticos\ncomo medio de expresión\nde su identidad personal,\nsocial y cultural. .\nIL-19- Asume un rol responsable y respeta los acuerdos cuando\nparticipa en creaciones grupales.\nIL-20- Elabora un diario artístico con sus reflexiones a lo largo\ndel año escolar, manifestando autoconocimiento y creatividad\nal comunicarse artísticamente.\nIL-21- Crea, utilizando artísticamente características y\nhabilidades corporales, vocales, manuales, psicológicas y\nemocionales.\nUsar el código para las competencias y el indicador, tomando en cuenta su planificación diseñada y ejecutada.\nSe debe agregar, solo los aspectos específicos trabajados.\n127"
+    },
+    {
+      "numero": 128,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP1 CE1-EA:\nCE2-EA:\nCE3-EA:\nCE4-EA:\nCE5-EA:\nCE6-EA:\nCE7-EA:\n128"
+    },
+    {
+      "numero": 129,
+      "texto": "Período Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP2 CE1-EA:\nCE2-EA:\nCE3-EA:\nCE4-EA:\nCE5-EA:\nCE6-EA:\nCE7-EA:\n129"
+    },
+    {
+      "numero": 130,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP3 CE1-EA:\nCE2-EA:\nCE3-EA:\nCE4-EA:\nCE5-EA:\nCE6-EA:\nCE7-EA:\n130"
+    },
+    {
+      "numero": 131,
+      "texto": "Período Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP4 CE1-EA:\nCE2-EA:\nCE3-EA:\nCE4-EA:\nCE5-EA:\nCE6-EA:\nCE7-EA:\n131"
+    },
+    {
+      "numero": 132,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Estrategias y técnicas de evaluación Observaciones o comentarios\nP1\nP2\n132"
+    },
+    {
+      "numero": 133,
+      "texto": "Período Estrategias y técnicas de evaluación Observaciones o comentarios\nP3\nP4\n133"
+    },
+    {
+      "numero": 134,
+      "texto": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nEDUCACIÓN ARTÍSTICA\nCompetencias\n \nArgumenta sobre la\nfunción de los distintos\nlenguajes artísticos en\nla construcción histórica\nde la sociedad en los\ncontextos.\nElabora propuestas\nartísticas, individuales\ny colectivas, mediante\nel uso de referentes\nestéticos, valorando la\nimportancia del arte como\nmedio de comunicación y\ntransformación social.\nUtiliza elementos técnicos\nde distintas expresiones\nartísticas en sus proyectos\npersonales y colectivos\ncomprendiendo mensaje,\nforma y contenido.\nInterpreta y crea piezas\nutilizando lenguajes\nartísticos a partir de\naspectos sociales del\ncontexto y que reflejan su\nidentidad cultural.\nP1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP\n134"
+    },
+    {
+      "numero": 135,
+      "texto": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nEDUCACIÓN ARTÍSTICA\nCompetencias\n \nRealiza procesos creativos\nintegrando herramientas\ntecnológicas como apoyo en\nproducciones artísticas.\nAnaliza el modo de utilización\nóptima de materiales, recursos\ny espacios propios de las artes\ny sus lenguajes en el cuidado\nde su cuerpo y conducta\npara la mejora de su salud y\nla de los distintos ambientes\nnaturales y ecosistemas.\nUtiliza elementos de los\nlenguajes artísticos como\nmedio de expresión de su\nidentidad personal, social y\ncultural.\n70%\n30%\nCalificación final\nP1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP\n135"
+    },
+    {
+      "numero": 136,
+      "texto": "Competencias e indicadores: EDUCACIÓN FÍSICA\nÁrea: EDUCACIÓN FÍSICA (EF) Nivel: Secundario - Primer Ciclo Grado: 2do.\nCompetencias\nFundamentales\nCompetencias Específicas\n(CE) del Grado Indicadores de Logro (IL)\nCompetencia\nComunicativa\nCE1-EF- Se comunica en su\nentorno social y cultural, a\npartir de la realización de\nactividades motrices en\ngrupo.\nIL-1- Improvisa espontáneamente movimientos corporales\nindividuales y en grupos, comunicando y expresando\nideas, sentimientos, emociones y circunstancias, con y sin\nimplementos.\nIL -2- Crea composiciones cortas en diferentes planos,\nniveles y direcciones (distribución consciente en el espacio)\ncomunicando y expresando ideas, sentimientos, emociones y\ncircunstancias, con y sin implementos.\nIL -3- Expone los elementos históricos más importantes\ndel baloncesto, del ajedrez y del balonmano en el plano\ninternacional, nacional y local.\nCompetencia\nAmbiental y de\nla Salud\nCE2-EF- Identifica los\nfactores y situaciones\nde riesgo para su salud,\nde los demás y de su\nentorno, para contribuir en\nel cuidado personal y del\nmedioambiente durante las\nactividades físicas.\nIL -4- Realiza calentamiento general y específico antes de\nlas actividades Físicas reconociendo su importancia para la\nprevención de lesiones.\nIL -5- Identifica los valores calóricos de la dieta balanceada en\ncarbohidratos, grasas y proteínas.\nIL -6- Reconoce la necesidad de ingesta calórica para la\nrealización de la actividad Física según edad.\nCompetencia\nDesarrollo\nPersonal y\nEspiritual\nCE3-EF-Establece relación\nentre sus actividades\ncorporales y el desarrollo\nde las habilidades motrices\ny las capacidades Físicas,\ncon el fin de mantener la\nmotivación y disponibilidad\ncorporal en el juego.\nIL -7 - Pone de manifiesto sus capacidades Físicas: fuerza\nrápida, velocidad de reacción, traslación y gestual en\nactividades gimnásticas, recreativas y deportivas.\nIL -8- Realiza actividades Físicas con eficiencia y eficacia a\npartir del mejoramiento de sus capacidades Físicas.\nIL-9- Juega partidas utilizando las tácticas básicas en\nsituaciones críticas (para defensa o ataque).\nCompetencia\nÉtica y\nCiudadana\nCE4-EF- Muestra dominio\nen la realización de\nactividades motrices en\ngrupo, asumiendo su\nresponsabilidad en el\ntrabajo en equipo.\nIL -10- - Colabora con sus compañeros/as en la solución de\nproblemáticas técnico - tácticas relacionadas con situaciones\nde juego en baloncesto, ajedrez y balonmano\nIL -11- Participa de manera activa en la ejecución de juegos\ntradicionales, populares, colaborativos, competitivos y\ndinámicas de grupo.\nIL -12- Indaga, recopila y socializa juegos tradicionales,\npopulares, colaborativos, competitivos y dinámicas de grupo.\n136"
+    },
+    {
+      "numero": 137,
+      "texto": "Área: EDUCACIÓN FÍSICA (EF) Nivel: Secundario - Primer Ciclo Grado: 2do.\nCompetencias\nFundamentales\nCompetencias Específicas\n(CE) del Grado Indicadores de Logro (IL)\nCompetencia\nPensamiento\nLógico, Crítico y\nCreativo\nCE5-EF- Domina su acción\nmotriz, a partir de su nivel\nde percepción y apreciación\nde patrones, tamaños,\nformas, direcciones y\nrelaciones espaciales y\ntemporales dinámicas en\ndiversos entornos, con base\nen la noción de su esquema\ncorporal.\nIL -13- Crea y ejecuta con precisión técnica movimientos, series\ny secuencias con y sin implementos.\nIL -14- Adapta cadencias rítmicas a una o varias series de\nmovimientos con los implementos.\nIL -15- Identifica semejanzas y diferencias entre los diferentes\ntipos de pases, dribles y tiros.\nCompetencia\nResolución de\nProblemas\nCE6-E- Utiliza el desarrollo\nde distintos niveles de\ndesempeño motriz a partir\nde sus condiciones físicas\nnaturales, a fin de alcanzar\neficacia motora progresiva\nen situaciones variables\n(juegos, deportes, trabajo).\nIL -16- Interpreta adecuadamente el valor de los elementos\nbásicos y las reglas generales de código de puntuación de la\ngimnasia general y la gimnasia artística.\nIL -17- Aplica los fundamentos técnicos y reglas básicas del\nbaloncesto y el balonmano ante defensa y en situaciones\nmotrices diversas que implican la toma de decisión.\nIL -18- Resuelve problemas de ajedrez a 1, 2 y 3 jugadas,\nidentificando las tácticas que intervienen.\nCompetencia\nCientífica y\nTecnológica\nCE7-EF- Descubre mediante\nanálisis, las características\nde implementos deportivos\nespecíficos, con la finalidad\nde usarlos en forma efectiva\nen situaciones de juegos y\ndeportes.\nIL -19- Interpreta correctamente los elementos básicos del\nCódigo de Puntuación para la Gimnasia General.\nIL -20- Analiza partidas de ajedrez identificando las tácticas\nque intervienen en situaciones críticas.\nIL -21- Realiza los movimientos técnicos básicos en los aparatos\ndisponibles.\nUsar el código para las competencias y el indicador, tomando en cuenta su planificación diseñada y ejecutada.\nSe debe agregar, solo los aspectos específicos trabajados.\n137"
+    },
+    {
+      "numero": 138,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP1 CE1-EF:\nCE2-EF\nCE3-EF:\nCE4-EF:\nCE5-EF:\nCE6-EF:\nCE7-EF:\n138"
+    },
+    {
+      "numero": 139,
+      "texto": "Período Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP2 CE1-EF:\nCE2-EF\nCE3-EF:\nCE4-EF:\nCE5-EF:\nCE6-EF:\nCE7-EF:\n139"
+    },
+    {
+      "numero": 140,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP3 CE1-EF:\nCE2-EF\nCE3-EF:\nCE4-EF:\nCE5-EF:\nCE6-EF:\nCE7-EF:\n140"
+    },
+    {
+      "numero": 141,
+      "texto": "Período Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP4 CE1-EF:\nCE2-EF\nCE3-EF:\nCE4-EF:\nCE5-EF:\nCE6-EF:\nCE7-EF:\n141"
+    },
+    {
+      "numero": 142,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Estrategias y técnicas de evaluación Observaciones o comentarios\nP1\nP2\n142"
+    },
+    {
+      "numero": 143,
+      "texto": "Período Estrategias y técnicas de evaluación Observaciones o comentarios\nP3\nP4\n143"
+    },
+    {
+      "numero": 144,
+      "texto": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nEDUCACIÓN FÍSICA\nCompetencias\n \nSe comunica en su entorno\nsocial y cultural, a partir\nde la realización de\nactividades motrices en\ngrupo.\nIdentifica los factores y\nsituaciones de riesgo para\nsu salud, de los demás y de\nsu entorno, para contribuir\nen el cuidado personal\ny del medioambiente\ndurante las actividades\nfísicas.\nEstablece relación entre\nsus actividades corporales\ny el desarrollo de las\nhabilidades motrices\ny las capacidades\nFísicas, con el fin de\nmantener la motivación y\ndisponibilidad corporal en\nel juego.\nMuestra dominio\nen la realización de\nactividades motrices en\ngrupo, asumiendo su\nresponsabilidad en el\ntrabajo en equipo.\nP1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP\n144"
+    },
+    {
+      "numero": 145,
+      "texto": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nEDUCACIÓN FÍSICA\nCompetencias\n \nDomina su acción motriz,\na partir de su nivel de\npercepción y apreciación de\npatrones, tamaños, formas,\ndirecciones y relaciones\nespaciales y temporales\ndinámicas en diversos\nentornos, con base en la\nnoción de su esquema\ncorporal\nUtiliza el desarrollo\nde distintos niveles de\ndesempeño motriz a partir\nde sus condiciones físicas\nnaturales, a fin de alcanzar\neficacia motora progresiva en\nsituaciones variables (juegos,\ndeportes, trabajo).\nDescubre mediante análisis,\nlas características de\nimplementos deportivos\nespecíficos, con la finalidad\nde usarlos en forma efectiva\nen situaciones de juegos y\ndeportes.\n70%\n30%\nCalificación final\nP1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP\n145"
+    },
+    {
+      "numero": 146,
+      "texto": "Competencias e indicadores: FORMACIÓN INTEGRAL HUMANA Y RELIGIOSA\nÁrea: Formación Integral Humana y Religiosa\n(FIHR) Nivel: Secundario - Primer Ciclo Grado: 2do.\nCompetencias\nFundamentales\nCompetencias Específicas\n(CE) del Grado Indicadores de Logro (IL)\nCompetencia\nAmbiental y de\nla Salud\nCE1-FIHR - Propone\nacciones que fomentan el\ncuidado y sostenibilidad\ndel entorno natural como\ncasa común, en su familia,\nescuela y comunidad, a fin\nde asumirlas y promoverlas.\nIL -1 - Identifica sus emociones, sentimientos, acciones\ny comportamientos relacionados a su persona, familia y\ncomunidad y los expresa a través de valores humanos y\ncristianos.\nIL -2- Distingue situaciones que favorecen o desfavorecen\nla convivencia armónica en su medio familiar, escolar y\ncomunitario y busca apoyo para su solución.\nIL -3- Utiliza el diálogo en sus relaciones como medio de\nsolución a los conflictos que se le presentan y promueve la\npaz en sus relaciones interpersonales.\nCompetencia\nDesarrollo\nPersonal y\nEspiritual\nCE2-FIHR - Reconoce los\ncambios que experimenta\nen la etapa de la\nadolescencia e identifica su\ninfluencia en sus intereses,\ncomportamientos, a fin\nde tomar decisiones que\nfavorezcan su desarrollo\nhumano y espiritual.\nIL -4- Argumenta sobre el estilo de vida basado en el amor\nque Jesús propone a las personas y lo relaciona con hechos y\nsituaciones de la vida diaria.\nIL -5- Analiza episodios relacionados con la vida, pasión,\nmuerte y resurrección de Jesús y los compara con actitudes y\nacciones en su vida personal, familiar, escolar y social.\nIL -6- Distingue la presencia de valores que promueven el bien\ncomún, desde el ejemplo de Jesús de Nazaret, en sí mismo,\nsus amigos y familiares.\nCompetencia\nResolución de\nProblemas\nCE3-FIHR - Analiza su\nrealidad familiar y social,\ntomando en cuenta valores\nhumanos y cristianos, a fin\nde plantear y promover\nestrategias de solución a los\nconflictos.\nIL -7- Evidencia acciones en su vida cotidiana que promueve el\nrespeto a la vida y la conservación del entorno natural como\ncasa común en su familia, la escuela y la comunidad.\nIL -8- Argumenta sobre lo establecido en las normas y leyes\nde nuestro país en torno a la protección de la vida y el cuidado\ndel medio ambiente.\nIL -9- Realiza acciones para cuidar su salud personal y colectiva\na en las actividades familiares y escolares.\nCompetencia\nÉtica y\nCiudadana\nCE4-FIHR - Constata en la\nmisión de Jesús de Nazaret\nla manifestación del amor\nde Dios hacia las personas,\na fin de desarrollar\nactitudes y acciones que\nfavorezcan el bienestar de\nlos demás.\nIL -10- Explica los cambios físicos, sexuales, emocionales\ny religiosos y sus consecuencias en el desarrollo de la\nadolescencia.\nIL -11- Comunica sus preocupaciones e interrogantes sobre la\netapa que vive y da respuestas a sus miedos e inseguridades.\nIL -12- Asume la responsabilidad en relación a su cuidado\npersonal, físico y emocional en su familia, escuela y comunidad.\n146"
+    },
+    {
+      "numero": 147,
+      "texto": "Área: Formación Integral Humana y Religiosa\n(FIHR) Nivel: Secundario - Primer Ciclo Grado: 2do.\nCompetencias\nFundamentales\nCompetencias Específicas\n(CE) del Grado Indicadores de Logro (IL)\nCompetencia\nCientífica y\nTecnológica\nCE5-FIHR- Explica a\npartir de criterios éticos la\ncontribución de las ciencias\ny las tecnologías para el\ndesarrollo de la sociedad,\nla vida humana y el entorno\nnatural.\nIL-13- Argumenta sobre el cuidado y respeto a la vida en todas\nsus manifestaciones a partir de valores morales y religiosos y\nde los derechos humanos.\nIL -14- Explica la defensa de la dignidad de la persona y las\ndiferentes manifestaciones culturales y religiosas de su familia\ny su comunidad mediante textos bíblicos y otros documentos.\nIL -15- Identifica la diversidad religiosa presente en su familia y\nsu entorno y expresa de forma natural su experiencia religiosa\nCompetencia\nComunicativa\nCE6-FIHR- Establece\ncriterios sobre el respeto\na la vida humana en todas\nsus etapas, a partir de los\nderechos humanos, los\nvalores éticos y religiosos\npresentes en su contexto\nfamiliar, escolar y social.\nIL -16- Explica sobre el esfuerzo y dedicación que requiere\nel trabajo para el bienestar de las personas, la familia y la\nsociedad.\nIL -17- Argumenta sobre el aporte del trabajo de las mujeres en\nel desarrollo de su familia y de la sociedad.\nIL -18- Argumenta sobre la importancia de la diversidad\nvocacional y profesional para mejorar la calidad de vida de las\npersonas y el desarrollo social.\nCompetencia\nPensamiento\nLógico, Crítico y\nCreativo\nCE7-FIHR- Argumenta\nsobre la práctica de valores\nvinculados al trabajo, a\nfin identificar su aporte al\ndesarrollo de las personas,\nla familia y la sociedad.\nIL -19- Expone las incidencias de los avances científicos-\ntecnológicos en la persona, la sociedad y el entorno natural.\nIL -20- Argumenta sobre el uso ético de las nuevas tecnologías\nen sus actividades cotidianas e identifica los beneficios que la\ntecnología aporta en diferentes situaciones de la vida diaria.\nIL -21- Argumenta acerca de los daños y riesgos que conlleva el\nuso inadecuado de los inventos tecnológicos para la persona y\nel entorno natural\nUsar el código para las competencias y el indicador, tomando en cuenta su planificación diseñada y ejecutada.\nSe debe agregar, solo los aspectos específicos trabajados.\n147"
+    },
+    {
+      "numero": 148,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP1 CE1-FIHR:\nCE2-FIHR:\nCE3-FIHR:\nCE4-FIHR:\nCE5-FIHR:\nCE6-FIHR:\nCE7-FIHR:\n148"
+    },
+    {
+      "numero": 149,
+      "texto": "Período Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP2 CE1-FIHR:\nCE2-FIHR:\nCE3-FIHR:\nCE4-FIHR:\nCE5-FIHR:\nCE6-FIHR:\nCE7-FIHR:\n149"
+    },
+    {
+      "numero": 150,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP3 CE1-FIHR:\nCE2-FIHR:\nCE3-FIHR:\nCE4-FIHR:\nCE5-FIHR:\nCE6-FIHR:\nCE7-FIHR:\n150"
+    },
+    {
+      "numero": 151,
+      "texto": "Período Aspectos trabajados de la\nCompetencia Específica (CE)\nAspectos trabajados de los\nIndicadores de logro (IL) Contenidos trabajados\nP4 CE1-FIHR:\nCE2-FIHR:\nCE3-FIHR:\nCE4-FIHR:\nCE5-FIHR:\nCE6-FIHR:\nCE7-FIHR:\n151"
+    },
+    {
+      "numero": 152,
+      "texto": "ESPECIFICACIÓN CURRICULAR APLICADA POR PERIODO\nPeríodo Estrategias y técnicas de evaluación Observaciones o comentarios\nP1\nP2\n152"
+    },
+    {
+      "numero": 153,
+      "texto": "Período Estrategias y técnicas de evaluación Observaciones o comentarios\nP3\nP4\n153"
+    },
+    {
+      "numero": 154,
+      "texto": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nFORMACIÓN INTEGRAL HUMANA Y RELIGIOSA\nCompetencias\n \nPropone acciones que\nfomentan el cuidado y\nsostenibilidad del entorno\nnatural como casa común,\nen su familia, escuela\ny comunidad, a fin de\nasumirlas y promoverlas.\nReconoce los cambios\nque experimenta en la\netapa de la adolescencia\ne identifica su influencia\nen sus intereses,\ncomportamientos, a fin\nde tomar decisiones que\nfavorezcan su desarrollo\nhumano y espiritual.\nAnaliza su realidad familiar\ny social, tomando en\ncuenta valores humanos y\ncristianos, a fin de plantear\ny promover estrategias de\nsolución a los conflictos.\nConstata en la misión\nde Jesús de Nazaret la\nmanifestación del amor de\nDios hacia las personas, a\nfin de desarrollar actitudes\ny acciones que favorezcan\nel bienestar de los demás.\nP1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP\n154"
+    },
+    {
+      "numero": 155,
+      "texto": "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nFORMACIÓN INTEGRAL HUMANA Y RELIGIOSA\nCompetencias\n \nExplica a partir de criterios\néticos la contribución de las\nciencias y las tecnologías para\nel desarrollo de la sociedad,\nla vida humana y el entorno\nnatural.\nEstablece criterios sobre el\nrespeto a la vida humana en\ntodas sus etapas, a partir de\nlos derechos humanos, los\nvalores éticos y religiosos\npresentes en su contexto\nfamiliar, escolar y social.\nArgumenta sobre la práctica\nde valores vinculados al\ntrabajo, a fin identificar su\naporte al desarrollo de las\npersonas, la familia y la\nsociedad.\n70%\n30%\nCalificación final\nP1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP P1 P2 RP P3 P4 RP\n155"
+    },
+    {
+      "numero": 156,
+      "texto": "PROMOCIÓN DEL GRADO\nCada año académico se asume como terminal para los fines de organización del proceso pedagógico,\nla aprobación, promoción y/o repitencia de asignaturas y/o grados.\nSerá promovido el estudiante que haya aprobado todas las asignaturas establecidas en el plan de\nestudio para el grado.\nCALIFICACIONES DEL AÑO\nESCOLAR\n% A.A\nCALIFICACIÓN\nCOMPLETIVA\nCALIFICACIÓN\nEXTRAORDINARIA\nSITUACIÓN\nFINAL\nCALIFICACIONES\nPORCENTUAL C.F. 50%\nC.F. C.P.C. 50%\nC.P.C. C.C. 30%\nC.F. C.P.EX 70%\nC.P.EX C.EX. A R\n70% 30%\nC.F.= Calificación Final. C.P.C.= Calificación Evaluación Completiva.\nC.C.= Calificación Completiva. C.P. EX= Calificación Evaluación Extraordinaria. C.EX.= Calificación Extraordinaria.\nA= Aprobado. R= Reprobado.\nSerán presentadas en evaluación completiva las asignaturas cuya calificación de fin de año sea\ninferior a 70 puntos. Las Evaluaciones Completivas tendrán un valor de 50% y se aplicarán en el\nperiodo que se especifique en el calendario escolar. La ponderación de las calificaciones parciales\nobtenidas durante el año representarán el otro 50%.\nLas asignaturas no aprobadas en las Evaluaciones Completivas serán examinadas en Evaluaciones\nExtraordinarias, las cuales se aplicarán en las fechas establecidas en el calendario escolar y tendrán\nun valor del 70% y el restante 30% será la ponderación de las calificaciones parciales obtenidas\ndurante el año en la asignatura. La calificación mínima aprobatoria es de 70 puntos.\nSerán promovidos los estudiantes que hayan aprobado todas las asignaturas establecidas en el\ngrado.\n156"
+    },
+    {
+      "numero": 157,
+      "texto": "157\nCALIFICACIONES DEL AÑO\n ESCOLAR\n% A.A\nCALIFICACIÓN COMPLETIVA CALIFICACIÓN EXTRAORDINARIA SITUACIÓN\nFINAL\nCALIFICACIONES\nPORCENTUAL\nC.F. 50%\nC.F. C.P.C. 50%\nC.P.C. C.C. 30%\nC.F.\nC.P.\nEX\n70%\nC.P.\nEX.\nC.EX. A R\n70% 30%\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nLENGUA ESPAÑOLA\nDOCENTE"
+    },
+    {
+      "numero": 158,
+      "texto": "158\nCALIFICACIONES DEL AÑO\n ESCOLAR\n% A.A\nCALIFICACIÓN COMPLETIVA CALIFICACIÓN EXTRAORDINARIA SITUACIÓN\nFINAL\nCALIFICACIONES\nPORCENTUAL\nC.F. 50%\nC.F. C.P.C. 50%\nC.P.C. C.C. 30%\nC.F.\nC.P.\nEX\n70%\nC.P.\nEX.\nC.EX. A R\n70% 30%\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nLENGUAS EXTRANJERAS - INGLÉS\nDOCENTE"
+    },
+    {
+      "numero": 159,
+      "texto": "159\nCALIFICACIONES DEL AÑO\n ESCOLAR\n% A.A\nCALIFICACIÓN COMPLETIVA CALIFICACIÓN EXTRAORDINARIA SITUACIÓN\nFINAL\nCALIFICACIONES\nPORCENTUAL\nC.F. 50%\nC.F. C.P.C. 50%\nC.P.C. C.C. 30%\nC.F.\nC.P.\nEX\n70%\nC.P.\nEX.\nC.EX. A R\n70% 30%\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nLENGUAS EXTRANJERAS - FRANCÉS\nDOCENTE"
+    },
+    {
+      "numero": 160,
+      "texto": "160\nCALIFICACIONES DEL AÑO\n ESCOLAR\n% A.A\nCALIFICACIÓN COMPLETIVA CALIFICACIÓN EXTRAORDINARIA SITUACIÓN\nFINAL\nCALIFICACIONES\nPORCENTUAL\nC.F. 50%\nC.F. C.P.C. 50%\nC.P.C. C.C. 30%\nC.F.\nC.P.\nEX\n70%\nC.P.\nEX.\nC.EX. A R\n70% 30%\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nMATEMÁTICA\nDOCENTE"
+    },
+    {
+      "numero": 161,
+      "texto": "161\nCALIFICACIONES DEL AÑO\n ESCOLAR\n% A.A\nCALIFICACIÓN COMPLETIVA CALIFICACIÓN EXTRAORDINARIA SITUACIÓN\nFINAL\nCALIFICACIONES\nPORCENTUAL\nC.F. 50%\nC.F. C.P.C. 50%\nC.P.C. C.C. 30%\nC.F.\nC.P.\nEX\n70%\nC.P.\nEX.\nC.EX. A R\n70% 30%\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nCIENCIAS SOCIALES\nDOCENTE"
+    },
+    {
+      "numero": 162,
+      "texto": "162\nCALIFICACIONES DEL AÑO\n ESCOLAR\n% A.A\nCALIFICACIÓN COMPLETIVA CALIFICACIÓN EXTRAORDINARIA SITUACIÓN\nFINAL\nCALIFICACIONES\nPORCENTUAL\nC.F. 50%\nC.F. C.P.C. 50%\nC.P.C. C.C. 30%\nC.F.\nC.P.\nEX\n70%\nC.P.\nEX.\nC.EX. A R\n70% 30%\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nCIENCIAS DE LA NATURALEZA - CIENCIAS DE LA VIDA\nDOCENTE"
+    },
+    {
+      "numero": 163,
+      "texto": "163\nCALIFICACIONES DEL AÑO\n ESCOLAR\n% A.A\nCALIFICACIÓN COMPLETIVA CALIFICACIÓN EXTRAORDINARIA SITUACIÓN\nFINAL\nCALIFICACIONES\nPORCENTUAL\nC.F. 50%\nC.F. C.P.C. 50%\nC.P.C. C.C. 30%\nC.F.\nC.P.\nEX\n70%\nC.P.\nEX.\nC.EX. A R\n70% 30%\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nEDUCACIÓN ARTÍSTICA\nDOCENTE"
+    },
+    {
+      "numero": 164,
+      "texto": "164\nCALIFICACIONES DEL AÑO\n ESCOLAR\n% A.A\nCALIFICACIÓN COMPLETIVA CALIFICACIÓN EXTRAORDINARIA SITUACIÓN\nFINAL\nCALIFICACIONES\nPORCENTUAL\nC.F. 50%\nC.F. C.P.C. 50%\nC.P.C. C.C. 30%\nC.F.\nC.P.\nEX\n70%\nC.P.\nEX.\nC.EX. A R\n70% 30%\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nEDUCACIÓN FÍSICA\nDOCENTE"
+    },
+    {
+      "numero": 165,
+      "texto": "165\nCALIFICACIONES DEL AÑO\n ESCOLAR\n% A.A\nCALIFICACIÓN COMPLETIVA CALIFICACIÓN EXTRAORDINARIA SITUACIÓN\nFINAL\nCALIFICACIONES\nPORCENTUAL\nC.F. 50%\nC.F. C.P.C. 50%\nC.P.C. C.C. 30%\nC.F.\nC.P.\nEX\n70%\nC.P.\nEX.\nC.EX. A R\n70% 30%\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20\n21\n22\n23\n24\n25\n26\n27\n28\n29\n30\n31\n32\n33\n34\n35\n36\n37\n38\n39\n40\nFORMACIÓN INTEGRAL HUMANA Y RELIGIOSA\nDOCENTE"
+    },
+    {
+      "numero": 166,
+      "texto": "Lugar, Fecha y Hora Actividad Programada Participantes\nREGISTRO DE EXPERIENCIAS\nEn este espacio se anotan aquellas vivencias, eventos referidos a: visitas al entorno de carácter\npedagógico, actividades de intercambios de experiencias con personas o instituciones de la\ncomunidad.\n166"
+    },
+    {
+      "numero": 167,
+      "texto": "REGISTRO DE EXPERIENCIAS\nEn este espacio se anotan aquellas vivencias, eventos referidos a: visitas al entorno de carácter\npedagógico, actividades de intercambios de experiencias con personas o instituciones de la\ncomunidad.\nLugar, Fecha y Hora Actividad Programada Participantes\n167"
+    },
+    {
+      "numero": 168,
+      "texto": "Lugar, Fecha y Hora Actividad Programada Participantes\nREGISTRO DE EXPERIENCIAS\nEn este espacio se anotan aquellas vivencias, eventos referidos a: visitas al entorno de carácter\npedagógico, actividades de intercambios de experiencias con personas o instituciones de la\ncomunidad.\n168"
+    },
+    {
+      "numero": 169,
+      "texto": "REGISTRO DE EXPERIENCIAS\nEn este espacio se anotan aquellas vivencias, eventos referidos a: visitas al entorno de carácter\npedagógico, actividades de intercambios de experiencias con personas o instituciones de la\ncomunidad.\nLugar, Fecha y Hora Actividad Programada Participantes\n169"
+    },
+    {
+      "numero": 170,
+      "texto": "170\nREGISTRO DE ACOMPAÑANTES A LA PRÁCTICA PEDAGÓGICA\nFECHA NOMBRES Y APELLIDOS CARGO FIRMA"
+    },
+    {
+      "numero": 171,
+      "texto": "171\nPROPÓSITO ACUERDOS"
+    },
+    {
+      "numero": 172,
+      "texto": "172\nREGISTRO DE ACOMPAÑANTES A LA PRÁCTICA PEDAGÓGICA\nFECHA NOMBRES Y APELLIDOS CARGO FIRMA"
+    },
+    {
+      "numero": 173,
+      "texto": "173\nPROPÓSITO ACUERDOS"
+    },
+    {
+      "numero": 174,
+      "texto": "174\nESTADÍSTICAS DE FIN DE AÑO ESCOLAR\nCONDICIÓN DE\nFIN DE AÑO\nESCOLAR\nSEXO\nCANTIDAD DE ESTUDIANTES POR EDADES\nTOTALES 11 AÑOS\n2 años de\nprecocidad\n12 AÑOS\n1 año de\nprecocidad\n13 AÑOS\nEdad teórica\n14 AÑOS\n1 año de\nrezago\n15 AÑOS\n2 años de\nrezago\nAPROBADO\nFEMENINO\nMASCULINO\nTOTAL\nREPROBADO\nFEMENINO\nMASCULINO\nTOTAL"
+    },
+    {
+      "numero": 175,
+      "texto": ""
+    },
+    {
+      "numero": 176,
+      "texto": ""
+    }
+  ]
+}

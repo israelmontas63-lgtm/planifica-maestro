@@ -153,10 +153,13 @@ function buscarEnCurriculo({ query, nivel = "primario", grado, area, limite = 3 
     const tokensIndicadores = normalizarTokens(chunk.indicadores ? JSON.stringify(chunk.indicadores) : "");
     const tokensTexto = normalizarTokens(chunk.texto || chunk.texto_busqueda || "");
 
-    // 1. Frase exacta en tema (50 pts)
+    // 1. Frase exacta en tema (60 pts) o en texto de página (45 pts)
     const fraseExactaTema = chunk.tema && normalizarTexto(chunk.tema).includes(queryNorm);
+    const fraseExactaTexto = (chunk.texto || chunk.texto_busqueda) && normalizarTexto(chunk.texto || chunk.texto_busqueda).includes(queryNorm);
     if (fraseExactaTema) {
       score += 60;
+    } else if (fraseExactaTexto) {
+      score += 45;
     }
 
     // 2. Coincidencia token a token por campo
@@ -180,7 +183,7 @@ function buscarEnCurriculo({ query, nivel = "primario", grado, area, limite = 3 
         matched = true;
       }
       if (tokensTexto.includes(t)) {
-        score += 5;
+        score += 15;
         matched = true;
       }
       if (matched) tokensCoincidentes++;
@@ -194,11 +197,12 @@ function buscarEnCurriculo({ query, nivel = "primario", grado, area, limite = 3 
     const ratioCoincidencia = tokensCoincidentes / tokensQuery.length;
     const esCoincidenciaValida =
       fraseExactaTema ||
-      (tokensQuery.length >= 2 && ratioCoincidencia >= 0.5 && score >= 40) ||
-      (tokensQuery.length === 1 && tokensCoincidentes === 1 && (tokensTema.includes(tokensQuery[0]) || tokensContenidos.includes(tokensQuery[0])) && score >= 35);
+      fraseExactaTexto ||
+      (tokensQuery.length >= 2 && ratioCoincidencia >= 0.5 && score >= 25) ||
+      (tokensQuery.length === 1 && tokensCoincidentes === 1 && score >= 20);
 
     // Requisito: coincidencia válida y superar el umbral
-    if (esCoincidenciaValida && score >= 35) {
+    if (esCoincidenciaValida && score >= 20) {
       candidatos.push({
         score,
         chunk: {
