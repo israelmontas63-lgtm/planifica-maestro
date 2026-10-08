@@ -3,7 +3,7 @@ import { obtenerContextoConBase } from "./contextoConBase.js";
 import { getAiProvider, getGeminiModels, fetchGeminiWithRetry } from "./services/aiProvider.js";
 import { generateVoice } from "./services/voiceProvider.js";
 import { clasificarIntencion } from "./clasificadorIntencion.js";
-import { generarRespuestaCharlaLocal, SYSTEM_PROMPT_CONVERSACIONAL } from "./modoConversacional.js";
+import { generarRespuestaCharlaLocal, SYSTEM_PROMPT_CONVERSACIONAL, limpiarSaludoInnecesario } from "./modoConversacional.js";
 import { buscarEnGlosario } from "./glosarioDocente.js";
 import {
   generarClaveCurricularSha256,
@@ -11,7 +11,7 @@ import {
   guardarRespuestaEnCache,
   esRespuestaCacheable
 } from "./cacheRespuestas.js";
-import { tieneIntencionExplicita, identificarImagenWorker, getGeminiVisionModels } from "./ojoDigital.js";
+import { tieneIntencionExplicita, identificarImagenWorker, getGeminiVisionModels, analizarCalidadImagen } from "./ojoDigital.js";
 import { corregirTextoPedagogico } from "./correctorTexto.js";
 
 /**
@@ -525,10 +525,14 @@ async function handleApiRequest(request, env, ctx) {
     });
   }
 
-  // 7. POST /api/plan/generate (Generación con Gemini y soporte SSE Streaming)
-  if (path === "/api/plan/generate" && method === "POST") {
+  // 7. POST /api/plan/generate y /api/plan (Generación con Gemini y soporte SSE Streaming)
+  if ((path === "/api/plan/generate" || path === "/api/plan") && method === "POST") {
     const body = await request.json().catch(() => ({}));
-    const { messages = [], nivel, periodo = "diaria", docenteId = "docente_default", stream = false } = body;
+    let { messages = [], nivel, periodo = "diaria", docenteId = "docente_default", stream = false } = body;
+    if ((!messages || messages.length === 0) && (body.tema || body.prompt)) {
+      const query = body.prompt || `Planifica el tema: ${body.tema} (${body.grado || ""} - ${body.area || ""})`;
+      messages = [{ role: "user", text: query }];
+    }
     const resolvedDocenteId = docenteId || request.headers.get("x-docente-id") || "docente_default";
 
     const ownerKey = request.headers.get("x-owner-key");
@@ -593,6 +597,13 @@ async function handleApiRequest(request, env, ctx) {
         data.correcciones_aplicadas = resultadoCorreccion.cambios || [];
         data.hubo_correcciones = !!resultadoCorreccion.huboCambios;
         data.cambio_significado = Boolean(resultadoCorreccion.cambioSignificado);
+      }
+      if (data.mensaje_chat && typeof data.mensaje_chat === "string") {
+        const tieneSaludoUsuario = /\b(hola|buen(?:os)?\s*días|buenas\s*tardes|buenas\s*noches|saludos|que\s*tal)\b/i.test(textoConsulta);
+        const debePermitirSaludo = messages.length <= 1 && tieneSaludoUsuario;
+        if (!debePermitirSaludo && data.modo !== "charla") {
+          data.mensaje_chat = limpiarSaludoInnecesario(data.mensaje_chat, false);
+        }
       }
       if (status >= 400 || !isStream) {
         return new Response(JSON.stringify(data), {
@@ -683,6 +694,26 @@ async function handleApiRequest(request, env, ctx) {
         },
         estado: "pensando"
       });
+    }
+
+    // DEFENSA DE CÓDIGO (3B.2): Si la imagen es muy pequeña, casi negra o sin contenido, responder mensaje honesto fijo
+    if (imageBase64) {
+      const calidadImg = analizarCalidadImagen(imageBase64);
+      if (calidadImg.ilegible) {
+        return responderWorker({
+          data: {
+            mensaje_chat: "La imagen se ve oscura o ilegible; toma otra foto con más luz o escribe el texto.",
+            plan_completado: false,
+            modo: "identificacion_visual",
+            categoria: "identificacion_visual",
+            tipo_visual: "ilegible",
+            es_borrosa: true,
+            opciones: ["Tomar otra foto con más luz", "Escribir mi consulta"],
+            datos_planificacion: null
+          },
+          estado: "conversando"
+        });
+      }
     }
 
     // ETAPA 1: Si hay imagen y no hay instrucción explícita del docente, la identificamos primero (Ojo Digital)
@@ -864,6 +895,52 @@ async function handleApiRequest(request, env, ctx) {
         },
         estado: "pensando"
       });
+    }
+
+    // 3.5. MODO BÚSQUEDA WEB -> Tavily Search
+    if (clasificacion.categoria === "busqueda_web") {
+      let fuentesCitas = [];
+      if (env.TAVILY_API_KEY) {
+        try {
+          const tavilyRes = await fetch("https://api.tavily.com/search", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              api_key: env.TAVILY_API_KEY,
+              query: textoParaProcesar,
+              search_depth: "basic",
+              max_results: 5,
+              include_answer: true
+            })
+          });
+          if (tavilyRes.ok) {
+            const dataT = await tavilyRes.json();
+            if (dataT.results) {
+              fuentesCitas = dataT.results.map(r => ({
+                titulo: r.title,
+                url: r.url,
+                resumen: r.content ? r.content.slice(0, 200) : ""
+              }));
+            }
+            if (dataT.answer) {
+              const fuentesStr = fuentesCitas.map(f => `\n- [${f.titulo}](${f.url})`).join("");
+              return responderWorker({
+                data: {
+                  mensaje_chat: `${dataT.answer}\n\n**Fuentes verificadas en internet:**${fuentesStr}`,
+                  plan_completado: false,
+                  modo: "busqueda_web",
+                  categoria: "busqueda_web",
+                  fuentes: fuentesCitas,
+                  datos_planificacion: null
+                },
+                estado: "conversando"
+              });
+            }
+          }
+        } catch (eTav) {
+          console.warn("Worker Tavily search error:", eTav.message);
+        }
+      }
     }
 
     // 4. MODO CONOCIMIENTO GENERAL -> Conversacional directo con modelo sin buscar en currículo oficial
@@ -1744,6 +1821,105 @@ Genera un JSON estricto con:
         }
       );
     }
+  }
+
+  // 12.5. POST /api/audio/transcribe (Transcripción de audio con Groq Whisper / Gemini)
+  if (path === "/api/audio/transcribe" && method === "POST") {
+    const body = await request.json().catch(() => ({}));
+    if (!body.audioBase64) {
+      return new Response(JSON.stringify({ error: "Falta audioBase64." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const cleanBase64 = body.audioBase64.replace(/^data:[^;]+;base64,/, "");
+    const mimeType = body.mimeType || "audio/webm";
+
+    // 1. Groq Whisper si env.GROQ_API_KEY
+    if (env.GROQ_API_KEY) {
+      try {
+        const binStr = atob(cleanBase64);
+        const len = binStr.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binStr.charCodeAt(i);
+        }
+        const extension = mimeType.includes("webm") ? "webm" : mimeType.includes("mp4") ? "m4a" : "wav";
+        const file = new Blob([bytes], { type: mimeType });
+        const formData = new FormData();
+        formData.append("file", file, `audio.${extension}`);
+        formData.append("model", "whisper-large-v3-turbo");
+        formData.append("language", body.idioma || "es");
+        formData.append("response_format", "json");
+
+        const groqRes = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${env.GROQ_API_KEY}`,
+          },
+          body: formData,
+        });
+
+        if (groqRes.ok) {
+          const data = await groqRes.json();
+          if (data && data.text) {
+            return new Response(JSON.stringify({
+              ok: true,
+              texto: data.text.trim(),
+              proveedor: "groq_whisper",
+              modelo: "whisper-large-v3-turbo",
+            }), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+        }
+      } catch (errG) {
+        console.warn("Worker Groq Whisper error:", errG.message);
+      }
+    }
+
+    // 2. Gemini fallback
+    if (env.GEMINI_API_KEY) {
+      try {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${env.GEMINI_API_KEY}`;
+        const gRes = await fetch(geminiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{
+              role: "user",
+              parts: [
+                { inlineData: { mimeType, data: cleanBase64 } },
+                { text: "Transcribe exactamente las palabras habladas en este audio en español. Devuelve SOLO el texto transcrito." }
+              ]
+            }],
+            generationConfig: { temperature: 0.0 }
+          })
+        });
+        if (gRes.ok) {
+          const gData = await gRes.json();
+          const texto = gData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+          if (texto) {
+            return new Response(JSON.stringify({
+              ok: true,
+              texto,
+              proveedor: "gemini_transcribe",
+              modelo: "gemini-3.5-flash-lite"
+            }), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" }
+            });
+          }
+        }
+      } catch (errGem) {
+        console.warn("Worker Gemini Audio error:", errGem.message);
+      }
+    }
+
+    return new Response(JSON.stringify({ error: "No se pudo transcribir el audio." }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
   // 13. Ruta no encontrada en la API

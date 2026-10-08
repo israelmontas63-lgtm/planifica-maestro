@@ -19,9 +19,7 @@ const {
 const { enrutarPeticion, obtenerEstadoProveedores } = require("../ia/enrutadorIA");
 const { generarDesdeBibliotecaOficial } = require("../ia/modoBibliotecaOficial");
 const { clasificarIntencion } = require("../ia/clasificadorIntencion");
-const { buscarEnCurriculo } = require("../curriculum/buscadorCurricular");
-const { generarRespuestaCharlaLocal, SYSTEM_PROMPT_CONVERSACIONAL } = require("../ia/modoConversacional");
-const { buscarEnGlosario } = require("../curriculum/glosarioDocente");
+const { generarRespuestaCharlaLocal, SYSTEM_PROMPT_CONVERSACIONAL, limpiarSaludoInnecesario } = require("../ia/modoConversacional");
 const { tieneIntencionExplicita, identificarImagenConVision } = require("../ia/ojoDigital");
 const { corregirTextoPedagogico } = require("../ia/correctorTexto");
 const { puedeRealizarConsulta } = require("../ia/gestorGasto");
@@ -724,7 +722,9 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
           env: process.env,
           signal: clientAbortController.signal
         });
-        const textoChat = respGen.mensaje_chat || respGen.texto || "Aquí tienes la información solicitada.";
+        let textoChat = respGen.mensaje_chat || respGen.texto || "Aquí tienes la información solicitada.";
+        const esSaludoDocente = /^(¡?(?:hola|buen(?:os)?\s*días|buenas\s*tardes|buenas\s*noches|saludos))/i.test((textoConsulta || "").trim());
+        textoChat = limpiarSaludoInnecesario(textoChat, esSaludoDocente);
         return responder({
           mensaje_chat: textoChat.includes("currículo oficial") ? textoChat : `${textoChat}${aviso}`,
           plan_completado: false,

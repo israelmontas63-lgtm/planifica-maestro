@@ -100,6 +100,41 @@ function generarOpcionesSegunTipoVisual(tipoVisual, esBorrosa = false) {
   }
 }
 
+function analizarCalidadImagen(imageBase64) {
+  if (!imageBase64 || typeof imageBase64 !== "string") {
+    return { ilegible: true, motivo: "sin_imagen" };
+  }
+  const clean = imageBase64.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, "").trim();
+  if (clean.length < 350) {
+    return { ilegible: true, motivo: "muy_pequena" };
+  }
+  try {
+    const bytes = typeof Buffer !== "undefined"
+      ? Buffer.from(clean, "base64")
+      : Uint8Array.from(atob(clean), c => c.charCodeAt(0));
+    if (bytes.length < 250) {
+      return { ilegible: true, motivo: "muy_pequena" };
+    }
+    let suma = 0;
+    let ceros = 0;
+    const inicio = Math.min(50, Math.floor(bytes.length * 0.1));
+    const fin = Math.max(inicio + 1, Math.floor(bytes.length * 0.9));
+    const muestra = fin - inicio;
+    for (let i = inicio; i < fin; i++) {
+      suma += bytes[i];
+      if (bytes[i] === 0) ceros++;
+    }
+    const promedio = suma / muestra;
+    const ratioCeros = ceros / muestra;
+    if (ratioCeros > 0.85 && promedio < 10) {
+      return { ilegible: true, motivo: "oscura_o_vacia" };
+    }
+  } catch (e) {
+    return { ilegible: true, motivo: "error_decodificacion" };
+  }
+  return { ilegible: false };
+}
+
 function tieneIntencionExplicita(texto) {
   if (!texto || typeof texto !== "string") return false;
   const t = texto.trim();
@@ -113,8 +148,27 @@ async function identificarImagenConVision({
   imageBase64,
   mediaType = "image/jpeg",
   env = process.env,
-  signal = null
+  signal = null,
+  validarCalidad = false
 }) {
+  if (validarCalidad) {
+    const calidad = analizarCalidadImagen(imageBase64);
+    if (calidad.ilegible) {
+      return {
+        exito: true,
+        descripcion: "La imagen se ve oscura o ilegible; toma otra foto con más luz o escribe el texto.",
+        tipo_visual: "ilegible",
+        es_borrosa: true,
+        es_delicado: false,
+        tema_detectado: null,
+        texto_resumen_ocr: null,
+        opciones: ["Tomar otra foto con más luz", "Escribir mi consulta"],
+        proveedor_utilizado: "defensa_local",
+        codigo_http: 200
+      };
+    }
+  }
+
   const apiKey = env.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return {
@@ -182,5 +236,6 @@ module.exports = {
   PROMPT_OJO_DIGITAL,
   generarOpcionesSegunTipoVisual,
   tieneIntencionExplicita,
-  identificarImagenConVision
+  identificarImagenConVision,
+  analizarCalidadImagen
 };
