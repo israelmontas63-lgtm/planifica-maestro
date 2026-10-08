@@ -86,6 +86,15 @@ const PATRONES_TEMAS_CURRICULARES = [
   "ciencias de la naturaleza", "lengua espanola", "matematica", "ciencias sociales"
 ];
 
+const PATRONES_BUSQUEDA_WEB = [
+  "busca en la web", "buscar en la web", "busca en internet", "buscar en internet",
+  "busca en google", "buscar en google", "investiga en la web", "investigar en la web",
+  "busca noticias", "buscar noticias", "noticias de educacion", "noticias recientes",
+  "noticias de hoy", "ultimas noticias", "busca informacion sobre", "buscar informacion sobre",
+  "busca en la red", "buscar en la red", "busca online", "buscar online", "investiga sobre",
+  "investiga", "investigar"
+];
+
 const PATRONES_CONOCIMIENTO_GENERAL = [
   "que es un ", "que es una ", "que es la ", "que es el ", "que son los ", "que son las ",
   "que es ", "explicame la ", "explicame el ", "explicame como ", "explicame que ",
@@ -96,7 +105,8 @@ const PATRONES_CONOCIMIENTO_GENERAL = [
   "adn", "celula", "atomo", "volcan", "gravedad",
   "dime que", "dime que es", "que planta", "que flor", "que animal", "que arbol",
   "que objeto", "que es esto", "que es esta", "que dice aqui", "leeme esto", "explica esta",
-  "identifica", "como se llama", "cuentame sobre"
+  "identifica", "como se llama", "cuentame sobre",
+  "cuantos ", "cuantas ", "cuanto ", "cuanta ", "donde queda ", "donde esta ", "capital de "
 ];
 
 const PATRONES_NO_EDUCATIVOS = [
@@ -184,6 +194,20 @@ function clasificarPorReglas(texto) {
     };
   }
 
+  // Detección de Búsqueda Web explícita
+  const pideBusquedaWeb = PATRONES_BUSQUEDA_WEB.some(p => contienePalabraOFrase(norm, p)) ||
+    ((norm.startsWith("busca ") || norm.startsWith("buscar ") || norm.startsWith("investiga ")) && !tienePlanificacion && !tieneTemaCurricular);
+
+  if (pideBusquedaWeb && !tienePlanificacion) {
+    return {
+      categoria: "busqueda_web",
+      tipo: "web",
+      confianza: 0.96,
+      motivo: "Solicitud explícita de búsqueda web o investigación externa.",
+      esMixtoConSaludo: tieneCharla
+    };
+  }
+
   // 5. Saludo / Charla pura
   if (tieneCharla && !tienePlanificacion && !tieneConsultaCurricular && !tieneTemaCurricular && !tieneConocimientoGeneral) {
     return {
@@ -268,19 +292,20 @@ async function clasificarConIA({ texto, env = process.env, timeoutMs = 2500 }) {
 
   if (!enrutarPeticion) return null;
 
-  const promptClasificacion = `Analiza la siguiente consulta de un docente y clasifícala estrictamente en una de estas 6 categorías:
+  const promptClasificacion = `Analiza la siguiente consulta de un docente y clasifícala estrictamente en una de estas categorías:
 1. "charla": Saludos, despedidas, fórmulas de cortesía, agradecimientos o conversación informal.
-2. "conocimiento_general": Conceptos, hechos históricos, definiciones o ciencia que no son una clase ni requieren el currículo oficial.
-3. "planificacion": Si solicita estructurar, diseñar o elaborar una clase, actividad, momento didáctico o unidad escolar.
-4. "consulta_curricular": Preguntas sobre normativas, indicadores de logro, competencias o contenidos del currículo oficial MINERD.
-5. "accion_app": Comandos de control de la app (biblioteca, perfil, descargar word, cambiar esquema/periodo).
-6. "ambigua": Si es algo no educativo, doméstico, confuso o fragmentario.
+2. "busqueda_web": Si solicita explícitamente buscar en la web, en internet, noticias actuales o datos externos fuera del currículo.
+3. "conocimiento_general": Conceptos, hechos históricos, definiciones o ciencia que no son una clase ni requieren el currículo oficial.
+4. "planificacion": Si solicita estructurar, diseñar o elaborar una clase, actividad, momento didáctico o unidad escolar.
+5. "consulta_curricular": Preguntas sobre normativas, indicadores de logro, competencias o contenidos del currículo oficial MINERD.
+6. "accion_app": Comandos de control de la app (biblioteca, perfil, descargar word, cambiar esquema/periodo).
+7. "ambigua": Si es algo no educativo, doméstico, confuso o fragmentario.
 
 Consulta: "${texto}"
 
 Responde ÚNICAMENTE un objeto JSON válido con esta interfaz:
 {
-  "categoria": "charla" | "conocimiento_general" | "planificacion" | "consulta_curricular" | "accion_app" | "ambigua",
+  "categoria": "charla" | "busqueda_web" | "conocimiento_general" | "planificacion" | "consulta_curricular" | "accion_app" | "ambigua",
   "confianza": 0.85,
   "motivo": "explicación breve de 1 frase",
   "esMixtoConSaludo": false
@@ -294,10 +319,11 @@ Responde ÚNICAMENTE un objeto JSON válido con esta interfaz:
       timeoutMs: timeoutMs || 2500
     });
 
-    if (res && res.categoria && ["charla", "conocimiento_general", "planificacion", "consulta_curricular", "accion_app", "ambigua"].includes(res.categoria)) {
+    if (res && res.categoria && ["charla", "busqueda_web", "conocimiento_general", "planificacion", "consulta_curricular", "accion_app", "ambigua"].includes(res.categoria)) {
       const cat = res.categoria;
       const mapaTipo = {
         charla: "charla",
+        busqueda_web: "web",
         conocimiento_general: "web",
         planificacion: "curricular",
         consulta_curricular: "curricular",

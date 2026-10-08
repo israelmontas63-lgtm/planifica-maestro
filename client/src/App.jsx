@@ -335,7 +335,7 @@ export default function App() {
     if (timerRespaldoRef.current) clearTimeout(timerRespaldoRef.current);
     timerRespaldoRef.current = setTimeout(() => {
       setCambiandoARespaldo(true);
-    }, 7000);
+    }, 15000);
 
     try {
       const data = await generarPlanificacion({
@@ -557,10 +557,14 @@ export default function App() {
     }
   }
 
-  async function handleExportar(planText) {
+  async function handleExportar(planText, datos = null) {
     setExportando(true);
     try {
-      await exportarWord({ titulo: "Planificacion_" + periodo + "_" + nivel, plan: planText });
+      await exportarWord({
+        titulo: "Planificacion_" + periodo + "_" + nivel,
+        plan: typeof planText === "string" ? planText : "",
+        datos: datos || (typeof planText === "object" ? planText : null)
+      });
     } catch (err) {
       setErrorGeneracion({
         message: err.friendlyMessage || err.message || "Error al exportar a Word.",
@@ -893,7 +897,7 @@ export default function App() {
                   planId={m.planId}
                   nivel={nivel}
                   periodo={periodo}
-                  onExportar={(datos) => handleExportar(Object.entries(datos).map(([k,v]) => `${k}\n${v}`).join("\n\n"))} 
+                  onExportar={(datos) => handleExportar(Object.entries(datos).map(([k,v]) => `${k}\n${v}`).join("\n\n"), datos)} 
                   exportando={exportando}
                   onEscuchar={(datos) => handleEscuchar(Object.values(datos).join(" ").substring(0, 500), "plan")}
                   escuchando={escuchando}
@@ -1162,7 +1166,7 @@ export default function App() {
                 ✕ Cancelar
               </button>
             </div>
-            {streamingText && (
+            {streamingText && !streamingText.trim().startsWith("{") && (
               <div className="pm-streaming-text">
                 {streamingText}
               </div>

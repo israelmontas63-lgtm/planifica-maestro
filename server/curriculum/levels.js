@@ -125,6 +125,30 @@ const LEVELS = {
     ]
   },
 
+  multigrado: {
+    label: "Esquema Multigrado (Aulas Unitarias y Polidocentes)",
+    descripcion: "Planificación con eje común y actividades simultáneas diferenciadas para dos o más grados en una misma aula.",
+    ciclos: [
+      "1.º y 2.º de Primaria (Articulado)",
+      "3.º y 4.º de Primaria (Articulado)",
+      "5.º y 6.º de Primaria (Articulado)"
+    ],
+    areas: AREAS_CURRICULARES_OFICIALES,
+    bloques: [
+      "1. Datos generales (grados atendidos, sección, tanda, centro educativo)",
+      "2. Competencias Fundamentales y Específicas por grado",
+      "3. Contenido integrador o Eje temático común",
+      "4. Estrategia metodológica de atención simultánea",
+      "5. Momentos pedagógicos: Actividad inicial común, trabajo directo/autónomo por grado y puesta en común",
+      "6. Recursos y materiales de apoyo diversificados",
+      "7. Criterios de evaluación e indicadores de logro diferenciados",
+      "8. Actividades Diferenciadas y adaptaciones curriculares"
+    ],
+    notas: [
+      "Diseñado según la Guía Multigrado oficial del MINERD: unifica el tema central mientras diversifica los niveles de complejidad y tareas por grado."
+    ]
+  },
+
   abp: {
     label: "Aprendizaje Basado en Proyectos (ABP)",
     descripcion: "Planificación centrada en la resolución de un problema real mediante la creación de un producto.",

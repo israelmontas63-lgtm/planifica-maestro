@@ -64,6 +64,12 @@ export function obtenerPerfil(userIdOverride) {
   if (!perfil.fechaManual) {
     perfil.fecha = new Date().toISOString().split("T")[0];
   }
+  if (!perfil.tanda) {
+    perfil.tanda = "Jornada Escolar Extendida (JEE)";
+  }
+  if (!perfil.seccion) {
+    perfil.seccion = "A";
+  }
   return perfil;
 }
 

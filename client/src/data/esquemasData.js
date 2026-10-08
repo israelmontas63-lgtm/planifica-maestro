@@ -41,6 +41,13 @@ export const ESQUEMAS = [
     color: "#F3E5F5"
   },
   {
+    id: "multigrado",
+    nombre: "Aulas Multigrado (MINERD)",
+    descripcion: "Planificación articulada simultánea para dos o más grados en una misma aula (1.º-2.º, 3.º-4.º, 5.º-6.º).",
+    niveles: "Primaria Multigrado",
+    color: "#E0F2FE"
+  },
+  {
     id: "abp",
     nombre: "Aprendizaje Basado en Proyectos (ABP)",
     descripcion: "Planificación centrada en resolver un problema real mediante un producto.",

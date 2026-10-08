@@ -1171,7 +1171,9 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
       );
     }
 
-    const models = getGeminiModels(env);
+    const modeloHeader = request.headers.get("x-gemini-model");
+    const modeloBody = body && body.modelo ? body.modelo : null;
+    const models = getGeminiModels(env, modeloHeader || modeloBody);
 
     // Modo Streaming SSE
     if (stream) {

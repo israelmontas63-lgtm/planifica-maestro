@@ -6,6 +6,7 @@ const planRoutes = require("./routes/plan");
 const ocrRoutes = require("./routes/ocr");
 const exportRoutes = require("./routes/export");
 const voiceRoutes = require("./routes/voice");
+const audioRoutes = require("./routes/audio");
 const authRoutes = require("./routes/auth");
 const authMiddleware = require("./middleware/auth");
 
@@ -23,6 +24,7 @@ app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
 app.use("/api/plan", planRoutes);
 app.use("/api/ocr", ocrRoutes);
+app.use("/api/audio", audioRoutes);
 app.use("/api/export", exportRoutes);
 app.use("/api/voice", voiceRoutes);
 app.use("/api/voz", voiceRoutes);

@@ -11,7 +11,21 @@ export default function ConfiguracionModal({
   onAbrirPerfil 
 }) {
   const [limpiado, setLimpiado] = useState(false);
+  const [modeloIA, setModeloIA] = useState(() => {
+    try {
+      return localStorage.getItem("pm_modelo_ia") || "gemini-3.1-flash-lite";
+    } catch (e) {
+      return "gemini-3.1-flash-lite";
+    }
+  });
   const totalPlanes = obtenerTodasLasPlanificaciones().length;
+
+  const handleCambiarModelo = (nuevoModelo) => {
+    setModeloIA(nuevoModelo);
+    try {
+      localStorage.setItem("pm_modelo_ia", nuevoModelo);
+    } catch (e) {}
+  };
 
   const handleLimpiarCache = () => {
     if (window.confirm("¿Deseas limpiar la memoria temporal y caché del navegador? Tus planificaciones guardadas y perfil NO se borrarán.")) {
@@ -117,6 +131,96 @@ export default function ConfiguracionModal({
               <option value={3500}>3.5 s (Pausado)</option>
               <option value={5000}>5.0 s (Extendido)</option>
             </select>
+          </div>
+
+          {/* Selector de Motor de IA */}
+          <div style={{
+            background: "#ffffff",
+            border: "1.5px solid #e2e8f0",
+            borderRadius: "12px",
+            padding: "14px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px"
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <strong style={{ fontSize: "14px", color: "#1e293b", display: "block" }}>
+                  🧠 Motor de Inteligencia Artificial
+                </strong>
+                <span style={{ fontSize: "12px", color: "#64748b" }}>
+                  Selecciona la velocidad y capacidad de análisis para tus planificaciones
+                </span>
+              </div>
+              <span style={{
+                fontSize: "11px",
+                fontWeight: "700",
+                padding: "3px 8px",
+                borderRadius: "12px",
+                background: modeloIA === "gemini-3.1-flash-lite" ? "#dcfce7" : "#e0e7ff",
+                color: modeloIA === "gemini-3.1-flash-lite" ? "#15803d" : "#4338ca"
+              }}>
+                {modeloIA === "gemini-3.1-flash-lite" ? "⚡ Ultrarrápido" : "🔬 Alta Capacidad"}
+              </span>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <label style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "10px",
+                padding: "10px",
+                borderRadius: "8px",
+                border: `1.5px solid ${modeloIA === "gemini-3.1-flash-lite" ? "#0d9488" : "#e2e8f0"}`,
+                background: modeloIA === "gemini-3.1-flash-lite" ? "#f0fdfa" : "#ffffff",
+                cursor: "pointer"
+              }}>
+                <input
+                  type="radio"
+                  name="modeloIA"
+                  value="gemini-3.1-flash-lite"
+                  checked={modeloIA === "gemini-3.1-flash-lite"}
+                  onChange={() => handleCambiarModelo("gemini-3.1-flash-lite")}
+                  style={{ marginTop: "3px", accentColor: "#0d9488" }}
+                />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a" }}>
+                    Gemini 3.1 Flash-Lite <span style={{ color: "#0d9488", fontWeight: "600" }}>(Recomendado)</span>
+                  </div>
+                  <div style={{ fontSize: "11.5px", color: "#64748b", marginTop: "2px" }}>
+                    Respuesta en ~2.4 s • $0 costo • Optimizado para el currículo dominicano y guías CON BASE.
+                  </div>
+                </div>
+              </label>
+
+              <label style={{
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "10px",
+                padding: "10px",
+                borderRadius: "8px",
+                border: `1.5px solid ${modeloIA === "gemini-3.5-flash" ? "#0d9488" : "#e2e8f0"}`,
+                background: modeloIA === "gemini-3.5-flash" ? "#f0fdfa" : "#ffffff",
+                cursor: "pointer"
+              }}>
+                <input
+                  type="radio"
+                  name="modeloIA"
+                  value="gemini-3.5-flash"
+                  checked={modeloIA === "gemini-3.5-flash"}
+                  onChange={() => handleCambiarModelo("gemini-3.5-flash")}
+                  style={{ marginTop: "3px", accentColor: "#0d9488" }}
+                />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a" }}>
+                    Gemini 3.5 Flash <span style={{ color: "#6366f1", fontWeight: "600" }}>(Mayor Detalle)</span>
+                  </div>
+                  <div style={{ fontSize: "11.5px", color: "#64748b", marginTop: "2px" }}>
+                    Respuesta en ~8.2 s • Redacción más extensa y detallada en proyectos complejos o multigrado.
+                  </div>
+                </div>
+              </label>
+            </div>
           </div>
 
           {/* 3. Perfil Docente */}

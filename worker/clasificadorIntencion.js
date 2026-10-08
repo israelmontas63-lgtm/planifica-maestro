@@ -80,6 +80,13 @@ const PATRONES_TEMAS_CURRICULARES = [
   "ciencias de la naturaleza", "lengua espanola", "matematica", "ciencias sociales"
 ];
 
+const PATRONES_BUSQUEDA_WEB = [
+  "busca en internet", "buscar en internet", "busca en la web", "buscar en la web",
+  "busca en google", "buscar en google", "noticias de hoy", "noticias recientes",
+  "informacion reciente", "acontecimientos recientes", "en tiempo real", "busca online",
+  "investiga", "investigar"
+];
+
 const PATRONES_CONOCIMIENTO_GENERAL = [
   "que es un ", "que es una ", "que es la ", "que es el ", "que son los ", "que son las ",
   "que es ", "explicame la ", "explicame el ", "explicame como ", "explicame que ",
@@ -175,6 +182,20 @@ export function clasificarPorReglas(texto) {
       confianza: 0.85,
       motivo: "Planificación pedagógica complementada con datos actuales.",
       esMixtoConSaludo: false
+    };
+  }
+
+  // Detección de Búsqueda Web explícita
+  const pideBusquedaWeb = PATRONES_BUSQUEDA_WEB.some(p => contienePalabraOFrase(norm, p)) ||
+    ((norm.startsWith("busca ") || norm.startsWith("buscar ") || norm.startsWith("investiga ")) && !tienePlanificacion && !tieneTemaCurricular);
+
+  if (pideBusquedaWeb && !tienePlanificacion) {
+    return {
+      categoria: "busqueda_web",
+      tipo: "web",
+      confianza: 0.96,
+      motivo: "Solicitud explícita de búsqueda web o investigación externa.",
+      esMixtoConSaludo: tieneCharla
     };
   }
 

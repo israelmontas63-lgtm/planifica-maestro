@@ -1,0 +1,138 @@
+[
+  {
+    "id": "A8",
+    "nombre": "Planificación curricular multinivel y multiesquema",
+    "exito": true,
+    "ms": 0,
+    "evidencia": "4/4 esquemas oficiales verificados con sus bloques obligatorios.",
+    "raw": {}
+  },
+  {
+    "id": "A9",
+    "nombre": "Cobertura CON BASE y guías oficiales",
+    "exito": true,
+    "ms": 1,
+    "evidencia": "2do Lengua (Receta) -> cubierto: true | 5to Naturales -> cubierto: false (sin mezcla de materias).",
+    "raw": {}
+  },
+  {
+    "id": "A10",
+    "nombre": "Historial y personalización docente",
+    "exito": true,
+    "ms": 3,
+    "evidencia": "Patrones recuperados exitosamente (473 caracteres de contexto aprendido).",
+    "raw": {}
+  },
+  {
+    "id": "A11",
+    "nombre": "Multimodalidad / Ojo Digital (Defensa de imagen)",
+    "exito": true,
+    "ms": 0,
+    "evidencia": "Imagen negra 1x1 rechazada determinísticamente sin llamar a la IA (ilegible=true, motivo=muy_pequena).",
+    "raw": {}
+  },
+  {
+    "id": "A12",
+    "nombre": "Modo voz / micrófono continuo",
+    "exito": true,
+    "ms": 1,
+    "evidencia": "Hook y App.jsx verificados: corte por silencio (true) e interbloqueo micrófono-altavoz (true).",
+    "raw": {}
+  },
+  {
+    "id": "A13",
+    "nombre": "Exportación Word / DOCX oficial MINERD",
+    "exito": true,
+    "ms": 198,
+    "evidencia": "HTTP 200 | Archivo DOCX binario generado (8810 bytes) con firma PK Zip válida.",
+    "raw": {}
+  },
+  {
+    "id": "A14",
+    "nombre": "Autenticación / Aislamiento de sesión",
+    "exito": true,
+    "ms": 20,
+    "evidencia": "Auth HTTP verificado (Health: 200, Clave incorrecta: 401) | Aislamiento entre docentes estricto (DocA=1, DocB=0).",
+    "raw": {}
+  },
+  {
+    "id": "A15",
+    "nombre": "Control de cuota docente",
+    "exito": true,
+    "ms": 80,
+    "evidencia": "Bloqueo exacto tras 20 consumos: permitidas=20/20, final agotado=true, restantes=0.",
+    "raw": {}
+  },
+  {
+    "id": "A16",
+    "nombre": "Modo Owner y bypass de cuota",
+    "exito": true,
+    "ms": 0,
+    "evidencia": "isOwner: true reconocido -> Límite ilimitado (Infinity), 25/25 consumos permitidos sin bloqueo.",
+    "raw": {}
+  },
+  {
+    "id": "A17",
+    "nombre": "Enrutador IA / Circuit Breakers y Biblioteca Oficial",
+    "exito": true,
+    "ms": 2,
+    "evidencia": "Fallback local oficial verificado (origen=\"biblioteca_oficial\", 5 proveedores en matriz de circuito).",
+    "raw": {}
+  },
+  {
+    "id": "A18",
+    "nombre": "Búsqueda web en tiempo real (Tavily)",
+    "exito": true,
+    "ms": 253,
+    "evidencia": "HTTP 200 real: 2 fuentes recuperadas. Primera: \"Instagram...\"",
+    "raw": {}
+  },
+  {
+    "id": "A19",
+    "nombre": "Arquitectura PWA y Service Worker",
+    "exito": true,
+    "ms": 2,
+    "evidencia": "dist/sw.js (6258 bytes) y manifest.webmanifest generados con precache activo.",
+    "raw": {}
+  },
+  {
+    "id": "A20",
+    "nombre": "Síntesis de voz / ElevenLabs API",
+    "exito": true,
+    "ms": 618,
+    "evidencia": "HTTP 200 | Tier: \"free\", Cuota disponible: 6906/10000 chars.",
+    "raw": {}
+  },
+  {
+    "id": "A21",
+    "nombre": "Limpieza de cuenta y derecho al olvido",
+    "exito": true,
+    "ms": 1,
+    "evidencia": "Endpoints de confirmación OTP en 2 pasos con TTL de 300 s y rate limiting implementados en Worker.",
+    "raw": {}
+  },
+  {
+    "id": "A22",
+    "nombre": "Corrección pedagógica Levenshtein",
+    "exito": true,
+    "ms": 4,
+    "evidencia": "\"ciencias socilales de 3er grado\" -> \"Ciencias sociales de 3.º\" (cambios=2).",
+    "raw": {}
+  },
+  {
+    "id": "A23",
+    "nombre": "Detección y aclaración de ambigüedad",
+    "exito": true,
+    "ms": 1130,
+    "evidencia": "Término polisémico \"banco\" detectado como categoría: \"ambigua\", opciones: [Planificar una clase oficial MINERD, Consultar el currículo oficial, Hacer una pregunta general].",
+    "raw": {}
+  },
+  {
+    "id": "A24",
+    "nombre": "Seguridad de claves (cero exposición en frontend)",
+    "exito": true,
+    "ms": 18,
+    "evidencia": "0 claves expuestas en todo el bundle cliente de client/dist/ (claves encontradas: 0).",
+    "raw": {}
+  }
+]

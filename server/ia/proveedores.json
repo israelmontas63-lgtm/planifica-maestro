@@ -17,9 +17,9 @@
   "proveedores_texto": [
     {
       "id": "gemini_flash",
-      "nombre": "Google Gemini 3.5 Flash",
+      "nombre": "Google Gemini 3.5 Flash-Lite",
       "tipo": "texto",
-      "modelo": "gemini-3.5-flash",
+      "modelo": "gemini-3.5-flash-lite",
       "prioridad": 1,
       "timeout_ms": 10000,
       "activo": true,
@@ -34,11 +34,11 @@
     },
     {
       "id": "gemini_flash_lite",
-      "nombre": "Google Gemini 3.5 Flash-Lite",
+      "nombre": "Google Gemini 3.1 Flash-Lite",
       "tipo": "texto",
-      "modelo": "gemini-3.5-flash-lite",
+      "modelo": "gemini-3.1-flash-lite",
       "prioridad": 2,
-      "timeout_ms": 7000,
+      "timeout_ms": 8000,
       "activo": true,
       "vision_aprobada": true,
       "texto_aprobado": true,
@@ -51,12 +51,12 @@
     },
     {
       "id": "groq_llama",
-      "nombre": "Groq Llama 3.3 70B",
+      "nombre": "Groq Qwen 3.8 27B",
       "tipo": "texto",
-      "modelo": "llama-3.3-70b-versatile",
+      "modelo": "qwen/qwen3.8-27b",
       "prioridad": 3,
       "timeout_ms": 6000,
-      "activo": false,
+      "activo": true,
       "vision_aprobada": false,
       "texto_aprobado": true,
       "es_de_pago": false,
@@ -70,12 +70,12 @@
       "id": "openrouter_free",
       "nombre": "OpenRouter Free Gateway",
       "tipo": "texto",
-      "modelo": "meta-llama/llama-3.3-70b-instruct:free",
+      "modelo": "apodex/apodex-1.1-mini:free",
       "prioridad": 4,
       "timeout_ms": 8000,
-      "activo": false,
+      "activo": true,
       "vision_aprobada": false,
-      "texto_aprobado": false,
+      "texto_aprobado": true,
       "es_de_pago": false,
       "requiere_autorizacion": false,
       "limites_iniciales": {
@@ -104,7 +104,7 @@
   "proveedores_vision": [
     {
       "id": "gemini_flash_vision",
-      "nombre": "Gemini 2.5 Flash Visión",
+      "nombre": "Gemini 3.5 Flash-Lite Visión",
       "proveedor_id": "gemini_flash",
       "vision_aprobada": true,
       "activo": true
@@ -112,9 +112,9 @@
   ],
   "proveedores_busqueda": [
     {
-      "id": "biblioteca_minerd_search",
-      "nombre": "Buscador Curricular MINERD",
-      "tipo": "curricular_oficial",
+      "id": "tavily_search",
+      "nombre": "Tavily Search API",
+      "tipo": "web",
       "prioridad": 1,
       "activo": true
     },
@@ -126,11 +126,11 @@
       "activo": true
     },
     {
-      "id": "tavily_search",
-      "nombre": "Tavily Search API",
-      "tipo": "web",
+      "id": "biblioteca_minerd_search",
+      "nombre": "Buscador Curricular MINERD",
+      "tipo": "curricular_oficial",
       "prioridad": 3,
-      "activo": false
+      "activo": true
     }
   ],
   "proveedores_voz": [

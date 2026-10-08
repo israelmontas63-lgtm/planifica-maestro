@@ -1,0 +1,42 @@
+{
+  "r1Lite": {
+    "modelo": "gemini-3.1-flash-lite",
+    "status": 200,
+    "ms": 2444,
+    "tokensInput": 191,
+    "tokensOutput": 493,
+    "esJsonValido": true,
+    "tieneMomentos": true,
+    "resumen": "{\n  \"tema\": \"La receta: pasos para preparar algo delicioso\",\n  \"area\": \"Lengua Española\",\n  \"grado\": \"2do de Primaria\",\n  \"competencias_fundamentales\": [\n    \"Competencia Comunicativa\",\n    \"Competenc"
+  },
+  "r1High": {
+    "modelo": "gemini-3.5-flash",
+    "status": 200,
+    "ms": 7993,
+    "tokensInput": 191,
+    "tokensOutput": 715,
+    "esJsonValido": true,
+    "tieneMomentos": true,
+    "resumen": "{\n  \"tema\": \"La receta: estructura y función\",\n  \"area\": \"Lengua Española\",\n  \"grado\": \"2do de Primaria\",\n  \"competencias_fundamentales\": [\n    \"Competencia Comunicativa\",\n    \"Competencia Pensamiento"
+  },
+  "r2Lite": {
+    "modelo": "gemini-3.1-flash-lite",
+    "status": 200,
+    "ms": 2420,
+    "tokensInput": 195,
+    "tokensOutput": 511,
+    "esJsonValido": true,
+    "tieneMomentos": true,
+    "resumen": "{\n  \"tema\": \"La Guerra de la Restauración Dominicana\",\n  \"area\": \"Ciencias Sociales\",\n  \"grado\": \"5to de Primaria\",\n  \"competencias_fundamentales\": [\n    \"Competencia Ética y Ciudadana\",\n    \"Competen"
+  },
+  "r2High": {
+    "modelo": "gemini-3.5-flash",
+    "status": 200,
+    "ms": 8412,
+    "tokensInput": 195,
+    "tokensOutput": 742,
+    "esJsonValido": true,
+    "tieneMomentos": true,
+    "resumen": "{\n  \"tema\": \"La Guerra de la Restauración Dominicana (1863-1865)\",\n  \"area\": \"Ciencias Sociales\",\n  \"grado\": \"5to de Primaria\",\n  \"competencias_fundamentales\": [\n    \"Competencia Ética y Ciudadana\",\n "
+  }
+}

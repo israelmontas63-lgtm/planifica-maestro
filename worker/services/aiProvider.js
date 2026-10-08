@@ -48,8 +48,9 @@ export const FALLBACK_GEMINI_MODEL = "gemini-3.5-flash";
  * Obtiene la lista ordenada de modelos Gemini: [principal, respaldo, seguridad]
  * Configurable mediante la variable de entorno GEMINI_MODEL.
  */
-export function getGeminiModels(env) {
-  const primary = (env && env.GEMINI_MODEL ? env.GEMINI_MODEL : DEFAULT_GEMINI_MODEL).trim();
+export function getGeminiModels(env, modeloPreferido = null) {
+  const pref = (typeof modeloPreferido === "string" && modeloPreferido.trim()) ? modeloPreferido.trim() : null;
+  const primary = pref || (env && env.GEMINI_MODEL ? env.GEMINI_MODEL : DEFAULT_GEMINI_MODEL).trim();
   const models = [primary];
   if (primary !== FALLBACK_GEMINI_MODEL) models.push(FALLBACK_GEMINI_MODEL);
   if (!models.includes("gemini-3.1-flash-lite")) models.push("gemini-3.1-flash-lite");

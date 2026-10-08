@@ -277,11 +277,17 @@ export async function generarPlanificacion({
   onChunk,
 }) {
   const docenteId = obtenerDocenteId();
+  let modeloPreferido = "gemini-3.1-flash-lite";
+  try {
+    modeloPreferido = localStorage.getItem("pm_modelo_ia") || "gemini-3.1-flash-lite";
+  } catch (e) {}
+
   const payload = {
     messages,
     nivel,
     periodo,
     docenteId,
+    modelo: modeloPreferido,
     forzarOriginal: Boolean(forzarOriginal),
     confirmado: Boolean(confirmado),
     permitirBusquedaWeb: true,
@@ -290,6 +296,7 @@ export async function generarPlanificacion({
 
   const headers = {
     Accept: onChunk ? "text/event-stream, application/json" : "application/json",
+    "x-gemini-model": modeloPreferido,
   };
 
   const res = await request(
@@ -453,40 +460,15 @@ export async function escanearMaterial({ imageBase64, mediaType = "image/jpeg", 
 }
 
 /**
- * Exportar a Word (.docx) — 100% en el cliente sin consumir CPU del servidor
+ * Exportar a Word (.docx) — Formato Oficial MINERD / CON BASE (A4 Horizontal, 17 filas)
+ * 100% en el cliente sin consumir CPU del servidor.
  */
-export async function exportarWord({ titulo = "Planificacion", plan = "" }) {
-  if (!plan) throw new Error("No hay contenido de planificación para exportar.");
+export async function exportarWord({ titulo = "Planificacion", plan = "", datos = null, perfil = null }) {
+  if (!plan && (!datos || Object.keys(datos).length === 0)) {
+    throw new Error("No hay contenido de planificación para exportar.");
+  }
 
-  const { Document, Packer, Paragraph, HeadingLevel, TextRun } = await import("docx");
-
-  const paragraphs = plan.split("\n").map((line) => {
-    const isHeading = /:$/.test(line.trim()) && line.trim().length < 80;
-    return new Paragraph({
-      heading: isHeading ? HeadingLevel.HEADING_2 : undefined,
-      children: [new TextRun({ text: line, bold: isHeading })],
-    });
-  });
-
-  const doc = new Document({
-    sections: [
-      {
-        children: [
-          new Paragraph({ text: titulo, heading: HeadingLevel.TITLE }),
-          new Paragraph({ text: "" }),
-          ...paragraphs,
-        ],
-      },
-    ],
-  });
-
-  const blob = await Packer.toBlob(doc);
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${titulo.replace(/\s+/g, "_")}.docx`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  const { descargarWordConBase } = await import("./services/generadorWordConBase.js");
+  return descargarWordConBase({ titulo, plan, datos, perfil });
 }
+
