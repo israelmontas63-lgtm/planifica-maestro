@@ -28,6 +28,8 @@ Cuando se configure el nuevo proyecto activo de Supabase para el lanzamiento mas
    - La sincronización bidireccional en la nube con `perfil_docente` y `planes_guardados`.
    - La purga de datos al cerrar sesión para ordenadores compartidos.
    - Cero reescritura de código: todo el flujo de autenticación está protegido y testeado.
+4. Tarea pendiente para lanzamiento masivo:
+   - Probar con dos cuentas reales en el nuevo proyecto de Supabase que las cuotas en `uso_docentes` sean estrictamente de solo lectura para el cliente (confirmando que un usuario autenticado no puede ejecutar INSERT, UPDATE ni DELETE sobre su contador de cuotas).
 
 ## Commits Realizados
 - `378c1b1`: `fix(conducta): salvaguarda de saludo directo y defensa en código para imagen ilegible`

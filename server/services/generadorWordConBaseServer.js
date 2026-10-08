@@ -638,7 +638,7 @@ async function construirDocumentoWordOficial({
             spacing: { before: 140 },
             children: [
               new TextRun({
-                text: "Documento oficial generado por Planifica Maestro — Adecuación Curricular MINERD",
+                text: "Documento generado por Planifica Maestro — Formato de secuencia didáctica (CON BASE)",
                 size: 16,
                 color: "94A3B8",
                 italics: true,

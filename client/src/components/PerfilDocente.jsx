@@ -2,11 +2,48 @@ import { useState, useEffect } from "react";
 import { cargarPerfil, guardarPerfil, obtenerDocenteId, obtenerPerfil } from "../services/perfilStorage.js";
 export { cargarPerfil, guardarPerfil, obtenerDocenteId, obtenerPerfil };
 
+const GRADOS_POR_NIVEL = {
+  primario: [
+    { id: "1.º", label: "1.º Primaria" },
+    { id: "2.º", label: "2.º Primaria" },
+    { id: "3.º", label: "3.º Primaria" },
+    { id: "4.º", label: "4.º Primaria" },
+    { id: "5.º", label: "5.º Primaria" },
+    { id: "6.º", label: "6.º Primaria" }
+  ],
+  inicial: [
+    { id: "Maternal", label: "Maternal (Párvulos)" },
+    { id: "Kínder", label: "Kínder (Pre-Kínder)" },
+    { id: "Pre-primario", label: "Pre-primario" }
+  ],
+  secundario: [
+    { id: "1.º Sec", label: "1.º Secundaria (7mo)" },
+    { id: "2.º Sec", label: "2.º Secundaria (8vo)" },
+    { id: "3.º Sec", label: "3.º Secundaria (1ro Bach)" },
+    { id: "4.º Sec", label: "4.º Secundaria (2do Bach)" },
+    { id: "5.º Sec", label: "5.º Secundaria (3ro Bach)" },
+    { id: "6.º Sec", label: "6.º Secundaria (4to Bach)" }
+  ]
+};
+
+function generarEtiquetaGrados(listaGrados, nivel) {
+  if (!listaGrados || listaGrados.length === 0) return "";
+  const nivelStr = nivel === "inicial" ? "Nivel Inicial" : nivel === "secundario" ? "Secundaria" : "Primaria";
+  if (listaGrados.length === 1) {
+    return `${listaGrados[0]} de ${nivelStr}`;
+  }
+  const ordenados = [...listaGrados];
+  const ult = ordenados.pop();
+  return `${ordenados.join(", ")} y ${ult} de ${nivelStr} (Multigrado)`;
+}
+
 export default function PerfilDocente({ user, onActualizarPerfil, onCerrar }) {
   const [nombre, setNombre] = useState("");
   const [escuela, setEscuela] = useState("");
   const [tanda, setTanda] = useState("Jornada Escolar Extendida (JEE)");
   const [seccion, setSeccion] = useState("A");
+  const [nivel, setNivel] = useState("primario");
+  const [grados, setGrados] = useState(["1.º", "2.º"]);
   const [grado, setGrado] = useState("");
   const [regional, setRegional] = useState("");
   const [distrito, setDistrito] = useState("");
@@ -16,7 +53,6 @@ export default function PerfilDocente({ user, onActualizarPerfil, onCerrar }) {
 
   useEffect(() => {
     const perfil = cargarPerfil() || {};
-    // Priorizar datos de user_metadata de Supabase si existen
     const userNombre = user?.user_metadata?.nombre || user?.user_metadata?.full_name || perfil?.nombre || "";
     const userEscuela = user?.user_metadata?.escuela || perfil?.escuela || "";
 
@@ -24,43 +60,85 @@ export default function PerfilDocente({ user, onActualizarPerfil, onCerrar }) {
     setEscuela(userEscuela);
     setTanda(perfil?.tanda || "Jornada Escolar Extendida (JEE)");
     setSeccion(perfil?.seccion || "A");
-    setGrado(perfil?.grado || "");
+    
+    const nivelGuardado = perfil?.nivel || "primario";
+    setNivel(nivelGuardado);
+
+    let gradosGuardados = Array.isArray(perfil?.grados) ? perfil.grados : [];
+    if (gradosGuardados.length === 0 && perfil?.grado) {
+      if (perfil.grado.includes("1.º") && perfil.grado.includes("2.º")) gradosGuardados = ["1.º", "2.º"];
+      else if (perfil.grado.includes("1")) gradosGuardados = ["1.º"];
+      else if (perfil.grado.includes("2")) gradosGuardados = ["2.º"];
+      else if (perfil.grado.includes("3")) gradosGuardados = ["3.º"];
+      else if (perfil.grado.includes("4")) gradosGuardados = ["4.º"];
+      else if (perfil.grado.includes("5")) gradosGuardados = ["5.º"];
+      else if (perfil.grado.includes("6")) gradosGuardados = ["6.º"];
+    }
+    if (gradosGuardados.length === 0) {
+      gradosGuardados = ["1.º", "2.º"];
+    }
+    setGrados(gradosGuardados);
+    setGrado(perfil?.grado || generarEtiquetaGrados(gradosGuardados, nivelGuardado));
+
     setRegional(perfil?.regional || "");
     setDistrito(perfil?.distrito || "");
     setFecha(perfil?.fecha || new Date().toISOString().split("T")[0]);
     setFechaManual(Boolean(perfil?.fechaManual));
   }, [user]);
 
+  const handleToggleGrado = (idGrado) => {
+    let nuevaLista;
+    if (grados.includes(idGrado)) {
+      nuevaLista = grados.filter(g => g !== idGrado);
+    } else {
+      nuevaLista = [...grados, idGrado];
+    }
+    setGrados(nuevaLista);
+    const etiqueta = generarEtiquetaGrados(nuevaLista, nivel);
+    setGrado(etiqueta);
+  };
+
+  const handleCambiarNivel = (nuevoNivel) => {
+    setNivel(nuevoNivel);
+    const primerOpcion = (GRADOS_POR_NIVEL[nuevoNivel] || [])[0]?.id;
+    const nuevosGrados = primerOpcion ? [primerOpcion] : [];
+    setGrados(nuevosGrados);
+    setGrado(generarEtiquetaGrados(nuevosGrados, nuevoNivel));
+  };
+
   const handleGuardar = async () => {
     const perfilActual = cargarPerfil() || {};
     const perfilActualizado = {
       ...perfilActual,
-      nombre,
-      escuela,
+      nombre: nombre.trim(),
+      escuela: escuela.trim(),
       tanda,
-      seccion,
-      grado,
-      regional,
-      distrito,
+      seccion: seccion.trim(),
+      nivel,
+      grados,
+      grado: grado.trim() || generarEtiquetaGrados(grados, nivel),
+      regional: regional.trim(),
+      distrito: distrito.trim(),
       fecha,
       fechaManual
     };
     guardarPerfil(perfilActualizado);
 
-    // FASE 17 - Punto 2: Fusión de perfil en user_metadata de Supabase
     if (onActualizarPerfil) {
       try {
         await onActualizarPerfil({
-          nombre,
-          escuela,
+          nombre: perfilActualizado.nombre,
+          escuela: perfilActualizado.escuela,
           tanda,
-          seccion,
-          grado,
-          regional,
-          distrito
+          seccion: perfilActualizado.seccion,
+          nivel,
+          grados,
+          grado: perfilActualizado.grado,
+          regional: perfilActualizado.regional,
+          distrito: perfilActualizado.distrito
         });
       } catch (err) {
-        console.warn("Aviso actualizando metadata en Supabase:", err);
+        console.warn("Aviso actualizando metadata en nube:", err);
       }
     }
 
@@ -71,9 +149,11 @@ export default function PerfilDocente({ user, onActualizarPerfil, onCerrar }) {
     }, 1200);
   };
 
+  const listaDisponibles = GRADOS_POR_NIVEL[nivel] || [];
+
   return (
     <div className="schema-overlay" onClick={onCerrar}>
-      <div className="schema-panel" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "520px" }}>
+      <div className="schema-panel" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "560px" }}>
         
         <div className="schema-header">
           <h2>Perfil del Docente</h2>
@@ -82,7 +162,7 @@ export default function PerfilDocente({ user, onActualizarPerfil, onCerrar }) {
 
         <div className="perfil-body">
           <p className="perfil-intro">
-            Tus datos se guardan en este dispositivo y se auto-rellenan en la matriz oficial de cada planificación nueva en Word.
+            Tus datos se guardan en este dispositivo y se auto-rellenan en el formato de secuencia didáctica (CON BASE) de cada planificación nueva en Word.
           </p>
           <div style={{
             fontSize: "12px",
@@ -121,6 +201,20 @@ export default function PerfilDocente({ user, onActualizarPerfil, onCerrar }) {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
             <label className="perfil-label">
+              Nivel Educativo
+              <select
+                className="perfil-input"
+                value={nivel}
+                onChange={(e) => handleCambiarNivel(e.target.value)}
+                style={{ cursor: "pointer" }}
+              >
+                <option value="primario">Nivel Primario</option>
+                <option value="inicial">Nivel Inicial</option>
+                <option value="secundario">Nivel Secundario</option>
+              </select>
+            </label>
+
+            <label className="perfil-label">
               Tanda / Jornada
               <select
                 className="perfil-input"
@@ -134,33 +228,85 @@ export default function PerfilDocente({ user, onActualizarPerfil, onCerrar }) {
                 <option value="Nocturna">Nocturna</option>
               </select>
             </label>
+          </div>
 
+          {/* SELECCIÓN MÚLTIPLE DE GRADOS (MULTIGRADO) */}
+          <div style={{ marginTop: "6px", marginBottom: "12px" }}>
+            <label className="perfil-label" style={{ marginBottom: "6px" }}>
+              Grados a tu cargo (selecciona uno o varios para Multigrado)
+            </label>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "4px" }}>
+              {listaDisponibles.map((g) => {
+                const seleccionado = grados.includes(g.id);
+                return (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => handleToggleGrado(g.id)}
+                    style={{
+                      border: seleccionado ? "2px solid #0f766e" : "1px solid #cbd5e1",
+                      background: seleccionado ? "#ccfbf1" : "#ffffff",
+                      color: seleccionado ? "#0f766e" : "#334155",
+                      fontWeight: seleccionado ? "700" : "500",
+                      padding: "6px 12px",
+                      borderRadius: "20px",
+                      fontSize: "12px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      transition: "all 0.15s ease"
+                    }}
+                  >
+                    <span>{seleccionado ? "✓" : "+"}</span>
+                    <span>{g.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {grados.length > 1 && (
+              <div style={{ fontSize: "11px", color: "#0f766e", fontWeight: "600", marginTop: "6px" }}>
+                🤝 Modalidad Multigrado activa: las planificaciones y el Word integrarán los grados seleccionados.
+              </div>
+            )}
+          </div>
+
+          <label className="perfil-label">
+            Texto de Grado para el Encabezado del Word
+            <input
+              type="text"
+              className="perfil-input"
+              placeholder="Ej: 1.º y 2.º de Primaria (Multigrado)"
+              value={grado}
+              onChange={(e) => setGrado(e.target.value)}
+            />
+          </label>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
             <label className="perfil-label">
               Sección
               <input
                 type="text"
                 className="perfil-input"
-                placeholder="Ej: A, B, C o Única"
+                placeholder="Ej: A, B o Única"
                 value={seccion}
                 onChange={(e) => setSeccion(e.target.value)}
               />
             </label>
-          </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
             <label className="perfil-label">
-              Regional Educativa (Opcional)
+              Regional (Opcional)
               <input
                 type="text"
                 className="perfil-input"
-                placeholder="Ej: 10 - Santo Domingo"
+                placeholder="Ej: 10"
                 value={regional}
                 onChange={(e) => setRegional(e.target.value)}
               />
             </label>
 
             <label className="perfil-label">
-              Distrito Educativo (Opcional)
+              Distrito (Opcional)
               <input
                 type="text"
                 className="perfil-input"
@@ -172,17 +318,6 @@ export default function PerfilDocente({ user, onActualizarPerfil, onCerrar }) {
           </div>
 
           <label className="perfil-label">
-            Grado Habitual (Opcional)
-            <input
-              type="text"
-              className="perfil-input"
-              placeholder="Ej: 3ro de Primaria"
-              value={grado}
-              onChange={(e) => setGrado(e.target.value)}
-            />
-          </label>
-
-          <label className="perfil-label">
             Fecha (se autocompleta con la fecha de hoy)
             <input
               type="date"
@@ -192,6 +327,7 @@ export default function PerfilDocente({ user, onActualizarPerfil, onCerrar }) {
             />
             {fechaManual && (
               <button 
+                type="button"
                 className="perfil-reset-fecha"
                 onClick={() => { setFecha(new Date().toISOString().split("T")[0]); setFechaManual(false); }}
               >
@@ -200,8 +336,8 @@ export default function PerfilDocente({ user, onActualizarPerfil, onCerrar }) {
             )}
           </label>
 
-          <button className="perfil-guardar" onClick={handleGuardar}>
-            {guardado ? "✓ Guardado y Sincronizado" : "Guardar Perfil"}
+          <button type="button" className="perfil-guardar" onClick={handleGuardar}>
+            {guardado ? "✓ Guardado en este Dispositivo" : "Guardar Perfil"}
           </button>
 
           <div style={{ textAlign: "center", marginTop: "14px", fontSize: "11px", color: "#64748b", fontWeight: "500" }}>

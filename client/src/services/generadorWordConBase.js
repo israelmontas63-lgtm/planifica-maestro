@@ -63,6 +63,7 @@ function normalizarClave(str) {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "")
     .trim();
 }
 
@@ -112,21 +113,85 @@ function parsearTextoPlan(planText) {
 }
 
 /**
- * Extrae o estructura los momentos pedagógicos (Inicio, Desarrollo, Cierre o Momentos 1 a 4)
+ * Extrae o estructura los momentos pedagógicos (Inicio, Desarrollo, Cierre o Momentos 1 a 6)
  */
-function extraerMomentosPedagogicos(datosObj, textoCompleto) {
+function inferirRecursosPorDefecto(area = "", momentoNum = 1) {
+  const a = (area || "").toLowerCase();
+  if (a.includes("lengua") || a.includes("español")) {
+    const list = [
+      "Fascículo de Lengua Española, papelógrafo de aprendizaje, pizarra y marcadores",
+      "Guía didáctica, tarjetas de letras y palabras, cuaderno de trabajo y lápices",
+      "Carteles ilustrados, fascículo de actividades, hojas en blanco",
+      "Cuaderno del estudiante, instrumentos de cotejo, lápices de colores"
+    ];
+    return list[(momentoNum - 1) % list.length];
+  }
+  if (a.includes("mate")) {
+    const list = [
+      "Fascículo de Matemática, calendario escolar, pizarra y marcadores",
+      "Material concreto manipulativo, regletas, tabla numérica y cuaderno",
+      "Ficha de actividades prácticas, regla, lápices y borrador",
+      "Cuaderno del estudiante, registro de logros, lista de cotejo"
+    ];
+    return list[(momentoNum - 1) % list.length];
+  }
+  if (a.includes("social")) {
+    const list = [
+      "Mapas temáticos, globo terráqueo, imágenes históricas y pizarra",
+      "Textos informativos del fascículo, cartulinas, marcadores y cuaderno",
+      "Láminas didácticas, cuaderno de trabajo, tijeras y pegamento",
+      "Cuaderno de Ciencias Sociales, rúbrica de participación, preguntas orales"
+    ];
+    return list[(momentoNum - 1) % list.length];
+  }
+  if (a.includes("natur") || a.includes("cien")) {
+    const list = [
+      "Láminas ilustrativas de ciencias, muestras del entorno natural, pizarra",
+      "Fascículo de Ciencias de la Naturaleza, lupas, cuaderno de campo",
+      "Material de experimentación sencilla, fichas de observación",
+      "Cuaderno de ciencias, lista de cotejo, preguntas de reflexión guiada"
+    ];
+    return list[(momentoNum - 1) % list.length];
+  }
+  return "Guía didáctica CON BASE, fascículo del estudiante, cuaderno de trabajo, pizarra y marcadores";
+}
+
+function extraerMomentosPedagogicos(datosObj, textoCompleto, area = "") {
   const momentos = [];
 
-  // 1. Intentar buscar campos específicos en datosObj
+  // 1. Si datosObj.momentos viene como arreglo estructurado
+  if (datosObj && Array.isArray(datosObj.momentos) && datosObj.momentos.length > 0) {
+    datosObj.momentos.forEach((m, idx) => {
+      if (typeof m === "object" && m !== null) {
+        const nom = m.momento || m.nombre || `Momento ${idx + 1}`;
+        const desc = m.descripcion || m.actividad || m.texto || "";
+        const tiem = m.tiempo || (idx === 0 ? "15 min" : idx === 1 ? "25 min" : "15 min");
+        const rec = m.recursos || buscarRecursosParaMomento(desc) || inferirRecursosPorDefecto(area, idx + 1);
+        momentos.push({ nombre: nom, descripcion: desc, tiempo: tiem, recursos: rec });
+      } else if (typeof m === "string") {
+        const matchMom = m.match(/^(?:#{1,4}\s*|[📌•*\-]\s*)?(momento\s*\d+|inicio|desarrollo|cierre)[^:]*:\s*(.*)/i);
+        const nom = matchMom ? matchMom[1] : `Momento ${idx + 1}`;
+        const desc = matchMom ? matchMom[2] : m;
+        const matchTiempo = desc.match(/(\d+\s*(?:min(?:utos)?|horas?))/i);
+        const tiem = matchTiempo ? matchTiempo[1] : (idx === 0 ? "15 min" : idx === 1 ? "25 min" : "15 min");
+        const rec = buscarRecursosParaMomento(desc) || inferirRecursosPorDefecto(area, idx + 1);
+        momentos.push({ nombre: nom, descripcion: desc, tiempo: tiem, recursos: rec });
+      }
+    });
+    if (momentos.length > 0) return momentos;
+  }
+
+  // 2. Intentar buscar campos específicos en datosObj
   const camposMomento = [
-    { claves: ["inicio", "momento 1", "apertura"], nombre: "Momento 1: Inicio / Recuperación de saberes", tiempo: "10 min" },
+    { claves: ["inicio", "momento 1", "apertura"], nombre: "Momento 1: Inicio / Recuperación de saberes", tiempo: "15 min" },
     { claves: ["desarrollo", "momento 2", "actividad guiada"], nombre: "Momento 2: Desarrollo / Construcción del aprendizaje", tiempo: "25 min" },
     { claves: ["momento 3", "practica independiente", "profundizacion"], nombre: "Momento 3: Práctica / Aplicación de conocimientos", tiempo: "25 min" },
-    { claves: ["cierre", "momento 4", "metacognicion", "evaluacion formativa"], nombre: "Momento 4: Cierre / Sistematización y evaluación", tiempo: "10 min" }
+    { claves: ["cierre", "momento 4", "metacognicion", "evaluacion formativa"], nombre: "Momento 4: Cierre / Sistematización y evaluación", tiempo: "15 min" }
   ];
 
   let encontrado = false;
-  for (const cm of camposMomento) {
+  for (let i = 0; i < camposMomento.length; i++) {
+    const cm = camposMomento[i];
     const val = buscarEnDatos(datosObj, cm.claves);
     if (val) {
       encontrado = true;
@@ -136,29 +201,31 @@ function extraerMomentosPedagogicos(datosObj, textoCompleto) {
         nombre: cm.nombre,
         descripcion: val,
         tiempo: tiempoFinal,
-        recursos: buscarRecursosParaMomento(val) || "Fascículo, pizarra, cuadernos"
+        recursos: buscarRecursosParaMomento(val) || inferirRecursosPorDefecto(area, i + 1)
       });
     }
   }
 
-  // 2. Si no se encontraron por campos individuales, buscar dentro de "actividades" o texto completo
+  // 3. Si no se encontraron por campos individuales, buscar dentro de "actividades" o texto completo
   if (!encontrado) {
     const fuente = buscarEnDatos(datosObj, ["actividades", "momentos", "secuencia didactica"]) || textoCompleto || "";
     const lineas = fuente.split("\n").map(l => l.trim()).filter(Boolean);
 
     let momActual = null;
+    let momCount = 0;
     for (const linea of lineas) {
       const matchMom = linea.match(/^(?:#{1,4}\s*|[📌•*\-]\s*)?(momento\s*\d+|inicio|desarrollo|cierre)[^:]*:\s*(.*)/i);
       if (matchMom) {
         if (momActual) momentos.push(momActual);
+        momCount++;
         const tit = matchMom[1].toUpperCase();
         const desc = matchMom[2] || "";
         const matchTiempo = desc.match(/(\d+\s*(?:min(?:utos)?|horas?))/i);
         momActual = {
           nombre: `Momento: ${tit}`,
           descripcion: desc,
-          tiempo: matchTiempo ? matchTiempo[1] : "15 min",
-          recursos: buscarRecursosParaMomento(desc) || "Guía didáctica, cuaderno"
+          tiempo: matchTiempo ? matchTiempo[1] : (momCount === 1 ? "15 min" : momCount === 2 ? "25 min" : "15 min"),
+          recursos: buscarRecursosParaMomento(desc) || inferirRecursosPorDefecto(area, momCount)
         };
       } else if (momActual) {
         momActual.descripcion += "\n" + linea;
@@ -172,21 +239,21 @@ function extraerMomentosPedagogicos(datosObj, textoCompleto) {
     momentos.push(
       {
         nombre: "Momento 1: Inicio",
-        descripcion: "Presentación del propósito pedagógico, recuperación de conocimientos previos y motivación.",
-        tiempo: "10 min",
-        recursos: "Pizarra, cartel de propósitos"
+        descripcion: "Presentación del propósito pedagógico, recuperación de conocimientos previos y motivación activa.",
+        tiempo: "15 min",
+        recursos: inferirRecursosPorDefecto(area, 1)
       },
       {
         nombre: "Momento 2: Desarrollo",
-        descripcion: "Actividades de aprendizaje guiadas, interacción con los textos/fascículos y trabajo colaborativo.",
+        descripcion: "Actividades de aprendizaje guiadas, interacción con los textos y fascículos, y resolución en equipos.",
         tiempo: "25 min",
-        recursos: "Fascículo CON BASE, cuadernos de trabajo, material manipulativo"
+        recursos: inferirRecursosPorDefecto(area, 2)
       },
       {
         nombre: "Momento 3: Cierre",
-        descripcion: "Socialización de producciones, síntesis de lo aprendido y preguntas metacognitivas.",
-        tiempo: "10 min",
-        recursos: "Cuaderno del estudiante, instrumentos de cotejo"
+        descripcion: "Socialización de producciones, síntesis de lo aprendido y preguntas de reflexión metacognitiva.",
+        tiempo: "15 min",
+        recursos: inferirRecursosPorDefecto(area, 3)
       }
     );
   }
@@ -308,29 +375,53 @@ export async function construirDocumentoWordOficial({
     : parsearTextoPlan(plan);
 
   // 1. Campos de identificación
-  const centroEducativo =
+  const area =
+    buscarEnDatos(datosObj, ["area", "área", "asignatura", "materia"]) ||
+    "Matemática";
+
+  // Grado con soporte multigrado:
+  let grado = buscarEnDatos(datosObj, ["grado", "curso", "nivel educativo"]);
+  if (!grado) {
+    if (Array.isArray(perfilActivo?.grados) && perfilActivo.grados.length > 0) {
+      if (perfilActivo.grados.length > 1) {
+        const ult = perfilActivo.grados[perfilActivo.grados.length - 1];
+        const prev = perfilActivo.grados.slice(0, -1);
+        grado = `${prev.join(", ")} y ${ult} (Multigrado)`;
+      } else {
+        grado = perfilActivo.grados[0];
+      }
+    } else if (perfilActivo?.grado) {
+      grado = perfilActivo.grado;
+    } else {
+      grado = "3ro de Primaria";
+    }
+  }
+
+  let centroEducativo =
     buscarEnDatos(datosObj, ["centro educativo", "escuela", "institucion", "colegio"]) ||
     perfilActivo?.escuela ||
-    "Centro Educativo del Nivel Primario";
+    "Centro Educativo";
+
+  const regDist = [];
+  if (perfilActivo?.regional && !centroEducativo.toLowerCase().includes("reg")) {
+    regDist.push(`Regional ${perfilActivo.regional}`);
+  }
+  if (perfilActivo?.distrito && !centroEducativo.toLowerCase().includes("dist")) {
+    regDist.push(`Distrito ${perfilActivo.distrito}`);
+  }
+  if (regDist.length > 0) {
+    centroEducativo = `${centroEducativo} (${regDist.join(", ")})`;
+  }
 
   const docente =
     buscarEnDatos(datosObj, ["docente", "profesor", "maestro", "facilitador"]) ||
     perfilActivo?.nombre ||
     "Docente";
 
-  const grado =
-    buscarEnDatos(datosObj, ["grado", "curso", "nivel educativo"]) ||
-    perfilActivo?.grado ||
-    "3ro de Primaria";
-
   const seccion =
     buscarEnDatos(datosObj, ["seccion", "sección"]) ||
     perfilActivo?.seccion ||
     "A";
-
-  const area =
-    buscarEnDatos(datosObj, ["area", "área", "asignatura", "materia"]) ||
-    "Matemática";
 
   const secuencia =
     buscarEnDatos(datosObj, ["secuencia", "fasciculo", "unidad de aprendizaje", "tema"]) ||
@@ -368,8 +459,8 @@ export async function construirDocumentoWordOficial({
   const actividad =
     buscarEnDatos(datosObj, ["actividad", "bloque y actividad"]) || "Actividad 1: Exploración y desarrollo";
 
-  // 3. Momentos pedagógicos
-  const momentosList = extraerMomentosPedagogicos(datosObj, plan);
+  // 3. Momentos pedagógicos (pasando el área curricular para recursos específicos)
+  const momentosList = extraerMomentosPedagogicos(datosObj, plan, area);
 
   // 4. Evaluación
   const evaluacion =
@@ -627,38 +718,7 @@ export async function construirDocumentoWordOficial({
     );
   });
 
-  // Si hay menos de 5 momentos para completar la simetría oficial de 17 filas, agregamos espacios de momento si aplica
-  const faltantes = Math.max(0, 6 - momentosList.length);
-  for (let f = 0; f < faltantes && (filasTabla.length < 15); f++) {
-    filasTabla.push(
-      new TableRow({
-        children: [
-          crearCelda({
-            columnSpan: 2,
-            widthPct: 70,
-            children: [
-              new Paragraph({
-                spacing: { before: 40, after: 40 },
-                children: [
-                  new TextRun({ text: "Momento complementario / Retroalimentación:", bold: true, size: 19, color: "64748B", font: "Calibri" })
-                ]
-              })
-            ]
-          }),
-          crearCelda({
-            columnSpan: 1,
-            widthPct: 15,
-            children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "---", size: 18, color: "94A3B8" })] })]
-          }),
-          crearCelda({
-            columnSpan: 1,
-            widthPct: 15,
-            children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "---", size: 18, color: "94A3B8" })] })]
-          })
-        ]
-      })
-    );
-  }
+
 
   // Fila 16: Evaluación de la actividad
   filasTabla.push(
@@ -714,14 +774,15 @@ export async function construirDocumentoWordOficial({
 
   // Si existen campos extra en datosObj que no entraron en las 17 filas (ej: fuentes curriculares, notas, situación de aprendizaje)
   const clavesCubiertas = [
-    "centro educativo", "docente", "grado", "seccion", "area", "secuencia", "fecha", "tanda",
-    "competencias fundamentales", "competencias especificas", "intencion pedagogica", "estrategias de ensenanza",
-    "bloque", "actividad", "evaluacion", "actividades diferenciadas", "general", "momentos", "inicio", "desarrollo", "cierre"
-  ];
+    "centro educativo", "docente", "grado", "grados", "seccion", "area", "secuencia", "fecha", "tanda",
+    "competencias fundamentales", "competencias especificas", "intencion pedagogica", "estrategias", "estrategias de ensenanza",
+    "bloque", "actividad", "evaluacion", "actividades diferenciadas", "general", "momentos", "inicio", "desarrollo", "cierre",
+    "titulo", "title"
+  ].map(normalizarClave);
 
   const camposAdicionales = Object.entries(datosObj).filter(([k]) => {
     const kNorm = normalizarClave(k);
-    return !clavesCubiertas.some(cc => kNorm.includes(cc));
+    return !clavesCubiertas.some(cc => kNorm.includes(cc) || cc.includes(kNorm));
   });
 
   if (camposAdicionales.length > 0) {
@@ -770,7 +831,7 @@ export async function construirDocumentoWordOficial({
             spacing: { before: 140 },
             children: [
               new TextRun({
-                text: "Documento oficial generado por Planifica Maestro — Adecuación Curricular MINERD",
+                text: "Documento generado por Planifica Maestro — Formato de secuencia didáctica (CON BASE)",
                 size: 16,
                 color: "94A3B8",
                 italics: true,

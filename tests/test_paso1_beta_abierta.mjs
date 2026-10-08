@@ -46,11 +46,16 @@ test("PASO 1: MODO BETA ABIERTA (SIN CUENTAS, SIN SUPABASE, CON DISPOSITIVO ESTA
     // Inicialmente no hay perfil
     assert.equal(cargarPerfil(), null);
 
-    // Guardar perfil sencillo
+    // Guardar perfil multigrado
     guardarPerfil({
       nombre: "Prof. María Pérez",
       escuela: "Escuela Básica República Dominicana",
-      grado: "4to de Primaria",
+      nivel: "primario",
+      grados: ["1.º", "2.º"],
+      grado: "1.º y 2.º de Primaria (Multigrado)",
+      seccion: "A - Multigrado",
+      regional: "10",
+      distrito: "10-01",
       tanda: "Jornada Escolar Extendida (JEE)"
     });
 
@@ -58,7 +63,11 @@ test("PASO 1: MODO BETA ABIERTA (SIN CUENTAS, SIN SUPABASE, CON DISPOSITIVO ESTA
     assert.ok(cargado !== null);
     assert.equal(cargado.nombre, "Prof. María Pérez");
     assert.equal(cargado.escuela, "Escuela Básica República Dominicana");
-    assert.equal(cargado.grado, "4to de Primaria");
+    assert.equal(cargado.nivel, "primario");
+    assert.deepEqual(cargado.grados, ["1.º", "2.º"]);
+    assert.equal(cargado.grado, "1.º y 2.º de Primaria (Multigrado)");
+    assert.equal(cargado.regional, "10");
+    assert.equal(cargado.distrito, "10-01");
   });
 
   const {
