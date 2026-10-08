@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const router = express.Router();
 const { LEVELS } = require("../curriculum/levels");
@@ -20,7 +21,8 @@ const { enrutarPeticion, obtenerEstadoProveedores } = require("../ia/enrutadorIA
 const { generarDesdeBibliotecaOficial } = require("../ia/modoBibliotecaOficial");
 const { clasificarIntencion } = require("../ia/clasificadorIntencion");
 const { generarRespuestaCharlaLocal, SYSTEM_PROMPT_CONVERSACIONAL, limpiarSaludoInnecesario } = require("../ia/modoConversacional");
-const { tieneIntencionExplicita, identificarImagenConVision } = require("../ia/ojoDigital");
+const { verificarYSanearCitas } = require("../curriculum/verificadorCitas");
+const { tieneIntencionExplicita, identificarImagenConVision, analizarCalidadImagen } = require("../ia/ojoDigital");
 const { corregirTextoPedagogico } = require("../ia/correctorTexto");
 const { puedeRealizarConsulta } = require("../ia/gestorGasto");
 const crypto = require("crypto");
@@ -439,17 +441,19 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
     // Preparar payload de historial para Gemini
     const geminiContents = messages.map((msg, index) => {
       const parts = [];
-      let textToUse = msg.text || "";
+      let textToUse = msg.text || msg.content || "";
       if (index === 0 && msg.role === "user") {
         let prefix = `[Contexto: El usuario seleccionó el esquema "${esquema.label}", Periodo: "${periodo}"]\n\n`;
         if (groundingConBaseBloque) {
           prefix += `${groundingConBaseBloque}\n\n`;
         }
-        textToUse = prefix + (msg.text || "");
+        textToUse = prefix + textToUse;
       }
       
-      if (msg.imageBase64 && msg.mediaType) {
-        parts.push({ inlineData: { data: msg.imageBase64, mimeType: msg.mediaType } });
+      const imgData = msg.imageBase64 || (index === messages.length - 1 ? req.body.imageBase64 : null);
+      const imgMime = msg.mediaType || req.body.mediaType || "image/jpeg";
+      if (imgData && imgMime) {
+        parts.push({ inlineData: { data: imgData, mimeType: imgMime } });
       }
       if (textToUse) {
         parts.push({ text: textToUse });
@@ -464,9 +468,9 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
     console.log(`Generando contenido curricular mediante Enrutador IA para esquema: ${nivel}...`);
     
     const ultimoMsg = messages[messages.length - 1] || {};
-    const imageBase64 = ultimoMsg.imageBase64 || null;
-    const mediaType = ultimoMsg.mediaType || "image/jpeg";
-    const textoConsulta = (ultimoMsg.text || req.body.tema || "").trim();
+    const imageBase64 = ultimoMsg.imageBase64 || req.body.imageBase64 || null;
+    const mediaType = ultimoMsg.mediaType || req.body.mediaType || "image/jpeg";
+    const textoConsulta = (ultimoMsg.text || ultimoMsg.content || req.body.tema || req.body.prompt || "").trim();
 
     const forzarOriginal = Boolean(req.body.forzarOriginal);
     const confirmado = Boolean(req.body.confirmado);
@@ -532,6 +536,23 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
         ],
         datos_planificacion: null
       }, 200, "pensando");
+    }
+
+    // DEFENSA DE CÓDIGO (3B.2 / 3C.6): Si la imagen es muy pequeña, casi negra o sin contenido, responder mensaje honesto fijo
+    if (imageBase64) {
+      const calidadImg = analizarCalidadImagen(imageBase64);
+      if (calidadImg.ilegible) {
+        return responder({
+          mensaje_chat: "La imagen se ve oscura o ilegible; toma otra foto con más luz o escribe el texto.",
+          plan_completado: false,
+          modo: "identificacion_visual",
+          categoria: "identificacion_visual",
+          tipo_visual: "ilegible",
+          es_borrosa: true,
+          opciones: ["Tomar otra foto con más luz", "Escribir mi consulta"],
+          datos_planificacion: null
+        }, 200, "conversando");
+      }
     }
 
     // 0. Si viene una foto SIN intención explícita previa: Identificar primero (Ojo Digital) y ofrecer opciones
@@ -722,9 +743,15 @@ ${esquema.bloques.map(b => `"${b}"`).join("\n")}
           env: process.env,
           signal: clientAbortController.signal
         });
-        let textoChat = respGen.mensaje_chat || respGen.texto || "Aquí tienes la información solicitada.";
+        let textoChat = respGen.mensaje_chat || respGen.texto || respGen.respuesta;
+        if (!textoChat && respGen && typeof respGen === "object") {
+          const stringVals = Object.values(respGen).filter(v => typeof v === "string" && v.length > 0);
+          if (stringVals.length > 0) textoChat = stringVals.join("\n\n");
+        }
+        if (!textoChat) textoChat = "Aquí tienes la información solicitada.";
         const esSaludoDocente = /^(¡?(?:hola|buen(?:os)?\s*días|buenas\s*tardes|buenas\s*noches|saludos))/i.test((textoConsulta || "").trim());
         textoChat = limpiarSaludoInnecesario(textoChat, esSaludoDocente);
+        textoChat = verificarYSanearCitas(textoChat, []);
         return responder({
           mensaje_chat: textoChat.includes("currículo oficial") ? textoChat : `${textoChat}${aviso}`,
           plan_completado: false,

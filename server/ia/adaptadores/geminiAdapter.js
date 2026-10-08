@@ -12,7 +12,8 @@ async function llamarGemini({
   imageBase64 = null,
   mediaType = null,
   onChunk = null,
-  signal = null
+  signal = null,
+  responseMimeType = undefined
 }) {
   if (!apiKey) {
     const err = new Error("GEMINI_API_KEY no configurada.");
@@ -43,9 +44,15 @@ async function llamarGemini({
   }
 
   cuerpoPeticion.generationConfig = {
-    temperature: 0.1,
-    responseMimeType: "application/json"
+    temperature: 0.1
   };
+  if (responseMimeType !== undefined) {
+    if (responseMimeType) {
+      cuerpoPeticion.generationConfig.responseMimeType = responseMimeType;
+    }
+  } else if (!prompt || prompt.includes("JSON") || prompt.includes("formato JSON")) {
+    cuerpoPeticion.generationConfig.responseMimeType = "application/json";
+  }
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -54,7 +61,7 @@ async function llamarGemini({
     else signal.addEventListener("abort", () => controller.abort(), { once: true });
   }
 
-  const timeoutPrimerToken = 4000;
+  const timeoutPrimerToken = 8000;
   let primerTokenRecibido = false;
   let falloPorPrimerToken = false;
   const timerPrimerToken = setTimeout(() => {

@@ -216,6 +216,17 @@ function registrarFalloCircuito(proveedorId, err, configGeneral) {
     est.ultimoError = "modelo_no_disponible";
   }
 
+  const esPermanente = err.status === 400 || err.status === 401 || err.status === 403 || es404 ||
+    (err.message && (err.message.includes("API key not valid") || err.message.includes("API_KEY_INVALID")));
+
+  if (esPermanente) {
+    est.estado = "ABIERTO";
+    est.pausaHastaMs = ahora + ((configGeneral && configGeneral.circuito_cooldown_error_ms) || 86400000);
+    est.motivoPausa = es404 ? "modelo_no_disponible" : "error_clave_o_config";
+    guardarEstadoCircuitos(estadosCircuito);
+    return;
+  }
+
   const es429 = err.status === 429 || (err.message && err.message.includes("429"));
   const maxFallos = (configGeneral && configGeneral.circuito_fallos_maximos) || 3;
 
@@ -543,6 +554,7 @@ async function enrutarPeticion({
 
       if (prov.id === "gemini_flash" || prov.id === "gemini_flash_lite") {
         const apiKey = env.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+        const requiereJson = (tema !== "Conocimiento General" && tema !== "Extracción de texto OCR" && esquemaActivo !== "conversacional" && (promptFiltrado.includes("JSON") || promptFiltrado.includes("formato JSON")));
         const resGemini = await llamarGemini({
           modelo: prov.modelo,
           apiKey,
@@ -552,7 +564,8 @@ async function enrutarPeticion({
           imageBase64,
           mediaType,
           onChunk,
-          signal
+          signal,
+          responseMimeType: requiereJson ? "application/json" : null
         });
         resultadoTexto = resGemini.texto;
       } else if (prov.id === "groq_llama") {
@@ -588,9 +601,16 @@ async function enrutarPeticion({
       }
 
       // Validar y sanitizar respuesta del proveedor
-      const jsonParsed = limpiarYExtraerJson(resultadoTexto);
+      let jsonParsed = limpiarYExtraerJson(resultadoTexto);
       if (!jsonParsed || (typeof jsonParsed === "object" && Object.keys(jsonParsed).length === 0)) {
-        throw new Error(`El proveedor ${prov.nombre} devolvió una respuesta vacía o no estructurada.`);
+        if (tema === "Conocimiento General" || tema === "Extracción de texto OCR" || esquemaActivo === "conversacional" || !prompt?.includes("JSON")) {
+          jsonParsed = {
+            mensaje_chat: resultadoTexto.trim(),
+            texto: resultadoTexto.trim()
+          };
+        } else {
+          throw new Error(`El proveedor ${prov.nombre} devolvió una respuesta vacía o no estructurada.`);
+        }
       }
 
       // Guardar en caché si es una planificación completa válida
@@ -625,28 +645,37 @@ async function enrutarPeticion({
         throw err;
       }
 
-      // REGLA: Si es error de configuración (400, 401, 403), NO activa el respaldo ni cicla otros proveedores
       const esConfiguracion = err.esConfiguracion || err.status === 400 || err.status === 401 || err.status === 403 || (err.message && (err.message.includes("API key not valid") || err.message.includes("API_KEY_INVALID")));
+      const es404 = err.status === 404 || (err.message && (err.message.includes("404") || err.message.toLowerCase().includes("not found")));
+
       if (esConfiguracion) {
-        console.error(`🚨 [Config Error] Proveedor ${prov.nombre}: ${err.message}`);
+        console.error(`🚨 [Error Configuración] Proveedor ${prov.nombre}: ${err.message}. Abriendo circuito y pasando directamente a Biblioteca Oficial.`);
+        registrarFalloCircuito(prov.id, err, configGeneral);
         registrarLlamada({
           proveedorId: prov.id,
           modelo: prov.modelo,
           duracionMs: duracionFallo,
           exito: false,
-          codigoError: err.status || 401,
+          codigoError: err.status || 400,
           tipoFallo: "configuracion",
           esRespaldo
         });
-        break; // Cortocircuito directo al Modo Biblioteca Oficial sin ciclar respaldos
+        break; // Error permanente de configuración: no activar respaldos de IA generativa
       }
 
-      // Si es error 404 / modelo no encontrado
-      const es404 = err.status === 404 || (err.message && (err.message.includes("404") || err.message.toLowerCase().includes("not found")));
       if (es404) {
-        console.warn(`⚠️ [Modelo No Disponible] Proveedor ${prov.nombre}: modelo no disponible (${err.message})`);
-        const est = obtenerEstadoCircuito(prov.id);
-        est.ultimoError = "modelo_no_disponible";
+        console.error(`🚨 [Modelo Inexistente] Proveedor ${prov.nombre}: ${err.message}. Abriendo circuito y pasando al siguiente proveedor.`);
+        registrarFalloCircuito(prov.id, err, configGeneral);
+        registrarLlamada({
+          proveedorId: prov.id,
+          modelo: prov.modelo,
+          duracionMs: duracionFallo,
+          exito: false,
+          codigoError: 404,
+          tipoFallo: "modelo_inexistente",
+          esRespaldo
+        });
+        continue; // Pasa de inmediato al siguiente proveedor sin ciclar
       }
 
       // Registrar fallo en Circuit Breaker (distingue 429 vs 5xx/timeout)

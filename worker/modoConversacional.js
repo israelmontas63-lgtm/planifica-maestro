@@ -102,8 +102,8 @@ export function generarRespuestaCharlaLocal({ texto = "", nombreDocente = null }
 export function limpiarSaludoInnecesario(texto, debePermitirSaludo = false) {
   if (debePermitirSaludo || !texto || typeof texto !== "string") return texto;
   let limpio = texto.trim();
-  limpio = limpio.replace(/^(?:¡?(?:hola|buen(?:os)?\s*días|buenas\s*tardes|buenas\s*noches|saludos)(?:,\s*(?:profe|profesor[a]?|colega|maestro[a]?))?[!.]?\s*)+/i, "");
-  limpio = limpio.replace(/^(?:(?:es\s+un\s+|qué\s+)?gusto\s+(?:en\s+)?saludar(?:te|le)[!.]?\s*|(?:es\s+un\s+|qué\s+)?placer\s+(?:en\s+)?saludar(?:te|le)[!.]?\s*|(?:un\s+placer|con\s+gusto\s+te\s+apoyo)[!.]?\s*)+/i, "");
+  limpio = limpio.replace(/^(?:¡?(?:hola\b|buen(?:os)?\s*días\b|buenas\s*tardes\b|buenas\s*noches\b|saludos\b)(?:,\s*(?:profe|profesor[a]?|colega|maestro[a]?))?[!.]?\s*)+/i, "");
+  limpio = limpio.replace(/^(?:(?:es\s+un\s+|qué\s+)?gusto\s+(?:en\s+)?saludar(?:te|le)?(?:,\s*(?:profe|profesor[a]?|colega|maestro[a]?))?[!.]?\s*|(?:es\s+un\s+|qué\s+)?placer\s+(?:en\s+)?saludar(?:te|le)?(?:,\s*(?:profe|profesor[a]?|colega|maestro[a]?))?[!.]?\s*|(?:un\s+placer|con\s+gusto\s+te\s+apoyo)[!.]?\s*)+/i, "");
   limpio = limpio.trim();
   return limpio || texto;
 }

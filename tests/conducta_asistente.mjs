@@ -267,12 +267,13 @@ export const CONVERSACIONES_REFERENCIA = [
     esperado: "Presenta exactamente 3 ideas claras, bien delimitadas y pedagógicas, sin listas interminables de 10 puntos.",
     evaluar: (resp) => {
       const lower = resp.toLowerCase();
-      const cuenta3 = (resp.match(/1[\.\)]/g) || []).length >= 1 &&
-                      (resp.match(/2[\.\)]/g) || []).length >= 1 &&
-                      (resp.match(/3[\.\)]/g) || []).length >= 1;
-      const noTiene4 = !resp.match(/4[\.\)]/g);
-      const hablaDeCambioClimatico = lower.includes("clima") || lower.includes("cambio climático") || lower.includes("ambiental");
-      return cuenta3 && noTiene4 && hablaDeCambioClimatico;
+      const tieneItem1 = /(?:^|\n)\s*1[\.\)]/m.test(resp);
+      const tieneItem2 = /(?:^|\n)\s*2[\.\)]/m.test(resp);
+      const tieneItem3 = /(?:^|\n)\s*3[\.\)]/m.test(resp);
+      const tieneItem4 = /(?:^|\n)\s*4[\.\)]/m.test(resp);
+      const cuenta3 = tieneItem1 && tieneItem2 && tieneItem3 && !tieneItem4;
+      const hablaDeCambioClimatico = lower.includes("clima") || lower.includes("cambio climático") || lower.includes("ambiental") || lower.includes("carbono");
+      return cuenta3 && hablaDeCambioClimatico;
     }
   },
   {

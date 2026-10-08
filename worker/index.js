@@ -13,6 +13,7 @@ import {
 } from "./cacheRespuestas.js";
 import { tieneIntencionExplicita, identificarImagenWorker, getGeminiVisionModels, analizarCalidadImagen } from "./ojoDigital.js";
 import { corregirTextoPedagogico } from "./correctorTexto.js";
+import { verificarYSanearCitas } from "./verificadorCitas.js";
 
 /**
  * Planifica Maestro - Cloudflare Worker Backend
@@ -560,8 +561,9 @@ async function handleApiRequest(request, env, ctx) {
     }
 
     const ultimoMsg = messages[messages.length - 1] || {};
-    const textoConsulta = ultimoMsg.text || body.tema || "";
-    const imageBase64 = ultimoMsg.imageBase64 || null;
+    const textoConsulta = (ultimoMsg.text || ultimoMsg.content || body.tema || body.prompt || "").trim();
+    const imageBase64 = ultimoMsg.imageBase64 || body.imageBase64 || null;
+    const mediaType = ultimoMsg.mediaType || body.mediaType || "image/jpeg";
 
     const forzarOriginal = Boolean(body.forzarOriginal);
     const confirmado = Boolean(body.confirmado);
@@ -604,6 +606,7 @@ async function handleApiRequest(request, env, ctx) {
         if (!debePermitirSaludo && data.modo !== "charla") {
           data.mensaje_chat = limpiarSaludoInnecesario(data.mensaje_chat, false);
         }
+        data.mensaje_chat = verificarYSanearCitas(data.mensaje_chat, data.datos_planificacion?.fragmentos || []);
       }
       if (status >= 400 || !isStream) {
         return new Response(JSON.stringify(data), {

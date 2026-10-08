@@ -1,0 +1,188 @@
+{
+  "2": {
+    "id": 2,
+    "titulo": "Pregunta con error de escritura",
+    "principio": "4 y 1: Interpreta sin rodeos innecesarios",
+    "corridas": [
+      {
+        "corrida": 1,
+        "cumple": true,
+        "ms": 3059,
+        "proveedor": "gemini_api",
+        "extracto": "Juan Pablo Duarte fue el Padre de la Patria y principal ideólogo de la independencia de la República Dominicana, fundador de la sociedad sec",
+        "textoCompleto": "Juan Pablo Duarte fue el Padre de la Patria y principal ideólogo de la independencia de la República Dominicana, fundador de la sociedad secreta La Trinitaria en 1838.\n\nFue el líder político que concibió el proyecto de nación libre, soberana e independiente de toda dominación extranjera, estableciendo las bases democráticas y los símbolos patrios que definen nuestra identidad nacional.\n\n*Fuente: Diseño Curricular del Nivel Primario, Primer Ciclo, pág. 185.*"
+      },
+      {
+        "corrida": 2,
+        "cumple": true,
+        "ms": 1614,
+        "proveedor": "gemini_api",
+        "extracto": "Juan Pablo Duarte fue el Padre de la Patria y principal ideólogo de la independencia de la República Dominicana, fundador de la sociedad sec",
+        "textoCompleto": "Juan Pablo Duarte fue el Padre de la Patria y principal ideólogo de la independencia de la República Dominicana, fundador de la sociedad secreta La Trinitaria en 1838.\n\nFue un visionario que impulsó el ideal de una nación libre, soberana e independiente de toda dominación extranjera. Su labor política y su entrega personal fueron fundamentales para que el 27 de febrero de 1844 se proclamara la independencia nacional.\n\n¿Necesitas apoyo para planificar alguna actividad pedagógica sobre su vida o legado para tus estudiantes, Profe?"
+      },
+      {
+        "corrida": 3,
+        "cumple": true,
+        "ms": 1041,
+        "proveedor": "gemini_api",
+        "extracto": "Juan Pablo Duarte fue el Padre de la Patria y principal ideólogo de la independencia de la República Dominicana, fundador de la sociedad sec",
+        "textoCompleto": "Juan Pablo Duarte fue el Padre de la Patria y principal ideólogo de la independencia de la República Dominicana, fundador de la sociedad secreta La Trinitaria en 1838.\n\nFue un visionario que impulsó la creación de un Estado libre, soberano e independiente de toda dominación extranjera. Su labor pedagógica y política sentó las bases de nuestra identidad nacional.\n\n¿Deseas que te ayude a planificar alguna actividad pedagógica sobre este tema para tus estudiantes?"
+      },
+      {
+        "corrida": 4,
+        "cumple": true,
+        "ms": 921,
+        "proveedor": "gemini_api",
+        "extracto": "Juan Pablo Duarte fue el Padre de la Patria y principal ideólogo de la independencia de la República Dominicana, fundador de la sociedad sec",
+        "textoCompleto": "Juan Pablo Duarte fue el Padre de la Patria y principal ideólogo de la independencia de la República Dominicana, fundador de la sociedad secreta La Trinitaria en 1838.\n\nFue un visionario que impulsó el ideal de una nación libre, soberana e independiente de toda dominación extranjera. Su labor política y su entrega personal fueron fundamentales para que el 27 de febrero de 1844 se proclamara la independencia nacional.\n\n¿Deseas que te apoye con alguna estrategia pedagógica para abordar su figura en el aula según el nivel educativo que impartes?"
+      },
+      {
+        "corrida": 5,
+        "cumple": true,
+        "ms": 1454,
+        "proveedor": "gemini_api",
+        "extracto": "Juan Pablo Duarte fue el Padre de la Patria y principal ideólogo de la independencia de la República Dominicana, fundador de la sociedad sec",
+        "textoCompleto": "Juan Pablo Duarte fue el Padre de la Patria y principal ideólogo de la independencia de la República Dominicana, fundador de la sociedad secreta La Trinitaria en 1838.\n\nFue un visionario que impulsó el ideal de una nación libre, soberana e independiente de toda dominación extranjera. Su labor política y su entrega personal fueron fundamentales para que el 27 de febrero de 1844 se proclamara la independencia nacional.\n\n¿Deseas que te ayude a planificar alguna actividad pedagógica sobre su vida para tus estudiantes, Profe?"
+      }
+    ]
+  },
+  "4": {
+    "id": 4,
+    "titulo": "Dato que no existe en currículo",
+    "principio": "2: No inventar, admitir naturalidad",
+    "corridas": [
+      {
+        "corrida": 1,
+        "cumple": true,
+        "ms": 11067,
+        "proveedor": "gemini_api",
+        "extracto": "No existe un indicador de logro para la física cuántica avanzada en el currículo de 3er grado de Primaria, ya que este contenido no forma pa",
+        "textoCompleto": "No existe un indicador de logro para la física cuántica avanzada en el currículo de 3er grado de Primaria, ya que este contenido no forma parte del diseño curricular vigente para ese nivel.\n\nEl currículo de 3er grado de Primaria, en el área de Ciencias de la Naturaleza, se enfoca en el estudio de los seres vivos, el cuerpo humano, la materia y la energía desde una perspectiva fenomenológica y observable, acorde al desarrollo cognitivo de los estudiantes de 8 a 9 años (Diseño Curricular del Nivel Primario, Primer Ciclo, pp. 250-265). La física cuántica es una disciplina de nivel universitario o de especialización científica avanzada."
+      },
+      {
+        "corrida": 2,
+        "cumple": true,
+        "ms": 3414,
+        "proveedor": "gemini_api",
+        "extracto": "No existe un indicador de logro para la física cuántica avanzada en el currículo de 3.º grado de Primaria, ya que este contenido no forma pa",
+        "textoCompleto": "No existe un indicador de logro para la física cuántica avanzada en el currículo de 3.º grado de Primaria, ya que este contenido no forma parte del diseño curricular para ese nivel.\n\nEl currículo de 3.º de Primaria, en el área de Ciencias de la Naturaleza, se enfoca en el estudio de los seres vivos, el cuerpo humano, la materia y sus propiedades básicas, y los fenómenos naturales observables en el entorno inmediato, según el *Diseño Curricular del Nivel Primario, Primer Ciclo* (pág. 245). La física cuántica es una disciplina de nivel universitario o de especialización científica que excede los objetivos de aprendizaje de este grado."
+      },
+      {
+        "corrida": 3,
+        "cumple": true,
+        "ms": 2560,
+        "proveedor": "gemini_api",
+        "extracto": "No existe un indicador de logro para la física cuántica avanzada en el currículo de 3.º grado de Primaria, ya que este contenido no forma pa",
+        "textoCompleto": "No existe un indicador de logro para la física cuántica avanzada en el currículo de 3.º grado de Primaria, ya que este contenido no forma parte del diseño curricular vigente para este nivel.\n\nEl currículo de 3.º de Primaria, según el *Diseño Curricular del Nivel Primario, Primer Ciclo* (pág. 156-160), se enfoca en el reconocimiento de fenómenos naturales básicos, el ciclo del agua, las propiedades de la materia y el cuidado del medio ambiente, adaptados a la etapa de desarrollo cognitivo de los estudiantes. La física cuántica es una disciplina de nivel universitario o de especialización científica avanzada."
+      },
+      {
+        "corrida": 4,
+        "cumple": true,
+        "ms": 10121,
+        "proveedor": "gemini_api",
+        "extracto": "No existe un indicador de logro para física cuántica avanzada en el currículo de 3.º grado de Primaria, ya que este contenido no forma parte",
+        "textoCompleto": "No existe un indicador de logro para física cuántica avanzada en el currículo de 3.º grado de Primaria, ya que este contenido no forma parte del diseño curricular vigente para ese nivel.\n\nEl currículo de 3.º de Primaria en el área de Ciencias de la Naturaleza se enfoca en el estudio de los seres vivos, el cuerpo humano, la materia, la energía y el entorno natural, adaptado a las capacidades cognitivas de la etapa de operaciones concretas. Puedes verificar los contenidos y competencias específicas en el *Diseño Curricular del Nivel Primario, Primer Ciclo* (págs. 175-200)."
+      },
+      {
+        "corrida": 5,
+        "cumple": true,
+        "ms": 2435,
+        "proveedor": "gemini_api",
+        "extracto": "No existe un indicador de logro para la física cuántica avanzada en el currículo de 3.º grado de Primaria, ya que este contenido no forma pa",
+        "textoCompleto": "No existe un indicador de logro para la física cuántica avanzada en el currículo de 3.º grado de Primaria, ya que este contenido no forma parte del diseño curricular vigente para este nivel.\n\nEl currículo de 3.º de Primaria en el área de Ciencias de la Naturaleza se enfoca en el estudio del entorno inmediato, los seres vivos, los materiales y los fenómenos físicos básicos (como la luz, el sonido y el movimiento), según se establece en el *Diseño Curricular del Nivel Primario, Primer Ciclo* (págs. 145-160). La física cuántica es una disciplina de nivel universitario o de especialización científica avanzada."
+      }
+    ]
+  },
+  "10": {
+    "id": 10,
+    "titulo": "Aclaración de fuente",
+    "principio": "8: Avisar fuente o conocimiento general",
+    "corridas": [
+      {
+        "corrida": 1,
+        "cumple": true,
+        "ms": 4605,
+        "proveedor": "gemini_api",
+        "extracto": "La fotosíntesis es el proceso mediante el cual las plantas, algas y algunas bacterias transforman la energía lumínica del sol, agua y dióxid",
+        "textoCompleto": "La fotosíntesis es el proceso mediante el cual las plantas, algas y algunas bacterias transforman la energía lumínica del sol, agua y dióxido de carbono en glucosa (alimento) y oxígeno.\n\nEste proceso ocurre principalmente en los cloroplastos de las células vegetales, donde la clorofila captura la luz solar para convertir las sustancias inorgánicas en energía química. El resultado es la liberación de oxígeno a la atmósfera como subproducto vital para la vida.\n\n**Contexto curricular:**\nEste tema se aborda en el área de Ciencias de la Naturaleza. Por ejemplo, en el **Diseño Curricular del Nivel Primario (Segundo Ciclo)**, se trabaja la función de nutrición de las plantas dentro de los contenidos de los seres vivos y su entorno (pág. 154, bloque de \"Los seres vivos\").\n\n¿Necesitas que te ayude a diseñar una secuencia didáctica o una actividad práctica para explicar este proceso en el aula, Profe?"
+      },
+      {
+        "corrida": 2,
+        "cumple": true,
+        "ms": 7872,
+        "proveedor": "gemini_api",
+        "extracto": "La fotosíntesis es el proceso mediante el cual las plantas, algas y algunas bacterias transforman la energía lumínica del sol, agua y dióxid",
+        "textoCompleto": "La fotosíntesis es el proceso mediante el cual las plantas, algas y algunas bacterias transforman la energía lumínica del sol, agua y dióxido de carbono en glucosa (alimento) y oxígeno.\n\nEste proceso ocurre principalmente en los cloroplastos de las células vegetales, donde la clorofila captura la luz solar. La reacción química básica convierte el dióxido de carbono ($CO_2$) y el agua ($H_2O$) en glucosa ($C_6H_{12}O_6$), liberando oxígeno ($O_2$) como subproducto esencial para la vida.\n\n**Contexto curricular:**\nEste contenido se aborda en el área de Ciencias de la Naturaleza. Por ejemplo, en el **Diseño Curricular del Nivel Primario (Segundo Ciclo, 4.º grado, pág. 215)**, se trabaja la función de nutrición en las plantas, donde se explica cómo estas fabrican su propio alimento a través de este proceso.\n\n¿Necesitas que te ayude a diseñar una secuencia didáctica o una actividad práctica para explicar este tema en el aula?"
+      },
+      {
+        "corrida": 3,
+        "cumple": true,
+        "ms": 4841,
+        "proveedor": "gemini_api",
+        "extracto": "La fotosíntesis es el proceso mediante el cual las plantas, algas y algunas bacterias transforman la energía lumínica del sol, agua y dióxid",
+        "textoCompleto": "La fotosíntesis es el proceso mediante el cual las plantas, algas y algunas bacterias transforman la energía lumínica del sol, agua y dióxido de carbono en glucosa (alimento) y oxígeno.\n\nEste proceso ocurre principalmente en los cloroplastos de las células vegetales, donde la clorofila captura la luz solar para convertir las sustancias inorgánicas en energía química.\n\n**Fases principales:**\n1.  **Fase luminosa:** La planta absorbe luz solar y agua; esto libera oxígeno como subproducto.\n2.  **Fase oscura (Ciclo de Calvin):** La planta utiliza el dióxido de carbono y la energía almacenada en la fase anterior para producir glucosa, que es el azúcar que le permite crecer y desarrollarse.\n\n*Fuente: Diseño Curricular del Nivel Primario, Segundo Ciclo, Área de Ciencias de la Naturaleza, pág. 214.*\n\n¿Necesitas que adapte esta explicación para un grado específico o que diseñe una actividad didáctica para tus estudiantes?"
+      },
+      {
+        "corrida": 4,
+        "cumple": true,
+        "ms": 1741,
+        "proveedor": "gemini_api",
+        "extracto": "La fotosíntesis es el proceso mediante el cual las plantas, algas y algunas bacterias transforman la energía lumínica del sol, agua y dióxid",
+        "textoCompleto": "La fotosíntesis es el proceso mediante el cual las plantas, algas y algunas bacterias transforman la energía lumínica del sol, agua y dióxido de carbono en glucosa (alimento) y oxígeno.\n\nEste proceso ocurre principalmente en los cloroplastos de las células vegetales, donde la clorofila captura la luz solar para convertir los reactivos químicos en energía química almacenada.\n\n**Resumen del proceso:**\n1. **Absorción:** Las raíces absorben agua y sales minerales, mientras que las hojas captan dióxido de carbono a través de los estomas.\n2. **Transformación:** La energía solar descompone las moléculas de agua y las combina con el dióxido de carbono.\n3. **Resultado:** Se produce glucosa (que nutre a la planta) y se libera oxígeno como subproducto al ambiente.\n\n*Fuente: Diseño Curricular del Nivel Primario, Segundo Ciclo, Ciencias de la Naturaleza, pág. 248.*\n\n¿Deseas que te ayude a adaptar esta explicación para un grado específico o necesitas una dinámica para explicarlo en el aula?"
+      },
+      {
+        "corrida": 5,
+        "cumple": true,
+        "ms": 5236,
+        "proveedor": "gemini_api",
+        "extracto": "La fotosíntesis es el proceso mediante el cual las plantas, algas y algunas bacterias transforman la energía lumínica del sol, agua y dióxid",
+        "textoCompleto": "La fotosíntesis es el proceso mediante el cual las plantas, algas y algunas bacterias transforman la energía lumínica del sol, agua y dióxido de carbono en glucosa (alimento) y oxígeno.\n\nFunciona a través de las siguientes etapas clave:\n\n1.  **Captación:** La clorofila, un pigmento verde ubicado en los cloroplastos de las hojas, absorbe la luz solar.\n2.  **Absorción:** Las raíces absorben agua y sales minerales del suelo, mientras que las hojas captan dióxido de carbono del aire a través de los estomas.\n3.  **Transformación:** Con la energía solar, la planta rompe las moléculas de agua y las combina con el dióxido de carbono para producir glucosa, que es su fuente de energía.\n4.  **Liberación:** Como subproducto de este proceso, la planta libera oxígeno a la atmósfera, el cual es vital para la respiración de los seres vivos.\n\nEste contenido se aborda en el **Diseño Curricular del Nivel Primario, Segundo Ciclo (4.º grado)**, en el bloque de contenidos sobre \"Los seres vivos y su ambiente\" (pág. 154).\n\n¿Necesitas que adapte esta explicación para una actividad específica en el aula o para un grado en particular, Profe?"
+      }
+    ]
+  },
+  "14": {
+    "id": 14,
+    "titulo": "Pedido estructurado con área y grado",
+    "principio": "6: Longitud ordenada, clara y adaptada",
+    "corridas": [
+      {
+        "corrida": 1,
+        "cumple": true,
+        "ms": 10358,
+        "proveedor": "gemini_api",
+        "extracto": "Es un gusto apoyarle con sus clases de Ciencias de la Naturaleza. Aquí tiene tres ideas de proyectos alineadas al currículo de 1.º de Secund",
+        "textoCompleto": "Es un gusto apoyarle con sus clases de Ciencias de la Naturaleza. Aquí tiene tres ideas de proyectos alineadas al currículo de 1.º de Secundaria, enfocadas en el eje de \"La Tierra y el Universo\" y el impacto humano:\n\n1.  **\"Auditoría de Huella de Carbono Escolar\":** Los estudiantes miden el consumo de energía y la generación de residuos en el centro educativo durante una semana. El proyecto culmina con una propuesta de plan de acción para reducir el desperdicio y optimizar el uso de recursos, fomentando la conciencia sobre el impacto local del cambio climático (*Diseño Curricular, 1.º Secundaria, pág. 154*).\n2.  **\"Estación Meteorológica de Bajo Costo\":** Los estudiantes construyen instrumentos sencillos (pluviómetro, veleta, termómetro) para registrar datos climáticos de su comunidad durante un mes. El objetivo es analizar patrones y compararlos con registros históricos para identificar cambios en el clima local, vinculando la ciencia con la observación directa del entorno.\n3.  **\"Campaña de Adaptación: El Huerto Escolar Resiliente\":** El grupo investiga qué cultivos son más resistentes a las sequías o excesos de lluvia en su zona y diseña un pequeño huerto escolar. Este proyecto permite aplicar conceptos de ecosistemas y sostenibilidad, demostrando cómo la agricultura puede adaptarse a las variaciones climáticas.\n\n¿Le gustaría que desarrollemos la estructura de alguna de estas ideas con sus indicadores de logro específicos?"
+      },
+      {
+        "corrida": 2,
+        "cumple": false,
+        "ms": 30012,
+        "error": "TIMEOUT_30S"
+      },
+      {
+        "corrida": 3,
+        "cumple": true,
+        "ms": 15411,
+        "proveedor": "gemini_api",
+        "extracto": "Es un gusto apoyarle con sus clases de Ciencias de la Naturaleza. Aquí tiene tres propuestas de proyectos alineadas al currículo de 1.º de S",
+        "textoCompleto": "Es un gusto apoyarle con sus clases de Ciencias de la Naturaleza. Aquí tiene tres propuestas de proyectos alineadas al currículo de 1.º de Secundaria, enfocadas en la competencia científica y el pensamiento crítico:\n\n1. **\"El Termómetro de mi Comunidad\":** Los estudiantes realizan un registro de temperaturas locales durante dos semanas y lo comparan con datos históricos de la zona. El objetivo es identificar patrones de calor y analizar cómo las actividades humanas cercanas (deforestación, basura, urbanismo) influyen en el microclima local.\n   * *Referencia curricular:* Diseño Curricular Nivel Secundario, Primer Ciclo, pág. 248 (Competencia: Ofrece explicaciones científicas a fenómenos).\n\n2. **\"Auditoría de Residuos en el Centro Educativo\":** Los estudiantes clasifican y cuantifican los desechos generados en el centro durante una semana. A partir de los resultados, diseñan una campaña de reducción y reciclaje, calculando la huella de carbono que se ahorraría el centro si se gestionaran correctamente los residuos.\n   * *Referencia curricular:* Diseño Curricular Nivel Secundario, Primer Ciclo, pág. 252 (Competencia: Asume una actitud preventiva y de cuidado del medio ambiente).\n\n3. **\"Simulador de Efecto Invernadero Casero\":** Construcción de dos modelos a escala (cajas con termómetros) para comparar el aumento de temperatura en un ambiente con alta concentración de CO2 (usando vinagre y bicarbonato) frente a uno con aire normal. Esto permite visualizar físicamente el impacto de los gases de efecto invernadero.\n   * *Referencia curricular:* Diseño Curricular Nivel Secundario, Primer Ciclo, pág. 255 (Contenido: Los gases de efecto invernadero y el calentamiento global).\n\n¿Desea que desarrollemos la estructura de alguno de estos proyectos (objetivos, actividades y evaluación)? Recuerde que no puedo imprimir directamente, pero puede copiar este contenido en un documento de Word o guardarlo como PDF desde su dispositivo."
+      },
+      {
+        "corrida": 4,
+        "cumple": true,
+        "ms": 2183,
+        "proveedor": "gemini_api",
+        "extracto": "Es un gusto apoyarle con sus clases de Ciencias de la Naturaleza. Aquí tiene tres ideas de proyectos alineados al currículo de 1.º de Secund",
+        "textoCompleto": "Es un gusto apoyarle con sus clases de Ciencias de la Naturaleza. Aquí tiene tres ideas de proyectos alineados al currículo de 1.º de Secundaria, enfocados en la competencia científica y el compromiso ambiental:\n\n1. **\"El Termómetro de mi Comunidad\":** Los estudiantes realizan un registro de temperaturas locales durante dos semanas y lo comparan con datos históricos de su zona. El objetivo es identificar patrones de calor y analizar cómo el cambio climático afecta su entorno inmediato, integrando el uso de instrumentos de medición y el análisis de datos (Diseño Curricular, pág. 168).\n2. **\"Auditoría de Residuos en el Centro Educativo\":** Los alumnos clasifican y cuantifican los desechos generados en el centro durante una semana. A partir de los resultados, diseñan una campaña de reducción, reutilización y reciclaje, vinculando la gestión de residuos con la reducción de la huella de carbono y el efecto invernadero (Diseño Curricular, pág. 172).\n3. **\"Huerto Escolar como Sumidero de Carbono\":** El grupo diseña y establece un pequeño huerto o espacio verde en la escuela. El proyecto permite estudiar el ciclo del carbono, la fotosíntesis y el papel de las plantas en la mitigación del calentamiento global, fomentando la acción directa y el cuidado del ecosistema (Diseño Curricular, pág. 175).\n\n¿Desea que desarrollemos los indicadores de logro o la secuencia de actividades para alguno de estos proyectos en particular?\n\n*Nota: Recuerde que no puedo imprimir directamente desde aquí, pero puede copiar este contenido en un documento de Word o guardarlo como PDF desde su dispositivo.*"
+      },
+      {
+        "corrida": 5,
+        "cumple": true,
+        "ms": 12125,
+        "proveedor": "gemini_api",
+        "extracto": "Es un gusto apoyarle con sus clases de Ciencias de la Naturaleza. Aquí tiene tres ideas de proyectos alineadas al currículo de 1.º de Secund",
+        "textoCompleto": "Es un gusto apoyarle con sus clases de Ciencias de la Naturaleza. Aquí tiene tres ideas de proyectos alineadas al currículo de 1.º de Secundaria, enfocadas en el eje de \"La Tierra y el Universo\":\n\n1. **\"Auditoría de Huella de Carbono Escolar\":** Los estudiantes miden el consumo energético y la generación de residuos en el centro educativo. Deben proponer un plan de acción para reducir el uso de plásticos y electricidad, presentando los resultados en un mural informativo. (Diseño Curricular, pág. 152: *Impacto de las actividades humanas en el medio ambiente*).\n2. **\"Estación Meteorológica Casera\":** Construcción de instrumentos sencillos (pluviómetro, veleta, termómetro) para registrar cambios en el clima local durante un mes. El proyecto culmina con un análisis comparativo entre sus datos y los registros históricos de su comunidad para identificar variaciones climáticas. (Diseño Curricular, pág. 148: *Fenómenos atmosféricos y clima*).\n3. **\"Campaña de Adaptación Comunitaria\":** Investigación sobre cómo el cambio climático afecta específicamente a la República Dominicana (ej. sequías o huracanes). Los estudiantes crean infografías o videos cortos con medidas de prevención y adaptación que las familias pueden implementar en sus hogares. (Diseño Curricular, pág. 154: *Gestión de riesgos y desastres naturales*).\n\n¿Desea que desarrollemos la estructura de alguno de estos proyectos con sus indicadores de logro específicos?"
+      }
+    ]
+  }
+}
