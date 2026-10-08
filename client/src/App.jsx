@@ -13,6 +13,7 @@ import { generarPlanificacion, exportarWord, generarVoz, guardarAjustesPlan, obt
 import { registrarAjusteConRespaldoOffline, sincronizarAjustesPendientes } from "./services/offlineSync.js";
 import { guardarPlanEnBiblioteca } from "./services/bibliotecaStorage.js";
 import { comprimirYRedimensionarImagen } from "./services/imageOptimizer.js";
+import { cargarPerfil } from "./services/perfilStorage.js";
 
 // Modales y componentes secundarios con carga diferida (Lazy Loading) para carga móvil instantánea
 const PlanResult = lazy(() => import("./components/PlanResult.jsx"));
@@ -471,7 +472,19 @@ export default function App() {
   }
 
   function handleAbrirTexto(promptInicial = "", titulo = "Describe la planificación") {
+    let promptConContexto = promptInicial || "";
+    if (!promptConContexto) {
+      try {
+        const p = cargarPerfil();
+        if (p?.grado && p.grado.trim()) {
+          promptConContexto = `Planificación para ${p.grado.trim()}: `;
+        }
+      } catch (e) {}
+    }
     setTextoModalPrompt(promptInicial || "");
+    if (promptConContexto && !promptInicial) {
+      setTextoModalPrompt(promptConContexto);
+    }
     setTextoModalTitulo(titulo || "Describe la planificación");
     setTextoModalOpen(true);
     setMenuOpen(false);

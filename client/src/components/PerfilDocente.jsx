@@ -43,7 +43,7 @@ export default function PerfilDocente({ user, onActualizarPerfil, onCerrar }) {
   const [tanda, setTanda] = useState("Jornada Escolar Extendida (JEE)");
   const [seccion, setSeccion] = useState("A");
   const [nivel, setNivel] = useState("primario");
-  const [grados, setGrados] = useState(["1.º", "2.º"]);
+  const [grados, setGrados] = useState([]);
   const [grado, setGrado] = useState("");
   const [regional, setRegional] = useState("");
   const [distrito, setDistrito] = useState("");
@@ -74,11 +74,9 @@ export default function PerfilDocente({ user, onActualizarPerfil, onCerrar }) {
       else if (perfil.grado.includes("5")) gradosGuardados = ["5.º"];
       else if (perfil.grado.includes("6")) gradosGuardados = ["6.º"];
     }
-    if (gradosGuardados.length === 0) {
-      gradosGuardados = ["1.º", "2.º"];
-    }
+    // El perfil arranca sin grados forzados: nunca se escribe un grado no elegido por el docente
     setGrados(gradosGuardados);
-    setGrado(perfil?.grado || generarEtiquetaGrados(gradosGuardados, nivelGuardado));
+    setGrado(perfil?.grado || (gradosGuardados.length > 0 ? generarEtiquetaGrados(gradosGuardados, nivelGuardado) : ""));
 
     setRegional(perfil?.regional || "");
     setDistrito(perfil?.distrito || "");
@@ -100,14 +98,15 @@ export default function PerfilDocente({ user, onActualizarPerfil, onCerrar }) {
 
   const handleCambiarNivel = (nuevoNivel) => {
     setNivel(nuevoNivel);
-    const primerOpcion = (GRADOS_POR_NIVEL[nuevoNivel] || [])[0]?.id;
-    const nuevosGrados = primerOpcion ? [primerOpcion] : [];
+    const opcionesNuevoNivel = (GRADOS_POR_NIVEL[nuevoNivel] || []).map(o => o.id);
+    const nuevosGrados = grados.filter(g => opcionesNuevoNivel.includes(g));
     setGrados(nuevosGrados);
-    setGrado(generarEtiquetaGrados(nuevosGrados, nuevoNivel));
+    setGrado(nuevosGrados.length > 0 ? generarEtiquetaGrados(nuevosGrados, nuevoNivel) : "");
   };
 
   const handleGuardar = async () => {
     const perfilActual = cargarPerfil() || {};
+    const gradoCalculado = grados.length > 0 ? generarEtiquetaGrados(grados, nivel) : "";
     const perfilActualizado = {
       ...perfilActual,
       nombre: nombre.trim(),
@@ -116,7 +115,7 @@ export default function PerfilDocente({ user, onActualizarPerfil, onCerrar }) {
       seccion: seccion.trim(),
       nivel,
       grados,
-      grado: grado.trim() || generarEtiquetaGrados(grados, nivel),
+      grado: grado.trim() || gradoCalculado,
       regional: regional.trim(),
       distrito: distrito.trim(),
       fecha,

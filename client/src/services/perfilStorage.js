@@ -32,6 +32,11 @@ export function cargarPerfil(userIdOverride) {
     if (saved) {
       return JSON.parse(saved);
     }
+    // Fallback de compatibilidad: clave legacy pm_perfil_docente_data si existe
+    const legacy = localStorage.getItem("pm_perfil_docente_data");
+    if (legacy) {
+      return JSON.parse(legacy);
+    }
   } catch (err) {
     console.error("Error cargando perfil:", err);
   }
