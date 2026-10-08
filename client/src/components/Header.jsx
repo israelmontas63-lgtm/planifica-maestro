@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import { isAuthEnabled } from "../services/supabaseClient.js";
+import { cargarPerfil } from "../services/perfilStorage.js";
 
 function LogoIcon() {
   return (
@@ -69,8 +71,9 @@ export default function Header({
     };
   }, [open]);
 
-  const nombre = user?.user_metadata?.nombre || user?.user_metadata?.full_name || "";
-  const escuela = user?.user_metadata?.escuela || "";
+  const localPerfil = (!user && open) ? (cargarPerfil() || {}) : {};
+  const nombre = user?.user_metadata?.nombre || user?.user_metadata?.full_name || localPerfil.nombre || "";
+  const escuela = user?.user_metadata?.escuela || localPerfil.escuela || "";
   const email = user?.email || "";
   const avatarUrl = user?.user_metadata?.avatar_url || null;
 
@@ -136,13 +139,13 @@ export default function Header({
           <BellOutlineIcon />
         </button>
 
-        {/* Botón visible de Iniciar Sesión cuando no está logueado ni es Owner */}
-        {!user && !isOwner && (
+        {/* Botón visible de Iniciar Sesión solo cuando la autenticación está activa */}
+        {!user && !isOwner && isAuthEnabled && (
           <button
             type="button"
             className="pm-btn-login-header"
             onClick={onAbrirAuth}
-            title="Iniciar sesión o crear cuenta (Opcional)"
+            title="Iniciar sesión o crear cuenta"
           >
             <span style={{ fontSize: '13px' }}>🔐</span>
             <span>Entrar</span>
@@ -279,26 +282,28 @@ export default function Header({
                   </div>
                 </>
               ) : (
-                /* Menú para usuario que NO ha iniciado sesión (opcional) */
+                /* Menú para usuario en modo Beta Abierta / sin sesión en la nube */
                 <>
                   <div className="pm-user-info-banner">
-                    <div className="pm-user-avatar-mini" style={{ background: '#64748b' }}>
-                      👤
+                    <div className="pm-user-avatar-mini" style={{ background: '#1a7d8c' }}>
+                      👩‍🏫
                     </div>
                     <div className="pm-user-details">
-                      <span className="pm-user-name">Acceso Abierto (Público)</span>
-                      <span className="pm-user-email">El registro es 100% opcional</span>
+                      <span className="pm-user-name">{nombre || "Mi Espacio Docente"}</span>
+                      <span className="pm-user-email">{escuela || "Planificación en este dispositivo"}</span>
                     </div>
                   </div>
 
                   <div className="pm-profile-menu-items">
-                    <button
-                      type="button"
-                      style={{ fontWeight: '700', color: '#1a7d8c', background: '#f0fdfa' }}
-                      onClick={() => { setOpen(false); onAbrirAuth?.(); }}
-                    >
-                      🔐 Iniciar Sesión / Registrarse
-                    </button>
+                    {isAuthEnabled && (
+                      <button
+                        type="button"
+                        style={{ fontWeight: '700', color: '#1a7d8c', background: '#f0fdfa' }}
+                        onClick={() => { setOpen(false); onAbrirAuth?.(); }}
+                      >
+                        🔐 Iniciar Sesión / Registrarse
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => { setOpen(false); onAbrirPerfil?.(); }}

@@ -13,7 +13,9 @@ const { registrarPlan, cargarHistorialDocente } = require("../server/curriculum/
 const gestorGasto = require("../server/ia/gestorGasto.js");
 
 // Asegurar claves para pruebas
-process.env.OWNER_MASTER_KEY = process.env.OWNER_MASTER_KEY || "llave_maestra_owner_test_999";
+if (!process.env.OWNER_MASTER_KEY || process.env.OWNER_MASTER_KEY === "ESCRIBE_AQUI_TU_LLAVE_SECRETA") {
+  process.env.OWNER_MASTER_KEY = "llave_maestra_owner_test_999";
+}
 process.env.REQUIRE_ACCESS_KEY = "false";
 
 test("AISLAMIENTO POR DISPOSITIVO Y SEGURIDAD", async (t) => {

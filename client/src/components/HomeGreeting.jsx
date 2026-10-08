@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { cargarPerfil } from "../services/perfilStorage.js";
 
 const PHRASES = [
   "¿Qué vamos a hacer hoy?",
@@ -25,9 +26,11 @@ export default function HomeGreeting({ user }) {
       if (h) hour = parseInt(h.value, 10);
     } catch (e) {}
 
+    const perfilLocal = (!user) ? (cargarPerfil() || {}) : {};
     const nombreCompleto =
       user?.user_metadata?.nombre ||
       user?.user_metadata?.full_name ||
+      perfilLocal.nombre ||
       "";
     const primerNombre = nombreCompleto.trim().split(" ")[0];
     const sufijo = primerNombre ? `profe ${primerNombre}` : "profe";

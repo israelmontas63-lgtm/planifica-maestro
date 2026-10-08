@@ -34,12 +34,27 @@ export default function App() {
     session,
     loading: authLoading,
     isSupabaseConfigured,
+    isAuthEnabled,
     signIn,
     signUp,
     signOut,
     resetPassword,
     updateProfile
   } = useAuth();
+  const [avisoDispositivoVisto, setAvisoDispositivoVisto] = useState(() => {
+    try {
+      return localStorage.getItem("pm_aviso_dispositivo_visto") === "true";
+    } catch (e) {
+      return false;
+    }
+  });
+
+  const handleCerrarAvisoDispositivo = () => {
+    try {
+      localStorage.setItem("pm_aviso_dispositivo_visto", "true");
+    } catch (e) {}
+    setAvisoDispositivoVisto(true);
+  };
   const { diasRestantes, expirado, diasPrueba } = useTrialStatus();
   const [periodo, setPeriodo] = useState("diaria");
   const [nivel, setNivel] = useState("primario");
@@ -789,6 +804,47 @@ export default function App() {
           <HomeGreeting user={user} />
         )}
 
+        {/* Aviso de almacenamiento local en dispositivo (mostrado una sola vez, sin jerga técnica) */}
+        {!avisoDispositivoVisto && messages.length === 0 && !cargando && !listening && (
+          <div style={{
+            background: "#eff6ff",
+            border: "1px solid #bfdbfe",
+            color: "#1e40af",
+            padding: "10px 14px",
+            borderRadius: "10px",
+            fontSize: "13px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "10px",
+            margin: "0 4px"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontSize: "16px" }}>📱</span>
+              <span>
+                <strong>Tus trabajos se guardan en este dispositivo:</strong> Recuerda descargar en Word las planificaciones que quieras conservar de forma permanente.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleCerrarAvisoDispositivo}
+              style={{
+                background: "#2563eb",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                padding: "4px 10px",
+                fontSize: "12px",
+                fontWeight: "600",
+                cursor: "pointer",
+                whiteSpace: "nowrap"
+              }}
+            >
+              Entendido
+            </button>
+          </div>
+        )}
+
         {messages.map((m, i) => (
           <div
             key={i}
@@ -1260,7 +1316,7 @@ export default function App() {
         onAbrirAyuda={() => { setAyudaOpen(true); setMenuOpen(false); }}
       />
       
-      {authModalOpen && (
+      {authModalOpen && isAuthEnabled && (
         <Suspense fallback={null}>
           <AuthScreen
             onSignIn={signIn}

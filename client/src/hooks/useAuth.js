@@ -1,36 +1,57 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase, isSupabaseConfigured } from "../services/supabaseClient.js";
+import { supabase, isSupabaseConfigured, isAuthEnabled } from "../services/supabaseClient.js";
 import { limpiarDatosUsuario } from "../services/perfilStorage.js";
 
 const LOCAL_USER_STORAGE = "pm_local_user";
+const DEVICE_ID_KEY = "pm_device_id";
 
-// Función auxiliar para obtener el ID de usuario activo en cualquier parte de la app
+// Identificador anónimo estable por dispositivo (guardado en localStorage)
+export function obtenerOrearDispositivoId() {
+  try {
+    let devId = localStorage.getItem(DEVICE_ID_KEY);
+    if (!devId) {
+      const rand = Math.random().toString(36).substring(2, 10);
+      const ts = Date.now().toString(36);
+      devId = `dev_${ts}_${rand}`;
+      localStorage.setItem(DEVICE_ID_KEY, devId);
+    }
+    return devId;
+  } catch (e) {
+    return "dev_local_fallback";
+  }
+}
+
 export function obtenerUsuarioIdActual() {
-  if (isSupabaseConfigured && supabase) {
-    try {
-      // Supabase guarda la sesión bajo sb-<projectId>-auth-token en localStorage
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith("sb-") && key.endsWith("-auth-token")) {
-          const raw = localStorage.getItem(key);
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            const uid = parsed?.user?.id;
-            if (uid) return uid;
+  if (isAuthEnabled) {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        // Supabase guarda la sesión bajo sb-<projectId>-auth-token en localStorage
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith("sb-") && key.endsWith("-auth-token")) {
+            const raw = localStorage.getItem(key);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              const uid = parsed?.user?.id;
+              if (uid) return uid;
+            }
           }
         }
+      } catch (e) {}
+    }
+    // Fallback a usuario local o simulado cuando la autenticación está activa
+    try {
+      const local = localStorage.getItem(LOCAL_USER_STORAGE);
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (parsed?.id) return parsed.id;
       }
     } catch (e) {}
+    return null;
   }
-  // Fallback a usuario local o generado
-  try {
-    const local = localStorage.getItem(LOCAL_USER_STORAGE);
-    if (local) {
-      const parsed = JSON.parse(local);
-      if (parsed?.id) return parsed.id;
-    }
-  } catch (e) {}
-  return null;
+  // En MODO BETA ABIERTA (isAuthEnabled === false):
+  // Cada dispositivo recibe un identificador anónimo estable para sus planes y perfil
+  return obtenerOrearDispositivoId();
 }
 
 export function useAuth() {
@@ -224,6 +245,7 @@ export function useAuth() {
     session,
     loading,
     isSupabaseConfigured,
+    isAuthEnabled,
     signIn,
     signUp,
     signOut,

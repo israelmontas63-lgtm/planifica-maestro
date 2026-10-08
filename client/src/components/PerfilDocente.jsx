@@ -82,8 +82,20 @@ export default function PerfilDocente({ user, onActualizarPerfil, onCerrar }) {
 
         <div className="perfil-body">
           <p className="perfil-intro">
-            Tus datos se sincronizan con tu cuenta y se auto-rellenan en la matriz oficial de cada planificación nueva.
+            Tus datos se guardan en este dispositivo y se auto-rellenan en la matriz oficial de cada planificación nueva en Word.
           </p>
+          <div style={{
+            fontSize: "12px",
+            color: "#475569",
+            background: "#f8fafc",
+            border: "1px solid #e2e8f0",
+            padding: "8px 12px",
+            borderRadius: "6px",
+            marginBottom: "14px",
+            lineHeight: "1.4"
+          }}>
+            💡 <strong>Nota importante:</strong> Tus planificaciones y perfil se guardan en este dispositivo. Si borras el historial o datos del navegador se perderán, por lo que te recomendamos descargar en Word los trabajos que quieras conservar.
+          </div>
 
           <label className="perfil-label">
             Nombre del Docente

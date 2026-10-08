@@ -102,6 +102,13 @@ CREATE TABLE IF NOT EXISTS public.uso_docentes (
 
 ALTER TABLE public.uso_docentes ENABLE ROW LEVEL SECURITY;
 
+-- Los docentes SOLO pueden leer su propio contador.
+-- NUNCA pueden insertar, modificar ni borrar cuotas desde el navegador.
+-- La escritura y actualización de cuotas está reservada exclusivamente al servidor (service_role).
+DROP POLICY IF EXISTS "Uso docentes: inserción propia" ON public.uso_docentes;
+DROP POLICY IF EXISTS "Uso docentes: actualización propia" ON public.uso_docentes;
+DROP POLICY IF EXISTS "Uso docentes: eliminación propia" ON public.uso_docentes;
+
 DROP POLICY IF EXISTS "Uso docentes: lectura propia" ON public.uso_docentes;
 CREATE POLICY "Uso docentes: lectura propia"
   ON public.uso_docentes
@@ -109,24 +116,28 @@ CREATE POLICY "Uso docentes: lectura propia"
   TO authenticated
   USING ((select auth.uid()) = docente_id);
 
-DROP POLICY IF EXISTS "Uso docentes: inserción propia" ON public.uso_docentes;
-CREATE POLICY "Uso docentes: inserción propia"
-  ON public.uso_docentes
-  FOR INSERT
-  TO authenticated
-  WITH CHECK ((select auth.uid()) = docente_id);
-
-DROP POLICY IF EXISTS "Uso docentes: actualización propia" ON public.uso_docentes;
-CREATE POLICY "Uso docentes: actualización propia"
-  ON public.uso_docentes
-  FOR UPDATE
-  TO authenticated
-  USING ((select auth.uid()) = docente_id)
-  WITH CHECK ((select auth.uid()) = docente_id);
-
 DROP TRIGGER IF EXISTS trg_uso_docentes_updated_at ON public.uso_docentes;
 CREATE TRIGGER trg_uso_docentes_updated_at
   BEFORE UPDATE ON public.uso_docentes
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE INDEX IF NOT EXISTS idx_uso_docentes_lookup ON public.uso_docentes (docente_id, periodo);
+
+-- -----------------------------------------------------------------------------
+-- 4. PRIVILEGIOS Y BLINDAJE DEFENSIVO (REVOKE / GRANT)
+-- -----------------------------------------------------------------------------
+-- Revocación total de acceso al rol anónimo (anon)
+REVOKE ALL ON public.perfil_docente FROM anon;
+REVOKE ALL ON public.planes_guardados FROM anon;
+REVOKE ALL ON public.uso_docentes FROM anon;
+
+-- Privilegios controlados para usuarios autenticados (sujetos a RLS)
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.perfil_docente TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.planes_guardados TO authenticated;
+GRANT SELECT ON public.uso_docentes TO authenticated;
+REVOKE INSERT, UPDATE, DELETE ON public.uso_docentes FROM authenticated;
+
+-- El rol del servidor (service_role) mantiene administración completa
+GRANT ALL ON public.perfil_docente TO service_role;
+GRANT ALL ON public.planes_guardados TO service_role;
+GRANT ALL ON public.uso_docentes TO service_role;
