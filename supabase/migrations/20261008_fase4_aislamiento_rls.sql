@@ -126,10 +126,10 @@ CREATE INDEX IF NOT EXISTS idx_uso_docentes_lookup ON public.uso_docentes (docen
 -- -----------------------------------------------------------------------------
 -- 4. PRIVILEGIOS Y BLINDAJE DEFENSIVO (REVOKE / GRANT)
 -- -----------------------------------------------------------------------------
--- Revocación total de acceso al rol anónimo (anon)
-REVOKE ALL ON public.perfil_docente FROM anon;
-REVOKE ALL ON public.planes_guardados FROM anon;
-REVOKE ALL ON public.uso_docentes FROM anon;
+-- Revocación total de acceso a PUBLIC y al rol anónimo (anon)
+REVOKE ALL ON public.perfil_docente FROM PUBLIC, anon;
+REVOKE ALL ON public.planes_guardados FROM PUBLIC, anon;
+REVOKE ALL ON public.uso_docentes FROM PUBLIC, anon;
 
 -- Privilegios controlados para usuarios autenticados (sujetos a RLS)
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.perfil_docente TO authenticated;

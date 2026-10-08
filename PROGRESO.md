@@ -28,13 +28,24 @@ Cuando se configure el nuevo proyecto activo de Supabase para el lanzamiento mas
    - La sincronización bidireccional en la nube con `perfil_docente` y `planes_guardados`.
    - La purga de datos al cerrar sesión para ordenadores compartidos.
    - Cero reescritura de código: todo el flujo de autenticación está protegido y testeado.
-4. Tarea pendiente para lanzamiento masivo:
-   - Probar con dos cuentas reales en el nuevo proyecto de Supabase que las cuotas en `uso_docentes` sean estrictamente de solo lectura para el cliente (confirmando que un usuario autenticado no puede ejecutar INSERT, UPDATE ni DELETE sobre su contador de cuotas).
+4. Procedimiento de prueba pendiente para lanzamiento masivo (con 2 cuentas reales en Supabase):
+   - Paso a: Registrar dos docentes de prueba (`docente_a@prueba.com` y `docente_b@prueba.com`).
+   - Paso b: Iniciar sesión como Docente A y autenticar sesión HTTP.
+   - Paso c: Probar consulta legítima de cuota: `supabase.from('uso_docentes').select('*')` -> Devuelve únicamente la fila de Docente A (HTTP 200).
+   - Paso d: Probar intento de mutación maliciosa desde cliente: `supabase.from('uso_docentes').update({ usadas: 0 }).eq('docente_id', userA.id)` -> Debe rechazar con error de privilegios (HTTP 403 / permission denied for table uso_docentes).
+   - Paso e: Probar intento de lectura cruzada: `supabase.from('planes_guardados').select('*').eq('user_id', userB.id)` -> Devuelve 0 filas (política RLS no coincide con auth.uid()).
+   - Paso f: Iniciar sesión como Docente B y confirmar que su biblioteca y perfil están 100% aislados de Docente A.
+   - Paso g: Cerrar sesión y confirmar que `limpiarDatosUsuario` purga el almacenamiento local del dispositivo.
 
 ## Commits Realizados
 - `378c1b1`: `fix(conducta): salvaguarda de saludo directo y defensa en código para imagen ilegible`
 - `f82fcb2`: `test(conducta): evaluadores semánticos y reporte de corridas por lotes`
 - `ba3be29`: `fix(conducta): cierre de Paso 3C con benchmark justo 5 corridas, verificador de citas y defensas`
+- `798e527`: `feat(fase2): modelo oficial Word CON BASE en A4 horizontal, perfil ampliado, multigrado y selector IA`
+- `f5ed81e`: `feat(fase3): indexacion de 9 PDFs oficiales MINERD, desduplicacion SHA-256 y buscador multiciclo`
+- `15dafcd`: `feat(fase4): persistencia y aislamiento multiusuario con Supabase RLS, purga en cierre de sesion y sincronizacion hibrida`
+- `68615c4`: `feat(beta): modo beta abierta sin login con dispositivo estable y almacenamiento local`
+- `3abc035`: `feat(beta): perfil multigrado, formato de secuencia didactica CON BASE y 3 muestras docx completas`
 
 ## Decisiones y Reglas Obligatorias
 1. Cero commits ni logs con claves completas (solo 4 primeros y 4 últimos caracteres). Claves solo en servidor/worker.

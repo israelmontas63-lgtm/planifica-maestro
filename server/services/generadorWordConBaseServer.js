@@ -616,8 +616,8 @@ async function construirDocumentoWordOficial({
         properties: {
           page: {
             size: {
-              width: 16838,
-              height: 11906,
+              width: 11906, // A4 portrait base invertido por PageOrientation.LANDSCAPE a w:16838 h:11906
+              height: 16838,
               orientation: PageOrientation.LANDSCAPE
             },
             margin: {
