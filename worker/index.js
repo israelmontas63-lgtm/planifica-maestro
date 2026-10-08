@@ -192,7 +192,7 @@ function extraerJsonValido(text) {
 // GESTIÓN DE CUOTAS (SUPABASE CON FALLBACK EN MEMORIA)
 // ─────────────────────────────────────────────────────────────
 async function consultarCuota(env, docenteId, isOwner) {
-  const limiteDefault = 15;
+  const limiteDefault = env.PLAN_LIMIT_MAX ? parseInt(env.PLAN_LIMIT_MAX, 10) : 20;
   const periodoActual = new Date().toISOString().substring(0, 7); // YYYY-MM
 
   if (isOwner) {
@@ -206,6 +206,7 @@ async function consultarCuota(env, docenteId, isOwner) {
       alerta80: false,
       isOwner: true,
       periodo: periodoActual,
+      origen_cuota: "owner_bypass",
     };
   }
 
@@ -235,6 +236,7 @@ async function consultarCuota(env, docenteId, isOwner) {
             alerta80: usadas / limite >= 0.8,
             isOwner: false,
             periodo: periodoActual,
+            origen_cuota: "supabase",
           };
         }
       }
@@ -256,6 +258,7 @@ async function consultarCuota(env, docenteId, isOwner) {
     alerta80: entry.usadas / entry.limite >= 0.8,
     isOwner: false,
     periodo: periodoActual,
+    origen_cuota: "memoria",
   };
 }
 
@@ -291,6 +294,7 @@ async function consumirCuota(env, docenteId, isOwner) {
           });
           return consultarCuota(env, docenteId, false);
         } else {
+          const limiteCreacion = env.PLAN_LIMIT_MAX ? parseInt(env.PLAN_LIMIT_MAX, 10) : 20;
           await fetch(`${env.SUPABASE_URL}/rest/v1/uso_docentes`, {
             method: "POST",
             headers: {
@@ -302,7 +306,7 @@ async function consumirCuota(env, docenteId, isOwner) {
               docente_id: docenteId,
               periodo: periodoActual,
               usadas: 1,
-              limite: 15,
+              limite: limiteCreacion,
             }),
           });
           return consultarCuota(env, docenteId, false);
@@ -314,8 +318,9 @@ async function consumirCuota(env, docenteId, isOwner) {
   }
 
   // Fallback en memoria
+  const limiteMemoria = env.PLAN_LIMIT_MAX ? parseInt(env.PLAN_LIMIT_MAX, 10) : 20;
   const key = `${docenteId}_${periodoActual}`;
-  const entry = inMemoryQuotas.get(key) || { usadas: 0, limite: 15 };
+  const entry = inMemoryQuotas.get(key) || { usadas: 0, limite: limiteMemoria };
   entry.usadas += 1;
   inMemoryQuotas.set(key, entry);
   return consultarCuota(env, docenteId, false);

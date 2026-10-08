@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase, isSupabaseConfigured } from "../services/supabaseClient.js";
+import { limpiarDatosUsuario } from "../services/perfilStorage.js";
 
 const LOCAL_USER_STORAGE = "pm_local_user";
 
@@ -160,6 +161,7 @@ export function useAuth() {
 
   // 4. Cerrar sesión
   const signOut = useCallback(async () => {
+    const userIdActual = user?.id || obtenerUsuarioIdActual();
     if (isSupabaseConfigured && supabase) {
       try {
         await supabase.auth.signOut();
@@ -167,10 +169,13 @@ export function useAuth() {
         console.error("Error cerrando sesión en Supabase:", err);
       }
     }
+    if (userIdActual) {
+      limpiarDatosUsuario(userIdActual);
+    }
     localStorage.removeItem(LOCAL_USER_STORAGE);
     setSession(null);
     setUser(null);
-  }, []);
+  }, [user]);
 
   // 5. Recuperación de contraseña por correo
   const resetPassword = useCallback(async (email) => {

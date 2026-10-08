@@ -103,7 +103,7 @@ export function duplicarPlanEnBiblioteca(id, userId) {
   }
 }
 
-export function eliminarPlanDeBiblioteca(id, userId) {
+export function eliminarPlanDeBiblioteca(id, userId, supabaseClient) {
   const key = getStorageKey(userId);
   if (!key) return false;
 
@@ -111,9 +111,111 @@ export function eliminarPlanDeBiblioteca(id, userId) {
     const lista = obtenerTodasLasPlanificaciones(userId);
     const nuevaLista = lista.filter((p) => p.id !== id);
     localStorage.setItem(key, JSON.stringify(nuevaLista));
+
+    if (supabaseClient && userId) {
+      supabaseClient
+        .from("planes_guardados")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", userId)
+        .then(() => {})
+        .catch((err) => console.warn("Aviso eliminando de Supabase:", err.message));
+    }
+
     return true;
   } catch (err) {
     console.error("Error eliminando de biblioteca:", err);
     return false;
   }
+}
+
+/**
+ * Sincroniza la biblioteca de planes local con Supabase planes_guardados (con RLS).
+ */
+export async function sincronizarBibliotecaConNube({ supabaseClient, userId }) {
+  if (!supabaseClient || !userId) return obtenerTodasLasPlanificaciones(userId);
+
+  try {
+    const planesLocales = obtenerTodasLasPlanificaciones(userId);
+
+    // 1. Consultar planes en Supabase
+    const { data: planesNube, error } = await supabaseClient
+      .from("planes_guardados")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.warn("Aviso al consultar planes en Supabase:", error.message);
+      return planesLocales;
+    }
+
+    // 2. Mapear y fusionar por ID
+    const mapaPlanes = new Map();
+
+    // Cargar planes de la nube primero
+    if (Array.isArray(planesNube)) {
+      for (const pn of planesNube) {
+        mapaPlanes.set(pn.id, {
+          id: pn.id,
+          titulo: pn.titulo,
+          area: pn.area || "General",
+          grado: pn.grado || "Grado no especificado",
+          nivel: pn.nivel || "primario",
+          periodo: pn.periodo || "diaria",
+          esquemaLabel: pn.esquema_label || "Tradicional",
+          fecha: pn.created_at || new Date().toISOString(),
+          datosPlanificacion: pn.datos_planificacion || {}
+        });
+      }
+    }
+
+    // Fusionar o subir planes locales que falten en la nube
+    for (const pl of planesLocales) {
+      if (!mapaPlanes.has(pl.id)) {
+        mapaPlanes.set(pl.id, pl);
+        // Subir a Supabase en background
+        supabaseClient
+          .from("planes_guardados")
+          .upsert({
+            id: pl.id,
+            user_id: userId,
+            titulo: pl.titulo || "Planificación",
+            nivel: pl.nivel || "primario",
+            periodo: pl.periodo || "diaria",
+            area: pl.area || "General",
+            grado: pl.grado || "General",
+            esquema_label: pl.esquemaLabel || "Tradicional",
+            datos_planificacion: pl.datosPlanificacion || {},
+            created_at: pl.fecha || new Date().toISOString()
+          })
+          .then(() => {})
+          .catch((e) => console.warn("Aviso al subir plan local a Supabase:", e.message));
+      }
+    }
+
+    const listaFinal = Array.from(mapaPlanes.values()).sort(
+      (a, b) => new Date(b.fecha) - new Date(a.fecha)
+    );
+
+    const key = getStorageKey(userId);
+    if (key) {
+      localStorage.setItem(key, JSON.stringify(listaFinal));
+    }
+
+    return listaFinal;
+  } catch (err) {
+    console.warn("Aviso en sincronización de biblioteca con la nube:", err.message);
+    return obtenerTodasLasPlanificaciones(userId);
+  }
+}
+
+/**
+ * Limpia la biblioteca local de un docente específico.
+ */
+export function limpiarBibliotecaUsuario(userId) {
+  if (!userId) return;
+  try {
+    localStorage.removeItem(`pm_biblioteca_${userId}`);
+  } catch (e) {}
 }

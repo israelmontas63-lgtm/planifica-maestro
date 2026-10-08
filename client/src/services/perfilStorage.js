@@ -74,6 +74,65 @@ export function obtenerPerfil(userIdOverride) {
 }
 
 /**
+ * Sincroniza el perfil docente local con Supabase (tabla perfil_docente con RLS).
+ * Si hay datos en la nube y no en local, los descarga; si hay datos en local, los sube.
+ */
+export async function sincronizarPerfilConNube({ supabaseClient, userId }) {
+  if (!supabaseClient || !userId) return null;
+
+  try {
+    const perfilLocal = cargarPerfil(userId);
+
+    // 1. Consultar perfil en Supabase
+    const { data: perfilNube, error } = await supabaseClient
+      .from("perfil_docente")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (error && error.code !== "PGRST116") {
+      console.warn("Aviso al consultar perfil en Supabase:", error.message);
+    }
+
+    if (perfilLocal) {
+      // Subir o actualizar en la nube con RLS
+      const payload = {
+        user_id: userId,
+        nombre: perfilLocal.nombreDocente || perfilLocal.nombre || "Docente",
+        centro_educativo: perfilLocal.centroEducativo || "",
+        tanda: perfilLocal.tanda || "",
+        seccion: perfilLocal.seccion || "",
+        regional: perfilLocal.regional || "",
+        distrito: perfilLocal.distrito || "",
+        grado: perfilLocal.grado || "",
+        materias: Array.isArray(perfilLocal.materias) ? perfilLocal.materias : [],
+        updated_at: new Date().toISOString()
+      };
+      await supabaseClient.from("perfil_docente").upsert(payload);
+      return perfilLocal;
+    } else if (perfilNube) {
+      // Descargar de la nube al almacenamiento local aislado
+      const restaurado = {
+        docenteId: userId,
+        nombreDocente: perfilNube.nombre,
+        centroEducativo: perfilNube.centro_educativo,
+        tanda: perfilNube.tanda,
+        seccion: perfilNube.seccion,
+        regional: perfilNube.regional,
+        distrito: perfilNube.distrito,
+        grado: perfilNube.grado,
+        materias: perfilNube.materias || []
+      };
+      guardarPerfil(restaurado, userId);
+      return restaurado;
+    }
+  } catch (err) {
+    console.warn("Aviso en sincronización de perfil con la nube:", err.message);
+  }
+  return cargarPerfil(userId);
+}
+
+/**
  * Limpia todos los datos almacenados localmente para un usuario específico.
  * Se ejecuta al cerrar sesión o cambiar de usuario.
  * @param {string} userId - ID del usuario a limpiar.
@@ -89,6 +148,7 @@ export function limpiarDatosUsuario(userId) {
     `pm_actividades_${userId}`,
     `pm_notas_${userId}`,
     `pm_recordatorios_${userId}`,
+    `pm_modelo_ia_${userId}`
   ];
 
   for (const key of prefijos) {
@@ -101,5 +161,6 @@ export function limpiarDatosUsuario(userId) {
   try {
     localStorage.removeItem("planifica_maestro_perfil");
     localStorage.removeItem("pm_biblioteca_planificaciones");
+    localStorage.removeItem("pm_local_user");
   } catch (e) {}
 }
