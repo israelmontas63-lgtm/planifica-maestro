@@ -199,31 +199,92 @@ function crearCelda({
   return new TableCell(props);
 }
 
+// Lista oficial de las 7 Competencias Fundamentales del currículo dominicano
+const LISTA_7_COMPETENCIAS_FUNDAMENTALES = [
+  "Competencia Ética y Ciudadana",
+  "Competencia Comunicativa",
+  "Competencia de Pensamiento Lógico, Creativo y Crítico",
+  "Competencia de Resolución de Problemas",
+  "Competencia Científica y Tecnológica",
+  "Competencia Ambiental y de la Salud",
+  "Competencia de Desarrollo Personal y Espiritual"
+];
+
+function formatear7CompetenciasFundamentales(textoFund) {
+  const norm = normalizarClave(textoFund || "");
+  const comps = LISTA_7_COMPETENCIAS_FUNDAMENTALES.map(comp => {
+    const palabraClave = normalizarClave(
+      comp.replace(/^competencia\s+(?:de\s+)?/i, "")
+    );
+    const trabajada = norm.includes(palabraClave);
+    const marca = trabajada ? "☑" : "☐";
+    return `${marca} ${comp}`;
+  });
+  return comps.join("   |   ");
+}
+
+function obtenerTituloSegunCiclo(gradoTexto, nivelTexto) {
+  const gradoNorm = (gradoTexto || "").toLowerCase();
+  const nivelNorm = (nivelTexto || "").toLowerCase();
+  
+  if (nivelNorm === "secundario" || gradoNorm.includes("sec")) {
+    return "Planificación Actividades de la Secuencia Didáctica del Nivel Secundario";
+  }
+  if (nivelNorm === "inicial" || gradoNorm.includes("inicial")) {
+    return "Planificación Actividades de la Secuencia Didáctica del Nivel Inicial";
+  }
+  if (gradoNorm.includes("4") || gradoNorm.includes("5") || gradoNorm.includes("6") || gradoNorm.includes("segundo ciclo")) {
+    return "Planificación Actividades de la Secuencia Didáctica de Segundo Ciclo de primaria";
+  }
+  return "Planificación Actividades de la Secuencia Didáctica de Primer Ciclo de primaria";
+}
+
 function crearParrafoCampo(etiqueta, valor, { size = 20, alignment = AlignmentType.LEFT } = {}) {
-  return new Paragraph({
-    alignment,
-    spacing: { before: 40, after: 40, line: 240 },
-    children: [
+  const valLimpio = valor != null && valor !== "undefined" && valor !== "null" ? String(valor).trim() : "";
+  const etiquetaLimpia = etiqueta ? `${etiqueta}: ` : "";
+
+  const children = [];
+  if (etiquetaLimpia) {
+    children.push(
       new TextRun({
-        text: etiqueta ? `${etiqueta}: ` : "",
+        text: etiquetaLimpia,
         bold: true,
         size,
         color: COLOR_TEXTO_TITULO,
         font: "Calibri"
-      }),
+      })
+    );
+  }
+  if (valLimpio) {
+    children.push(
       new TextRun({
-        text: valor || "---",
+        text: valLimpio,
         bold: false,
         size,
         color: COLOR_TEXTO_NORMAL,
         font: "Calibri"
       })
-    ]
+    );
+  } else if (!etiquetaLimpia) {
+    children.push(
+      new TextRun({
+        text: "\u00A0",
+        size,
+        font: "Calibri"
+      })
+    );
+  }
+
+  return new Paragraph({
+    alignment,
+    spacing: { before: 40, after: 40, line: 240 },
+    children
   });
 }
 
 function crearParrafoMultiLinea(texto, { size = 19, bold = false, color = COLOR_TEXTO_NORMAL } = {}) {
-  const lineas = String(texto || "").split("\n");
+  const textoLimpio = texto != null && texto !== "undefined" && texto !== "null" ? String(texto) : "";
+  const lineas = textoLimpio ? textoLimpio.split("\n") : ["\u00A0"];
   const paragraphs = [];
 
   lineas.forEach((linea, index) => {
@@ -232,7 +293,7 @@ function crearParrafoMultiLinea(texto, { size = 19, bold = false, color = COLOR_
         spacing: { before: index === 0 ? 40 : 20, after: 30, line: 240 },
         children: [
           new TextRun({
-            text: linea || " ",
+            text: linea || "\u00A0",
             bold,
             size,
             color,
@@ -268,10 +329,22 @@ async function construirDocumentoWordOficial({
     perfilActivo.nombre ||
     "Docente";
 
-  const grado =
-    buscarEnDatos(datosObj, ["grado", "curso", "nivel educativo"]) ||
-    perfilActivo.grado ||
-    "3ro de Primaria";
+  let grado = buscarEnDatos(datosObj, ["grado", "curso", "nivel educativo"]);
+  if (!grado) {
+    if (Array.isArray(perfilActivo?.grados) && perfilActivo.grados.length > 0) {
+      if (perfilActivo.grados.length > 1) {
+        const ult = perfilActivo.grados[perfilActivo.grados.length - 1];
+        const prev = perfilActivo.grados.slice(0, -1);
+        grado = `${prev.join(", ")} y ${ult} de ${perfilActivo?.nivel === "secundario" ? "Secundaria" : perfilActivo?.nivel === "inicial" ? "Nivel Inicial" : "Primaria"} (Multigrado)`;
+      } else {
+        grado = `${perfilActivo.grados[0]} de ${perfilActivo?.nivel === "secundario" ? "Secundaria" : perfilActivo?.nivel === "inicial" ? "Nivel Inicial" : "Primaria"}`;
+      }
+    } else if (perfilActivo?.grado && perfilActivo.grado.trim()) {
+      grado = perfilActivo.grado.trim();
+    } else {
+      grado = ""; // NUNCA escribir un grado que el maestro no eligió
+    }
+  }
 
   const seccion =
     buscarEnDatos(datosObj, ["seccion", "sección"]) ||
@@ -329,6 +402,8 @@ async function construirDocumentoWordOficial({
 
   const filasTabla = [];
 
+  // Fila 1: Título según ciclo
+  const tituloSegunCiclo = obtenerTituloSegunCiclo(grado, perfilActivo?.nivel);
   filasTabla.push(
     new TableRow({
       children: [
@@ -341,7 +416,7 @@ async function construirDocumentoWordOficial({
               spacing: { before: 80, after: 80 },
               children: [
                 new TextRun({
-                  text: "Planificación de Actividades de la Secuencia Didáctica - Programa CON BASE",
+                  text: tituloSegunCiclo,
                   bold: true,
                   size: 23,
                   color: COLOR_TEXTO_TITULO,
@@ -355,34 +430,38 @@ async function construirDocumentoWordOficial({
     })
   );
 
+  // Fila 2
   filasTabla.push(
     new TableRow({
       children: [
-        crearCelda({ widthPct: 42, children: [crearParrafoCampo("Centro Educativo", centroEducativo)] }),
-        crearCelda({ widthPct: 30, children: [crearParrafoCampo("Docente", docente)] }),
+        crearCelda({ widthPct: 45, children: [crearParrafoCampo("Centro Educativo", centroEducativo)] }),
+        crearCelda({ widthPct: 32, children: [crearParrafoCampo("Docente", docente)] }),
         crearCelda({ widthPct: 15, children: [crearParrafoCampo("Grado", grado)] }),
-        crearCelda({ widthPct: 13, children: [crearParrafoCampo("Sección", seccion)] })
+        crearCelda({ widthPct: 8, children: [crearParrafoCampo("Sección", seccion)] })
       ]
     })
   );
 
+  // Fila 3
   filasTabla.push(
     new TableRow({
       children: [
-        crearCelda({ widthPct: 42, children: [crearParrafoCampo("Área", area)] }),
-        crearCelda({ widthPct: 30, children: [crearParrafoCampo("Secuencia", secuencia)] }),
+        crearCelda({ widthPct: 45, children: [crearParrafoCampo("Área", area)] }),
+        crearCelda({ widthPct: 32, children: [crearParrafoCampo("Secuencia", secuencia)] }),
         crearCelda({ widthPct: 15, children: [crearParrafoCampo("Fecha", fecha)] }),
-        crearCelda({ widthPct: 13, children: [crearParrafoCampo("Tanda", tanda)] })
+        crearCelda({ widthPct: 8, children: [crearParrafoCampo("Tanda", tanda)] })
       ]
     })
   );
 
+  // Fila 4: 7 Competencias marcando las trabajadas
+  const competenciasFundMarcadas = formatear7CompetenciasFundamentales(competenciasFund);
   filasTabla.push(
     new TableRow({
       children: [
         crearCelda({
           columnSpan: 4,
-          children: [crearParrafoCampo("Competencias Fundamentales", competenciasFund)]
+          children: [crearParrafoCampo("Competencias Fundamentales", competenciasFundMarcadas)]
         })
       ]
     })
@@ -443,11 +522,13 @@ async function construirDocumentoWordOficial({
   );
 
   filasTabla.push(
+  // Fila 9: Encabezado Momentos
+  filasTabla.push(
     new TableRow({
       children: [
         crearCelda({
           columnSpan: 2,
-          widthPct: 70,
+          widthPct: 77,
           shadingColor: COLOR_AZUL_ENCABEZADO,
           children: [
             new Paragraph({
@@ -471,7 +552,7 @@ async function construirDocumentoWordOficial({
         }),
         crearCelda({
           columnSpan: 1,
-          widthPct: 15,
+          widthPct: 8,
           shadingColor: COLOR_AZUL_ENCABEZADO,
           children: [
             new Paragraph({
@@ -485,7 +566,31 @@ async function construirDocumentoWordOficial({
     })
   );
 
-  momentosList.forEach((m, idx) => {
+  // Filas 10 a 15: Exactamente 6 Filas de Momentos
+  const momentos6 = [...momentosList];
+  while (momentos6.length < 6) {
+    const idxPad = momentos6.length + 1;
+    let nomPad = `Momento ${idxPad}`;
+    let descPad = "Actividad formativa de aprendizaje y desarrollo curricular.";
+    let tiempoPad = "10 min";
+    let recPad = "Cuaderno y guía pedagógica";
+    if (idxPad === 5) {
+      nomPad = "Momento 5: Sistematización y afianzamiento";
+      descPad = "Consolidación de conceptos clave mediante ejercicios prácticos y preguntas orales guiadas.";
+    } else if (idxPad === 6) {
+      nomPad = "Momento 6: Valoración metacognitiva y tarea formativa";
+      descPad = "Reflexión final sobre lo aprendido, verificación de logros y asignación de actividad complementaria.";
+    }
+    momentos6.push({
+      nombre: nomPad,
+      descripcion: descPad,
+      tiempo: tiempoPad,
+      recursos: recPad
+    });
+  }
+  const momentosFinales = momentos6.slice(0, 6);
+
+  momentosFinales.forEach((m, idx) => {
     const parsDescripcion = crearParrafoMultiLinea(m.descripcion, { size: 19 });
     const contenidoMomento = [
       new Paragraph({
@@ -506,7 +611,7 @@ async function construirDocumentoWordOficial({
     filasTabla.push(
       new TableRow({
         children: [
-          crearCelda({ columnSpan: 2, widthPct: 70, children: contenidoMomento }),
+          crearCelda({ columnSpan: 2, widthPct: 77, children: contenidoMomento }),
           crearCelda({
             columnSpan: 1,
             widthPct: 15,
@@ -520,7 +625,7 @@ async function construirDocumentoWordOficial({
           }),
           crearCelda({
             columnSpan: 1,
-            widthPct: 15,
+            widthPct: 8,
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
@@ -534,42 +639,13 @@ async function construirDocumentoWordOficial({
     );
   });
 
-  const faltantes = Math.max(0, 6 - momentosList.length);
-  for (let f = 0; f < faltantes && (filasTabla.length < 15); f++) {
-    filasTabla.push(
-      new TableRow({
-        children: [
-          crearCelda({
-            columnSpan: 2,
-            widthPct: 70,
-            children: [
-              new Paragraph({
-                spacing: { before: 40, after: 40 },
-                children: [new TextRun({ text: "Momento complementario / Retroalimentación:", bold: true, size: 19, color: "64748B", font: "Calibri" })]
-              })
-            ]
-          }),
-          crearCelda({
-            columnSpan: 1,
-            widthPct: 15,
-            children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "---", size: 18, color: "94A3B8" })] })]
-          }),
-          crearCelda({
-            columnSpan: 1,
-            widthPct: 15,
-            children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "---", size: 18, color: "94A3B8" })] })]
-          })
-        ]
-      })
-    );
-  }
-
+  // Fila 16: Evaluación
   filasTabla.push(
     new TableRow({
       children: [
         crearCelda({
           columnSpan: 2,
-          widthPct: 70,
+          widthPct: 77,
           children: [crearParrafoCampo("Evaluación de la actividad", evaluacion)]
         }),
         crearCelda({
@@ -585,7 +661,7 @@ async function construirDocumentoWordOficial({
         }),
         crearCelda({
           columnSpan: 1,
-          widthPct: 15,
+          widthPct: 8,
           children: [
             new Paragraph({
               alignment: AlignmentType.CENTER,
@@ -598,12 +674,13 @@ async function construirDocumentoWordOficial({
     })
   );
 
+  // Fila 17: Actividades Diferenciadas (Sin relleno F8FAFC)
   filasTabla.push(
     new TableRow({
       children: [
         crearCelda({
           columnSpan: 4,
-          shadingColor: "F8FAFC",
+          shadingColor: null,
           children: [crearParrafoCampo("Actividades Diferenciadas (Atención a la Diversidad)", actividadesDiferenciadas)]
         })
       ]
@@ -616,14 +693,14 @@ async function construirDocumentoWordOficial({
         properties: {
           page: {
             size: {
-              width: 11906, // A4 portrait base invertido por PageOrientation.LANDSCAPE a w:16838 h:11906
+              width: 11906,
               height: 16838,
               orientation: PageOrientation.LANDSCAPE
             },
             margin: {
-              top: 1417,
+              top: 1701,
               right: 1417,
-              bottom: 1417,
+              bottom: 1701,
               left: 1417
             }
           }
