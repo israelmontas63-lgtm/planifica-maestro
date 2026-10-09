@@ -159,13 +159,21 @@ function inferirRecursosPorDefecto(area = "", momentoNum = 1) {
 function extraerMomentosPedagogicos(datosObj, textoCompleto, area = "") {
   const momentos = [];
 
+  // Detectar tiempo total especificado por el maestro (ej. "45 minutos" o "45 min")
+  const tiempoGlobal = buscarEnDatos(datosObj, ["tiempo", "duracion", "duración", "tiempo_estimado"]);
+  const matchGlobalMin = tiempoGlobal ? String(tiempoGlobal).match(/(\d+)\s*(?:min|minutos)/i) : null;
+  const minutosTotales = matchGlobalMin ? parseInt(matchGlobalMin[1], 10) : null;
+
   // 1. Si datosObj.momentos viene como arreglo estructurado
   if (datosObj && Array.isArray(datosObj.momentos) && datosObj.momentos.length > 0) {
     datosObj.momentos.forEach((m, idx) => {
       if (typeof m === "object" && m !== null) {
         const nom = m.momento || m.nombre || `Momento ${idx + 1}`;
         const desc = m.descripcion || m.actividad || m.texto || "";
-        const tiem = m.tiempo || (idx === 0 ? "15 min" : idx === 1 ? "25 min" : "15 min");
+        const tiemPorDefecto = minutosTotales === 45
+          ? (idx === 0 ? "10 min" : idx === 1 ? "25 min" : "10 min")
+          : (idx === 0 ? "15 min" : idx === 1 ? "25 min" : "15 min");
+        const tiem = m.tiempo || tiemPorDefecto;
         const rec = m.recursos || buscarRecursosParaMomento(desc) || inferirRecursosPorDefecto(area, idx + 1);
         momentos.push({ nombre: nom, descripcion: desc, tiempo: tiem, recursos: rec });
       } else if (typeof m === "string") {
@@ -173,7 +181,10 @@ function extraerMomentosPedagogicos(datosObj, textoCompleto, area = "") {
         const nom = matchMom ? matchMom[1] : `Momento ${idx + 1}`;
         const desc = matchMom ? matchMom[2] : m;
         const matchTiempo = desc.match(/(\d+\s*(?:min(?:utos)?|horas?))/i);
-        const tiem = matchTiempo ? matchTiempo[1] : (idx === 0 ? "15 min" : idx === 1 ? "25 min" : "15 min");
+        const tiemPorDefecto = minutosTotales === 45
+          ? (idx === 0 ? "10 min" : idx === 1 ? "25 min" : "10 min")
+          : (idx === 0 ? "15 min" : idx === 1 ? "25 min" : "15 min");
+        const tiem = matchTiempo ? matchTiempo[1] : tiemPorDefecto;
         const rec = buscarRecursosParaMomento(desc) || inferirRecursosPorDefecto(area, idx + 1);
         momentos.push({ nombre: nom, descripcion: desc, tiempo: tiem, recursos: rec });
       }
@@ -240,19 +251,19 @@ function extraerMomentosPedagogicos(datosObj, textoCompleto, area = "") {
       {
         nombre: "Momento 1: Inicio",
         descripcion: "Presentación del propósito pedagógico, recuperación de conocimientos previos y motivación activa.",
-        tiempo: "15 min",
+        tiempo: minutosTotales === 45 ? "10 min" : "15 min",
         recursos: inferirRecursosPorDefecto(area, 1)
       },
       {
         nombre: "Momento 2: Desarrollo",
         descripcion: "Actividades de aprendizaje guiadas, interacción con los textos y fascículos, y resolución en equipos.",
-        tiempo: "25 min",
+        tiempo: minutosTotales === 45 ? "25 min" : "25 min",
         recursos: inferirRecursosPorDefecto(area, 2)
       },
       {
         nombre: "Momento 3: Cierre",
         descripcion: "Socialización de producciones, síntesis de lo aprendido y preguntas de reflexión metacognitiva.",
-        tiempo: "15 min",
+        tiempo: minutosTotales === 45 ? "10 min" : "15 min",
         recursos: inferirRecursosPorDefecto(area, 3)
       }
     );

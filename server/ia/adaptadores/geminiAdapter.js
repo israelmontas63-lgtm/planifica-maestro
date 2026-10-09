@@ -44,7 +44,8 @@ async function llamarGemini({
   }
 
   cuerpoPeticion.generationConfig = {
-    temperature: 0.1
+    temperature: 0.1,
+    maxOutputTokens: 8192
   };
   if (responseMimeType !== undefined) {
     if (responseMimeType) {
@@ -189,7 +190,15 @@ async function llamarGemini({
     }
 
     const data = await res.json();
-    const texto = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const cand = data.candidates?.[0];
+    const finishReason = cand?.finishReason;
+    if (finishReason && finishReason !== "STOP") {
+      const errFinish = new Error(`Finalización anormal de Gemini: ${finishReason}`);
+      errFinish.status = 502;
+      errFinish.finishReason = finishReason;
+      throw errFinish;
+    }
+    const texto = cand?.content?.parts?.[0]?.text || "";
     return {
       texto,
       datosCrudos: data,

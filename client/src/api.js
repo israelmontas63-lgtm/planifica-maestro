@@ -1,4 +1,5 @@
 import { obtenerDocenteId } from "./services/perfilStorage.js";
+import { extraerJson, mensajeParaChat, validarCamposPlanificacion } from "./utils/parseadorJsonSeguro.js";
 
 /**
  * Cliente único y centralizado de API para Planifica Maestro.
@@ -336,11 +337,10 @@ export async function generarPlanificacion({
             try {
               const parsed = JSON.parse(jsonStr);
               if (parsed.estado) {
-                onChunk("", accumulatedText, parsed.estado);
+                onChunk("", "", parsed.estado);
               }
               if (parsed.delta) {
                 accumulatedText += parsed.delta;
-                onChunk(parsed.delta, accumulatedText, parsed.estado);
               }
               if (parsed.final) {
                 finalData = parsed.final;
@@ -353,12 +353,29 @@ export async function generarPlanificacion({
       reader.releaseLock();
     }
 
-    if (finalData) return finalData;
-    return { mensaje_chat: accumulatedText, plan_completado: false };
+    if (finalData && validarCamposPlanificacion(finalData)) {
+      return finalData;
+    }
+    const parsedAccum = extraerJson(accumulatedText);
+    if (parsedAccum && validarCamposPlanificacion(parsedAccum)) {
+      return parsedAccum;
+    }
+    return {
+      mensaje_chat: "No pude armar la planificación, ¿intentamos otra vez?",
+      plan_completado: false
+    };
   }
 
   // 2. Respuesta estándar JSON
-  return res.json();
+  const resJson = await res.json().catch(() => null);
+  if (resJson && validarCamposPlanificacion(resJson)) {
+    return resJson;
+  }
+  return {
+    mensaje_chat: (resJson && mensajeParaChat(resJson)) || "No pude armar la planificación, ¿intentamos otra vez?",
+    plan_completado: Boolean(resJson?.plan_completado && resJson?.datos_planificacion),
+    ...resJson
+  };
 }
 
 /**

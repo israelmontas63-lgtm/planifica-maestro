@@ -76,7 +76,7 @@ async function generarConGeminiRapido({ contents, systemInstruction, responseMim
   for (const model of PRIMARY_MODELS) {
     // 1. Intento rápido con thinkingBudget: 0 (para modelos que lo soporten) y temperatura determinista 0.0
     try {
-      const config = { responseMimeType, temperature: 0.0 };
+      const config = { responseMimeType, temperature: 0.0, maxOutputTokens: 8192 };
       if (systemInstruction) config.systemInstruction = systemInstruction;
       if (model.includes("flash") && !model.includes("lite")) {
         config.thinkingConfig = { thinkingBudget: 0 };
@@ -86,18 +86,26 @@ async function generarConGeminiRapido({ contents, systemInstruction, responseMim
         contents,
         config
       });
+      const cand = response.candidates?.[0];
+      if (cand?.finishReason && cand.finishReason !== "STOP") {
+        throw new Error(`Finalización anormal de Gemini: ${cand.finishReason}`);
+      }
       return response;
     } catch (err) {
       console.warn(`Aviso: modelo ${model} rápido falló (${err.message?.substring(0, 80)}). Reintentando modo estándar...`);
       // 2. Reintento estándar sin thinkingConfig con temperatura determinista 0.0
       try {
-        const configSimple = { responseMimeType, temperature: 0.0 };
+        const configSimple = { responseMimeType, temperature: 0.0, maxOutputTokens: 8192 };
         if (systemInstruction) configSimple.systemInstruction = systemInstruction;
         const response = await geminiClient.models.generateContent({
           model,
           contents,
           config: configSimple
         });
+        const cand2 = response.candidates?.[0];
+        if (cand2?.finishReason && cand2.finishReason !== "STOP") {
+          throw new Error(`Finalización anormal de Gemini: ${cand2.finishReason}`);
+        }
         return response;
       } catch (err2) {
         console.warn(`Aviso: modelo ${model} estándar falló (${err2.message?.substring(0, 80)}). Probando siguiente modelo...`);
@@ -108,55 +116,10 @@ async function generarConGeminiRapido({ contents, systemInstruction, responseMim
   throw ultimoError || new Error("No fue posible generar respuesta con ningún modelo disponible.");
 }
 
+const { extraerJson, mensajeParaChat, validarCamposPlanificacion } = require("../utils/parseadorJsonSeguro");
+
 function extraerJsonValido(text) {
-  if (!text || typeof text !== "string") return null;
-  let str = text.trim();
-  if (str.startsWith("```json")) {
-    str = str.replace(/^```json\s*/, "").replace(/```\s*$/, "").trim();
-  } else if (str.startsWith("```")) {
-    str = str.replace(/^```\s*/, "").replace(/```\s*$/, "").trim();
-  }
-  try {
-    return JSON.parse(str);
-  } catch (e) {}
-
-  const startIdx = str.indexOf("{");
-  if (startIdx === -1) return null;
-
-  let depth = 0;
-  let inString = false;
-  let escaped = false;
-  for (let i = startIdx; i < str.length; i++) {
-    const char = str[i];
-    if (inString) {
-      if (char === "\\" && !escaped) {
-        escaped = true;
-      } else {
-        if (char === '"' && !escaped) inString = false;
-        escaped = false;
-      }
-    } else {
-      if (char === '"') inString = true;
-      else if (char === "{") depth++;
-      else if (char === "}") {
-        depth--;
-        if (depth === 0) {
-          const candidate = str.substring(startIdx, i + 1);
-          try {
-            return JSON.parse(candidate);
-          } catch (err) {}
-        }
-      }
-    }
-  }
-
-  const lastIdx = str.lastIndexOf("}");
-  if (lastIdx > startIdx) {
-    try {
-      return JSON.parse(str.substring(startIdx, lastIdx + 1));
-    } catch (err) {}
-  }
-  return null;
+  return extraerJson(text);
 }
 
 // ─────────────────────────────────────────────

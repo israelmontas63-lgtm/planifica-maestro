@@ -36,7 +36,8 @@ async function llamarOpenRouter({
         model: modelo,
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
-        temperature: 0.1
+        temperature: 0.1,
+        max_tokens: 4096
       }),
       signal: controller.signal
     });
@@ -54,7 +55,15 @@ async function llamarOpenRouter({
     }
 
     const data = await res.json();
-    const texto = data.choices?.[0]?.message?.content || "";
+    const choice = data.choices?.[0];
+    const finishReason = choice?.finish_reason;
+    if (finishReason && finishReason !== "stop") {
+      const errFinish = new Error(`Finalización anormal de OpenRouter: ${finishReason}`);
+      errFinish.status = 502;
+      errFinish.finishReason = finishReason;
+      throw errFinish;
+    }
+    const texto = choice?.message?.content || "";
     return {
       texto,
       datosCrudos: data,

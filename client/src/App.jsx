@@ -14,6 +14,8 @@ import { registrarAjusteConRespaldoOffline, sincronizarAjustesPendientes } from 
 import { guardarPlanEnBiblioteca } from "./services/bibliotecaStorage.js";
 import { comprimirYRedimensionarImagen } from "./services/imageOptimizer.js";
 import { cargarPerfil } from "./services/perfilStorage.js";
+import { extraerJson, mensajeParaChat, validarCamposPlanificacion } from "./utils/parseadorJsonSeguro.js";
+import { normalizarOrdinalesYNumeros, analizarEntidadesDictado } from "./utils/normalizadorVoz.js";
 
 // Modales y componentes secundarios con carga diferida (Lazy Loading) para carga móvil instantánea
 const PlanResult = lazy(() => import("./components/PlanResult.jsx"));
@@ -196,6 +198,23 @@ export default function App() {
       localStorage.setItem("pm_silence_timeout_ms", String(num));
     } catch (e) {}
   };
+
+  const [confirmarVozAntes, setConfirmarVozAntes] = useState(() => {
+    try {
+      return localStorage.getItem("pm_confirmar_voz_antes") === "true";
+    } catch (e) {
+      return false;
+    }
+  });
+
+  const handleCambiarConfirmarVozAntes = (val) => {
+    setConfirmarVozAntes(val);
+    try {
+      localStorage.setItem("pm_confirmar_voz_antes", val ? "true" : "false");
+    } catch (e) {}
+  };
+
+  const ultimoTiempoDictadoRef = useRef(null);
 
   const handleFinDictadoRef = useRef(null);
   const handleFiveMinuteLimit = useCallback((res) => {
@@ -394,10 +413,35 @@ export default function App() {
         setEstadoCuota(data.cuota);
       }
 
-      // Handle new structured JSON response
-      const chatText = data.mensaje_chat || data.plan || "";
-      const planDatos = data.datos_planificacion || null;
-      const planCompleto = data.plan_completado || false;
+      // Manejo estricto de respuesta JSON: chatText NUNCA debe mostrar sintaxis cruda
+      let parsedObj = typeof data === "object" && data !== null ? data : null;
+      if (!parsedObj || typeof data === "string") {
+        parsedObj = extraerJson(data) || {};
+      }
+
+      let chatText = parsedObj.mensaje_chat || parsedObj.plan || "";
+      if (typeof chatText === "string" && chatText.trim().startsWith("{")) {
+        const sub = extraerJson(chatText);
+        if (sub) {
+          chatText = mensajeParaChat(sub);
+          if (!parsedObj.datos_planificacion && (sub.datos_planificacion || sub.momentos || sub.actividades)) {
+            parsedObj.datos_planificacion = sub.datos_planificacion || sub;
+          }
+        } else {
+          chatText = "No pude armar la planificación, ¿intentamos otra vez?";
+        }
+      }
+      if (!chatText || chatText.trim() === "") {
+        chatText = parsedObj.datos_planificacion
+          ? "He preparado tu planificación docente basada en el currículo."
+          : "No pude armar la planificación, ¿intentamos otra vez?";
+      }
+
+      let planDatos = parsedObj.datos_planificacion || (parsedObj.momentos ? parsedObj : null);
+      if (planDatos && ultimoTiempoDictadoRef.current && !planDatos.tiempo && !planDatos.duracion) {
+        planDatos.tiempo = ultimoTiempoDictadoRef.current;
+      }
+      const planCompleto = Boolean(planDatos && (parsedObj.plan_completado || validarCamposPlanificacion(planDatos)));
 
       const newAssistantMsg = {
         role: "assistant",
@@ -563,25 +607,53 @@ export default function App() {
   }
 
   const handleFinDictado = useCallback((res) => {
-    const textToSend = (typeof res === "string" ? res : res?.text || transcript).trim();
-    if (!textToSend) return;
+    const rawText = (typeof res === "string" ? res : res?.text || transcript).trim();
+    if (!rawText) return;
 
-    if (res?.isLowConfidence) {
+    // Normalizar ordinales y números escritos con palabras ("segundo" -> "2.º", "cuarenta y cinco minutos" -> "45 minutos")
+    const textoNormalizado = normalizarOrdinalesYNumeros(rawText);
+
+    // Perfil guardado sin quemar nombres fijos
+    let perfilDocente = {};
+    try {
+      perfilDocente = cargarPerfil() || {};
+    } catch (e) {}
+
+    const analisis = analizarEntidadesDictado(textoNormalizado, perfilDocente);
+    if (analisis.minutosNum) {
+      ultimoTiempoDictadoRef.current = `${analisis.minutosNum} minutos`;
+    }
+
+    if (confirmarVozAntes) {
+      // Switch encendido: mostrar tarjeta editable previa con botones Generar y Corregir
       setEntendidoVoz({
-        texto: textToSend,
+        tipo: "confirmacion_previa",
+        texto: textoNormalizado,
+        analisis,
+        bajaConfianza: Boolean(res?.isLowConfidence),
+        enviado: false
+      });
+    } else if (res?.isLowConfidence) {
+      setEntendidoVoz({
+        tipo: "baja_confianza",
+        texto: textoNormalizado,
+        analisis,
         bajaConfianza: true,
         enviado: false
       });
     } else {
       fuePorVozRef.current = true;
       setEntendidoVoz({
-        texto: textToSend,
+        tipo: "directo",
+        texto: textoNormalizado,
+        analisis,
         bajaConfianza: false,
         enviado: true
       });
+      const textToSend = textoNormalizado;
       enviarMensaje(textToSend);
     }
-  }, [transcript]);
+  }, [transcript, confirmarVozAntes]);
 
   useEffect(() => {
     handleFinDictadoRef.current = handleFinDictado;
@@ -930,7 +1002,7 @@ export default function App() {
                 />
               </div>
             )}
-            <div style={{ whiteSpace: 'pre-wrap', fontSize: '14.5px' }}>{m.text}</div>
+            <div style={{ whiteSpace: 'pre-wrap', fontSize: '14.5px' }}>{typeof m.text === 'string' && m.text.trim().startsWith('{') ? mensajeParaChat(extraerJson(m.text)) : m.text}</div>
             
             {m.role === 'assistant' && m.huboCorrecciones && m.cambioSignificado && (
               <div className="pm-correccion-banner no-print" style={{
@@ -1186,7 +1258,89 @@ export default function App() {
         {/* ETAPA 2: Confirmación inteligente 'Entendí: …' */}
         {entendidoVoz && (
           <div className="pm-entendido-voz-container no-print" style={{ margin: "10px 0", animation: "fadeIn 0.2s ease" }}>
-            {entendidoVoz.bajaConfianza && !entendidoVoz.enviado ? (
+            {entendidoVoz.tipo === "confirmacion_previa" ? (
+              <div style={{ padding: "14px 16px", borderRadius: "12px", background: "#f8fafc", border: "1.5px solid #0d9488", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: "700", color: "#0f766e", fontSize: "14px" }}>
+                    <span>🎙️ Confirmar lo que entendí antes de generar:</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setEntendidoVoz(null)}
+                    style={{ background: "none", border: "none", color: "#64748b", cursor: "pointer", fontSize: "16px", padding: "0 4px" }}
+                    aria-label="Cerrar"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div style={{ background: "#ffffff", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "13.5px", color: "#1e293b", lineHeight: "1.5" }}>
+                  {entendidoVoz.analisis?.resumenEstructurado || entendidoVoz.texto}
+                </div>
+
+                {/* Etiquetas sutiles de discrepancia con el perfil (sin bloquear) */}
+                {entendidoVoz.analisis?.difiereDocente && (
+                  <div style={{ fontSize: "12px", color: "#b45309", background: "#fef3c7", padding: "4px 8px", borderRadius: "6px", marginTop: "6px", display: "inline-block" }}>
+                    ℹ️ Nombre en el dictado no coincide con el perfil
+                  </div>
+                )}
+                {entendidoVoz.analisis?.difiereEscuela && (
+                  <div style={{ fontSize: "12px", color: "#b45309", background: "#fef3c7", padding: "4px 8px", borderRadius: "6px", marginTop: "6px", marginLeft: entendidoVoz.analisis?.difiereDocente ? "6px" : "0", display: "inline-block" }}>
+                    ℹ️ Escuela en el dictado no coincide con el perfil
+                  </div>
+                )}
+
+                {/* Sugerencia fonética biografía vs bibliografía */}
+                {entendidoVoz.analisis?.sugerencia?.tieneSugerencia && (
+                  <div style={{ marginTop: "8px", padding: "6px 10px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "6px", fontSize: "12px", color: "#1d4ed8", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+                    <span>💡 {entendidoVoz.analisis.sugerencia.mensaje}</span>
+                    <button
+                      type="button"
+                      style={{ background: "#2563eb", color: "white", border: "none", borderRadius: "4px", padding: "3px 8px", fontSize: "11px", fontWeight: "600", cursor: "pointer" }}
+                      onClick={() => {
+                        const nuevoTxt = entendidoVoz.texto.replace(/bibliograf[íi]a/gi, "biografía");
+                        let p = {};
+                        try { p = cargarPerfil() || {}; } catch(e) {}
+                        const nuevoAnalisis = analizarEntidadesDictado(nuevoTxt, p);
+                        setEntendidoVoz({
+                          ...entendidoVoz,
+                          texto: nuevoTxt,
+                          analisis: nuevoAnalisis
+                        });
+                      }}
+                    >
+                      Usar biografía
+                    </button>
+                  </div>
+                )}
+
+                <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
+                  <button
+                    type="button"
+                    style={{ padding: "8px 16px", borderRadius: "8px", background: "#0d9488", color: "white", border: "none", fontWeight: "700", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
+                    onClick={() => {
+                      const txt = entendidoVoz.texto;
+                      setEntendidoVoz(null);
+                      fuePorVozRef.current = true;
+                      enviarMensaje(txt);
+                    }}
+                  >
+                    ✅ Generar
+                  </button>
+                  <button
+                    type="button"
+                    style={{ padding: "8px 16px", borderRadius: "8px", background: "#f1f5f9", color: "#334155", border: "1px solid #cbd5e1", fontWeight: "600", fontSize: "13px", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}
+                    onClick={() => {
+                      const txt = entendidoVoz.texto;
+                      setEntendidoVoz(null);
+                      handleAbrirTexto(txt, "Corregir lo que entendí");
+                    }}
+                  >
+                    ✏️ Corregir
+                  </button>
+                </div>
+              </div>
+            ) : entendidoVoz.bajaConfianza && !entendidoVoz.enviado ? (
               <div style={{ padding: "12px 16px", borderRadius: "10px", background: "#fefce8", border: "1px solid #fde047" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", fontWeight: "600", color: "#854d0e" }}>
                   <span>🎙️ Entendí:</span>
@@ -1478,6 +1632,8 @@ export default function App() {
             setHablarRespuestas={setHablarRespuestas}
             silenceTimeoutMs={silenceTimeoutMs}
             setSilenceTimeoutMs={handleGuardarSilenceTimeout}
+            confirmarVozAntes={confirmarVozAntes}
+            setConfirmarVozAntes={handleCambiarConfirmarVozAntes}
             onAbrirPerfil={() => { setPerfilOpen(true); setConfiguracionOpen(false); }}
             onCerrar={() => setConfiguracionOpen(false)}
           />

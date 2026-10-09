@@ -14,6 +14,7 @@ import {
 import { tieneIntencionExplicita, identificarImagenWorker, getGeminiVisionModels, analizarCalidadImagen } from "./ojoDigital.js";
 import { corregirTextoPedagogico } from "./correctorTexto.js";
 import { verificarYSanearCitas } from "./verificadorCitas.js";
+import { extraerJson, mensajeParaChat, validarCamposPlanificacion } from "./parseadorJsonSeguro.js";
 
 /**
  * Planifica Maestro - Cloudflare Worker Backend
@@ -1091,7 +1092,7 @@ async function handleApiRequest(request, env, ctx) {
       } catch (e) {}
     }
 
-    const avisoSinVerificar = "Borrador referencial sin contrastar con la base oficial del servidor: valida competencias e indicadores con el currículo vigente";
+    const avisoSinVerificar = "Borrador: revísalo con el currículo antes de usarlo";
     let directivaBorrador = "";
     if (!baseOficialCargada) {
       directivaBorrador = `
@@ -1198,7 +1199,11 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
             body: JSON.stringify({
               contents,
               systemInstruction: { parts: [{ text: dynamicPrompt }] },
-              generationConfig: { temperature: 0.0, responseMimeType: "application/json" },
+              generationConfig: {
+                temperature: 0.0,
+                responseMimeType: "application/json",
+                maxOutputTokens: 8192,
+              },
             }),
             signal: request.signal,
           });
@@ -1208,17 +1213,17 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
             break;
           } else if (res) {
             ultimoStatus = res.status;
-            ultimoError = await res.text();
-            console.warn(`[Gemini Stream] Modelo ${model} falló con status ${res.status}: ${ultimoError}`);
+            ultimoError = `HTTP_${res.status}`;
+            console.warn(`[AI Warn] Modelo ${model} falló con status ${res.status}`);
           }
         } catch (e) {
-          ultimoError = e.message;
-          console.warn(`[Gemini Stream] Excepción en modelo ${model}: ${e.message}`);
+          ultimoError = "FETCH_EXCEPTION";
+          console.warn(`[AI Warn] Excepción en modelo ${model}`);
         }
       }
 
       if (!geminiRes) {
-        console.error("[Gemini Stream Fail] Modelos agotados:", ultimoError);
+        console.error(`[AI Error] Modelos agotados. Código: ${ultimoStatus}`);
         const mensajeMaestro = (ultimoStatus === 503 || ultimoStatus === 429 || ultimoStatus === 502 || ultimoStatus === 504)
           ? "La IA está ocupada, intenta de nuevo en un minuto."
           : (ultimoStatus === 401 || ultimoStatus === 403)
@@ -1241,6 +1246,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
       ctx.waitUntil(
         (async () => {
           let fullText = "";
+          let corteOcurrio = null;
           try {
             await writer.write(encoder.encode(`data: ${JSON.stringify({ estado: "curriculo" })}\n\n`));
             while (true) {
@@ -1254,13 +1260,14 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                   const jsonStr = line.replace(/^data:\s*/, "").trim();
                   if (jsonStr && jsonStr !== "[DONE]") {
                     try {
-                      const parsed = JSON.parse(jsonStr);
-                      const part = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+                      const parsedChunk = JSON.parse(jsonStr);
+                      const cand = parsedChunk.candidates?.[0];
+                      if (cand?.finishReason && cand.finishReason !== "STOP") {
+                        corteOcurrio = cand.finishReason;
+                      }
+                      const part = cand?.content?.parts?.[0]?.text;
                       if (part) {
                         fullText += part;
-                        await writer.write(
-                          encoder.encode(`data: ${JSON.stringify({ delta: part, estado: "curriculo" })}\n\n`)
-                        );
                       }
                     } catch (e) {}
                   }
@@ -1268,14 +1275,61 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
               }
             }
 
-            // Procesar el resultado completo
-            const parsedFinal = extraerJsonValido(fullText) || { mensaje_chat: fullText };
+            // Procesar el resultado completo con parseador seguro
+            let parsedFinal = extraerJson(fullText);
+            let esValido = Boolean(parsedFinal && validarCamposPlanificacion(parsedFinal) && !corteOcurrio);
+
+            // Reintento único si hubo corte, JSON inválido o campos faltantes
+            if (!esValido && env.GEMINI_API_KEY) {
+              try {
+                const promptReintento = `${dynamicPrompt}\n\nINSTRUCCIÓN CRÍTICA DE REINTENTO: En el intento previo la respuesta quedó incompleta o con JSON inválido. Por favor, genera la planificación completa en formato JSON estricto pero de manera más breve y sintetizada, asegurando que todos los campos requeridos estén presentes y el JSON cierre perfectamente con '}'.`;
+                const retryModel = models[0] || "gemini-3.1-flash-lite";
+                const retryUrl = `https://generativelanguage.googleapis.com/v1beta/models/${retryModel}:generateContent`;
+                const retryRes = await fetchGeminiWithRetry(retryUrl, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": env.GEMINI_API_KEY,
+                  },
+                  body: JSON.stringify({
+                    contents,
+                    systemInstruction: { parts: [{ text: promptReintento }] },
+                    generationConfig: {
+                      temperature: 0.0,
+                      responseMimeType: "application/json",
+                      maxOutputTokens: 8192,
+                    },
+                  }),
+                  signal: request.signal,
+                });
+                if (retryRes && retryRes.ok) {
+                  const retryData = await retryRes.json();
+                  const retryCand = retryData.candidates?.[0];
+                  if (!retryCand?.finishReason || retryCand.finishReason === "STOP") {
+                    const retryRaw = retryCand?.content?.parts?.[0]?.text || "";
+                    const retryParsed = extraerJson(retryRaw);
+                    if (retryParsed && validarCamposPlanificacion(retryParsed)) {
+                      parsedFinal = retryParsed;
+                      esValido = true;
+                    }
+                  }
+                }
+              } catch (errRetry) {}
+            }
+
+            if (!esValido || !parsedFinal) {
+              parsedFinal = {
+                mensaje_chat: "No pude armar la planificación, ¿intentamos otra vez?",
+                plan_completado: false,
+              };
+            }
+
             let estadoActualizado = cheqCuota;
             if (parsedFinal && parsedFinal.plan_completado) {
               estadoActualizado = await consumirCuota(env, resolvedDocenteId, isOwner);
             }
 
-            if (!baseOficialCargada) {
+            if (!baseOficialCargada && parsedFinal.plan_completado) {
               if (parsedFinal.mensaje_chat && !parsedFinal.mensaje_chat.includes(avisoSinVerificar)) {
                 parsedFinal.mensaje_chat = `⚠️ ${avisoSinVerificar}\n\n${parsedFinal.mensaje_chat}`;
               }
@@ -1316,7 +1370,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
             await writer.write(encoder.encode("data: [DONE]\n\n"));
           } catch (err) {
             await writer.write(
-              encoder.encode(`data: ${JSON.stringify({ error: err.message })}\n\n`)
+              encoder.encode(`data: ${JSON.stringify({ error: "No pude armar la planificación, ¿intentamos otra vez?" })}\n\n`)
             );
           } finally {
             writer.close();
@@ -1351,7 +1405,11 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
           body: JSON.stringify({
             contents,
             systemInstruction: { parts: [{ text: dynamicPrompt }] },
-            generationConfig: { temperature: 0.0, responseMimeType: "application/json" },
+            generationConfig: {
+              temperature: 0.0,
+              responseMimeType: "application/json",
+              maxOutputTokens: 8192,
+            },
           }),
           signal: request.signal,
         });
@@ -1361,68 +1419,113 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
           break;
         } else if (geminiRes) {
           ultimoStatus = geminiRes.status;
-          ultimoError = await geminiRes.text();
-          console.warn(`[Gemini Sync] Modelo ${model} falló con status ${geminiRes.status}: ${ultimoError}`);
+          ultimoError = `HTTP_${geminiRes.status}`;
+          console.warn(`[AI Warn] Modelo ${model} falló con status ${geminiRes.status}`);
         }
       } catch (err) {
-        ultimoError = err.message;
-        console.warn(`[Gemini Sync] Excepción en modelo ${model}: ${err.message}`);
+        ultimoError = "FETCH_EXCEPTION";
+        console.warn(`[AI Warn] Excepción en modelo ${model}`);
       }
     }
 
     if (geminiData) {
-      const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      const parsed = extraerJsonValido(rawText);
+      const cand = geminiData.candidates?.[0];
+      const rawText = cand?.content?.parts?.[0]?.text || "";
+      const finishReason = cand?.finishReason;
+      let parsed = (finishReason && finishReason !== "STOP") ? null : extraerJson(rawText);
+      let esValido = Boolean(parsed && validarCamposPlanificacion(parsed));
 
-      if (parsed) {
-        let cuotaActualizada = cheqCuota;
-        if (parsed.plan_completado) {
-          cuotaActualizada = await consumirCuota(env, resolvedDocenteId, isOwner);
-        }
-
-        if (!baseOficialCargada) {
-          if (parsed.mensaje_chat && !parsed.mensaje_chat.includes(avisoSinVerificar)) {
-            parsed.mensaje_chat = `⚠️ ${avisoSinVerificar}\n\n${parsed.mensaje_chat}`;
+      if (!esValido && env.GEMINI_API_KEY) {
+        try {
+          const promptReintento = `${dynamicPrompt}\n\nINSTRUCCIÓN CRÍTICA DE REINTENTO: En el intento previo la respuesta quedó incompleta o con JSON inválido. Por favor, genera la planificación completa en formato JSON estricto pero de manera más breve y sintetizada, asegurando que todos los campos requeridos estén presentes y el JSON cierre perfectamente con '}'.`;
+          const retryModel = models[0] || "gemini-3.1-flash-lite";
+          const retryUrl = `https://generativelanguage.googleapis.com/v1beta/models/${retryModel}:generateContent`;
+          const retryRes = await fetchGeminiWithRetry(retryUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": env.GEMINI_API_KEY,
+            },
+            body: JSON.stringify({
+              contents,
+              systemInstruction: { parts: [{ text: promptReintento }] },
+              generationConfig: {
+                temperature: 0.0,
+                responseMimeType: "application/json",
+                maxOutputTokens: 8192,
+              },
+            }),
+            signal: request.signal,
+          });
+          if (retryRes && retryRes.ok) {
+            const retryData = await retryRes.json();
+            const retryCand = retryData.candidates?.[0];
+            if (!retryCand?.finishReason || retryCand.finishReason === "STOP") {
+              const retryRaw = retryCand?.content?.parts?.[0]?.text || "";
+              const retryParsed = extraerJson(retryRaw);
+              if (retryParsed && validarCamposPlanificacion(retryParsed)) {
+                parsed = retryParsed;
+                esValido = true;
+              }
+            }
           }
-          const infoReferencial = {
-            nivel_certeza: "referencial, no verificado",
-            bloques_aproximados: [],
-            nota_revision: "Planificación referencial no contrastada con la base curricular oficial. El docente debe validar los indicadores y competencias con su registro de grado.",
-          };
-          parsed.confianza_curricular = infoReferencial;
-          parsed.confianzaCurricular = infoReferencial;
-        }
-
-        // Garantizar fecha real no inventada
-        if (parsed && parsed.datos_planificacion) {
-          const claveDatos = Object.keys(parsed.datos_planificacion).find((k) => k.toLowerCase().includes("datos generales"));
-          if (claveDatos && typeof parsed.datos_planificacion[claveDatos] === "object" && parsed.datos_planificacion[claveDatos] !== null) {
-            parsed.datos_planificacion[claveDatos].fecha = fechaPlanificacion;
-          }
-          if (parsed.datos_planificacion.fecha) {
-            parsed.datos_planificacion.fecha = fechaPlanificacion;
-          }
-        }
-
-        if (claveCache && esRespuestaCacheable(parsed)) {
-          guardarRespuestaEnCache(claveCache, parsed);
-        }
-
-        return new Response(
-          JSON.stringify({
-            ...parsed,
-            planId: "plan_" + Date.now(),
-            nivel,
-            periodo,
-            nivelLabel: esquema.label,
-            cuota: cuotaActualizada,
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        } catch (e) {}
       }
+
+      if (!esValido || !parsed) {
+        parsed = {
+          mensaje_chat: "No pude armar la planificación, ¿intentamos otra vez?",
+          plan_completado: false,
+        };
+      }
+
+      let cuotaActualizada = cheqCuota;
+      if (parsed.plan_completado) {
+        cuotaActualizada = await consumirCuota(env, resolvedDocenteId, isOwner);
+      }
+
+      if (!baseOficialCargada && parsed.plan_completado) {
+        if (parsed.mensaje_chat && !parsed.mensaje_chat.includes(avisoSinVerificar)) {
+          parsed.mensaje_chat = `⚠️ ${avisoSinVerificar}\n\n${parsed.mensaje_chat}`;
+        }
+        const infoReferencial = {
+          nivel_certeza: "referencial, no verificado",
+          bloques_aproximados: [],
+          nota_revision: "Planificación referencial no contrastada con la base curricular oficial. El docente debe validar los indicadores y competencias con su registro de grado.",
+        };
+        parsed.confianza_curricular = infoReferencial;
+        parsed.confianzaCurricular = infoReferencial;
+      }
+
+      // Garantizar fecha real no inventada
+      if (parsed && parsed.datos_planificacion) {
+        const claveDatos = Object.keys(parsed.datos_planificacion).find((k) => k.toLowerCase().includes("datos generales"));
+        if (claveDatos && typeof parsed.datos_planificacion[claveDatos] === "object" && parsed.datos_planificacion[claveDatos] !== null) {
+          parsed.datos_planificacion[claveDatos].fecha = fechaPlanificacion;
+        }
+        if (parsed.datos_planificacion.fecha) {
+          parsed.datos_planificacion.fecha = fechaPlanificacion;
+        }
+      }
+
+      if (claveCache && esRespuestaCacheable(parsed)) {
+        guardarRespuestaEnCache(claveCache, parsed);
+      }
+
+      return new Response(
+        JSON.stringify({
+          ...parsed,
+          planId: "plan_" + Date.now(),
+          nivel,
+          periodo,
+          nivelLabel: esquema.label,
+          cuota: cuotaActualizada,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    console.error("[Gemini Sync Fail] Modelos agotados:", ultimoError);
+    console.error(`[AI Error] Modelos agotados. Código: ${ultimoStatus}`);
     const mensajeMaestro = (ultimoStatus === 503 || ultimoStatus === 429 || ultimoStatus === 502 || ultimoStatus === 504)
       ? "La IA está ocupada, intenta de nuevo en un minuto."
       : (ultimoStatus === 401 || ultimoStatus === 403)

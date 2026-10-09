@@ -8,6 +8,8 @@ export default function ConfiguracionModal({
   setHablarRespuestas, 
   silenceTimeoutMs = 2500,
   setSilenceTimeoutMs,
+  confirmarVozAntes = false,
+  setConfirmarVozAntes,
   onAbrirPerfil 
 }) {
   const [limpiado, setLimpiado] = useState(false);
@@ -85,6 +87,37 @@ export default function ConfiguracionModal({
                 type="checkbox" 
                 checked={hablarRespuestas} 
                 onChange={(e) => setHablarRespuestas?.(e.target.checked)} 
+              />
+              <div className="pm-switch-track">
+                <div className="pm-switch-thumb"></div>
+              </div>
+            </label>
+          </div>
+
+          {/* 1.1 Confirmación de Voz antes de generar */}
+          <div style={{
+            background: "#ffffff",
+            border: "1.5px solid #e2e8f0",
+            borderRadius: "12px",
+            padding: "14px",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "12px"
+          }}>
+            <div>
+              <strong style={{ fontSize: "14px", color: "#1e293b", display: "block" }}>
+                🎙️ Confirmar lo que entendí antes de generar
+              </strong>
+              <span style={{ fontSize: "12px", color: "#64748b" }}>
+                Muestra una tarjeta para verificar grado, tema y escuela antes de consultar a la IA
+              </span>
+            </div>
+            <label className="pm-switch" style={{ margin: 0 }}>
+              <input 
+                type="checkbox" 
+                checked={confirmarVozAntes} 
+                onChange={(e) => setConfirmarVozAntes?.(e.target.checked)} 
               />
               <div className="pm-switch-track">
                 <div className="pm-switch-thumb"></div>
