@@ -65,6 +65,17 @@ export default function App() {
   const [textoModalPrompt, setTextoModalPrompt] = useState("");
   const [textoModalTitulo, setTextoModalTitulo] = useState("Describe la planificación");
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Bloquear el scroll del fondo cuando el menú está abierto
+  useEffect(() => {
+    if (menuOpen) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [menuOpen]);
   const [schemaOpen, setSchemaOpen] = useState(false);
   const [perfilOpen, setPerfilOpen] = useState(false);
   const [curriculumOpen, setCurriculumOpen] = useState(false);
@@ -210,9 +221,20 @@ export default function App() {
   const fuePorVozRef = useRef(false);
   const [entendidoVoz, setEntendidoVoz] = useState(null);
 
-  // Auto-scroll chat
+  // Auto-scroll chat contenedor interno sin afectar el documento
+  const chatContainerRef = useRef(null);
   const chatEndRef = useRef(null);
   const fileInputHiddenRef = useRef(null);
+
+  const scrollToChatBottom = (smooth = true) => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        left: 0,
+        behavior: smooth ? 'smooth' : 'auto'
+      });
+    }
+  };
 
   // Esquema y periodo legibles
   const esquemaActual = ESQUEMAS.find((e) => e.id === nivel);
@@ -225,8 +247,8 @@ export default function App() {
   const pasoActual = tienePlanGenerado ? 3 : (messages.length > 0 || cargando || imageSrc) ? 2 : 2;
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    scrollToChatBottom(true);
+  }, [messages, cargando]);
 
   // FASE 13: Listener de conectividad y sincronización automática al volver online
   useEffect(() => {
@@ -791,7 +813,7 @@ export default function App() {
         onConfigurarClick={() => { setSchemaOpen(true); setMenuOpen(false); }}
         onTemaClick={() => handleAbrirTexto()}
         onRevisarClick={() => {
-          chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+          scrollToChatBottom(true);
         }}
         periodo={periodoLabel}
         esquemaLabel={esquemaLabel}
@@ -811,7 +833,24 @@ export default function App() {
         }}
       />
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 10px 100px 10px', background: 'var(--pm-bg)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div 
+        ref={chatContainerRef}
+        className="pm-chat-container"
+        style={{ 
+          flex: 1, 
+          overflowY: 'auto', 
+          overflowX: 'hidden',
+          minWidth: 0,
+          width: '100%',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+          padding: '10px 10px 100px 10px', 
+          background: 'var(--pm-bg)', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '12px' 
+        }}
+      >
         {/* FASE A: Saludo vivo contextual con tipografía serifa y efecto máquina de escribir */}
         {messages.length === 0 && !cargando && !listening && (
           <HomeGreeting user={user} />

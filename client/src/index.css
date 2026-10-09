@@ -136,14 +136,25 @@
   --sec-proyecto-text: #c2e1fd;
 }
 
-* { box-sizing: border-box; }
+*, *::before, *::after { 
+  box-sizing: border-box; 
+}
 
 html {
   font-size: 16px;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
 }
 
 body {
   margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
   background: var(--fondo);
   color: #1A2B3C;
   font-family: "Inter", system-ui, -apple-system, sans-serif;
@@ -153,15 +164,32 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
 /* ── Contenedor principal de la app (vista nativa fluida) ── */
 .phone-shell {
   width: 100%;
+  max-width: 100%;
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
   background: var(--blanco);
   display: flex;
   flex-direction: column;
   position: relative;
+  overflow-x: hidden;
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 
 /* ═══════════════════════════════════════════
@@ -170,12 +198,15 @@ body {
 .header {
   background: linear-gradient(135deg, var(--azul-header1) 0%, var(--azul-header2) 100%);
   color: white;
-  padding: 13px 16px;
+  padding: calc(13px + env(safe-area-inset-top, 0px)) 16px 13px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   position: relative;
-  min-height: 60px;
+  min-height: calc(60px + env(safe-area-inset-top, 0px));
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* Logo: ícono SVG + texto de marca */
@@ -776,26 +807,42 @@ body {
    STEPPER DE PROGRESO (WIZARD DE 3 PASOS)
 ═══════════════════════════════════════════ */
 .pm-wizard-stepper {
-  margin: 0 16px 10px 16px;
+  margin: 0 12px 10px 12px;
+  width: calc(100% - 24px);
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
+.pm-wizard-stepper::-webkit-scrollbar {
+  display: none;
+}
+
 .pm-stepper-list {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   list-style: none;
   margin: 0;
   padding: 0;
-  gap: 8px;
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
 }
+
 .pm-step-item {
-  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: 6px;
+  padding: 6px 8px;
   border-radius: 10px;
   background: #ffffff;
   border: 1.5px solid #e2e8f0;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03);
   transition: all 0.15s ease;
+  box-sizing: border-box;
 }
 .pm-step-item.clickable {
   cursor: pointer;
@@ -813,14 +860,15 @@ body {
   border-color: #86efac;
   background: #f0fdf4;
 }
+
 .pm-step-indicator {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.125rem; /* 18px */
+  font-size: 0.8125rem; /* 13px */
   font-weight: 700;
   flex-shrink: 0;
   background: #e2e8f0;
@@ -834,30 +882,94 @@ body {
   background: #22c55e;
   color: #ffffff;
 }
+
 .pm-step-text {
   display: flex;
   flex-direction: column;
   min-width: 0;
-}
-.pm-step-titulo {
-  font-size: 0.875rem; /* 14px */
-  font-weight: 600;
-  color: #1A2B3C;
-  white-space: nowrap;
+  flex: 1;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
-.pm-step-chevron {
+
+.pm-step-titulo {
   font-size: 0.8125rem; /* 13px */
+  font-weight: 700;
+  color: #1A2B3C;
+  line-height: 1.2;
+  white-space: normal;
+  overflow: hidden;
+}
+
+.pm-step-chevron {
+  font-size: 0.75rem;
   color: #1a7d8c;
 }
+
 .pm-step-detalle {
-  font-size: 0.8125rem; /* 13px */
+  font-size: 0.6875rem; /* 11px */
   font-weight: 500;
   color: #475569;
-  white-space: nowrap;
+  line-height: 1.2;
+  white-space: normal;
   overflow: hidden;
-  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+
+.pm-step-label-short {
+  display: inline;
+}
+.pm-step-label-full {
+  display: none;
+}
+
+@media (min-width: 641px) {
+  .pm-wizard-stepper {
+    margin: 0 16px 12px 16px;
+    width: calc(100% - 32px);
+  }
+  .pm-stepper-list {
+    gap: 8px;
+  }
+  .pm-step-item {
+    gap: 8px;
+    padding: 8px 10px;
+  }
+  .pm-step-indicator {
+    width: 28px;
+    height: 28px;
+    font-size: 0.9375rem;
+  }
+  .pm-step-titulo {
+    font-size: 0.875rem; /* 14px */
+  }
+  .pm-step-detalle {
+    font-size: 0.75rem; /* 12px */
+  }
+  .pm-step-label-short {
+    display: none;
+  }
+  .pm-step-label-full {
+    display: inline;
+  }
+}
+
+/* En pantallas muy angostas (≤340px): scroll horizontal interno con snap sin desfasar la pantalla */
+@media (max-width: 340px) {
+  .pm-stepper-list {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .pm-stepper-list::-webkit-scrollbar {
+    display: none;
+  }
+  .pm-step-item {
+    flex: 0 0 85%;
+    scroll-snap-align: start;
+  }
 }
 
 
