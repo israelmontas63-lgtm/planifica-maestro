@@ -2085,7 +2085,10 @@ export default {
       // /sw.js, /manifest.webmanifest y cualquier respuesta HTML (incluyendo
       // el fallback SPA a index.html para rutas como /planificacion) → no-cache
       if (
+        url.pathname === "/" ||
+        url.pathname === "/index.html" ||
         url.pathname === "/sw.js" ||
+        url.pathname === "/registerSW.js" ||
         url.pathname === "/manifest.webmanifest" ||
         url.pathname === "/manifest.json" ||
         url.pathname.startsWith("/workbox-") ||

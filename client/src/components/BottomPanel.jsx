@@ -834,32 +834,9 @@ export default function BottomPanel({
               </div>
               <div className="pm-menu-scroll-gradient" aria-hidden="true" />
 
-              {/* 5. PIE: Versión y Fecha/Hora de build generada por Vite en zona horaria America/Santo_Domingo */}
+              {/* 5. PIE: Versión y Fecha/Hora de compilación visible */}
               <div className="pm-menu-footer">
-                v{(() => {
-                  try {
-                    const raw = typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "";
-                    if (!raw) return "19/09/2026 22:20";
-                    const d = new Date(raw);
-                    if (isNaN(d.getTime())) return raw;
-                    const formatter = new Intl.DateTimeFormat("es-DO", {
-                      timeZone: "America/Santo_Domingo",
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      hour12: false
-                    });
-                    const p = {};
-                    formatter.formatToParts(d).forEach(({ type, value }) => {
-                      p[type] = value;
-                    });
-                    return `${p.day}/${p.month}/${p.year} ${p.hour}:${p.minute}`;
-                  } catch {
-                    return "19/09/2026 22:20";
-                  }
-                })()}
+                v{typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "2026.10.09"} · prueba de actualización
               </div>
 
             </div>

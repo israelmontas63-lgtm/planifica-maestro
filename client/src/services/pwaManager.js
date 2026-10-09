@@ -3,21 +3,28 @@
  * 
  * Gestor del Ciclo de Vida del Service Worker y Estrategia de Actualización PWA.
  * 
- * Diseñado según directrices de arquitectura frontend para PWA:
- * 1. updateViaCache: 'none' en registro nativo.
- * 2. Bypass de espera y toma de control inmediata (skipWaiting + clientsClaim).
- * 3. Detección controlada de controllerchange:
- *    - No recarga en la primera instalación.
- *    - Protección contra bucles infinitos con sessionStorage y flag en memoria.
- *    - No interrumpe trabajos en curso (generación, dictado, foto): pospone y guarda borrador.
- * 4. Captura de vite:preloadError para chunks obsoletos tras un nuevo deploy.
- * 5. Comprobación periódica throttled (10 min mínimo en visibilitychange/focus).
+ * Basado en vite-plugin-pwa (virtual:pwa-register):
+ * 1. registerSW con immediate: true y updateViaCache: 'none'.
+ * 2. Verificación de actualización en 4 momentos clave:
+ *    - Al abrir la app (inmediato, sin throttling que lo impida).
+ *    - Al volver a primer plano (evento visibilitychange).
+ *    - Al recuperar foco de ventana o conexión (focus, online).
+ *    - Cada 15 minutos en segundo plano (registration.update()).
+ * 3. onNeedRefresh detecta la nueva versión y recarga automáticamente con updateSW(true),
+ *    SIN pedir confirmación al usuario.
+ * 4. Protección contra bucles de recarga infinitos mediante sessionStorage.
+ * 5. Protección de trabajo docente: guarda borrador de seguridad en localStorage antes de recargar.
  */
 
-const hadPreviousController = typeof navigator !== "undefined" && "serviceWorker" in navigator && Boolean(navigator.serviceWorker.controller);
+import { registerSW } from "virtual:pwa-register";
 
 let isReloading = false;
+let updateSWFn = null;
+let currentRegistration = null;
 
+/**
+ * Recarga la aplicación protegiendo contra bucles infinitos en sessionStorage
+ */
 export function safeReload() {
   if (isReloading) return;
   isReloading = true;
@@ -25,8 +32,9 @@ export function safeReload() {
   try {
     const lastReload = parseInt(sessionStorage.getItem("pm_sw_last_reload") || "0", 10);
     const now = Date.now();
-    if (now - lastReload < 6000) {
-      console.warn("[PWA] Recarga abortada para evitar bucle continuo.");
+    if (now - lastReload < 8000) {
+      console.warn("[PWA] Recarga pospuesta para evitar bucle continuo.");
+      isReloading = false;
       return;
     }
     sessionStorage.setItem("pm_sw_last_reload", String(now));
@@ -36,7 +44,7 @@ export function safeReload() {
 }
 
 /**
- * Inicializa la PWA y coordina la actualización en segundo plano
+ * Inicializa la PWA y coordina la actualización automática en segundo plano
  * @param {Object} options
  * @param {Function} [options.isBusy] - Retorna true si hay generación, dictado o escaneo activo
  * @param {Function} [options.saveDraft] - Guarda en localStorage el borrador actual antes de recargar
@@ -47,86 +55,97 @@ export async function initPWA({ isBusy, saveDraft, onUpdatePending } = {}) {
     return null;
   }
 
-  // Capturar errores de carga dinámica de chunks (vite:preloadError) tras un despliegue
+  // Capturar errores de carga dinámica de chunks (vite:preloadError) tras un nuevo despliegue
   window.addEventListener("vite:preloadError", () => {
     console.warn("[PWA] Error de carga en bundle dinámico (chunk obsoleto). Aplicando recarga limpia...");
     if (saveDraft) saveDraft();
     safeReload();
   });
 
-  // Escuchar controllerchange: un nuevo Service Worker tomó el control
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    // Si es la PRIMERA instalación de la PWA, no se recarga
-    if (!hadPreviousController) {
-      console.log("[PWA] Primera instalación completada. Controlador activo.");
-      return;
-    }
-
-    console.log("[PWA] Nuevo Service Worker en control. Preparando actualización...");
-
-    // Si el maestro está generando una planificación, dictando o subiendo una foto
+  const aplicarActualizacionSegura = (customReloadTrigger) => {
+    // Si el docente está dictando, generando o escaneando foto, posponer recarga y avisar discretamente
     if (isBusy && isBusy()) {
-      console.warn("[PWA] Trabajo en curso. Notificando aviso discreto sin interrumpir.");
+      console.warn("[PWA] Docente en actividad. Pospone recarga automática y guarda borrador.");
       if (saveDraft) saveDraft();
       if (onUpdatePending) {
-        onUpdatePending(safeReload);
+        onUpdatePending(customReloadTrigger || safeReload);
       }
       return;
     }
 
-    // Si la app está inactiva, guardar borrador si hay texto y recargar de inmediato
+    // Si la app está inactiva, guardar borrador de seguridad y recargar de inmediato
     if (saveDraft) saveDraft();
-    safeReload();
-  });
+    if (customReloadTrigger) {
+      customReloadTrigger();
+    } else {
+      safeReload();
+    }
+  };
 
-  let registration = null;
   try {
-    registration = await navigator.serviceWorker.register("/sw.js", {
-      scope: "/",
-      updateViaCache: "none" // Garantiza que el navegador consulte a la red byte a byte
+    updateSWFn = registerSW({
+      immediate: true,
+      onNeedRefresh() {
+        console.log("[PWA] 🔄 Nueva versión detectada en Cloudflare (onNeedRefresh). Aplicando actualización...");
+        aplicarActualizacionSegura(() => {
+          if (typeof updateSWFn === "function") {
+            updateSWFn(true);
+          } else {
+            safeReload();
+          }
+        });
+      },
+      onOfflineReady() {
+        console.log("[PWA] ✓ PWA lista para operar sin conexión (Service Worker activo).");
+      },
+      onRegisteredSW(swUrl, registration) {
+        currentRegistration = registration;
+        console.log("[PWA] Service Worker registrado exitosamente vía virtual:pwa-register:", swUrl);
+
+        if (registration) {
+          // 1. Verificación inmediata al abrir la app (sin throttling que la bloquee)
+          registration.update().catch(() => {});
+
+          // 2. Verificación al volver a primer plano (visibilitychange)
+          document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") {
+              registration.update().catch(() => {});
+            }
+          });
+
+          // 3. Verificación al recuperar el foco de la ventana o conectividad
+          window.addEventListener("focus", () => {
+            registration.update().catch(() => {});
+          });
+          window.addEventListener("online", () => {
+            registration.update().catch(() => {});
+          });
+
+          // 4. Verificación periódica cada 15 minutos mientras la app esté abierta
+          setInterval(() => {
+            registration.update().catch(() => {});
+          }, 15 * 60 * 1000);
+        }
+      },
+      onRegisterError(error) {
+        console.warn("[PWA] Error en registro de Service Worker:", error);
+      }
     });
-    console.log("[PWA] Service Worker registrado con updateViaCache: 'none'");
+
+    // Escuchar controllerchange como garantía adicional cuando el nuevo SW toma control
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      console.log("[PWA] Nuevo Service Worker tomó control (controllerchange).");
+      aplicarActualizacionSegura();
+    });
+
+    return {
+      registration: currentRegistration,
+      updateSW: updateSWFn,
+      triggerUpdateNow: () => currentRegistration ? currentRegistration.update() : Promise.resolve(),
+      reload: safeReload
+    };
   } catch (err) {
-    console.warn("[PWA] Error en registro de Service Worker:", err);
+    console.warn("[PWA] Fallo iniciando registro virtual:pwa-register:", err);
     return null;
   }
-
-  // Comprobación de actualizaciones con estrangulamiento (mínimo 10 min entre peticiones)
-  let lastCheck = Date.now();
-  const THROTTLE_MS = 10 * 60 * 1000;
-
-  const triggerUpdate = async () => {
-    const now = Date.now();
-    if (now - lastCheck < THROTTLE_MS) return;
-    lastCheck = now;
-
-    try {
-      if (registration) {
-        await registration.update();
-      }
-    } catch (e) {
-      // Ignorar errores transitorios de red
-    }
-  };
-
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") {
-      triggerUpdate();
-    }
-  });
-
-  window.addEventListener("focus", triggerUpdate);
-  window.addEventListener("online", triggerUpdate);
-
-  // Verificación periódica cada 30 minutos mientras la app esté abierta
-  setInterval(triggerUpdate, 30 * 60 * 1000);
-
-  return {
-    registration,
-    triggerUpdateNow: () => {
-      lastCheck = 0;
-      return registration ? registration.update() : Promise.resolve();
-    },
-    reload: safeReload
-  };
 }
