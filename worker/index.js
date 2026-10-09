@@ -2092,6 +2092,7 @@ export default {
         url.pathname === "/manifest.webmanifest" ||
         url.pathname === "/manifest.json" ||
         url.pathname.startsWith("/workbox-") ||
+        url.pathname === "/version.json" ||
         ct.includes("text/html")
       ) {
         const newHeaders = new Headers(response.headers);

@@ -53,3 +53,9 @@ Cuando se configure el nuevo proyecto activo de Supabase para el lanzamiento mas
 3. Respaldo creado: branch `backup-antes-commits-20261007`.
 4. Cero gasto de cuota de ElevenLabs en pruebas (solo consultar /v1/user/subscription).
 5. Conservar intacto todo lo que ya funciona (modo hablado, cámara/ojo digital, PWA, dictado continuo).
+
+## Respaldo de Producción (Fase 0.1)
+- **Deployment ID actual**: `52e6fb92-f2f2-4215-8636-f6731ea6e205`
+- **Fecha de creación**: `2026-10-09T19:51:50.190Z`
+- **Deployment previo inmediato**: `ee9499cf-cb40-40e4-b2ca-a9b12140e9fd` (`2026-10-09T19:48:17.439Z`)
+- **Comando de reversa inmediata**: `npx wrangler rollback 52e6fb92-f2f2-4215-8636-f6731ea6e205` (o `npx wrangler rollback ee9499cf-cb40-40e4-b2ca-a9b12140e9fd`)
