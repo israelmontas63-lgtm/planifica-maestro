@@ -13,12 +13,15 @@
 
 -- Función para actualizar columna updated_at automáticamente
 CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
 BEGIN
   NEW.updated_at = now();
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- -----------------------------------------------------------------------------
 -- 1. TABLA: perfil_docente (Perfil Institucional del Docente)
@@ -134,8 +137,8 @@ REVOKE ALL ON public.uso_docentes FROM PUBLIC, anon;
 -- Privilegios controlados para usuarios autenticados (sujetos a RLS)
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.perfil_docente TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.planes_guardados TO authenticated;
+REVOKE ALL ON public.uso_docentes FROM authenticated;
 GRANT SELECT ON public.uso_docentes TO authenticated;
-REVOKE INSERT, UPDATE, DELETE ON public.uso_docentes FROM authenticated;
 
 -- El rol del servidor (service_role) mantiene administración completa
 GRANT ALL ON public.perfil_docente TO service_role;
