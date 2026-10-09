@@ -149,6 +149,25 @@ const LEVELS = {
     ]
   },
 
+  con_base_multigrado: {
+    label: "formato de secuencia didáctica CON BASE (multigrado)",
+    descripcion: "Secuencia didáctica CON BASE para aulas multigrado del Primer Ciclo de Primaria (1.º, 2.º y 3.º) estructurada en apartados I a VI.",
+    ciclos: ["1.º, 2.º y 3.º de Primaria"],
+    areas: ["Lengua Española", "Matemática"],
+    bloques: [
+      "I. INSERCIÓN CURRICULAR",
+      "II. PRESENTACIÓN DE LA SECUENCIA",
+      "III. RECURSOS PARA TODA LA SECUENCIA",
+      "IV. DESARROLLO DE LA SECUENCIA",
+      "V. CRITERIOS PARA LA VALORACIÓN",
+      "VI. ORIENTACIONES GENERALES PARA PROFUNDIZAR LA ENSEÑANZA"
+    ],
+    notas: [
+      "Basado en server/esquemas/con_base_multigrado.schema.json como única fuente de verdad.",
+      "Para Matemática en multigrado se marca como adaptación de las guías de grado de Matemática CON BASE."
+    ]
+  },
+
   abp: {
     label: "Aprendizaje Basado en Proyectos (ABP)",
     descripcion: "Planificación centrada en la resolución de un problema real mediante la creación de un producto.",

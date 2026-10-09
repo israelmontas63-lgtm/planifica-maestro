@@ -41,6 +41,13 @@ export const ESQUEMAS = [
     color: "#F3E5F5"
   },
   {
+    id: "con_base_multigrado",
+    nombre: "formato de secuencia didáctica CON BASE (multigrado)",
+    descripcion: "Secuencia didáctica para aulas multigrado del Primer Ciclo (1.º a 3.º de Primaria) estructurada en apartados I a VI.",
+    niveles: "1.º a 3.º de Primaria",
+    color: "#CDEEF6"
+  },
+  {
     id: "multigrado",
     nombre: "Aulas Multigrado (MINERD)",
     descripcion: "Planificación articulada simultánea para dos o más grados en una misma aula (1.º-2.º, 3.º-4.º, 5.º-6.º).",

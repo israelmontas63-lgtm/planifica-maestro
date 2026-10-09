@@ -1,0 +1,418 @@
+{
+  "": "https://planificamaestro.com/esquemas/con_base_multigrado.schema.json",
+  "title": "Secuencia didáctica CON BASE - multigrado (primer ciclo)",
+  "description": "Esquema único oficial de datos para secuencias didácticas multigrado del Primer Ciclo de Primaria (1.º, 2.º y 3.º grado). Fuente de verdad única para el prompt de IA, el validador y el generador de Word.",
+  "type": "object",
+  "required": [
+    "encabezado",
+    "apartado_I_insercion_curricular",
+    "apartado_II_presentacion_de_la_secuencia",
+    "apartado_III_recursos_para_toda_la_secuencia",
+    "apartado_IV_desarrollo_de_la_secuencia",
+    "apartado_V_criterios_para_la_valoracion",
+    "apartado_VI_orientaciones_generales_para_profundizar_la_ensenanza",
+    "fuente_pie"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "encabezado": {
+      "type": "object",
+      "required": [
+        "centro_educativo",
+        "docente",
+        "grados",
+        "seccion",
+        "area",
+        "secuencia_numero",
+        "secuencia_titulo",
+        "fecha"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "centro_educativo": {
+          "type": "string",
+          "minLength": 1
+        },
+        "docente": {
+          "type": "string",
+          "minLength": 1
+        },
+        "grados": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "1.º",
+              "2.º",
+              "3.º"
+            ]
+          }
+        },
+        "seccion": {
+          "type": "string"
+        },
+        "area": {
+          "type": "string",
+          "enum": [
+            "Lengua Española",
+            "Matemática"
+          ]
+        },
+        "secuencia_numero": {
+          "type": [
+            "integer",
+            "string"
+          ]
+        },
+        "secuencia_titulo": {
+          "type": "string",
+          "minLength": 1
+        },
+        "fecha": {
+          "type": "string"
+        },
+        "tanda": {
+          "type": "string"
+        }
+      }
+    },
+    "apartado_I_insercion_curricular": {
+      "type": "object",
+      "description": "Apartado I: Inserción curricular por grado con respaldo estricto en la Adecuación Curricular 2023.",
+      "required": [
+        "competencias_fundamentales",
+        "grados_curriculo"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "competencias_fundamentales": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "items": {
+            "type": "object",
+            "required": [
+              "nombre",
+              "trabajada"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "nombre": {
+                "type": "string"
+              },
+              "trabajada": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "grados_curriculo": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "items": {
+            "type": "object",
+            "required": [
+              "grado",
+              "competencias_especificas",
+              "contenidos",
+              "indicadores_de_logro",
+              "fuente_adecuacion_curricular"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "grado": {
+                "type": "string",
+                "enum": [
+                  "1.º",
+                  "2.º",
+                  "3.º"
+                ]
+              },
+              "competencias_especificas": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "contenidos": {
+                "type": "object",
+                "required": [
+                  "conceptuales",
+                  "procedimentales",
+                  "actitudinales_y_valores"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "conceptuales": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "procedimentales": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "actitudinales_y_valores": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "indicadores_de_logro": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "fuente_adecuacion_curricular": {
+                "type": "string",
+                "description": "Cita y página exacta de la Adecuación Curricular 2023. Si no hay respaldo, debe decir exactamente: verificar en la Adecuación Curricular",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "apartado_II_presentacion_de_la_secuencia": {
+      "type": "object",
+      "description": "Apartado II: Presentación de la secuencia y sentido del abordaje en multigrado.",
+      "required": [
+        "justificacion_pedagogica",
+        "tratamiento_didactico_multigrado"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "justificacion_pedagogica": {
+          "type": "string",
+          "minLength": 1
+        },
+        "tratamiento_didactico_multigrado": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "apartado_III_recursos_para_toda_la_secuencia": {
+      "type": "object",
+      "description": "Apartado III: Recursos materiales para estudiantes y para exhibir en el aula.",
+      "required": [
+        "recursos_estudiantes",
+        "recursos_aula"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "recursos_estudiantes": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "recursos_aula": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "apartado_IV_desarrollo_de_la_secuencia": {
+      "type": "object",
+      "description": "Apartado IV: Desarrollo paso a paso de las actividades y momentos pedagógicos.",
+      "required": [
+        "bloque",
+        "actividad_numero",
+        "actividad_titulo",
+        "titulo_en_cuaderno",
+        "intencion_pedagogica",
+        "momentos",
+        "tarea_para_el_hogar"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "bloque": {
+          "type": [
+            "string",
+            "integer"
+          ]
+        },
+        "actividad_numero": {
+          "type": [
+            "string",
+            "integer"
+          ]
+        },
+        "actividad_titulo": {
+          "type": "string",
+          "minLength": 1
+        },
+        "titulo_en_cuaderno": {
+          "type": "string",
+          "minLength": 1
+        },
+        "intencion_pedagogica": {
+          "type": "string",
+          "minLength": 1
+        },
+        "momentos": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "momento_numero",
+              "foco_o_titulo",
+              "descripcion",
+              "agrupamiento",
+              "recursos"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "momento_numero": {
+                "type": "string"
+              },
+              "foco_o_titulo": {
+                "type": "string",
+                "minLength": 1
+              },
+              "descripcion": {
+                "type": "string",
+                "minLength": 1
+              },
+              "agrupamiento": {
+                "type": "string",
+                "description": "Organización requerida del grupo para el aula multigrado.",
+                "enum": [
+                  "Grupo total",
+                  "Grupo por grado",
+                  "Grupo cooperativo"
+                ]
+              },
+              "tiempo_minutos": {
+                "type": [
+                  "string",
+                  "integer",
+                  "null"
+                ],
+                "description": "Tiempo en minutos opcional; solo aparece si el docente lo solicita."
+              },
+              "recursos": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "tarea_para_el_hogar": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "apartado_V_criterios_para_la_valoracion": {
+      "type": "object",
+      "description": "Apartado V: Criterios observables para la valoración formativa.",
+      "required": [
+        "criterios",
+        "instrumentos_o_evidencias"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "criterios": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "instrumentos_o_evidencias": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "apartado_VI_orientaciones_generales_para_profundizar_la_ensenanza": {
+      "type": "object",
+      "description": "Apartado VI: Orientaciones para atender diferentes ritmos de aprendizaje y actividades diferenciadas.",
+      "required": [
+        "atencion_a_la_diversidad",
+        "actividades_diferenciadas"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "atencion_a_la_diversidad": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actividades_diferenciadas": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "grado_o_grupo",
+              "propuesta"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "grado_o_grupo": {
+                "type": "string",
+                "minLength": 1
+              },
+              "propuesta": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    "fuente_pie": {
+      "type": "object",
+      "description": "Fuente bibliográfica con cita y página exacta para el pie del documento.",
+      "required": [
+        "texto",
+        "es_adaptacion"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "texto": {
+          "type": "string",
+          "minLength": 1
+        },
+        "es_adaptacion": {
+          "type": "boolean"
+        },
+        "nota": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
