@@ -22,6 +22,20 @@ const APARTADOS_REQUERIDOS = [
 const AGRUPAMIENTOS_VALIDOS = ['Grupo total', 'Grupo por grado', 'Grupo cooperativo'];
 const GRADOS_PRIMER_CICLO_VALIDOS = ['1.º', '2.º', '3.º'];
 
+const PALABRAS_CON_TILDE = [
+  { con: 'Autobiografía', regex: /\bautobiografia\b/i },
+  { con: 'Planificación', regex: /\bplanificacion\b/i },
+  { con: 'Educación', regex: /\beducacion\b/i },
+  { con: 'Didáctica', regex: /\bdidactica\b/i },
+  { con: 'Comunicación', regex: /\bcomunicacion\b/i },
+  { con: 'Evaluación', regex: /\bevaluacion\b/i },
+  { con: 'Atención', regex: /\batencion\b/i },
+  { con: 'Lógico', regex: /\blogico\b/i },
+  { con: 'Artística', regex: /\bartistica\b/i },
+  { con: 'Pedagógica', regex: /\bpedagogica\b/i },
+  { con: 'Numeración', regex: /\bnumeracion\b/i }
+];
+
 function normalizarGrado(g) {
   if (!g) return '';
   const s = String(g).trim().toLowerCase();
@@ -134,15 +148,37 @@ function validarRespuestaConBaseMultigrado({ respuesta, gradosPerfil = [], area 
     }
   }
 
-  const areaResp = (respuesta.encabezado.area || area || '').toLowerCase();
+  const orientaciones = respuesta.apartado_VI_orientaciones_generales_para_profundizar_la_ensenanza;
+  if (orientaciones) {
+    if (!Array.isArray(orientaciones.actividades_diferenciadas) || orientaciones.actividades_diferenciadas.length === 0) {
+      errores.push('El Apartado VI debe contener la lista de actividades diferenciadas por grado.');
+    } else {
+      const gradosConActividad = orientaciones.actividades_diferenciadas.map(a => normalizarGrado(a.grado_o_grupo));
+      for (const g of gradosResp) {
+        if (!gradosConActividad.includes(g)) {
+          errores.push(`El Apartado VI no contiene una actividad diferenciada para el grado ${g}. Debe incluir una propuesta para cada grado seleccionado.`);
+        }
+      }
+    }
+  }
+
+  const areaResp = (respuesta.encabezado?.area || area || '').toLowerCase();
   if (areaResp.includes('matem')) {
     const pie = respuesta.fuente_pie || {};
-    if (!pie.es_adaptacion) {
-      errores.push('Para Matemática en multigrado, la fuente debe marcarse como adaptación (es_adaptacion: true).');
-    }
     const textoPie = (pie.texto || '').toLowerCase();
-    if (!textoPie.includes('adaptaci') && !textoPie.includes('matem')) {
-      errores.push('El pie para Matemática debe indicar adaptación a partir de las guías por grado de Matemática CON BASE.');
+    const esAdaptacionValida = pie.es_adaptacion === true && textoPie.includes('adaptaci');
+    const esGuiaOficialValida = (textoPie.includes('guía') || textoPie.includes('guia')) && (textoPie.includes('matemática') || textoPie.includes('matematica'));
+    if (!esAdaptacionValida && !esGuiaOficialValida) {
+      errores.push('Para Matemática en multigrado, la fuente debe citar la "Guía Didáctica de Matemática Multigrado (MINERD / UNICEF, 2023)" o marcarse como "adaptación a partir de las guías por grado de Matemática CON BASE".');
+    }
+  }
+
+  // Validación ortográfica de palabras requeridas con tilde (Regla 5)
+  const textoSerializado = JSON.stringify(respuesta);
+  for (const item of PALABRAS_CON_TILDE) {
+    const match = textoSerializado.match(item.regex);
+    if (match) {
+      errores.push(`Se detectó ortografía sin tilde en el término "${match[0]}": debe escribirse con tilde (${item.con}).`);
     }
   }
 
@@ -225,5 +261,6 @@ module.exports = {
   AGRUPAMIENTOS_VALIDOS,
   GRADOS_PRIMER_CICLO_VALIDOS,
   APARTADOS_REQUERIDOS,
+  PALABRAS_CON_TILDE,
   ESQUEMA_CON_BASE
 };

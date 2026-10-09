@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tests/test_con_base_multigrado.mjs
  * Pruebas automatizadas para el formato "Secuencia didáctica CON BASE - multigrado (primer ciclo)"
  * Entorno de ejecución: "Node, no navegador"
@@ -54,7 +54,7 @@ function afirmativo(desc, condicion, evidencia = "") {
 // --------------------------------------------------------------------------------
 // FIXTURES DE DATOS CURRICULARES REALES DE LA ADECUACIÓN CURRICULAR 2023 (RAG APP)
 // --------------------------------------------------------------------------------
-function crearPlanBaseMock(grados = ["1.º", "2.º"], area = "Lengua Española") {
+function crearPlanBaseMock(grados = ["1.º", "2.º"], area = "Lengua Española", { incluirTiempo = false, esAdaptacionMat = false } = {}) {
   const curData = extraerDatosCurricularesOficiales({
     area,
     grados,
@@ -71,7 +71,7 @@ function crearPlanBaseMock(grados = ["1.º", "2.º"], area = "Lengua Española")
       seccion: "A",
       area: area,
       secuencia_numero: 1,
-      secuencia_titulo: esMatematica ? "Secuencia 1: Números naturales y patrones" : "Secuencia 1: Tarjeta de identidad / Documento de identidad / Autobiografía",
+      secuencia_titulo: esMatematica ? "Secuencia 1: Número y numeración (Los números en la vida cotidiana / El colmado)" : "Secuencia 1: Tarjeta de identidad / Documento de identidad / Autobiografía",
       fecha: "08/10/2026",
       tanda: "Jornada Escolar Extendida (JEE)"
     },
@@ -107,7 +107,7 @@ function crearPlanBaseMock(grados = ["1.º", "2.º"], area = "Lengua Española")
           foco_o_titulo: "Encuentro de grupo y rutina inicial",
           descripcion: "Socialización de la intención del día, lectura guiada del papelógrafo de aprendizajes y presentación de las metas de la secuencia.",
           agrupamiento: "Grupo total",
-          tiempo_minutos: 15,
+          tiempo_minutos: incluirTiempo ? 15 : "A definir por el docente",
           recursos: "Papelógrafo de aprendizajes, cartel de propósitos"
         },
         {
@@ -115,7 +115,7 @@ function crearPlanBaseMock(grados = ["1.º", "2.º"], area = "Lengua Española")
           foco_o_titulo: "Exploración de tarjetas de identidad y documentos",
           descripcion: "Modelado docente con las tarjetas de nombres para 1.º grado y análisis de datos en documentos de identidad para 2.º y 3.º grado.",
           agrupamiento: "Grupo por grado",
-          tiempo_minutos: 25,
+          tiempo_minutos: incluirTiempo ? 25 : "A definir por el docente",
           recursos: "Tarjetas de nombres, modelos de cédula/acta"
         },
         {
@@ -123,7 +123,7 @@ function crearPlanBaseMock(grados = ["1.º", "2.º"], area = "Lengua Española")
           foco_o_titulo: "Trabajo colaborativo y apoyo entre pares",
           descripcion: "Emparejamiento de estudiantes para verificar letras iniciales y armar nombres usando las letras móviles de los fascículos.",
           agrupamiento: "Grupo cooperativo",
-          tiempo_minutos: 25,
+          tiempo_minutos: incluirTiempo ? 25 : "A definir por el docente",
           recursos: "Letras móviles, fascículos del estudiante"
         },
         {
@@ -131,7 +131,7 @@ function crearPlanBaseMock(grados = ["1.º", "2.º"], area = "Lengua Española")
           foco_o_titulo: "Cierre, metacognición y registro",
           descripcion: "Puesta en común de las producciones en la pizarra, reflexión colectiva y registro del avance en el cuaderno de trabajo.",
           agrupamiento: "Grupo total",
-          tiempo_minutos: 15,
+          tiempo_minutos: incluirTiempo ? 15 : "A definir por el docente",
           recursos: "Cuadernos de trabajo, lista de cotejo"
         }
       ],
@@ -146,15 +146,20 @@ function crearPlanBaseMock(grados = ["1.º", "2.º"], area = "Lengua Española")
     },
     apartado_VI_orientaciones_generales_para_profundizar_la_ensenanza: {
       atencion_a_la_diversidad: "Aplicación de pautas DUA: apoyos visuales y táctiles para estudiantes en nivel presilábico; desafíos de escritura para estudiantes silábico-alfabéticos.",
-      actividades_diferenciadas: [
-        { grado_o_grupo: "1.º Grado", propuesta: "Composición guiada del nombre propio con tarjetas modelo y letras móviles." },
-        { grado_o_grupo: "2.º Grado", propuesta: "Completar ficha de documento de identidad reconociendo mayúsculas y fecha de nacimiento." }
-      ]
+      actividades_diferenciadas: grados.map(g => {
+        const gn = normalizarGrado(g);
+        if (gn === "1.º") return { grado_o_grupo: "1.º Grado", propuesta: "Composición guiada del nombre propio con tarjetas modelo y letras móviles." };
+        if (gn === "2.º") return { grado_o_grupo: "2.º Grado", propuesta: "Completar ficha de documento de identidad reconociendo mayúsculas y fecha de nacimiento." };
+        if (gn === "3.º") return { grado_o_grupo: "3.º Grado", propuesta: "Escritura de borrador de la autobiografía organizando introducción, desarrollo y conclusión." };
+        return { grado_o_grupo: `${g} Grado`, propuesta: `Actividad de profundización diferenciada para ${g}.` };
+      })
     },
     fuente_pie: {
-      texto: esMatematica ? "Adaptación a partir de las guías por grado de Matemática CON BASE (no oficial publicado)" : "Guía Didáctica de Lengua Española Multigrado (MINERD/UNICEF, 2023), pág. 29.",
-      es_adaptacion: esMatematica,
-      nota: esMatematica ? "Adaptación curricular metodológica" : "Guía oficial publicada"
+      texto: esMatematica
+        ? (esAdaptacionMat ? "Adaptación a partir de las guías por grado de Matemática CON BASE (no oficial publicado)" : "Guía Didáctica de Matemática Multigrado (Primer, segundo y tercer Grados) (MINERD / UNICEF, 2023), págs. 37-40.")
+        : "Guía Didáctica de Lengua Española Multigrado (MINERD / UNICEF, 2023), págs. 29-54.",
+      es_adaptacion: esMatematica && esAdaptacionMat,
+      nota: esMatematica ? (esAdaptacionMat ? "Adaptación curricular metodológica" : "Guía oficial publicada MINERD / UNICEF") : "Guía oficial publicada MINERD / UNICEF"
     }
   };
 }
@@ -323,42 +328,95 @@ afirmativo(
 );
 
 // ================================================================================
-// PRUEBA 8: MATEMÁTICA EN MULTIGRADO (Regla 10)
+// PRUEBA 8: MATEMÁTICA EN MULTIGRADO (Oficial publicada y adaptación)
 // ================================================================================
-console.log("\n--- 8. Regla Matemática en Multigrado (Adaptación no publicada) ---");
-const planMatematica = crearPlanBaseMock(["1.º", "2.º"], "Matemática");
-const valMatematica = validarRespuestaConBaseMultigrado({
-  respuesta: planMatematica,
+console.log("\n--- 8. Regla Matemática en Multigrado (Guía oficial y adaptación) ---");
+const planMatematicaOficial = crearPlanBaseMock(["1.º", "2.º"], "Matemática", { esAdaptacionMat: false });
+const valMatOficial = validarRespuestaConBaseMultigrado({
+  respuesta: planMatematicaOficial,
   gradosPerfil: ["1.º", "2.º"],
   area: "Matemática"
 });
 
 afirmativo(
-  "Plan de Matemática en multigrado se valida con marca de adaptación",
-  valMatematica.valido === true,
-  `es_adaptacion=${planMatematica.fuente_pie.es_adaptacion}, pie="${planMatematica.fuente_pie.texto}"`
+  "Plan de Matemática en multigrado se valida con cita oficial de la Guía Multigrado MINERD/UNICEF 2023",
+  valMatOficial.valido === true,
+  `pie="${planMatematicaOficial.fuente_pie.texto}"`
 );
 
-// Si Matemática no se marcara como adaptación, debe fallar:
-const planMatSinAdaptacion = JSON.parse(JSON.stringify(planMatematica));
-planMatSinAdaptacion.fuente_pie.es_adaptacion = false;
-planMatSinAdaptacion.fuente_pie.texto = "Guía oficial publicada de Matemática Multigrado";
-const valMatSinAdapt = validarRespuestaConBaseMultigrado({
-  respuesta: planMatSinAdaptacion,
+const planMatematicaAdaptada = crearPlanBaseMock(["1.º", "2.º"], "Matemática", { esAdaptacionMat: true });
+const valMatAdaptada = validarRespuestaConBaseMultigrado({
+  respuesta: planMatematicaAdaptada,
   gradosPerfil: ["1.º", "2.º"],
   area: "Matemática"
 });
 
 afirmativo(
-  "Validador rechaza plan de Matemática que se presente falsamente como formato publicado",
-  valMatSinAdapt.valido === false,
-  `errores=${valMatSinAdapt.errores.join(" | ")}`
+  "Plan de Matemática en multigrado también se valida con marca explícita de adaptación",
+  valMatAdaptada.valido === true,
+  `es_adaptacion=${planMatematicaAdaptada.fuente_pie.es_adaptacion}`
+);
+
+// Si Matemática no tuviera ni guía oficial ni adaptación, debe fallar:
+const planMatInvalido = JSON.parse(JSON.stringify(planMatematicaOficial));
+planMatInvalido.fuente_pie.es_adaptacion = false;
+planMatInvalido.fuente_pie.texto = "Fuente inventada sin respaldo oficial";
+const valMatInvalido = validarRespuestaConBaseMultigrado({
+  respuesta: planMatInvalido,
+  gradosPerfil: ["1.º", "2.º"],
+  area: "Matemática"
+});
+
+afirmativo(
+  "Validador rechaza plan de Matemática que no cite ni guía oficial ni adaptación autorizada",
+  valMatInvalido.valido === false,
+  `errores=${valMatInvalido.errores.join(" | ")}`
 );
 
 // ================================================================================
-// PRUEBA 9: VERIFICACIÓN DE 0 CELDAS VACÍAS Y SANITIZACIÓN EN WORD GENERADO
+// PRUEBA 9: VALIDACIÓN ORTOGRÁFICA DE TILDES OBLIGATORIAS (Regla 5)
 // ================================================================================
-console.log("\n--- 9. Inspección Binaria de Celdas en DOCX Generado ---");
+console.log("\n--- 9. Verificación de Tildes Pedagógicas Obligatorias ---");
+const planSinTilde = JSON.parse(JSON.stringify(planCompleto));
+planSinTilde.encabezado.secuencia_titulo = "Secuencia 1: Tarjeta de identidad / Documento de identidad / Autobiografia"; // falta tilde en Autobiografía
+const valSinTilde = validarRespuestaConBaseMultigrado({
+  respuesta: planSinTilde,
+  gradosPerfil: ["1.º", "2.º"],
+  area: "Lengua Española"
+});
+
+afirmativo(
+  "Validador detecta y rechaza término pedagógico sin tilde ('Autobiografia')",
+  valSinTilde.valido === false && valSinTilde.errores.some(e => e.includes("Autobiografía")),
+  `errores=${valSinTilde.errores.filter(e => e.includes("tilde")).join(" | ")}`
+);
+
+// ================================================================================
+// PRUEBA 10: ACTIVIDADES DIFERENCIADAS POR CADA GRADO SELECCIONADO (Regla 4)
+// ================================================================================
+console.log("\n--- 10. Verificación de Actividades Diferenciadas por Cada Grado ---");
+const planFaltaGrado = JSON.parse(JSON.stringify(planTresGrados));
+// Eliminar la actividad para 3.º grado
+planFaltaGrado.apartado_VI_orientaciones_generales_para_profundizar_la_ensenanza.actividades_diferenciadas = [
+  { grado_o_grupo: "1.º Grado", propuesta: "Composición guiada del nombre propio." },
+  { grado_o_grupo: "2.º Grado", propuesta: "Completar ficha de documento de identidad." }
+];
+const valFaltaGrado = validarRespuestaConBaseMultigrado({
+  respuesta: planFaltaGrado,
+  gradosPerfil: ["1.º", "2.º", "3.º"],
+  area: "Lengua Española"
+});
+
+afirmativo(
+  "Validador rechaza cuando falta actividad diferenciada para algún grado seleccionado (falta 3.º)",
+  valFaltaGrado.valido === false && valFaltaGrado.errores.some(e => e.includes("3.º")),
+  `errores=${valFaltaGrado.errores.filter(e => e.includes("Apartado VI")).join(" | ")}`
+);
+
+// ================================================================================
+// PRUEBA 11: VERIFICACIÓN DE 0 CELDAS VACÍAS Y SANITIZACIÓN EN WORD GENERADO
+// ================================================================================
+console.log("\n--- 11. Inspección Binaria de Celdas en DOCX Generado ---");
 const dirMuestras = path.join(__dirname, "../muestras_word");
 if (!fs.existsSync(dirMuestras)) fs.mkdirSync(dirMuestras, { recursive: true });
 

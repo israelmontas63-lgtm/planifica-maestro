@@ -182,11 +182,16 @@ async function generarWordConBaseMultigrado(datos = {}, opciones = {}) {
   );
 
   // 3. DATOS DE CLASE (Fila 2)
+  const numSec = enc.secuencia_numero != null ? String(enc.secuencia_numero).trim() : "";
+  let titSec = sanitizarTexto(enc.secuencia_titulo || "Secuencia didáctica");
+  titSec = titSec.replace(/^Secuencia\s*\d*\s*:\s*/i, "").trim();
+  const textoSecuencia = numSec ? `Secuencia ${numSec}: ${titSec}` : titSec;
+
   filas.push(
     new TableRow({
       children: [
         crearCelda({ widthPct: 35, children: [crearParrafoCampo("Área", enc.area || "Lengua Española")] }),
-        crearCelda({ widthPct: 30, children: [crearParrafoCampo("Secuencia", (enc.secuencia_numero ? "Secuencia " + enc.secuencia_numero + ": " : "") + (enc.secuencia_titulo || "Secuencia didáctica"))] }),
+        crearCelda({ widthPct: 30, children: [crearParrafoCampo("Secuencia", textoSecuencia)] }),
         crearCelda({ widthPct: 20, children: [crearParrafoCampo("Fecha", enc.fecha || new Date().toLocaleDateString("es-DO"))] }),
         crearCelda({ widthPct: 15, children: [crearParrafoCampo("Tanda", enc.tanda || "Jornada Escolar Extendida")] })
       ]
@@ -398,7 +403,7 @@ async function generarWordConBaseMultigrado(datos = {}, opciones = {}) {
 
     const celdasFilaMom = [];
     if (mostrarTiempo) {
-      const tiempoVal = mom.tiempo_minutos ? mom.tiempo_minutos + (String(mom.tiempo_minutos).includes("min") ? "" : " min") : "15 min";
+      const tiempoVal = mom.tiempo_minutos ? (String(mom.tiempo_minutos).includes("min") ? String(mom.tiempo_minutos) : mom.tiempo_minutos + " min") : "A definir por el docente";
       celdasFilaMom.push(
         crearCelda({ widthPct: 18, children: [new Paragraph({ children: [new TextRun({ text: titMom, bold: true, size: 18, font: "Calibri" })] })] }),
         crearCelda({ widthPct: 20, children: [new Paragraph({ children: [new TextRun({ text: agrip, size: 18, font: "Calibri" })] })] }),
@@ -514,11 +519,15 @@ async function generarWordConBaseMultigrado(datos = {}, opciones = {}) {
     })
   );
 
-  // 10. PIE DE PÁGINA / FUENTE (Reglas 6 y 10)
+  // 10. PIE DE PÁGINA / FUENTE (Reglas 6, 8 y 10)
   const fuentePie = datos.fuente_pie || {};
-  let textoFuente = fuentePie.texto || "Guía Didáctica de Lengua Española Multigrado (MINERD/UNICEF, 2023)";
-  if (fuentePie.es_adaptacion) {
-    textoFuente = "Adaptación a partir de las guías por grado de Matemática CON BASE (no oficial publicado)";
+  let textoFuente = fuentePie.texto;
+  if (!textoFuente) {
+    if ((enc.area || "").toLowerCase().includes("matem")) {
+      textoFuente = "Guía Didáctica de Matemática Multigrado (Primer, segundo y tercer Grados) (MINERD / UNICEF, 2023), págs. 11-13.";
+    } else {
+      textoFuente = "Guía Didáctica de Lengua Española Multigrado (MINERD / UNICEF, 2023), pág. 29.";
+    }
   }
 
   filas.push(
@@ -559,14 +568,17 @@ async function generarWordConBaseMultigrado(datos = {}, opciones = {}) {
           page: {
             size: {
               orientation: PageOrientation.LANDSCAPE,
-              width: 16838,
-              height: 11906
+              width: 11906,
+              height: 16838
             },
             margin: {
               top: 1701,    // 3.0 cm
               bottom: 1701, // 3.0 cm
               left: 1417,   // 2.5 cm
-              right: 1417   // 2.5 cm
+              right: 1417,  // 2.5 cm
+              header: 708,  // 1.25 cm
+              footer: 708,  // 1.25 cm
+              gutter: 0
             }
           }
         },
