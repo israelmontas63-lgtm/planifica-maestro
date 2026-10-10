@@ -3,7 +3,7 @@ import React from 'react';
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, errorInfo: null };
   }
 
   static getDerivedStateFromError(error) {
@@ -12,6 +12,7 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('ErrorBoundary caught an error', error, errorInfo);
+    this.setState({ errorInfo });
   }
 
   handleLimpiarCache = async () => {
@@ -139,14 +140,31 @@ class ErrorBoundary extends React.Component {
                 border: '1px solid #e2e8f0',
                 borderRadius: '8px',
                 fontSize: '11px',
-                color: '#dc2626',
+                color: '#334155',
                 fontFamily: 'monospace',
                 wordBreak: 'break-all',
-                maxHeight: '140px',
+                maxHeight: '180px',
                 overflowY: 'auto'
               }}>
-                <div><strong>Error:</strong> {mensajeError}</div>
-                {stackError && <pre style={{ marginTop: '4px', fontSize: '10px', color: '#64748b', whiteSpace: 'pre-wrap' }}>{stackError.slice(0, 350)}</pre>}
+                <div style={{ color: '#dc2626', fontWeight: 'bold' }}>Error: {mensajeError}</div>
+                <div style={{ marginTop: '4px' }}><strong>Versión:</strong> {typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'v1.0.0'}</div>
+                <div style={{ marginTop: '4px' }}><strong>Navegador:</strong> {typeof navigator !== 'undefined' ? navigator.userAgent : 'N/A'}</div>
+                {stackError && (
+                  <div style={{ marginTop: '6px' }}>
+                    <strong>Stack:</strong>
+                    <pre style={{ margin: '2px 0 0 0', fontSize: '10px', color: '#64748b', whiteSpace: 'pre-wrap' }}>
+                      {stackError.split('\n').slice(0, 4).join('\n')}
+                    </pre>
+                  </div>
+                )}
+                {this.state.errorInfo?.componentStack && (
+                  <div style={{ marginTop: '6px' }}>
+                    <strong>Component Stack:</strong>
+                    <pre style={{ margin: '2px 0 0 0', fontSize: '10px', color: '#64748b', whiteSpace: 'pre-wrap' }}>
+                      {this.state.errorInfo.componentStack.split('\n').slice(0, 3).join('\n')}
+                    </pre>
+                  </div>
+                )}
               </div>
             </details>
           </div>
