@@ -111,9 +111,87 @@ const PATRONES_CONOCIMIENTO_GENERAL = [
 
 const PATRONES_NO_EDUCATIVOS = [
   "receta de cocina", "receta de sancocho", "sancocho", "mangu", "cocinar",
-  "chiste", "adivinanza graciosa", "reparar carro", "comprar", "precio de venta",
+  "chiste", "adivinanza graciosa", "reparar carro", "reparar", "alternador", "taller mecanico",
+  "mecanica automotriz", "comprar", "precio de venta",
   "pelicula", "netflix", "cancion de moda", "horoscopo", "futbol en vivo",
-  "juego de pelota", "loteria", "chismes"
+  "juego de pelota", "partido de beisbol", "loteria", "chismes"
+];
+
+const CATEGORIAS_6 = {
+  A_CURRICULAR_RD: "A_CURRICULAR_RD",
+  B_PEDAGOGIA_GENERAL: "B_PEDAGOGIA_GENERAL",
+  C_CONOCIMIENTO_GENERAL: "C_CONOCIMIENTO_GENERAL",
+  D_NORMATIVA_O_ACTUALIDAD: "D_NORMATIVA_O_ACTUALIDAD",
+  E_TERMINO_AJENO: "E_TERMINO_AJENO",
+  F_FUERA_DE_ALCANCE: "F_FUERA_DE_ALCANCE"
+};
+
+const MAPEO_TERMINOS_AJENOS = [
+  {
+    patrones: ["dba", "derechos basicos de aprendizaje"],
+    termino: "DBA (Derechos Básicos de Aprendizaje)",
+    pais_origen: "Colombia (MEN)",
+    equivalente_minerd: "Indicadores de Logro y Contenidos Procedimentales",
+    documento: "Adecuación Curricular del Nivel Primario (MINERD, 2023), pág. 26",
+    explicacion: "En República Dominicana (MINERD) no se utilizan los DBA; el currículo oficial se organiza mediante Competencias Fundamentales, Específicas, Contenidos e Indicadores de Logro."
+  },
+  {
+    patrones: ["aprendizajes clave", "campos formativos"],
+    termino: "Aprendizajes Clave / Campos Formativos",
+    pais_origen: "México (SEP)",
+    equivalente_minerd: "Competencias Fundamentales y Específicas / Áreas Curriculares",
+    documento: "Adecuación Curricular del Nivel Primario (MINERD, 2023), pág. 18",
+    explicacion: "El sistema educativo dominicano no emplea Campos Formativos ni Aprendizajes Clave; se estructura en 7 Competencias Fundamentales y Competencias Específicas por grado y área."
+  },
+  {
+    patrones: ["estandares basicos", "estandares basicos de competencias"],
+    termino: "Estándares Básicos de Competencias",
+    pais_origen: "Colombia",
+    equivalente_minerd: "Competencias Fundamentales (7) y Específicas por ciclo y grado",
+    documento: "Adecuación Curricular (MINERD, 2023), pág. 18",
+    explicacion: "En República Dominicana, los referentes de calidad curricular son las 7 Competencias Fundamentales y los Indicadores de Logro definidos por el MINERD."
+  },
+  {
+    patrones: ["nucleos de aprendizaje prioritarios", "nap"],
+    termino: "Núcleos de Aprendizaje Prioritarios (NAP)",
+    pais_origen: "Argentina",
+    equivalente_minerd: "Contenidos e Indicadores de Logro de la Adecuación Curricular",
+    documento: "Adecuación Curricular (MINERD, 2023), pág. 26",
+    explicacion: "Los NAP corresponden a la normativa federal argentina. En República Dominicana se aplican los contenidos e indicadores de logro de la Adecuación Curricular 2023."
+  },
+  {
+    patrones: ["objetivos de aprendizaje", "oa "],
+    termino: "Objetivos de Aprendizaje (OA)",
+    pais_origen: "Chile (MINEDUC)",
+    equivalente_minerd: "Indicadores de Logro y Competencias Específicas",
+    documento: "Adecuación Curricular (MINERD, 2023), pág. 26",
+    explicacion: "En el sistema dominicano (MINERD), la concreción de los aprendizajes esperados se denomina Indicadores de Logro."
+  },
+  {
+    patrones: ["malla curricular"],
+    termino: "Malla Curricular",
+    pais_origen: "Término no oficial (común en varios países)",
+    equivalente_minerd: "Diseño Curricular / Adecuación Curricular / Matriz de Competencias y Contenidos",
+    documento: "Adecuación Curricular (MINERD, 2023), pág. 12",
+    explicacion: "El término oficial del MINERD en la Adecuación Curricular 2023 es Diseño Curricular o Matriz de Competencias, Contenidos e Indicadores de Logro."
+  }
+];
+
+const PATRONES_NORMATIVA_ACTUALIDAD = [
+  "ano escolar", "año escolar", "calendario escolar", "cuando inician las clases",
+  "cuando terminan las clases", "inicio de clases", "fin de clases", "vacaciones escolares",
+  "ordenanza", "resolucion", "circular minerd", "noticias de hoy", "noticias recientes",
+  "ministro de educacion", "efemerides patrias", "efemerides", "concurso docente", "induccion docente"
+];
+
+const PATRONES_PEDAGOGIA_GENERAL = [
+  "estrategias para motivar", "motivar a los estudiantes", "estrategias de motivacion",
+  "disciplina en el aula", "manejo de disciplina", "control de grupo",
+  "dinamicas de grupo", "romper el hielo", "tecnicas de comprension lectora",
+  "evaluar con rubricas", "como elaborar una rubrica", "organizacion del aula",
+  "inclusion educativa", "adaptaciones curriculares", "trabajo colaborativo",
+  "gestion del tiempo escolar", "aprendizaje basado en proyectos",
+  "estrategias de ensenanza", "tecnicas didacticas", "recursos didacticos"
 ];
 
 const OPCIONES_ACLARACION = [
@@ -131,6 +209,8 @@ function clasificarPorReglas(texto) {
     return {
       categoria: "ambigua",
       tipo: "ambigua",
+      categoria_6: CATEGORIAS_6.F_FUERA_DE_ALCANCE,
+      codigo_categoria: "F",
       confianza: 0.9,
       motivo: "Texto vacío o sin caracteres válidos.",
       esMixtoConSaludo: false,
@@ -138,15 +218,34 @@ function clasificarPorReglas(texto) {
     };
   }
 
-  // 1. Detectar patrones no educativos o domésticos evidentes
+  // 0. Detección de Término Ajeno (Categoría E)
+  for (const m of MAPEO_TERMINOS_AJENOS) {
+    if (m.patrones.some(p => contienePalabraOFrase(norm, p))) {
+      return {
+        categoria: "consulta_curricular",
+        tipo: "curricular",
+        categoria_6: CATEGORIAS_6.E_TERMINO_AJENO,
+        codigo_categoria: "E",
+        confianza: 0.96,
+        motivo: `Consulta identificada con término ajeno al currículo MINERD: ${m.termino} (${m.pais_origen}).`,
+        termino_ajeno: m,
+        esMixtoConSaludo: false
+      };
+    }
+  }
+
+  // 1. Detectar patrones no educativos o domésticos evidentes (Categoría F)
   const esNoEducativo = PATRONES_NO_EDUCATIVOS.some(p => contienePalabraOFrase(norm, p));
   const pidePlanReceta = contienePalabraOFrase(norm, "plan") && (contienePalabraOFrase(norm, "grado") || contienePalabraOFrase(norm, "lengua") || contienePalabraOFrase(norm, "texto instructivo"));
   if (esNoEducativo && !pidePlanReceta) {
     return {
       categoria: "ambigua",
       tipo: "ambigua",
+      categoria_6: CATEGORIAS_6.F_FUERA_DE_ALCANCE,
+      codigo_categoria: "F",
       confianza: 0.92,
       motivo: "Consulta identificada como tema doméstico/no educativo fuera del ámbito escolar.",
+      mensaje_rechazo: "Profe, como colega pedagógico de Planifica Maestro mi labor se enfoca exclusivamente en el apoyo educativo y curricular. ¿En qué planificación o contenido escolar te puedo colaborar hoy?",
       esMixtoConSaludo: false,
       opciones: OPCIONES_ACLARACION
     };
@@ -158,6 +257,8 @@ function clasificarPorReglas(texto) {
     return {
       categoria: "accion_app",
       tipo: "accion_app",
+      categoria_6: CATEGORIAS_6.B_PEDAGOGIA_GENERAL,
+      codigo_categoria: "B",
       confianza: 0.95,
       motivo: "Comando de acción sobre la aplicación o navegación.",
       esMixtoConSaludo: false
@@ -171,11 +272,43 @@ function clasificarPorReglas(texto) {
   const tieneTemaCurricular = PATRONES_TEMAS_CURRICULARES.some(p => contienePalabraOFrase(norm, p));
   const tieneConocimientoGeneral = PATRONES_CONOCIMIENTO_GENERAL.some(p => contienePalabraOFrase(norm, p));
 
+  // 3.1 Categoría D: Normativa o Actualidad MINERD
+  const tieneNormativaActualidad = PATRONES_NORMATIVA_ACTUALIDAD.some(p => contienePalabraOFrase(norm, p));
+  if (tieneNormativaActualidad && !tienePlanificacion) {
+    return {
+      categoria: "consulta_curricular",
+      tipo: "web",
+      categoria_6: CATEGORIAS_6.D_NORMATIVA_O_ACTUALIDAD,
+      codigo_categoria: "D",
+      confianza: 0.94,
+      motivo: "Consulta sobre normativa oficial, calendario escolar o actualidad educativa MINERD.",
+      requiere_tavily: true,
+      esMixtoConSaludo: false
+    };
+  }
+
+  // 3.2 Categoría B: Pedagogía General Transversal (sin grado o área curricular específica)
+  const tienePedagogiaGeneral = PATRONES_PEDAGOGIA_GENERAL.some(p => contienePalabraOFrase(norm, p));
+  const tieneGradoEspecifico = norm.includes("grado") || norm.includes("ciclo") || norm.includes("primaria") || norm.includes("secundaria") || norm.includes("1ro") || norm.includes("2do") || norm.includes("3ro") || norm.includes("4to") || norm.includes("5to") || norm.includes("6to");
+  if (tienePedagogiaGeneral && !tieneGradoEspecifico && !tienePlanificacion) {
+    return {
+      categoria: "consulta_curricular",
+      tipo: "curricular",
+      categoria_6: CATEGORIAS_6.B_PEDAGOGIA_GENERAL,
+      codigo_categoria: "B",
+      confianza: 0.92,
+      motivo: "Consulta sobre estrategias didácticas y pedagogía general transversal sin grado escolar específico.",
+      esMixtoConSaludo: false
+    };
+  }
+
   // 4. Caso Mixto: Saludo + Planificación (ej. "hola, planifícame fracciones para 3.º")
   if (tieneCharla && (tienePlanificacion || (tieneTemaCurricular && (norm.includes("3") || norm.includes("grado") || norm.includes("para"))))) {
     return {
       categoria: "planificacion",
       tipo: "curricular",
+      categoria_6: CATEGORIAS_6.A_CURRICULAR_RD,
+      codigo_categoria: "A",
       confianza: 0.95,
       motivo: "Mensaje mixto con saludo y solicitud explícita de planificación pedagógica.",
       esMixtoConSaludo: true
@@ -188,6 +321,8 @@ function clasificarPorReglas(texto) {
     return {
       categoria: "planificacion",
       tipo: "mixta",
+      categoria_6: CATEGORIAS_6.A_CURRICULAR_RD,
+      codigo_categoria: "A",
       confianza: 0.85,
       motivo: "Planificación pedagógica complementada con datos actuales.",
       esMixtoConSaludo: false
@@ -199,9 +334,12 @@ function clasificarPorReglas(texto) {
     ((norm.startsWith("busca ") || norm.startsWith("buscar ") || norm.startsWith("investiga ")) && !tienePlanificacion && !tieneTemaCurricular);
 
   if (pideBusquedaWeb && !tienePlanificacion) {
+    const esActualidad = contienePalabraOFrase(norm, "noticias") || contienePalabraOFrase(norm, "hoy") || contienePalabraOFrase(norm, "recientes");
     return {
       categoria: "busqueda_web",
       tipo: "web",
+      categoria_6: esActualidad ? CATEGORIAS_6.D_NORMATIVA_O_ACTUALIDAD : CATEGORIAS_6.C_CONOCIMIENTO_GENERAL,
+      codigo_categoria: esActualidad ? "D" : "C",
       confianza: 0.96,
       motivo: "Solicitud explícita de búsqueda web o investigación externa.",
       esMixtoConSaludo: tieneCharla
@@ -213,6 +351,8 @@ function clasificarPorReglas(texto) {
     return {
       categoria: "charla",
       tipo: "charla",
+      categoria_6: CATEGORIAS_6.B_PEDAGOGIA_GENERAL,
+      codigo_categoria: "B",
       confianza: 0.95,
       motivo: "Mensaje de saludo, cortesía o conversación informal.",
       esMixtoConSaludo: false
@@ -224,6 +364,8 @@ function clasificarPorReglas(texto) {
     return {
       categoria: "consulta_curricular",
       tipo: "curricular",
+      categoria_6: CATEGORIAS_6.A_CURRICULAR_RD,
+      codigo_categoria: "A",
       confianza: 0.92,
       motivo: "Consulta directa sobre contenidos, normativas o indicadores de la malla curricular MINERD.",
       esMixtoConSaludo: false
@@ -235,6 +377,8 @@ function clasificarPorReglas(texto) {
     return {
       categoria: "planificacion",
       tipo: "curricular",
+      categoria_6: CATEGORIAS_6.A_CURRICULAR_RD,
+      codigo_categoria: "A",
       confianza: tienePlanificacion && tieneTemaCurricular ? 0.98 : 0.90,
       motivo: "Solicitud directa de diseño pedagógico, clase o unidad de aprendizaje.",
       esMixtoConSaludo: false
@@ -246,6 +390,8 @@ function clasificarPorReglas(texto) {
     return {
       categoria: "conocimiento_general",
       tipo: "web",
+      categoria_6: CATEGORIAS_6.C_CONOCIMIENTO_GENERAL,
+      codigo_categoria: "C",
       confianza: 0.90,
       motivo: "Consulta conceptual o informativa general.",
       esMixtoConSaludo: false
@@ -257,6 +403,8 @@ function clasificarPorReglas(texto) {
     return {
       categoria: "conocimiento_general",
       tipo: "web",
+      categoria_6: CATEGORIAS_6.C_CONOCIMIENTO_GENERAL,
+      codigo_categoria: "C",
       confianza: 0.80,
       motivo: "Pregunta informativa general.",
       esMixtoConSaludo: false
@@ -267,10 +415,23 @@ function clasificarPorReglas(texto) {
   return {
     categoria: "ambigua",
     tipo: "ambigua",
+    categoria_6: CATEGORIAS_6.F_FUERA_DE_ALCANCE,
+    codigo_categoria: "F",
     confianza: 0.45,
     motivo: "Texto ambiguo o fragmentario sin indicios pedagógicos claros.",
     esMixtoConSaludo: false,
     opciones: OPCIONES_ACLARACION
+  };
+}
+
+function clasificarCategoria6(texto, perfil = null) {
+  const res = clasificarPorReglas(texto);
+  return {
+    codigo: res.codigo_categoria || "C",
+    categoria: res.categoria_6 || CATEGORIAS_6.C_CONOCIMIENTO_GENERAL,
+    motivo: res.motivo,
+    termino_ajeno: res.termino_ajeno || null,
+    resultado_base: res
   };
 }
 
@@ -386,6 +547,11 @@ async function clasificarIntencion({ texto = "", temaVision = null, env = proces
 module.exports = {
   clasificarIntencion,
   clasificarPorReglas,
+  clasificarCategoria6,
   normalizarTexto,
-  OPCIONES_ACLARACION
+  OPCIONES_ACLARACION,
+  CATEGORIAS_6,
+  MAPEO_TERMINOS_AJENOS,
+  PATRONES_NORMATIVA_ACTUALIDAD,
+  PATRONES_PEDAGOGIA_GENERAL
 };
