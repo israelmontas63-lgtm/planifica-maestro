@@ -65,7 +65,7 @@ export default function OwnerModal({ onCerrar, onSuccess }) {
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: "16px" }}>
             <label style={{ display: "block", fontSize: "12px", fontWeight: "700", color: "#334155", marginBottom: "6px" }}>
-              Llave Maestra (OWNER_MASTER_KEY):
+              Llave Maestra de Propietario:
             </label>
             <input
               type="password"

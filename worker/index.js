@@ -24,6 +24,57 @@ import { extraerJson, mensajeParaChat, validarCamposPlanificacion } from "./pars
 // Rate limit en memoria por IP para intentos de clave de propietario
 const ownerLoginAttempts = new Map(); // ip -> { count: number, resetAt: number }
 
+// Rate limit anónimo por hash SHA-256 de IP + fecha (sin almacenar la IP en texto claro)
+const anonymousDailyRateLimit = new Map(); // hashHex -> { count: number, resetAt: number }
+
+async function verificarRateLimitAnonimo(clientIp, limiteDiario = 30) {
+  if (!clientIp || clientIp === "127.0.0.1" || clientIp === "localhost") {
+    return { permitido: true, restantes: limiteDiario };
+  }
+  try {
+    const fechaHoy = new Date().toISOString().substring(0, 10);
+    const encoder = new TextEncoder();
+    const data = encoder.encode(`${clientIp}_pm_anon_${fechaHoy}`);
+    const hashBuf = await crypto.subtle.digest("SHA-256", data);
+    const hashHex = Array.from(new Uint8Array(hashBuf))
+      .map(b => b.toString(16).padStart(2, "0"))
+      .join("")
+      .substring(0, 32);
+
+    const now = Date.now();
+    const midnight = new Date();
+    midnight.setHours(24, 0, 0, 0);
+    const resetAt = midnight.getTime();
+
+    const entry = anonymousDailyRateLimit.get(hashHex);
+    if (!entry || now > entry.resetAt) {
+      anonymousDailyRateLimit.set(hashHex, { count: 1, resetAt });
+      return { permitido: true, restantes: limiteDiario - 1, hash: hashHex };
+    }
+
+    if (entry.count >= limiteDiario) {
+      return { permitido: false, restantes: 0, hash: hashHex };
+    }
+
+    entry.count++;
+    return { permitido: true, restantes: limiteDiario - entry.count, hash: hashHex };
+  } catch (e) {
+    return { permitido: true, restantes: limiteDiario };
+  }
+}
+
+// Interruptor de freno de emergencia: IA apagada en KV o variable de entorno
+async function verificarIaApagada(env) {
+  if (env.IA_APAGADA === "true" || env.IA_APAGADA === "1") return true;
+  if (env.PLANIFICA_KV && typeof env.PLANIFICA_KV.get === "function") {
+    try {
+      const val = await env.PLANIFICA_KV.get("ia_apagada");
+      if (val === "true" || val === "1") return true;
+    } catch (e) {}
+  }
+  return false;
+}
+
 function timingSafeEqualStr(a, b) {
   if (typeof a !== "string" || typeof b !== "string") return false;
   const encoder = new TextEncoder();
@@ -397,6 +448,7 @@ async function handleApiRequest(request, env, ctx) {
         auth: env.APP_ACCESS_KEY ? "activa" : "abierta",
         owner: env.OWNER_MASTER_KEY ? "configurada" : "sin_configurar",
         database: (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) ? "ok" : "en_memoria",
+        ia_apagada: (await verificarIaApagada(env)) ? "apagada" : "activa",
       },
     };
     return new Response(JSON.stringify(health, null, 2), {
@@ -560,6 +612,23 @@ async function handleApiRequest(request, env, ctx) {
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // Verificar rate limit anónimo por hash diario de IP (límite de 30 consultas/día por IP sin guardar IP en texto claro)
+    if (!isOwner) {
+      const rlAnonimo = await verificarRateLimitAnonimo(clientIp, 30);
+      if (!rlAnonimo.permitido) {
+        return new Response(
+          JSON.stringify({
+            error: "Has alcanzado el límite diario de consultas para este dispositivo. Puedes continuar consultando el currículo oficial del MINERD o regresar mañana.",
+            limiteAlcanzado: true,
+            agotado: true,
+          }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    const iaApagada = await verificarIaApagada(env);
 
     if (!messages.length) {
       return new Response(JSON.stringify({ error: "Faltan 'messages'." }), {
@@ -958,6 +1027,19 @@ async function handleApiRequest(request, env, ctx) {
     if (clasificacion.categoria === "conocimiento_general") {
       const aviso = "\n\n*(Nota: Esta es una explicación pedagógica general, no una cita textual del currículo oficial MINERD. Si deseas llevar este concepto a una actividad de clase o situación de aprendizaje, dime el grado y lo armamos.)*";
 
+      if (iaApagada) {
+        return responderWorker({
+          data: {
+            mensaje_chat: "Profe, el asistente de IA está en mantenimiento breve; puedes seguir consultando el currículo oficial del MINERD y las secuencias didácticas disponibles.",
+            plan_completado: false,
+            modo: "mantenimiento_ia",
+            categoria: "mantenimiento_ia",
+            datos_planificacion: null
+          },
+          estado: "conversando"
+        });
+      }
+
       if (!env.GEMINI_API_KEY) {
         const avisoHonesto = "La consulta de conocimiento general requiere conexión con el modelo de inteligencia artificial. En este momento el servicio externo no está disponible o no tiene cuota configurada. Puedes consultar contenidos directamente del currículo oficial o escribir tu consulta pedagógica.";
         return responderWorker({
@@ -1171,6 +1253,19 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
         parts: parts.length > 0 ? parts : [{ text: "..." }],
       };
     });
+
+    if (iaApagada) {
+      return responderWorker({
+        data: {
+          mensaje_chat: "Profe, el asistente de IA está en mantenimiento breve; puedes seguir consultando el currículo oficial del MINERD y las secuencias didácticas disponibles en la biblioteca.",
+          plan_completado: false,
+          modo: "mantenimiento_ia",
+          categoria: "mantenimiento_ia",
+          datos_planificacion: null
+        },
+        estado: "conversando"
+      });
+    }
 
     if (!env.GEMINI_API_KEY) {
       return new Response(

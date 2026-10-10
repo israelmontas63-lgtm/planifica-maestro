@@ -1,5 +1,14 @@
 const express = require("express");
+const crypto = require("crypto");
 const router = express.Router();
+
+function timingSafeEqualStr(a, b) {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  const aBuf = Buffer.from(a);
+  const bBuf = Buffer.from(b);
+  if (aBuf.length !== bBuf.length) return false;
+  return crypto.timingSafeEqual(aBuf, bBuf);
+}
 
 /**
  * POST /api/auth/verify
@@ -13,7 +22,7 @@ router.post("/verify", (req, res) => {
     return res.json({ ok: true, token: "open_dev_mode" });
   }
 
-  if (password && typeof password === "string" && password.trim() === expectedKey.trim()) {
+  if (password && typeof password === "string" && timingSafeEqualStr(password.trim(), expectedKey.trim())) {
     return res.json({
       ok: true,
       token: expectedKey.trim(),
@@ -45,7 +54,7 @@ router.post("/owner-verify", (req, res) => {
     });
   }
 
-  if (key && typeof key === "string" && key.trim() === expectedOwnerKey.trim()) {
+  if (key && typeof key === "string" && timingSafeEqualStr(key.trim(), expectedOwnerKey.trim())) {
     return res.json({
       ok: true,
       isOwner: true,

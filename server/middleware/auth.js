@@ -1,3 +1,13 @@
+const crypto = require("crypto");
+
+function timingSafeEqualStr(a, b) {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  const aBuf = Buffer.from(a);
+  const bBuf = Buffer.from(b);
+  if (aBuf.length !== bBuf.length) return false;
+  return crypto.timingSafeEqual(aBuf, bBuf);
+}
+
 /**
  * Middleware de seguridad institucional para Planifica Maestro
  * Bloquea con HTTP 401 cualquier petición no autenticada contra las APIs del backend.
@@ -11,7 +21,7 @@ function authMiddleware(req, res, next) {
     expectedOwnerKey.trim() !== "ESCRIBE_AQUI_TU_LLAVE_SECRETA" &&
     ownerHeader &&
     typeof ownerHeader === "string" &&
-    ownerHeader.trim() === expectedOwnerKey.trim()
+    timingSafeEqualStr(ownerHeader.trim(), expectedOwnerKey.trim())
   ) {
     req.isOwner = true;
   } else {
