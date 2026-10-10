@@ -48,15 +48,19 @@ async function verificarRateLimitAnonimo(clientIp, limiteDiario = 30, env = null
     const ttlSeconds = Math.floor((resetAt - now) / 1000);
 
     if (env && env.RATE_LIMIT_KV) {
-      const key = `rl_anon_${hashHex}`;
-      let count = 0;
-      const val = await env.RATE_LIMIT_KV.get(key);
-      if (val) count = parseInt(val, 10);
+      try {
+        const key = `rl_anon_${hashHex}`;
+        let count = 0;
+        const val = await env.RATE_LIMIT_KV.get(key);
+        if (val) count = parseInt(val, 10);
 
-      if (count >= limiteDiario) return { permitido: false, restantes: 0, hash: hashHex };
-      
-      await env.RATE_LIMIT_KV.put(key, (count + 1).toString(), { expirationTtl: Math.max(60, ttlSeconds) });
-      return { permitido: true, restantes: limiteDiario - (count + 1), hash: hashHex };
+        if (count >= limiteDiario) return { permitido: false, restantes: 0, hash: hashHex };
+        
+        await env.RATE_LIMIT_KV.put(key, (count + 1).toString(), { expirationTtl: Math.max(60, ttlSeconds) });
+        return { permitido: true, restantes: limiteDiario - (count + 1), hash: hashHex };
+      } catch (kvError) {
+        console.error("WARN: Error en KV Rate Limit, cayendo a Map:", kvError);
+      }
     }
 
     console.warn("WARN: Usando Map() en memoria para Rate Limit. Configura RATE_LIMIT_KV.");

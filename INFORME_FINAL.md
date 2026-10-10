@@ -83,5 +83,3 @@ Quedan anotados en `PENDIENTES.md` para el ciclo de estabilización posterior (F
 - Archivos `.pdf` duplicados y binarios pesados en el repositorio (ej. doble extensión `.pdf.pdf`).
 - Migrar `pm_owner_key` y JWT a cookies `HttpOnly` firmadas, en lugar de Web Storage.
 - Rotar y purgar completamente el historial git de los `.env.example` en el futuro.
-
-**Misión cumplida. Aplicación asegurada para Beta Cerrada.**
