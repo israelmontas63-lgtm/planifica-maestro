@@ -946,7 +946,7 @@ export default function App() {
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ fontSize: "16px" }}>📱</span>
               <span>
-                <strong>Tus trabajos se guardan en este dispositivo:</strong> Recuerda descargar en Word las planificaciones que quieras conservar de forma permanente.
+                <strong>Tus planificaciones se guardan en este dispositivo.</strong> Descárgalas en Word para conservarlas.
               </span>
             </div>
             <button

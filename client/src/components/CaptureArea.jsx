@@ -39,6 +39,29 @@ export default function CaptureArea({ imageSrc, onImageSelected, onRemoveImage, 
         onChange={handleFile}
       />
 
+      {/* Advertencia de Privacidad Escolar (Fase 7) */}
+      <div
+        className="pm-camera-privacy-alert no-print"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          background: "#fffbeb",
+          border: "1px solid #fef3c7",
+          borderRadius: "8px",
+          padding: "6px 10px",
+          fontSize: "12px",
+          color: "#92400e",
+          margin: "4px 0"
+        }}
+        role="note"
+      >
+        <span style={{ fontSize: "14px" }}>🛡️</span>
+        <span>
+          <strong>Privacidad en el aula:</strong> No incluyas rostros de estudiantes; solo materiales, libros o cuadernos.
+        </span>
+      </div>
+
       {imageSrc && (
         <div className="pm-capture-preview-card">
           {imageSrc.startsWith("data:application/pdf") ? (
