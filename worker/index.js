@@ -63,7 +63,10 @@ async function verificarRateLimitAnonimo(clientIp, limiteDiario = 30, env = null
       }
     }
 
-    console.warn("WARN: Usando Map() en memoria para Rate Limit. Configura RATE_LIMIT_KV.");
+    if (!globalThis.fallbackAvisado) {
+      console.warn("WARN: Usando Map() en memoria para Rate Limit. Configura RATE_LIMIT_KV.");
+      globalThis.fallbackAvisado = true;
+    }
     const entry = anonymousDailyRateLimit.get(hashHex);
     if (!entry || now > entry.resetAt) {
       anonymousDailyRateLimit.set(hashHex, { count: 1, resetAt });

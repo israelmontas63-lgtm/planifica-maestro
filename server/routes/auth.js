@@ -19,7 +19,7 @@ router.post("/verify", (req, res) => {
   const expectedKey = process.env.APP_ACCESS_KEY;
 
   if (!expectedKey) {
-    return res.json({ ok: true, token: "open_dev_mode" });
+    return res.status(500).json({ ok: false, error: "Servidor mal configurado. Falta clave institucional." });
   }
 
   if (password && typeof password === "string" && timingSafeEqualStr(password.trim(), expectedKey.trim())) {

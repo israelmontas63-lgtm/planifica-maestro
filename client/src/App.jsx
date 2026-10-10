@@ -306,6 +306,8 @@ export default function App() {
 
   // Detección de atajo ?owner=1 o #owner
   useEffect(() => {
+    localStorage.removeItem("pm_owner_key"); // Limpieza residual requerida
+
     const params = new URLSearchParams(window.location.search);
     if (params.get("owner") === "1" || window.location.hash === "#owner") {
       setOwnerModalOpen(true);
@@ -329,6 +331,7 @@ export default function App() {
 
   const handleOwnerLogout = () => {
     sessionStorage.removeItem("pm_owner_key");
+    localStorage.removeItem("pm_owner_key"); // Limpieza residual
     setIsOwner(false);
     obtenerCuotaDocente().then((c) => c && setEstadoCuota(c)).catch(() => {});
   };
