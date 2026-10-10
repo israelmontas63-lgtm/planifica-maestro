@@ -32,9 +32,9 @@
 
 ## 3. Verificación y Testing
 
-- **Pruebas Locales (Unitarias/Integración):** Todos los 236 tests originales (`npm test`) pasaron exitosamente tras los cambios.
+- **Pruebas Locales (Unitarias/Integración):** Resultados reales: ejecutados 236 tests, 231 exitosos (`pass`), 5 fallidos (`fail`). Los 5 fallos son idénticos a los del tag de respaldo (`respaldo-pre-auditoria`), por lo que la auditoría no introdujo regresiones.
 - **Construcción (Build):** `npm run build` genera el PWA manifest y el `dist/version.json` correctamente sin errores.
-- **Producción:** *NO se desplegó código automáticamente debido a la restricción P6* (falta de token de Cloudflare/Supabase a nivel de CLI local). Todo está preparado para que el Dueño ejecute el despliegue en un solo click.
+- **Producción:** *NO se desplegó código por decisión explícita* (el token local SÍ funciona). Al ejecutar `npm run deploy` desde esta rama, el despliegue va directo a producción (un solo entorno).
 
 ---
 
