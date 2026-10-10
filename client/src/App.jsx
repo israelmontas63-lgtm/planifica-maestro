@@ -306,6 +306,8 @@ export default function App() {
 
   // Detección de atajo ?owner=1 o #owner
   useEffect(() => {
+    localStorage.removeItem("pm_owner_key"); // Limpieza residual requerida
+
     const params = new URLSearchParams(window.location.search);
     if (params.get("owner") === "1" || window.location.hash === "#owner") {
       setOwnerModalOpen(true);
@@ -314,7 +316,7 @@ export default function App() {
     if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
       const quickKey = params.get("key");
       if (quickKey) {
-        localStorage.setItem("pm_owner_key", quickKey);
+        sessionStorage.setItem("pm_owner_key", quickKey);
         setIsOwner(true);
         obtenerCuotaDocente().then((c) => c && setEstadoCuota(c)).catch(() => {});
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -328,7 +330,8 @@ export default function App() {
   };
 
   const handleOwnerLogout = () => {
-    localStorage.removeItem("pm_owner_key");
+    sessionStorage.removeItem("pm_owner_key");
+    localStorage.removeItem("pm_owner_key"); // Limpieza residual
     setIsOwner(false);
     obtenerCuotaDocente().then((c) => c && setEstadoCuota(c)).catch(() => {});
   };
@@ -946,7 +949,7 @@ export default function App() {
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ fontSize: "16px" }}>📱</span>
               <span>
-                <strong>Tus trabajos se guardan en este dispositivo:</strong> Recuerda descargar en Word las planificaciones que quieras conservar de forma permanente.
+                <strong>Tus planificaciones se guardan en este dispositivo.</strong> Descárgalas en Word para conservarlas.
               </span>
             </div>
             <button

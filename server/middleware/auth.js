@@ -54,9 +54,9 @@ function authMiddleware(req, res, next) {
 
   const expectedKey = process.env.APP_ACCESS_KEY;
 
-  // Si no está configurada la variable en .env, permitir en modo desarrollo
+  // Seguridad por defecto (Fail-Closed): si no está configurada la clave en el servidor, se bloquea todo.
   if (!expectedKey) {
-    return next();
+    return res.status(500).json({ error: "Servidor mal configurado. Falta clave institucional." });
   }
 
   // Comprobar token en headers (x-app-key, x-access-token, Authorization Bearer) o query param

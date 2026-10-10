@@ -27,7 +27,7 @@ const ownerLoginAttempts = new Map(); // ip -> { count: number, resetAt: number 
 // Rate limit anónimo por hash SHA-256 de IP + fecha (sin almacenar la IP en texto claro)
 const anonymousDailyRateLimit = new Map(); // hashHex -> { count: number, resetAt: number }
 
-async function verificarRateLimitAnonimo(clientIp, limiteDiario = 30) {
+async function verificarRateLimitAnonimo(clientIp, limiteDiario = 30, env = null) {
   if (!clientIp || clientIp === "127.0.0.1" || clientIp === "localhost") {
     return { permitido: true, restantes: limiteDiario };
   }
@@ -45,7 +45,28 @@ async function verificarRateLimitAnonimo(clientIp, limiteDiario = 30) {
     const midnight = new Date();
     midnight.setHours(24, 0, 0, 0);
     const resetAt = midnight.getTime();
+    const ttlSeconds = Math.floor((resetAt - now) / 1000);
 
+    if (env && env.RATE_LIMIT_KV) {
+      try {
+        const key = `rl_anon_${hashHex}`;
+        let count = 0;
+        const val = await env.RATE_LIMIT_KV.get(key);
+        if (val) count = parseInt(val, 10);
+
+        if (count >= limiteDiario) return { permitido: false, restantes: 0, hash: hashHex };
+        
+        await env.RATE_LIMIT_KV.put(key, (count + 1).toString(), { expirationTtl: Math.max(60, ttlSeconds) });
+        return { permitido: true, restantes: limiteDiario - (count + 1), hash: hashHex };
+      } catch (kvError) {
+        console.error("WARN: Error en KV Rate Limit, cayendo a Map:", kvError);
+      }
+    }
+
+    if (!globalThis.fallbackAvisado) {
+      console.warn("WARN: Usando Map() en memoria para Rate Limit. Configura RATE_LIMIT_KV.");
+      globalThis.fallbackAvisado = true;
+    }
     const entry = anonymousDailyRateLimit.get(hashHex);
     if (!entry || now > entry.resetAt) {
       anonymousDailyRateLimit.set(hashHex, { count: 1, resetAt });
@@ -461,7 +482,8 @@ async function handleApiRequest(request, env, ctx) {
     const body = await request.json().catch(() => ({}));
     const expected = env.APP_ACCESS_KEY;
     if (!expected) {
-      return new Response(JSON.stringify({ ok: true, token: "open_dev_mode" }), {
+      return new Response(JSON.stringify({ ok: false, error: "Servidor mal configurado. Falta clave institucional." }), {
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -615,7 +637,7 @@ async function handleApiRequest(request, env, ctx) {
 
     // Verificar rate limit anónimo por hash diario de IP (límite de 30 consultas/día por IP sin guardar IP en texto claro)
     if (!isOwner) {
-      const rlAnonimo = await verificarRateLimitAnonimo(clientIp, 30);
+      const rlAnonimo = await verificarRateLimitAnonimo(clientIp, 30, env);
       if (!rlAnonimo.permitido) {
         return new Response(
           JSON.stringify({
