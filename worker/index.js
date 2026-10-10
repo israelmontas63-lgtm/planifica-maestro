@@ -341,6 +341,8 @@ async function handleApiRequest(request, env, ctx) {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, x-docente-id, x-app-key, x-owner-key, authorization",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
   };
 
   if (method === "OPTIONS") {
@@ -2064,6 +2066,8 @@ export default {
         if (response.status === 200 && !ct.includes("text/html")) {
           const newHeaders = new Headers(response.headers);
           newHeaders.set("Cache-Control", "public, max-age=31536000, immutable");
+          newHeaders.set("X-Content-Type-Options", "nosniff");
+          newHeaders.set("Referrer-Policy", "strict-origin-when-cross-origin");
           return new Response(response.body, {
             status: response.status,
             statusText: response.statusText,
@@ -2077,6 +2081,8 @@ export default {
             headers: {
               "Content-Type": "text/plain",
               "Cache-Control": "no-cache, no-store, must-revalidate",
+              "X-Content-Type-Options": "nosniff",
+              "Referrer-Policy": "strict-origin-when-cross-origin",
             }
           });
         }
@@ -2099,6 +2105,8 @@ export default {
         newHeaders.set("Cache-Control", "no-cache, no-store, must-revalidate");
         newHeaders.set("Pragma", "no-cache");
         newHeaders.set("Expires", "0");
+        newHeaders.set("X-Content-Type-Options", "nosniff");
+        newHeaders.set("Referrer-Policy", "strict-origin-when-cross-origin");
         return new Response(response.body, {
           status: response.status,
           statusText: response.statusText,
@@ -2106,7 +2114,14 @@ export default {
         });
       }
 
-      return response;
+      const fallbackHeaders = new Headers(response.headers);
+      fallbackHeaders.set("X-Content-Type-Options", "nosniff");
+      fallbackHeaders.set("Referrer-Policy", "strict-origin-when-cross-origin");
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: fallbackHeaders,
+      });
     }
 
     return new Response("Assets binding not available", { status: 500 });
