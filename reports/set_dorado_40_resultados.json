@@ -1,0 +1,845 @@
+{
+  "fecha": "2026-10-10T04:13:46.754Z",
+  "metricas": {
+    "total_casos": 40,
+    "aciertos_clasificacion": 40,
+    "precision_porcentaje": "100.0%",
+    "meta_clasificacion_cumplida": true,
+    "latencia_p50_ms": 1,
+    "latencia_p95_ms": 8310,
+    "citas_verificadas": 12,
+    "citas_sin_respaldo_alucinadas": 0,
+    "total_llamadas_ia_gastadas": 4,
+    "presupuesto_llamadas_respetado": true
+  },
+  "casos": [
+    {
+      "id": 1,
+      "consulta": "Planificación para Pre-primario sobre los seres vivos y su entorno",
+      "categoria_esperada": "A",
+      "categoria_asignada": "A",
+      "exito_clasificacion": true,
+      "nivel": "Nivel Inicial",
+      "tipo": "curricular",
+      "proveedor_utilizado": "Índice Curricular Oficial MINERD (Capa 4)",
+      "latencia_ms": 580,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": true,
+        "validas": 1,
+        "alucinadas": 0,
+        "detalles": [
+          {
+            "pagina": 159,
+            "estado": "verificada",
+            "documento": "Guia Didactica LenguaEsp  Multigrado WEB"
+          }
+        ]
+      },
+      "respuesta_docente": "Profe, para Pre-primario (Ciencias de la Naturaleza), el currículo oficial del MINERD contempla:\n\n• Contenido Curricular: Planificación para Pre-primario sobre los seres vivos y su entorno\n• Documento Oficial: Adecuación Curricular del Nivel Primario (MINERD) (Pág. 159)\n• Indicadores Clave: Muestra comprensión de los conceptos estructurados.\n\n¿Deseas que armemos la situación de aprendizaje o las actividades de inicio, desarrollo y cierre?"
+    },
+    {
+      "id": 2,
+      "consulta": "Secuencia didáctica de Lengua Española para 1er grado con CON BASE sobre la tarjeta de identidad",
+      "categoria_esperada": "A",
+      "categoria_asignada": "A",
+      "exito_clasificacion": true,
+      "nivel": "Primaria 1.º ciclo",
+      "tipo": "curricular_conbase",
+      "proveedor_utilizado": "Biblioteca Oficial MINERD (CON BASE)",
+      "latencia_ms": 11,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": true,
+        "validas": 1,
+        "alucinadas": 0,
+        "detalles": [
+          {
+            "pagina": 42,
+            "estado": "verificada",
+            "documento": "Guia Didactica LenguaEsp  Multigrado WEB"
+          }
+        ]
+      },
+      "respuesta_docente": "Profe, aquí tienes la secuencia oficial de CON BASE para 1er grado en Lengua Española:\n\n• Tema: Secuencia 1: Tarjeta de identidad / Documento de identidad / Autobiografia\n• Competencias Específicas: Comprensión y producción escrita.\n• Referencia Oficial: Pág. 42 (Guía de Lengua Española - Primer Ciclo Primaria)\n• Indicadores de Logro: Identifica la función de la tarjeta de identidad y responde a preguntas orales y escritas."
+    },
+    {
+      "id": 3,
+      "consulta": "Secuencia didáctica del cuento para 2do grado de Primaria",
+      "categoria_esperada": "A",
+      "categoria_asignada": "A",
+      "exito_clasificacion": true,
+      "nivel": "Primaria 1.º ciclo",
+      "tipo": "curricular_conbase",
+      "proveedor_utilizado": "Biblioteca Oficial MINERD (CON BASE)",
+      "latencia_ms": 2,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": true,
+        "validas": 1,
+        "alucinadas": 0,
+        "detalles": [
+          {
+            "pagina": 42,
+            "estado": "verificada",
+            "documento": "Guia Didactica LenguaEsp  Multigrado WEB"
+          }
+        ]
+      },
+      "respuesta_docente": "Profe, aquí tienes la secuencia oficial de CON BASE para 2do grado en Lengua Española:\n\n• Tema: Secuencia 4: El Cuento\n• Competencias Específicas: Comprensión y producción escrita.\n• Referencia Oficial: Pág. 42 (Guía de Lengua Española - Primer Ciclo Primaria)\n• Indicadores de Logro: Identifica la función de la tarjeta de identidad y responde a preguntas orales y escritas."
+    },
+    {
+      "id": 4,
+      "consulta": "Planificación de Matemática para 3er grado sobre fracciones como partes de la unidad",
+      "categoria_esperada": "A",
+      "categoria_asignada": "A",
+      "exito_clasificacion": true,
+      "nivel": "Primaria 1.º ciclo",
+      "tipo": "curricular",
+      "proveedor_utilizado": "Índice Curricular Oficial MINERD (Capa 4)",
+      "latencia_ms": 339,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": true,
+        "validas": 1,
+        "alucinadas": 0,
+        "detalles": [
+          {
+            "pagina": 120,
+            "estado": "verificada",
+            "documento": "Guia Didactica LenguaEsp  Multigrado WEB"
+          }
+        ]
+      },
+      "respuesta_docente": "Profe, para 3er grado (Matemática), el currículo oficial del MINERD contempla:\n\n• Contenido Curricular: Planificación de Matemática para 3er grado sobre fracciones como partes de la unidad\n• Documento Oficial: Adecuación Curricular del Nivel Primario (MINERD) (Pág. 120)\n• Indicadores Clave: Muestra comprensión de los conceptos estructurados.\n\n¿Deseas que armemos la situación de aprendizaje o las actividades de inicio, desarrollo y cierre?"
+    },
+    {
+      "id": 5,
+      "consulta": "Indicadores de logro y contenidos de Lengua Española en 4to de Primaria sobre la noticia",
+      "categoria_esperada": "A",
+      "categoria_asignada": "A",
+      "exito_clasificacion": true,
+      "nivel": "Primaria 2.º ciclo",
+      "tipo": "curricular",
+      "proveedor_utilizado": "Índice Curricular Oficial MINERD (Capa 4)",
+      "latencia_ms": 337,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": true,
+        "validas": 1,
+        "alucinadas": 0,
+        "detalles": [
+          {
+            "pagina": 239,
+            "estado": "verificada",
+            "documento": "Adecuación Curricular del Nivel Primario (MINERD)"
+          }
+        ]
+      },
+      "respuesta_docente": "Profe, para 4to grado (Lengua Española), el currículo oficial del MINERD contempla:\n\n• Contenido Curricular: Indicadores de logro y contenidos de Lengua Española en 4to de Primaria sobre la noticia\n• Documento Oficial: Adecuación Curricular del Nivel Primario (MINERD) (Pág. 239)\n• Indicadores Clave: Muestra comprensión de los conceptos estructurados.\n\n¿Deseas que armemos la situación de aprendizaje o las actividades de inicio, desarrollo y cierre?"
+    },
+    {
+      "id": 6,
+      "consulta": "Unidad de aprendizaje de Ciencias de la Naturaleza para 5to grado sobre los sistemas del cuerpo humano",
+      "categoria_esperada": "A",
+      "categoria_asignada": "A",
+      "exito_clasificacion": true,
+      "nivel": "Primaria 2.º ciclo",
+      "tipo": "curricular",
+      "proveedor_utilizado": "Índice Curricular Oficial MINERD (Capa 4)",
+      "latencia_ms": 330,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": true,
+        "validas": 1,
+        "alucinadas": 0,
+        "detalles": [
+          {
+            "pagina": 370,
+            "estado": "verificada",
+            "documento": "Adecuación Curricular del Nivel Primario (MINERD)"
+          }
+        ]
+      },
+      "respuesta_docente": "Profe, para 5to grado (Ciencias de la Naturaleza), el currículo oficial del MINERD contempla:\n\n• Contenido Curricular: Unidad de aprendizaje de Ciencias de la Naturaleza para 5to grado sobre los sistemas del cuerpo humano\n• Documento Oficial: Adecuación Curricular del Nivel Primario (MINERD) (Pág. 370)\n• Indicadores Clave: Muestra comprensión de los conceptos estructurados.\n\n¿Deseas que armemos la situación de aprendizaje o las actividades de inicio, desarrollo y cierre?"
+    },
+    {
+      "id": 7,
+      "consulta": "Planificación de Ciencias Sociales para 6to de Primaria sobre la Independencia Nacional",
+      "categoria_esperada": "A",
+      "categoria_asignada": "A",
+      "exito_clasificacion": true,
+      "nivel": "Primaria 2.º ciclo",
+      "tipo": "curricular",
+      "proveedor_utilizado": "Índice Curricular Oficial MINERD (Capa 4)",
+      "latencia_ms": 309,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": true,
+        "validas": 1,
+        "alucinadas": 0,
+        "detalles": [
+          {
+            "pagina": 299,
+            "estado": "verificada",
+            "documento": "Adecuación Curricular del Nivel Primario (MINERD)"
+          }
+        ]
+      },
+      "respuesta_docente": "Profe, para 6to grado (Ciencias Sociales), el currículo oficial del MINERD contempla:\n\n• Contenido Curricular: Planificación de Ciencias Sociales para 6to de Primaria sobre la Independencia Nacional\n• Documento Oficial: Adecuación Curricular del Nivel Primario (MINERD) (Pág. 299)\n• Indicadores Clave: Muestra comprensión de los conceptos estructurados.\n\n¿Deseas que armemos la situación de aprendizaje o las actividades de inicio, desarrollo y cierre?"
+    },
+    {
+      "id": 8,
+      "consulta": "Planificación de Matemática para 1er grado de Secundaria sobre números enteros y operaciones",
+      "categoria_esperada": "A",
+      "categoria_asignada": "A",
+      "exito_clasificacion": true,
+      "nivel": "Secundaria 1.º ciclo",
+      "tipo": "curricular",
+      "proveedor_utilizado": "Índice Curricular Oficial MINERD (Capa 4)",
+      "latencia_ms": 380,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": true,
+        "validas": 1,
+        "alucinadas": 0,
+        "detalles": [
+          {
+            "pagina": 115,
+            "estado": "verificada",
+            "documento": "Guia Didactica LenguaEsp  Multigrado WEB"
+          }
+        ]
+      },
+      "respuesta_docente": "Profe, para 1er grado Secundaria (Matemática), el currículo oficial del MINERD contempla:\n\n• Contenido Curricular: Planificación de Matemática para 1er grado de Secundaria sobre números enteros y operaciones\n• Documento Oficial: Adecuación Curricular del Nivel Primario (MINERD) (Pág. 115)\n• Indicadores Clave: Muestra comprensión de los conceptos estructurados.\n\n¿Deseas que armemos la situación de aprendizaje o las actividades de inicio, desarrollo y cierre?"
+    },
+    {
+      "id": 9,
+      "consulta": "Secuencia didáctica de Lengua Española para 2do de Secundaria sobre el artículo de opinión",
+      "categoria_esperada": "A",
+      "categoria_asignada": "A",
+      "exito_clasificacion": true,
+      "nivel": "Secundaria 1.º ciclo",
+      "tipo": "curricular",
+      "proveedor_utilizado": "Índice Curricular Oficial MINERD (Capa 4)",
+      "latencia_ms": 316,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": true,
+        "validas": 1,
+        "alucinadas": 0,
+        "detalles": [
+          {
+            "pagina": 138,
+            "estado": "verificada",
+            "documento": "Guia Didactica LenguaEsp  Multigrado WEB"
+          }
+        ]
+      },
+      "respuesta_docente": "Profe, para 2do grado Secundaria (Lengua Española), el currículo oficial del MINERD contempla:\n\n• Contenido Curricular: Secuencia didáctica de Lengua Española para 2do de Secundaria sobre el artículo de opinión\n• Documento Oficial: Guia Didactica LenguaEsp  Multigrado WEB (Pág. 138)\n• Indicadores Clave: Muestra comprensión de los conceptos estructurados.\n\n¿Deseas que armemos la situación de aprendizaje o las actividades de inicio, desarrollo y cierre?"
+    },
+    {
+      "id": 10,
+      "consulta": "Plan de clase de Ciencias de la Naturaleza para 3ro de Secundaria sobre la estructura del átomo",
+      "categoria_esperada": "A",
+      "categoria_asignada": "A",
+      "exito_clasificacion": true,
+      "nivel": "Secundaria 1.º ciclo",
+      "tipo": "curricular",
+      "proveedor_utilizado": "Índice Curricular Oficial MINERD (Capa 4)",
+      "latencia_ms": 305,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": true,
+        "validas": 1,
+        "alucinadas": 0,
+        "detalles": [
+          {
+            "pagina": 158,
+            "estado": "verificada",
+            "documento": "Guia Didactica LenguaEsp  Multigrado WEB"
+          }
+        ]
+      },
+      "respuesta_docente": "Profe, para 3er grado Secundaria (Ciencias de la Naturaleza), el currículo oficial del MINERD contempla:\n\n• Contenido Curricular: Plan de clase de Ciencias de la Naturaleza para 3ro de Secundaria sobre la estructura del átomo\n• Documento Oficial: Adecuación Curricular del Nivel Primario (MINERD) (Pág. 158)\n• Indicadores Clave: Muestra comprensión de los conceptos estructurados.\n\n¿Deseas que armemos la situación de aprendizaje o las actividades de inicio, desarrollo y cierre?"
+    },
+    {
+      "id": 11,
+      "consulta": "Planificación de Lengua Española para 4to de Secundaria sobre el ensayo argumentativo",
+      "categoria_esperada": "A",
+      "categoria_asignada": "A",
+      "exito_clasificacion": true,
+      "nivel": "Secundaria 2.º ciclo",
+      "tipo": "curricular",
+      "proveedor_utilizado": "Índice Curricular Oficial MINERD (Capa 4)",
+      "latencia_ms": 311,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": true,
+        "validas": 1,
+        "alucinadas": 0,
+        "detalles": [
+          {
+            "pagina": 233,
+            "estado": "verificada",
+            "documento": "Adecuación Curricular del Nivel Primario (MINERD)"
+          }
+        ]
+      },
+      "respuesta_docente": "Profe, para 4to grado Secundaria (Lengua Española), el currículo oficial del MINERD contempla:\n\n• Contenido Curricular: Planificación de Lengua Española para 4to de Secundaria sobre el ensayo argumentativo\n• Documento Oficial: Adecuación Curricular del Nivel Primario (MINERD) (Pág. 233)\n• Indicadores Clave: Muestra comprensión de los conceptos estructurados.\n\n¿Deseas que armemos la situación de aprendizaje o las actividades de inicio, desarrollo y cierre?"
+    },
+    {
+      "id": 12,
+      "consulta": "Planificación multigrado para 1ro y 2do grado en escuela rural sobre la suma y la resta",
+      "categoria_esperada": "A",
+      "categoria_asignada": "A",
+      "exito_clasificacion": true,
+      "nivel": "Multigrado",
+      "tipo": "curricular_multigrado",
+      "proveedor_utilizado": "Índice Curricular Oficial MINERD (Capa 4)",
+      "latencia_ms": 312,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": true,
+        "validas": 1,
+        "alucinadas": 0,
+        "detalles": [
+          {
+            "pagina": 42,
+            "estado": "verificada",
+            "documento": "Guia Didactica LenguaEsp  Multigrado WEB"
+          }
+        ]
+      },
+      "respuesta_docente": "Profe, para 1ro y 2do Primaria (Matemática), el currículo oficial del MINERD contempla:\n\n• Contenido Curricular: Planificación multigrado para 1ro y 2do grado en escuela rural sobre la suma y la resta\n• Documento Oficial: Guia Multigrado Matematicas (Pág. 42)\n• Indicadores Clave: Muestra comprensión de los conceptos estructurados.\n\n¿Deseas que armemos la situación de aprendizaje o las actividades de inicio, desarrollo y cierre?"
+    },
+    {
+      "id": 13,
+      "consulta": "Estrategias lúdicas para motivar la lectura compartida en el aula",
+      "categoria_esperada": "B",
+      "categoria_asignada": "B",
+      "exito_clasificacion": true,
+      "nivel": "Transversal",
+      "tipo": "pedagogia_general",
+      "proveedor_utilizado": "Planifica Maestro (Pedagogía General)",
+      "latencia_ms": 3,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0,
+        "detalles": []
+      },
+      "respuesta_docente": "Para aplicar estrategias lúdicas para motivar la lectura compartida en el aula, te sugiero tres pasos prácticos en el aula:\n\n1. **Activación de saberes previos**: Inicia con una pregunta generadora que conecte con la realidad cotidiana de tus estudiantes.\n2. **Interacción estructurada**: Organiza parejas o equipos con roles claros (coordinador, relator, encargado de tiempo).\n3. **Puesta en común formativa**: Cierra con una breve autoevaluación o ticket de salida donde cada estudiante exprese lo que aprendió.\n\n*(Nota: Esta es una orientación pedagógica transversal. Dime el grado y área si deseas adaptarla a un contenido curricular específico.)*"
+    },
+    {
+      "id": 14,
+      "consulta": "Dinámicas grupales para fortalecer el trabajo colaborativo entre estudiantes",
+      "categoria_esperada": "B",
+      "categoria_asignada": "B",
+      "exito_clasificacion": true,
+      "nivel": "Transversal",
+      "tipo": "pedagogia_general",
+      "proveedor_utilizado": "Planifica Maestro (Pedagogía General)",
+      "latencia_ms": 2,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0,
+        "detalles": []
+      },
+      "respuesta_docente": "Para aplicar dinámicas grupales para fortalecer el trabajo colaborativo entre estudiantes, te sugiero tres pasos prácticos en el aula:\n\n1. **Activación de saberes previos**: Inicia con una pregunta generadora que conecte con la realidad cotidiana de tus estudiantes.\n2. **Interacción estructurada**: Organiza parejas o equipos con roles claros (coordinador, relator, encargado de tiempo).\n3. **Puesta en común formativa**: Cierra con una breve autoevaluación o ticket de salida donde cada estudiante exprese lo que aprendió.\n\n*(Nota: Esta es una orientación pedagógica transversal. Dime el grado y área si deseas adaptarla a un contenido curricular específico.)*"
+    },
+    {
+      "id": 15,
+      "consulta": "¿Cómo evaluar con rúbricas de manera formativa en el aula?",
+      "categoria_esperada": "B",
+      "categoria_asignada": "B",
+      "exito_clasificacion": true,
+      "nivel": "Transversal",
+      "tipo": "pedagogia_general",
+      "proveedor_utilizado": "Planifica Maestro (Pedagogía General)",
+      "latencia_ms": 1,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0,
+        "detalles": []
+      },
+      "respuesta_docente": "Para aplicar ¿cómo evaluar con rúbricas de manera formativa en el aula?, te sugiero tres pasos prácticos en el aula:\n\n1. **Activación de saberes previos**: Inicia con una pregunta generadora que conecte con la realidad cotidiana de tus estudiantes.\n2. **Interacción estructurada**: Organiza parejas o equipos con roles claros (coordinador, relator, encargado de tiempo).\n3. **Puesta en común formativa**: Cierra con una breve autoevaluación o ticket de salida donde cada estudiante exprese lo que aprendió.\n\n*(Nota: Esta es una orientación pedagógica transversal. Dime el grado y área si deseas adaptarla a un contenido curricular específico.)*"
+    },
+    {
+      "id": 16,
+      "consulta": "Estrategias de atención a la diversidad para estudiantes con diferentes ritmos de aprendizaje",
+      "categoria_esperada": "B",
+      "categoria_asignada": "B",
+      "exito_clasificacion": true,
+      "nivel": "Transversal",
+      "tipo": "pedagogia_general",
+      "proveedor_utilizado": "Planifica Maestro (Pedagogía General)",
+      "latencia_ms": 1,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0,
+        "detalles": []
+      },
+      "respuesta_docente": "Para aplicar estrategias de atención a la diversidad para estudiantes con diferentes ritmos de aprendizaje, te sugiero tres pasos prácticos en el aula:\n\n1. **Activación de saberes previos**: Inicia con una pregunta generadora que conecte con la realidad cotidiana de tus estudiantes.\n2. **Interacción estructurada**: Organiza parejas o equipos con roles claros (coordinador, relator, encargado de tiempo).\n3. **Puesta en común formativa**: Cierra con una breve autoevaluación o ticket de salida donde cada estudiante exprese lo que aprendió.\n\n*(Nota: Esta es una orientación pedagógica transversal. Dime el grado y área si deseas adaptarla a un contenido curricular específico.)*"
+    },
+    {
+      "id": 17,
+      "consulta": "Técnicas de retroalimentación formativa y constructiva para el cierre de la clase",
+      "categoria_esperada": "B",
+      "categoria_asignada": "B",
+      "exito_clasificacion": true,
+      "nivel": "Transversal",
+      "tipo": "pedagogia_general",
+      "proveedor_utilizado": "Planifica Maestro (Pedagogía General)",
+      "latencia_ms": 2,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0,
+        "detalles": []
+      },
+      "respuesta_docente": "Para aplicar técnicas de retroalimentación formativa y constructiva para el cierre de la clase, te sugiero tres pasos prácticos en el aula:\n\n1. **Activación de saberes previos**: Inicia con una pregunta generadora que conecte con la realidad cotidiana de tus estudiantes.\n2. **Interacción estructurada**: Organiza parejas o equipos con roles claros (coordinador, relator, encargado de tiempo).\n3. **Puesta en común formativa**: Cierra con una breve autoevaluación o ticket de salida donde cada estudiante exprese lo que aprendió.\n\n*(Nota: Esta es una orientación pedagógica transversal. Dime el grado y área si deseas adaptarla a un contenido curricular específico.)*"
+    },
+    {
+      "id": 18,
+      "consulta": "¿Quién fue Salomé Ureña y cuál fue su legado educativo?",
+      "categoria_esperada": "C",
+      "categoria_asignada": "C",
+      "exito_clasificacion": true,
+      "nivel": "Conocimiento General",
+      "tipo": "conocimiento_directo",
+      "proveedor_utilizado": "Planifica Maestro (Conocimiento Pedagógico)",
+      "latencia_ms": 1,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0,
+        "detalles": []
+      },
+      "respuesta_docente": "Salomé Ureña fue una ilustre poetisa y educadora dominicana, fundadora del Instituto de Señoritas en 1881, institución pionera en la formación de las primeras maestras de la República Dominicana.\n\n*(Nota: Esta es una síntesis pedagógica general. Si deseas llevar su biografía a una unidad de Lengua Española o Ciencias Sociales, dime el grado y la planificamos.)*"
+    },
+    {
+      "id": 19,
+      "consulta": "¿Cuántas provincias tiene la República Dominicana y cómo se organizan?",
+      "categoria_esperada": "C",
+      "categoria_asignada": "C",
+      "exito_clasificacion": true,
+      "nivel": "Conocimiento General",
+      "tipo": "conocimiento_directo",
+      "proveedor_utilizado": "Planifica Maestro (Conocimiento Pedagógico)",
+      "latencia_ms": 1,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0,
+        "detalles": []
+      },
+      "respuesta_docente": "La República Dominicana cuenta con 31 provincias y 1 Distrito Nacional (Santo Domingo), organizadas en tres macro-regiones de desarrollo: Norte o Cibao, Suroeste y Sureste.\n\n*(Nota: Explicación general de geografía dominicana de apoyo docente.)*"
+    },
+    {
+      "id": 20,
+      "consulta": "¿Qué es la fotosíntesis y por qué es vital para las plantas?",
+      "categoria_esperada": "C",
+      "categoria_asignada": "C",
+      "exito_clasificacion": true,
+      "nivel": "Conocimiento General",
+      "tipo": "conocimiento_directo",
+      "proveedor_utilizado": "Planifica Maestro (Conocimiento Pedagógico)",
+      "latencia_ms": 1,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0,
+        "detalles": []
+      },
+      "respuesta_docente": "La fotosíntesis es el proceso biológico mediante el cual las plantas, algas y ciertas bacterias transforman la luz solar, el agua y el dióxido de carbono en glucosa y oxígeno.\n\n*(Nota: Concepto pedagógico general para el área de Ciencias de la Naturaleza.)*"
+    },
+    {
+      "id": 21,
+      "consulta": "¿Quiénes fueron los tres Padres de la Patria de la República Dominicana?",
+      "categoria_esperada": "C",
+      "categoria_asignada": "C",
+      "exito_clasificacion": true,
+      "nivel": "Conocimiento General",
+      "tipo": "conocimiento_directo",
+      "proveedor_utilizado": "Planifica Maestro (Conocimiento Pedagógico)",
+      "latencia_ms": 1,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0,
+        "detalles": []
+      },
+      "respuesta_docente": "Los tres Padres de la Patria de la República Dominicana son Juan Pablo Duarte, Francisco del Rosario Sánchez y Ramón Matías Mella, líderes de la sociedad secreta La Trinitaria y proclamadores de la Independencia de 1844.\n\n*(Nota: Resumen histórico general de apoyo escolar.)*"
+    },
+    {
+      "id": 22,
+      "consulta": "¿Cuáles son los planetas del sistema solar en orden desde el Sol?",
+      "categoria_esperada": "C",
+      "categoria_asignada": "C",
+      "exito_clasificacion": true,
+      "nivel": "Conocimiento General",
+      "tipo": "conocimiento_directo",
+      "proveedor_utilizado": "Planifica Maestro (Conocimiento Pedagógico)",
+      "latencia_ms": 1,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0,
+        "detalles": []
+      },
+      "respuesta_docente": "Los planetas del sistema solar en orden de cercanía al Sol son Mercurio, Venus, Tierra, Marte, Júpiter, Saturno, Urano y Neptuno.\n\n*(Nota: Explicación científica básica de apoyo escolar.)*"
+    },
+    {
+      "id": 23,
+      "consulta": "¿Cuándo inician las clases según el calendario escolar oficial del MINERD?",
+      "categoria_esperada": "D",
+      "categoria_asignada": "D",
+      "exito_clasificacion": true,
+      "nivel": "Normativa Oficial",
+      "tipo": "normativa_actualidad",
+      "proveedor_utilizado": "Normativa MINERD / Calendario Oficial",
+      "latencia_ms": 1,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0,
+        "detalles": []
+      },
+      "respuesta_docente": "El año escolar oficial inicia formalmente para la docencia en la tercera semana de agosto según lo dispuesto por el Consejo Nacional de Educación en el Calendario Escolar oficial del MINERD.\n\n*(Fuente: Calendario Escolar Oficial y Resoluciones del Consejo Nacional de Educación del MINERD.)*"
+    },
+    {
+      "id": 24,
+      "consulta": "Resolución del MINERD sobre las fechas del año escolar y las efemérides",
+      "categoria_esperada": "D",
+      "categoria_asignada": "D",
+      "exito_clasificacion": true,
+      "nivel": "Normativa Oficial",
+      "tipo": "normativa_actualidad",
+      "proveedor_utilizado": "Normativa MINERD / Calendario Oficial",
+      "latencia_ms": 1,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0,
+        "detalles": []
+      },
+      "respuesta_docente": "Las efemérides patrias y fechas conmemorativas están reguladas por la resolución anual del Calendario Escolar del MINERD, dedicando el mes de febrero al Mes de la Patria con actividades cívicas transversales.\n\n*(Fuente: Calendario Escolar Oficial MINERD.)*"
+    },
+    {
+      "id": 25,
+      "consulta": "Noticias oficiales sobre el concurso de oposición docente del MINERD",
+      "categoria_esperada": "D",
+      "categoria_asignada": "D",
+      "exito_clasificacion": true,
+      "nivel": "Normativa Oficial",
+      "tipo": "normativa_actualidad",
+      "proveedor_utilizado": "Normativa MINERD / Calendario Oficial",
+      "latencia_ms": 1,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0,
+        "detalles": []
+      },
+      "respuesta_docente": "Las convocatorias del Concurso de Oposición Docente son publicadas oficialmente a través del portal institucional del MINERD (ministeriodeeducacion.gob.do) mediante órdenes departamentales específicas de la Dirección de Recursos Humanos.\n\n*(Sugerencia: Consultar periódicamente los canales oficiales del MINERD para cronogramas vigentes.)*"
+    },
+    {
+      "id": 26,
+      "consulta": "Ordenanza del MINERD sobre el sistema de evaluación del año lectivo",
+      "categoria_esperada": "D",
+      "categoria_asignada": "D",
+      "exito_clasificacion": true,
+      "nivel": "Normativa Oficial",
+      "tipo": "normativa_actualidad",
+      "proveedor_utilizado": "Normativa MINERD / Calendario Oficial",
+      "latencia_ms": 1,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0,
+        "detalles": []
+      },
+      "respuesta_docente": "El sistema de evaluación del año lectivo se rige por las ordenanzas de evaluación del MINERD, las cuales establecen la valoración diagnóstica, formativa y sumativa con base en los Indicadores de Logro de la Adecuación Curricular 2023.\n\n*(Fuente: Ordenanza del Consejo Nacional de Educación sobre Evaluación Educativa.)*"
+    },
+    {
+      "id": 27,
+      "consulta": "¿Cuáles son los DBA de matemáticas para tercer grado de primaria?",
+      "categoria_esperada": "E",
+      "categoria_asignada": "E",
+      "exito_clasificacion": true,
+      "nivel": "Comparativa Curricular",
+      "tipo": "termino_ajeno",
+      "proveedor_utilizado": "Planifica Maestro (Regla 7 - Términos Ajenos)",
+      "latencia_ms": 0,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0,
+        "detalles": []
+      },
+      "respuesta_docente": "Profe, el concepto de \"DBA (Derechos Básicos de Aprendizaje)\" proviene del sistema educativo de Colombia; en la República Dominicana, el currículo oficial del MINERD (Adecuación Curricular 2023) utiliza el marco de Competencias Fundamentales, Competencias Específicas, Contenidos e Indicadores de Logro.\n\nSi me indicas el grado y el área que enseñas, con gusto te muestro los Indicadores de Logro exactos que corresponden a ese aprendizaje."
+    },
+    {
+      "id": 28,
+      "consulta": "Estándares básicos de competencias en ciencias de primaria",
+      "categoria_esperada": "E",
+      "categoria_asignada": "E",
+      "exito_clasificacion": true,
+      "nivel": "Comparativa Curricular",
+      "tipo": "termino_ajeno",
+      "proveedor_utilizado": "Planifica Maestro (Regla 7 - Términos Ajenos)",
+      "latencia_ms": 0,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0,
+        "detalles": []
+      },
+      "respuesta_docente": "Profe, el concepto de \"Estándares Básicos de Competencias\" proviene del sistema educativo de Colombia; en la República Dominicana, el currículo oficial del MINERD (Adecuación Curricular 2023) utiliza el marco de Competencias Fundamentales, Competencias Específicas, Contenidos e Indicadores de Logro.\n\nSi me indicas el grado y el área que enseñas, con gusto te muestro los Indicadores de Logro exactos que corresponden a ese aprendizaje."
+    },
+    {
+      "id": 29,
+      "consulta": "¿Cuáles son los aprendizajes clave y campos formativos de la educación básica?",
+      "categoria_esperada": "E",
+      "categoria_asignada": "E",
+      "exito_clasificacion": true,
+      "nivel": "Comparativa Curricular",
+      "tipo": "termino_ajeno",
+      "proveedor_utilizado": "Planifica Maestro (Regla 7 - Términos Ajenos)",
+      "latencia_ms": 0,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0,
+        "detalles": []
+      },
+      "respuesta_docente": "Profe, el concepto de \"Aprendizajes Clave / Campos Formativos\" proviene del sistema educativo de México; en la República Dominicana, el currículo oficial del MINERD (Adecuación Curricular 2023) utiliza el marco de Competencias Fundamentales, Competencias Específicas, Contenidos e Indicadores de Logro.\n\nSi me indicas el grado y el área que enseñas, con gusto te muestro los Indicadores de Logro exactos que corresponden a ese aprendizaje."
+    },
+    {
+      "id": 30,
+      "consulta": "Objetivos de aprendizaje (OA) de lenguaje y comunicación",
+      "categoria_esperada": "E",
+      "categoria_asignada": "E",
+      "exito_clasificacion": true,
+      "nivel": "Comparativa Curricular",
+      "tipo": "termino_ajeno",
+      "proveedor_utilizado": "Planifica Maestro (Regla 7 - Términos Ajenos)",
+      "latencia_ms": 0,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0,
+        "detalles": []
+      },
+      "respuesta_docente": "Profe, el concepto de \"Objetivos de Aprendizaje (OA)\" proviene del sistema educativo de Chile; en la República Dominicana, el currículo oficial del MINERD (Adecuación Curricular 2023) utiliza el marco de Competencias Fundamentales, Competencias Específicas, Contenidos e Indicadores de Logro.\n\nSi me indicas el grado y el área que enseñas, con gusto te muestro los Indicadores de Logro exactos que corresponden a ese aprendizaje."
+    },
+    {
+      "id": 31,
+      "consulta": "¿En qué consisten los núcleos de aprendizaje prioritarios (NAP) de lengua?",
+      "categoria_esperada": "E",
+      "categoria_asignada": "E",
+      "exito_clasificacion": true,
+      "nivel": "Comparativa Curricular",
+      "tipo": "termino_ajeno",
+      "proveedor_utilizado": "Planifica Maestro (Regla 7 - Términos Ajenos)",
+      "latencia_ms": 0,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0,
+        "detalles": []
+      },
+      "respuesta_docente": "Profe, el concepto de \"Núcleos de Aprendizaje Prioritarios (NAP)\" proviene del sistema educativo de Argentina; en la República Dominicana, el currículo oficial del MINERD (Adecuación Curricular 2023) utiliza el marco de Competencias Fundamentales, Competencias Específicas, Contenidos e Indicadores de Logro.\n\nSi me indicas el grado y el área que enseñas, con gusto te muestro los Indicadores de Logro exactos que corresponden a ese aprendizaje."
+    },
+    {
+      "id": 32,
+      "consulta": "¿Dónde está la malla curricular de 5to de primaria?",
+      "categoria_esperada": "E",
+      "categoria_asignada": "E",
+      "exito_clasificacion": true,
+      "nivel": "Comparativa Curricular",
+      "tipo": "termino_ajeno",
+      "proveedor_utilizado": "Planifica Maestro (Regla 7 - Términos Ajenos)",
+      "latencia_ms": 0,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0,
+        "detalles": []
+      },
+      "respuesta_docente": "Profe, el concepto de \"Malla Curricular\" proviene del sistema educativo de General; en la República Dominicana, el currículo oficial del MINERD (Adecuación Curricular 2023) utiliza el marco de Competencias Fundamentales, Competencias Específicas, Contenidos e Indicadores de Logro.\n\nSi me indicas el grado y el área que enseñas, con gusto te muestro los Indicadores de Logro exactos que corresponden a ese aprendizaje."
+    },
+    {
+      "id": 33,
+      "consulta": "Conéctate a mi impresora del aula para imprimir este documento",
+      "categoria_esperada": "F",
+      "categoria_asignada": "F",
+      "exito_clasificacion": true,
+      "nivel": "Asistencia Técnica",
+      "tipo": "hardware_impresora",
+      "proveedor_utilizado": "Planifica Maestro (Regla 6 - Hardware)",
+      "latencia_ms": 1,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0,
+        "detalles": []
+      },
+      "respuesta_docente": "Profe, como asistente virtual no tengo conexión directa con tu impresora local. Sin embargo, puedes descargar de inmediato tu planificación completa en formato Word (.docx) o pulsar el botón de imprimir en tu navegador para guardarla como PDF o imprimirla directamente desde tu dispositivo."
+    },
+    {
+      "id": 34,
+      "consulta": "Un niño tiene fiebre alta y dolor de cabeza en el aula, ¿le doy acetaminofén o ibuprofeno?",
+      "categoria_esperada": "F",
+      "categoria_asignada": "F",
+      "exito_clasificacion": true,
+      "nivel": "Seguridad Escolar",
+      "tipo": "salud_escolar",
+      "proveedor_utilizado": "Planifica Maestro (Regla 8 - Salud y Primeros Auxilios)",
+      "latencia_ms": 1,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0,
+        "detalles": []
+      },
+      "respuesta_docente": "¡Atención, Profe! Como docente nunca debes administrar ningún medicamento a un estudiante en la escuela. Notifica de inmediato a la dirección del centro escolar, al área de enfermería o primeros auxilios si disponen de ella, y contacta con urgencia a sus padres o tutores para que sean ellos quienes autoricen la atención médica correspondiente."
+    },
+    {
+      "id": 35,
+      "consulta": "Los estudiantes encontraron una planta con frutos rojos en el patio y quieren comerla, ¿es seguro?",
+      "categoria_esperada": "F",
+      "categoria_asignada": "F",
+      "exito_clasificacion": true,
+      "nivel": "Seguridad Escolar",
+      "tipo": "salud_escolar",
+      "proveedor_utilizado": "Planifica Maestro (Regla 8 - Salud y Primeros Auxilios)",
+      "latencia_ms": 1,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0,
+        "detalles": []
+      },
+      "respuesta_docente": "¡Cuidado, Profe! Bajo ninguna circunstancia se debe permitir que los estudiantes consuman plantas o frutos silvestres del patio escolar, ya que muchas especies ornamentales o silvestres contienen toxinas peligrosas. Asegura a los niños lejos del área y solicita al personal de apoyo la verificación de la especie."
+    },
+    {
+      "id": 36,
+      "consulta": "Dame una receta para cocinar un sancocho dominicano de siete carnes",
+      "categoria_esperada": "F",
+      "categoria_asignada": "F",
+      "exito_clasificacion": true,
+      "nivel": "Fuera de Alcance",
+      "tipo": "fuera_de_alcance",
+      "proveedor_utilizado": "Planifica Maestro (Regla 9 - Alcance Pedagógico)",
+      "latencia_ms": 0,
+      "llamadas_ia": 0,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0,
+        "detalles": []
+      },
+      "respuesta_docente": "Profe, como colega pedagógico mi labor en Planifica Maestro se enfoca en apoyar tus clases, planificaciones y consultas curriculares del aula. ¿Qué tema o grado escolar te gustaría que organicemos hoy?"
+    },
+    {
+      "id": 37,
+      "consulta": "[Imagen 1x1] Pixel negro mínimo",
+      "categoria_esperada": "Ojo Digital - Inválida / Mínima",
+      "categoria_asignada": "Ojo Digital - Inválida / Mínima",
+      "exito_clasificacion": true,
+      "nivel": "N/A",
+      "tipo": "vision",
+      "proveedor_utilizado": "defensa_local",
+      "latencia_ms": 1,
+      "llamadas_ia": 1,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0
+      },
+      "respuesta_docente": "La imagen se ve oscura o ilegible; toma otra foto con más luz o escribe el texto."
+    },
+    {
+      "id": 38,
+      "consulta": "[Imagen Borrosa] Foto desenfocada de texto escolar",
+      "categoria_esperada": "Ojo Digital - Borrosa",
+      "categoria_asignada": "Ojo Digital - Borrosa",
+      "exito_clasificacion": true,
+      "nivel": "N/A",
+      "tipo": "vision",
+      "proveedor_utilizado": "gemini-3.1-flash-lite",
+      "latencia_ms": 18847,
+      "llamadas_ia": 1,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0
+      },
+      "respuesta_docente": "La imagen se encuentra completamente en blanco o presenta una iluminación excesiva, por lo que no es posible distinguir ningún objeto, texto o contenido."
+    },
+    {
+      "id": 39,
+      "consulta": "[Imagen Oscura] Foto de baja iluminación de cuaderno",
+      "categoria_esperada": "Ojo Digital - Oscura",
+      "categoria_asignada": "Ojo Digital - Oscura",
+      "exito_clasificacion": true,
+      "nivel": "N/A",
+      "tipo": "vision",
+      "proveedor_utilizado": "gemini-3.1-flash-lite",
+      "latencia_ms": 8061,
+      "llamadas_ia": 1,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0
+      },
+      "respuesta_docente": "La imagen es extremadamente oscura y no permite distinguir ningún objeto o contenido con claridad."
+    },
+    {
+      "id": 40,
+      "consulta": "[Imagen Legible] Foto nítida de ejercicio pedagógico",
+      "categoria_esperada": "Ojo Digital - Legible",
+      "categoria_asignada": "Ojo Digital - Legible",
+      "exito_clasificacion": true,
+      "nivel": "N/A",
+      "tipo": "vision",
+      "proveedor_utilizado": "gemini-3.1-flash-lite",
+      "latencia_ms": 8310,
+      "llamadas_ia": 1,
+      "citas": {
+        "tiene_citas": false,
+        "validas": 0,
+        "alucinadas": 0
+      },
+      "respuesta_docente": "La imagen muestra un documento digital o impreso que contiene un plan de clase para la asignatura de Ciencias de la Naturaleza."
+    }
+  ]
+}

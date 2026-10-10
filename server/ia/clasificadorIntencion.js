@@ -99,7 +99,8 @@ const PATRONES_CONOCIMIENTO_GENERAL = [
   "que es un ", "que es una ", "que es la ", "que es el ", "que son los ", "que son las ",
   "que es ", "explicame la ", "explicame el ", "explicame como ", "explicame que ",
   "por que el cielo", "por que llueve", "por que ocurre", "como funciona",
-  "quien fue", "quien era", "quien es", "cuando nacio", "cuando murio",
+  "quien fue", "quien era", "quien es", "quienes fueron", "quienes son", "cuando nacio", "cuando murio",
+  "padres de la patria", "padre de la patria", "trinitaria", "la trinitaria", "salome urena",
   "definicion de", "concepto de", "ley de", "teoria de",
   "fotosintesis", "sistema digestivo", "sistema solar", "arbol", "energia cinetica",
   "adn", "celula", "atomo", "volcan", "gravedad",
@@ -181,7 +182,8 @@ const PATRONES_NORMATIVA_ACTUALIDAD = [
   "ano escolar", "año escolar", "calendario escolar", "cuando inician las clases",
   "cuando terminan las clases", "inicio de clases", "fin de clases", "vacaciones escolares",
   "ordenanza", "resolucion", "circular minerd", "noticias de hoy", "noticias recientes",
-  "ministro de educacion", "efemerides patrias", "efemerides", "concurso docente", "induccion docente"
+  "ministro de educacion", "efemerides patrias", "efemerides", "concurso docente", "induccion docente",
+  "concurso de oposicion", "concurso de oposicion docente", "oposicion docente", "ordenanza de evaluacion", "sistema de evaluacion"
 ];
 
 const PATRONES_PEDAGOGIA_GENERAL = [
@@ -191,7 +193,11 @@ const PATRONES_PEDAGOGIA_GENERAL = [
   "evaluar con rubricas", "como elaborar una rubrica", "organizacion del aula",
   "inclusion educativa", "adaptaciones curriculares", "trabajo colaborativo",
   "gestion del tiempo escolar", "aprendizaje basado en proyectos",
-  "estrategias de ensenanza", "tecnicas didacticas", "recursos didacticos"
+  "estrategias de ensenanza", "tecnicas didacticas", "recursos didacticos",
+  "estrategias ludicas", "lectura compartida", "estrategias de lectura", "estrategias pedagogicas",
+  "atencion a la diversidad", "ritmos de aprendizaje", "estilos de aprendizaje", "diversidad en el aula",
+  "retroalimentacion", "retroalimentacion formativa", "retroalimentacion constructiva", "evaluacion formativa",
+  "cierre de la clase", "cierre de clase"
 ];
 
 const OPCIONES_ACLARACION = [
