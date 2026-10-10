@@ -417,6 +417,26 @@ async function handleApiRequest(request, env, ctx) {
     "Referrer-Policy": "strict-origin-when-cross-origin",
   };
 
+  function generarErrorPlanificacion(codigo, mensaje, sugerencia, reintentable = true, status = 200, cuota = null) {
+    const incidentId = "INC-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+    console.warn(`[PlanError ${incidentId}] ${codigo} - ${mensaje}`);
+    const payload = {
+      ok: false,
+      codigo,
+      mensaje,
+      sugerencia,
+      reintentable,
+      incidentId,
+      mensaje_chat: `${mensaje}
+
+💡 Sugerencia: ${sugerencia}`,
+      plan_completado: false
+    };
+    if (cuota) payload.cuota = cuota;
+    return new Response(JSON.stringify(payload), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  }
+
+
   if (method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -660,7 +680,25 @@ async function handleApiRequest(request, env, ctx) {
     }
 
     const ultimoMsg = messages[messages.length - 1] || {};
-    const textoConsulta = (ultimoMsg.text || ultimoMsg.content || body.tema || body.prompt || "").trim();
+          const textoConsulta = (ultimoMsg.text || ultimoMsg.content || body.tema || body.prompt || "").trim();
+
+      const esPreguntaPorQue = /^(?:�?por qu[e�]\??|y eso\??|c[o�]mo as[i�]\??|dime por qu[e�]|explica|por qu[e�] motivo)$/i.test(textoConsulta);
+      const previoAssistant = messages[messages.length - 2] || {};
+      if (esPreguntaPorQue && previoAssistant.isError && previoAssistant.codigoError) {
+        let explicacion = "Hubo un problema t�cnico y no pude completar la solicitud.";
+        if (previoAssistant.codigoError === "IA_RESPUESTA_INVALIDA") explicacion = "El modelo de IA devolvi� los datos desordenados, y por seguridad prefer� no mostrarte una planificaci�n rota.";
+        if (previoAssistant.codigoError === "DATOS_INCOMPLETOS") explicacion = "Me faltaron datos clave como el grado, el �rea o el tema a planificar para poder cumplir con el curr�culo oficial.";
+        if (previoAssistant.codigoError === "IA_NO_DISPONIBLE") explicacion = "El servidor de inteligencia artificial est� saturado o apagado temporalmente debido a la alta demanda.";
+        if (previoAssistant.codigoError === "CUOTA_DIARIA_AGOTADA") explicacion = "Se agot� el l�mite de planes que puedes generar gratis por hoy. Esto ayuda a mantener el servidor funcionando.";
+        if (previoAssistant.codigoError === "ERROR_INTERNO") explicacion = "Mi configuraci�n interna (por ejemplo, las claves de conexi�n al servidor de IA) fall� inesperadamente.";
+        return generarErrorPlanificacion(
+           previoAssistant.codigoError,
+           explicacion,
+           previoAssistant.sugerencia || "Intenta nuevamente.",
+           previoAssistant.reintentable !== false,
+           200
+        );
+      }
     const imageBase64 = ultimoMsg.imageBase64 || body.imageBase64 || null;
     const mediaType = ultimoMsg.mediaType || body.mediaType || "image/jpeg";
 
@@ -1049,18 +1087,7 @@ async function handleApiRequest(request, env, ctx) {
     if (clasificacion.categoria === "conocimiento_general") {
       const aviso = "\n\n*(Nota: Esta es una explicación pedagógica general, no una cita textual del currículo oficial MINERD. Si deseas llevar este concepto a una actividad de clase o situación de aprendizaje, dime el grado y lo armamos.)*";
 
-      if (iaApagada) {
-        return responderWorker({
-          data: {
-            mensaje_chat: "Profe, el asistente de IA está en mantenimiento breve; puedes seguir consultando el currículo oficial del MINERD y las secuencias didácticas disponibles.",
-            plan_completado: false,
-            modo: "mantenimiento_ia",
-            categoria: "mantenimiento_ia",
-            datos_planificacion: null
-          },
-          estado: "conversando"
-        });
-      }
+      if (iaApagada) return generarErrorPlanificacion("IA_NO_DISPONIBLE", "El servicio de inteligencia artificial est� en mantenimiento breve.", "Puedes seguir consultando el curr�culo oficial y las secuencias did�cticas disponibles.", false);
 
       if (!env.GEMINI_API_KEY) {
         const avisoHonesto = "La consulta de conocimiento general requiere conexión con el modelo de inteligencia artificial. En este momento el servicio externo no está disponible o no tiene cuota configurada. Puedes consultar contenidos directamente del currículo oficial o escribir tu consulta pedagógica.";
@@ -1276,25 +1303,11 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
       };
     });
 
-    if (iaApagada) {
-      return responderWorker({
-        data: {
-          mensaje_chat: "Profe, el asistente de IA está en mantenimiento breve; puedes seguir consultando el currículo oficial del MINERD y las secuencias didácticas disponibles en la biblioteca.",
-          plan_completado: false,
-          modo: "mantenimiento_ia",
-          categoria: "mantenimiento_ia",
-          datos_planificacion: null
-        },
-        estado: "conversando"
-      });
-    }
+    if (iaApagada) return generarErrorPlanificacion("IA_NO_DISPONIBLE", "El servicio de inteligencia artificial est� en mantenimiento breve.", "Puedes seguir consultando el curr�culo oficial y las secuencias did�cticas disponibles.", false);
 
     if (!env.GEMINI_API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "Hay un problema de configuración en el servicio de generación. Por favor, contacta a soporte." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+        return generarErrorPlanificacion("ERROR_INTERNO", "Tuve un problema interno y no sé la causa exacta; te dejo un código para soporte.", "Falta GEMINI_API_KEY en la configuración del servidor.", false);
+      }
 
     const modeloHeader = request.headers.get("x-gemini-model");
     const modeloBody = body && body.modelo ? body.modelo : null;
@@ -1670,11 +1683,8 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
     }
 
     if (!env.GEMINI_API_KEY) {
-      return new Response(JSON.stringify({ error: "Hay un problema de configuración en el servicio de generación. Por favor, contacta a soporte." }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+        return generarErrorPlanificacion("ERROR_INTERNO", "Tuve un problema interno y no sé la causa exacta; te dejo un código para soporte.", "Falta GEMINI_API_KEY en la configuración del servidor.", false);
+      }
 
     const esquema = LEVELS[esquemaActivo] || LEVELS["primario"];
     const prompt = `Eres un asistente pedagógico de consulta curricular para República Dominicana:
@@ -2008,11 +2018,8 @@ Genera un JSON estricto con:
     }
 
     if (!env.GEMINI_API_KEY) {
-      return new Response(JSON.stringify({ error: "GEMINI_API_KEY no configurada en el Worker." }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+        return generarErrorPlanificacion("ERROR_INTERNO", "Tuve un problema interno y no sé la causa exacta; te dejo un código para soporte.", "Falta GEMINI_API_KEY en la configuración del servidor.", false);
+      }
 
     try {
       const ai = getAiProvider(env);

@@ -247,11 +247,15 @@ export default function App() {
 
   const scrollToChatBottom = (smooth = true) => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTo({
-        top: chatContainerRef.current.scrollHeight,
-        left: 0,
-        behavior: smooth ? 'smooth' : 'auto'
-      });
+      try {
+        chatContainerRef.current.scrollTo({
+          top: chatContainerRef.current.scrollHeight,
+          left: 0,
+          behavior: smooth ? "smooth" : "auto"
+        });
+      } catch (e) {
+        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      }
     }
   };
 
@@ -465,6 +469,11 @@ export default function App() {
         correccionesAplicadas: data.correcciones_aplicadas || [],
         huboCorrecciones: Boolean(data.hubo_correcciones),
         cambioSignificado: Boolean(data.cambio_significado),
+        ok: data.ok,
+        isError: data.ok === false,
+        codigoError: data.codigo || null,
+        sugerencia: data.sugerencia || null,
+        reintentable: data.reintentable !== false
       };
       setMessages([...newHistory, newAssistantMsg]);
 
