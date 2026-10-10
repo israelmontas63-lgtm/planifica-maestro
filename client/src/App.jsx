@@ -1667,6 +1667,11 @@ export default function App() {
         onEnded={() => setEscuchando(false)}
         onError={() => setEscuchando(false)}
       />
+
+      {/* Versión instalada visible para diagnóstico */}
+      <footer style={{ textAlign: "center", padding: "16px 8px 32px 8px", fontSize: "11px", color: "#94a3b8" }}>
+        Planifica Maestro &bull; Versión: {typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "v1.0.0"}
+      </footer>
     </div>
   );
 }

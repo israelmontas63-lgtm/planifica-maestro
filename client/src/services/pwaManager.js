@@ -56,6 +56,21 @@ export async function initPWA({ isBusy, saveDraft, onUpdatePending } = {}) {
   }
 
   // Capturar errores de carga dinámica de chunks (vite:preloadError) tras un nuevo despliegue
+  window.addEventListener("unhandledrejection", (e) => {
+    if (e.reason && e.reason.message && e.reason.message.includes("Failed to fetch dynamically imported module")) {
+      e.preventDefault();
+      console.warn("[PWA] Mdulo dinmico no encontrado. Limpiando cach...");
+      if (saveDraft) saveDraft();
+      if (navigator.serviceWorker) {
+         navigator.serviceWorker.getRegistrations().then(regs => {
+           for(let r of regs) r.unregister();
+           safeReload();
+         });
+      } else {
+         safeReload();
+      }
+    }
+  });
   window.addEventListener("vite:preloadError", () => {
     console.warn("[PWA] Error de carga en bundle dinámico (chunk obsoleto). Aplicando recarga limpia...");
     if (saveDraft) saveDraft();
@@ -104,26 +119,26 @@ export async function initPWA({ isBusy, saveDraft, onUpdatePending } = {}) {
 
         if (registration) {
           // 1. Verificación inmediata al abrir la app (sin throttling que la bloquee)
-          registration.update().catch(() => {});
+          checkVersionAndUpdate(registration);
 
           // 2. Verificación al volver a primer plano (visibilitychange)
           document.addEventListener("visibilitychange", () => {
             if (document.visibilityState === "visible") {
-              registration.update().catch(() => {});
+              checkVersionAndUpdate(registration);
             }
           });
 
           // 3. Verificación al recuperar el foco de la ventana o conectividad
           window.addEventListener("focus", () => {
-            registration.update().catch(() => {});
+            checkVersionAndUpdate(registration);
           });
           window.addEventListener("online", () => {
-            registration.update().catch(() => {});
+            checkVersionAndUpdate(registration);
           });
 
           // 4. Verificación periódica cada 15 minutos mientras la app esté abierta
           setInterval(() => {
-            registration.update().catch(() => {});
+            checkVersionAndUpdate(registration);
           }, 15 * 60 * 1000);
         }
       },
