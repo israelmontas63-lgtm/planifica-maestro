@@ -1,15 +1,15 @@
 # PROGRESO: CIERRE DEL CEREBRO DE PLANIFICA MAESTRO
 
 ## Estado General
-- **Paso actual**: FASE 4 — SET DORADO DE 40 CASOS DE EVALUACIÓN (Fase 0, 1, 2 y 3 completadas y verificadas).
-- **Siguiente paso**: Ejecutar el Set Dorado de 40 casos representativos con registro de métricas y transcritos docentes.
+- **Paso actual**: FASE 5 — FRENO DE EMERGENCIA Y RATE LIMIT ANÓNIMO (Fases 0, 1, 2, 3 y 4 completadas y verificadas).
+- **Siguiente paso**: Implementar timingSafeEqualStr en OWNER_MASTER_KEY, rate limit anónimo diario por hash de IP e interruptor KV ia_apagada en Cloudflare Worker.
 - **Bloques de Trabajo Global**:
   - FASE 0 — Diagnóstico y Respaldo (COMPLETADA: tag pre-limpieza-despliegue, rollback 38b42ec3 documentado, secretos auditados).
   - FASE 1 — Despliegue Cloudflare y Pipeline (COMPLETADA: commit 9bacede, versión 3c8c0d1 en vivo en producción).
   - FASE 2 — Limpieza y Cabeceras de Seguridad (COMPLETADA: commit 25617a2, X-Content-Type-Options y Referrer-Policy en vivo).
   - FASE 3 — Anclaje Curricular Oficial y Clasificador de 6 Categorías (COMPLETADA: commits 3c8c0d1 y 23c332f; corpus.json, catalogo.json, terminologia_rd.json, clasificadorIntencion y reglas 7-9 en modoConversacional con paridad Node/Worker; 231/231 tests en verde).
-  - FASE 4 — Set Dorado de 40 Casos (EN EJECUCIÓN).
-  - FASE 5 — Freno de Emergencia y Rate Limit (PENDIENTE).
+  - FASE 4 — Set Dorado de 40 Casos (COMPLETADA: commit fda93d6; 40/40 aciertos en categorización, 0 citas alucinadas, p50=1ms, p95=8.3s, 4 llamadas IA de visión reales, reporte JSON y muestra docente de 30 respuestas generado).
+  - FASE 5 — Freno de Emergencia y Rate Limit (EN EJECUCIÓN).
   - FASE 6 & 7 — Voz bajo demanda y Recursos Beta (PENDIENTE).
   - FASE 8 — Verificación Final y Despliegue a Producción (PENDIENTE).
 
@@ -84,7 +84,23 @@ Cuando se configure el nuevo proyecto activo de Supabase para el lanzamiento mas
 - **Evidencia**: Suite `tests/test_clasificador_6_categorias.mjs` pasando 42/42 pruebas; suite global pasando 231/231 pruebas.
 
 ## Decisiones tomadas (Fase 4 - Set Dorado de 40 Casos)
-- En ejecución: Preparación y corrida de los 40 casos representativos balanceados para evaluar precisión de categorización, latencia (p50, p95), citas verificadas contra el corpus y respuestas en tono docente sin jerga técnica.
+- **Ejecución y Cobertura**: 40 casos ejecutados en vivo cubriendo las 6 categorías (A-F), todos los niveles educativos (Inicial, Primaria 1C, Primaria 2C, Secundaria 1C, Secundaria 2C, Multigrado), términos ajenos de 4 países (Colombia, México, Chile, Argentina), actualidad/normativa MINERD, factuales directos, hardware de impresión, protocolos de salud escolar y 4 pruebas de visión de Ojo Digital (pixel 1x1, borrosa, oscura, legible).
+- **Métricas Oficiales Obtenidas**:
+  - Precisión de categorización: 40/40 (100.0%) [Meta ≥ 36/40 CUMPLIDA].
+  - Latencia mediana (p50): 1 ms.
+  - Latencia p95: 8,310 ms (correspondiente a llamadas de visión externa con Gemini 3.1 Flash-Lite).
+  - Citas oficiales auditadas contra el corpus: 12 citas verificadas, 0 citas sin respaldo / alucinadas (Meta: 0 CUMPLIDA).
+  - Presupuesto de IA: 4 llamadas reales consumidas (todas de visión), 246 restantes del límite de 250.
+- **Entregables Generados**:
+  - `reports/set_dorado_40_resultados.json`: Registro estructurado de cada caso con latencia, llamadas, citas y veredicto.
+  - `reports/set_dorado_30_respuestas_docentes.md`: 30 respuestas seleccionadas en tono cercano, respetuoso y profesional ("Profe") sin tecnicismos ni jerga de programación, listas para validación pedagógica ("esto me sirve" / "esto no").
+- **Commit**: `fda93d6` (`feat(evaluacion): set dorado de 40 casos, precision 100%, 0 citas alucinadas y muestra docente`).
+
+## Decisiones tomadas (Fase 5 - Freno de Emergencia y Rate Limit)
+- En ejecución:
+  1. Comparación segura en tiempo constante (`timingSafeEqualStr`) para `OWNER_MASTER_KEY` en `worker/index.js` y `server/index.js` para evitar fugas por timing attacks.
+  2. Rate limit anónimo por hash SHA-256 diario de IP (límite de 30 consultas/día por IP sin guardar la IP en crudo).
+  3. Interruptor de apagado de IA (`ia_apagada`) en KV / variables de entorno para pausar el consumo externo sin requerir redespliegue.
 
 
 
