@@ -29,7 +29,7 @@ export class ApiError extends Error {
 
 export function obtenerOwnerKey() {
   try {
-    return localStorage.getItem("pm_owner_key") || null;
+    return sessionStorage.getItem("pm_owner_key") || null;
   } catch (e) {
     return null;
   }
@@ -41,7 +41,7 @@ function getAuthHeaders(customHeaders = {}) {
     const appToken = localStorage.getItem("pm_auth_token");
     if (appToken) headers["x-app-key"] = appToken;
 
-    const ownerKey = localStorage.getItem("pm_owner_key");
+    const ownerKey = sessionStorage.getItem("pm_owner_key");
     if (ownerKey) headers["x-owner-key"] = ownerKey;
 
     const docenteId = obtenerDocenteId();

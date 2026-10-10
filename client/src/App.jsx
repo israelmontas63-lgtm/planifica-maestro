@@ -314,7 +314,7 @@ export default function App() {
     if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
       const quickKey = params.get("key");
       if (quickKey) {
-        localStorage.setItem("pm_owner_key", quickKey);
+        sessionStorage.setItem("pm_owner_key", quickKey);
         setIsOwner(true);
         obtenerCuotaDocente().then((c) => c && setEstadoCuota(c)).catch(() => {});
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -328,7 +328,7 @@ export default function App() {
   };
 
   const handleOwnerLogout = () => {
-    localStorage.removeItem("pm_owner_key");
+    sessionStorage.removeItem("pm_owner_key");
     setIsOwner(false);
     obtenerCuotaDocente().then((c) => c && setEstadoCuota(c)).catch(() => {});
   };
