@@ -461,7 +461,8 @@ async function handleApiRequest(request, env, ctx) {
     const body = await request.json().catch(() => ({}));
     const expected = env.APP_ACCESS_KEY;
     if (!expected) {
-      return new Response(JSON.stringify({ ok: true, token: "open_dev_mode" }), {
+      return new Response(JSON.stringify({ ok: false, error: "Servidor mal configurado. Falta clave institucional." }), {
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
