@@ -7,7 +7,7 @@
 | Hallazgo | Estado Inicial | Veredicto | Resoluci贸n Aplicada | Bloque |
 |----------|----------------|-----------|---------------------|--------|
 | **H1. RLS Supabase** | Pol铆ticas solapadas y `public.perfil_docente` global. | **S脥 (Cr铆tico)** | Se cre贸 migraci贸n `20261010_bloque3_consolidar_rls.sql` que dropea pol铆ticas antiguas e impone estricto `auth.uid() = user_id`. | 3 |
-| **H2. Fail-Open Auth** | `ACCESO_ABIERTO=true`, middleware permit铆a todo sin clave. | **S脥 (Cr铆tico)** | `ACCESO_ABIERTO` en false. Middleware y Worker actualizados para dar error 500 (Fail-Closed) si falta `APP_ACCESS_KEY`. | 2 |
+| **H2. Fail-Open Auth** | `ACCESO_ABIERTO` en wrangler. | **FALSO (Bajo)** | `ACCESO_ABIERTO` era c骴igo muerto, no se le韆 en ning鷑 lado. RLS pendiente y opcional. | 2 |
 | **H3. Secretos en Git** | `.env.example` versionados con claves reales quemadas. | **S脥 (Cr铆tico)** | Se sanitizaron con `TU_CLAVE_AQUI`. El due帽o decidi贸 **Aceptar el Riesgo** de no rotar las claves en su historial. | 2 |
 | **H4. Vulnerabilidades** | Reportadas por `npm audit`. | **FALSO (Bajo)** | 0 vulnerabilidades en producci贸n (`--omit=dev`). Solo existen en dependencias de desarrollo. | 4 |
 | **H5. Rate Limit Memoria** | Uso de `new Map()` en Cloudflare Workers. | **S脥 (Alto)** | Se adapt贸 la l贸gica para usar un Cloudflare KV (`RATE_LIMIT_KV`). Si falla/no existe, hace fallback seguro al Map. | 5 |
