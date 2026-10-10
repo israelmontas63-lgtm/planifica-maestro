@@ -1,0 +1,307 @@
+{
+  "version": "1.0.0",
+  "fecha_generacion": "2026-10-10T02:22:32.382Z",
+  "total_documentos_indexados": 9,
+  "total_paginas_corpus": 2304,
+  "documentos_indexados": [
+    {
+      "id": "adecuacion_inicial_2023",
+      "nombre": "Adecuación Curricular del Nivel Inicial (MINERD)",
+      "archivo_pdf": "Adecuacion-Curricular-Nivel-Inicial-FINAL-2023.pdf",
+      "nivel": "Inicial",
+      "ciclo": "Primer y Segundo Ciclo",
+      "grados": [
+        "Maternal",
+        "Infantes",
+        "Párvulos",
+        "Pre-Primario"
+      ],
+      "areas": [
+        "Dimensiones del Desarrollo Infantil"
+      ],
+      "ano_edicion": 2023,
+      "host_origen": "ministeriodeeducacion.gob.do",
+      "paginas": 85,
+      "offset_impreso_vs_pdf": 0,
+      "estado_indexacion": "indexado"
+    },
+    {
+      "id": "adecuacion_primaria_2023",
+      "nombre": "Adecuación Curricular del Nivel Primario (MINERD)",
+      "archivo_pdf": "Adecuacion-Curricular-Primaria-2023.pdf",
+      "nivel": "Primario",
+      "ciclo": "Primer y Segundo Ciclo",
+      "grados": [
+        "1.º",
+        "2.º",
+        "3.º",
+        "4.º",
+        "5.º",
+        "6.º"
+      ],
+      "areas": [
+        "Lengua Española",
+        "Matemática",
+        "Ciencias Sociales",
+        "Ciencias de la Naturaleza",
+        "Educación Artística",
+        "Educación Física",
+        "Formación Integral Humana y Religiosa",
+        "Lenguas Extranjeras (Inglés)"
+      ],
+      "ano_edicion": 2023,
+      "host_origen": "ministeriodeeducacion.gob.do",
+      "paginas": 504,
+      "offset_impreso_vs_pdf": 0,
+      "estado_indexacion": "indexado"
+    },
+    {
+      "id": "adecuacion_secundaria_2023",
+      "nombre": "Adecuación Curricular del Nivel Secundario (MINERD, 2023)",
+      "archivo_pdf": "Adecuacion_Secundaria_2023.pdf",
+      "nivel": "Secundario",
+      "ciclo": "Primer y Segundo Ciclo",
+      "grados": [
+        "1.º",
+        "2.º",
+        "3.º",
+        "4.º",
+        "5.º",
+        "6.º"
+      ],
+      "areas": [
+        "Lengua Española",
+        "Matemática",
+        "Ciencias Sociales",
+        "Ciencias de la Naturaleza",
+        "Educación Artística",
+        "Educación Física",
+        "Formación Integral Humana y Religiosa",
+        "Lenguas Extranjeras (Inglés, Francés)"
+      ],
+      "ano_edicion": 2023,
+      "host_origen": "ministeriodeeducacion.gob.do",
+      "paginas": 612,
+      "offset_impreso_vs_pdf": 0,
+      "estado_indexacion": "indexado"
+    },
+    {
+      "id": "diseno_curricular_primaria_1er_ciclo",
+      "nombre": "Diseño Curricular Nivel Primario - Primer Ciclo (MINERD)",
+      "archivo_pdf": "Diseno-Curricular-Nivel-Primario-Primer-Ciclo.pdf",
+      "nivel": "Primario",
+      "ciclo": "Primer Ciclo",
+      "grados": [
+        "1.º",
+        "2.º",
+        "3.º"
+      ],
+      "areas": [
+        "Lengua Española",
+        "Matemática",
+        "Ciencias Sociales",
+        "Ciencias de la Naturaleza",
+        "Educación Artística",
+        "Educación Física",
+        "Formación Integral Humana y Religiosa"
+      ],
+      "ano_edicion": 2016,
+      "host_origen": "ministeriodeeducacion.gob.do",
+      "paginas": 248,
+      "offset_impreso_vs_pdf": 0,
+      "estado_indexacion": "indexado"
+    },
+    {
+      "id": "guia_con_base_lengua_esp",
+      "nombre": "Guía Didáctica de Lengua Española (MINERD / CON BASE)",
+      "archivo_pdf": "Guia Didactica LenguaEsp  Multigrado WEB.pdf",
+      "nivel": "Primario",
+      "ciclo": "Primer Ciclo",
+      "grados": [
+        "1.º",
+        "2.º",
+        "3.º",
+        "Multigrado"
+      ],
+      "areas": [
+        "Lengua Española"
+      ],
+      "ano_edicion": 2023,
+      "host_origen": "unicef.org/dominicanrepublic",
+      "paginas": 215,
+      "offset_impreso_vs_pdf": 0,
+      "estado_indexacion": "indexado"
+    },
+    {
+      "id": "guia_con_base_matematica",
+      "nombre": "Guía Didáctica de Matemática (MINERD / CON BASE)",
+      "archivo_pdf": "Guia Matematica WEB.pdf",
+      "nivel": "Primario",
+      "ciclo": "Primer Ciclo",
+      "grados": [
+        "1.º",
+        "2.º",
+        "3.º",
+        "Multigrado"
+      ],
+      "areas": [
+        "Matemática"
+      ],
+      "ano_edicion": 2023,
+      "host_origen": "unicef.org/dominicanrepublic",
+      "paginas": 198,
+      "offset_impreso_vs_pdf": 0,
+      "estado_indexacion": "indexado"
+    },
+    {
+      "id": "guia_con_base_matematica_multigrado",
+      "nombre": "Guia Multigrado Matematicas (MINERD / CON BASE)",
+      "archivo_pdf": "Guia Multigrado Matematicas.pdf",
+      "nivel": "Primario",
+      "ciclo": "Primer Ciclo",
+      "grados": [
+        "1.º a 3.º Multigrado"
+      ],
+      "areas": [
+        "Matemática"
+      ],
+      "ano_edicion": 2023,
+      "host_origen": "unicef.org/dominicanrepublic",
+      "paginas": 184,
+      "offset_impreso_vs_pdf": 0,
+      "estado_indexacion": "indexado"
+    },
+    {
+      "id": "manual_organizacion_con_base",
+      "nombre": "Manual de Organización del Programa CON BASE (MINERD / UNICEF)",
+      "archivo_pdf": "Manual de Organizacion CON BASE.pdf",
+      "nivel": "Primario",
+      "ciclo": "Primer Ciclo",
+      "grados": [
+        "1.º",
+        "2.º",
+        "3.º"
+      ],
+      "areas": [
+        "Gestión Pedagógica"
+      ],
+      "ano_edicion": 2023,
+      "host_origen": "unicef.org/dominicanrepublic",
+      "paginas": 72,
+      "offset_impreso_vs_pdf": 0,
+      "estado_indexacion": "indexado"
+    },
+    {
+      "id": "naturaleza_areas_curriculares",
+      "nombre": "Naturaleza de las Áreas Curriculares (MINERD)",
+      "archivo_pdf": "Naturaleza_areas_curriculares.pdf",
+      "nivel": "Transversal",
+      "ciclo": "Todos los Ciclos",
+      "grados": [
+        "Primaria y Secundaria"
+      ],
+      "areas": [
+        "Fundamentos Curriculares"
+      ],
+      "ano_edicion": 2020,
+      "host_origen": "ministeriodeeducacion.gob.do",
+      "paginas": 186,
+      "offset_impreso_vs_pdf": 0,
+      "estado_indexacion": "indexado"
+    }
+  ],
+  "matriz_cobertura": {
+    "adecuacion_inicial_2023": {
+      "requerido": true,
+      "presente": true,
+      "documento": "Adecuación Curricular Nivel Inicial 2023"
+    },
+    "adecuacion_primaria_2023": {
+      "requerido": true,
+      "presente": true,
+      "documento": "Adecuación Curricular Primaria 2023"
+    },
+    "adecuacion_secundaria_2023": {
+      "requerido": true,
+      "presente": true,
+      "documento": "Adecuación Curricular Secundaria 2023"
+    },
+    "guias_con_base_1_a_3_lengua": {
+      "requerido": true,
+      "presente": true,
+      "documento": "Guía Didáctica Lengua Española CON BASE"
+    },
+    "guias_con_base_1_a_3_matematica": {
+      "requerido": true,
+      "presente": true,
+      "documento": "Guía Didáctica Matemática CON BASE"
+    },
+    "guias_con_base_multigrado": {
+      "requerido": true,
+      "presente": true,
+      "documento": "Guía Multigrado Matemáticas / Lengua CON BASE"
+    },
+    "diseno_curricular_vigente_primaria": {
+      "requerido": true,
+      "presente": true,
+      "documento": "Diseño Curricular Primaria Primer Ciclo"
+    },
+    "secuencias_4to_a_6to_pucmm_minerd": {
+      "requerido": true,
+      "presente": false,
+      "documento": "Secuencias Didácticas de 4.º a 6.º (PUCMM/MINERD)",
+      "motivo_ausencia": "Pendiente de publicación / descarga oficial desde repositorio PUCMM",
+      "host_oficial_permitido": "repositorio.pucmm.edu.do / minerd.gob.do"
+    },
+    "ordenanza_03_2023_evaluacion": {
+      "requerido": true,
+      "presente": false,
+      "documento": "Ordenanza 03-2023 (Sistema de Evaluación Curricular)",
+      "motivo_ausencia": "Normativa complementaria no indexada en Capa 4",
+      "host_oficial_permitido": "ministeriodeeducacion.gob.do"
+    },
+    "ordenanza_04_2023_adecuacion": {
+      "requerido": true,
+      "presente": false,
+      "documento": "Ordenanza 04-2023 (Norma de Implementación Curricular)",
+      "motivo_ausencia": "Normativa complementaria no indexada en Capa 4",
+      "host_oficial_permitido": "ministeriodeeducacion.gob.do"
+    },
+    "modalidad_tecnico_profesional": {
+      "requerido": true,
+      "presente": false,
+      "documento": "Bachillerato Técnico y Familias Profesionales",
+      "motivo_ausencia": "Modalidad especializada pendiente de catalogación oficial",
+      "host_oficial_permitido": "minerd.gob.do"
+    },
+    "modalidad_artes": {
+      "requerido": true,
+      "presente": false,
+      "documento": "Modalidad en Artes Nivel Secundario",
+      "motivo_ausencia": "Modalidad especializada pendiente de catalogación oficial",
+      "host_oficial_permitido": "minerd.gob.do"
+    },
+    "modalidad_adultos_prepara": {
+      "requerido": true,
+      "presente": false,
+      "documento": "Educación de Personas Jóvenes y Adultas (PREPARA / Básica)",
+      "motivo_ausencia": "Modalidad semipresencial pendiente de catalogación oficial",
+      "host_oficial_permitido": "minerd.gob.do"
+    }
+  },
+  "reglas_descarga_faltantes": {
+    "hosts_permitidos_estrictos": [
+      "ministeriodeeducacion.gob.do",
+      "minerd.gob.do",
+      "unicef.org/dominicanrepublic",
+      "repositorio.pucmm.edu.do"
+    ],
+    "fuentes_prohibidas": [
+      "scribd.com",
+      "studocu.com",
+      "slideshare.net",
+      "blogs",
+      "agregadores"
+    ]
+  }
+}

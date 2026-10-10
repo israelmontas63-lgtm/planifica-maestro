@@ -1,0 +1,105 @@
+{
+  "version": "1.0.0",
+  "actualizacion": "2026-10-09",
+  "sistema_educativo": "República Dominicana (MINERD)",
+  "terminos_oficiales_minerd": [
+    {
+      "termino": "Competencias Fundamentales",
+      "definicion": "Competencias transversales que expresan las intenciones educativas de mayor relevancia y significatividad. Son 7: Ética y Ciudadana; Comunicativa; Pensamiento Lógico, Creativo y Crítico; Resolución de Problemas; Científica y Tecnológica; Ambiental y de la Salud; Desarrollo Personal y Espiritual.",
+      "documento_fuente": "Adecuación Curricular del Nivel Primario (MINERD, 2023)",
+      "pagina_documento": 18,
+      "uso_oficial_minerd": true
+    },
+    {
+      "termino": "Competencias Específicas",
+      "definicion": "Concreción de las Competencias Fundamentales en cada una de las áreas curriculares y grados escolares, articulando capacidades, habilidades y actitudes.",
+      "documento_fuente": "Adecuación Curricular del Nivel Primario (MINERD, 2023)",
+      "pagina_documento": 24,
+      "uso_oficial_minerd": true
+    },
+    {
+      "termino": "Contenidos Curriculares",
+      "definicion": "Mediadores de aprendizajes significativos estructurados en tres categorías: conceptuales (hechos, datos y conceptos), procedimentales (habilidades y destrezas) y actitudinales (valores y actitudes).",
+      "documento_fuente": "Diseño Curricular Nivel Primario - Primer Ciclo (MINERD)",
+      "pagina_documento": 38,
+      "uso_oficial_minerd": true
+    },
+    {
+      "termino": "Indicadores de Logro",
+      "definicion": "Evidencias observables y medibles que permiten constatar el nivel de dominio y desarrollo de las competencias específicas por parte de los estudiantes.",
+      "documento_fuente": "Adecuación Curricular del Nivel Primario (MINERD, 2023)",
+      "pagina_documento": 26,
+      "uso_oficial_minerd": true
+    },
+    {
+      "termino": "Situación de Aprendizaje",
+      "definicion": "Escenario o circunstancia del contexto que el docente diseña o aprovecha como desafío o problema que los estudiantes deben resolver para construir aprendizajes significativos.",
+      "documento_fuente": "Diseño Curricular Nivel Primario - Primer Ciclo (MINERD)",
+      "pagina_documento": 45,
+      "uso_oficial_minerd": true
+    },
+    {
+      "termino": "Secuencia Didáctica",
+      "definicion": "Estructura pedagógica y cronológica de actividades organizadas en momentos consecutivos para el desarrollo de una competencia (en el programa CON BASE: 6 momentos).",
+      "documento_fuente": "Guía Didáctica de Lengua Española (MINERD / CON BASE, 2023)",
+      "pagina_documento": 14,
+      "uso_oficial_minerd": true
+    },
+    {
+      "termino": "Ejes Transversales",
+      "definicion": "Temáticas de relevancia social y ética integradas a lo largo de las distintas áreas del conocimiento escolar.",
+      "documento_fuente": "Adecuación Curricular del Nivel Primario (MINERD, 2023)",
+      "pagina_documento": 20,
+      "uso_oficial_minerd": true
+    },
+    {
+      "termino": "Unidad de Aprendizaje",
+      "definicion": "Estrategia de articulación curricular que organiza competencias, contenidos, actividades y evaluación en torno a una situación de aprendizaje.",
+      "documento_fuente": "Adecuación Curricular del Nivel Secundario (MINERD, 2023)",
+      "pagina_documento": 32,
+      "uso_oficial_minerd": true
+    }
+  ],
+  "terminos_ajenos_y_equivalencias": [
+    {
+      "termino_ajeno": "malla curricular",
+      "pais_origen_comun": "Colombia, Perú, Chile",
+      "estado_en_rd": "no_oficial",
+      "explicacion": "El término 'malla curricular' no forma parte de la nomenclatura oficial del MINERD en la Adecuación Curricular 2023.",
+      "equivalente_oficial_minerd": "Diseño Curricular / Adecuación Curricular / Matriz de Competencias y Contenidos",
+      "documento_respaldo": "Adecuación Curricular del Nivel Primario (MINERD, 2023), pág. 12"
+    },
+    {
+      "termino_ajeno": "DBA (Derechos Básicos de Aprendizaje)",
+      "pais_origen_comun": "Colombia (MEN)",
+      "estado_en_rd": "ajeno",
+      "explicacion": "Concepto normativo propio del Ministerio de Educación Nacional de Colombia.",
+      "equivalente_oficial_minerd": "Indicadores de Logro y Contenidos Procedimentales",
+      "documento_respaldo": "Adecuación Curricular (MINERD, 2023), pág. 26"
+    },
+    {
+      "termino_ajeno": "Aprendizajes Clave / Campos Formativos",
+      "pais_origen_comun": "México (SEP / Nueva Escuela Mexicana)",
+      "estado_en_rd": "ajeno",
+      "explicacion": "Organización curricular propia del sistema educativo mexicano.",
+      "equivalente_oficial_minerd": "Competencias Fundamentales y Específicas / Áreas Curriculares",
+      "documento_respaldo": "Adecuación Curricular (MINERD, 2023), pág. 18"
+    },
+    {
+      "termino_ajeno": "Estándares Básicos de Competencias",
+      "pais_origen_comun": "Colombia",
+      "estado_en_rd": "ajeno",
+      "explicacion": "Norma técnica colombiana de calidad pedagógica.",
+      "equivalente_oficial_minerd": "Competencias Fundamentales (7) y Específicas por ciclo y grado",
+      "documento_respaldo": "Adecuación Curricular (MINERD, 2023), pág. 18"
+    },
+    {
+      "termino_ajeno": "Núcleos de Aprendizaje Prioritarios (NAP)",
+      "pais_origen_comun": "Argentina",
+      "estado_en_rd": "ajeno",
+      "explicacion": "Acuerdos curriculares federales de Argentina.",
+      "equivalente_oficial_minerd": "Contenidos e Indicadores de Logro de la Adecuación Curricular",
+      "documento_respaldo": "Adecuación Curricular (MINERD, 2023), pág. 26"
+    }
+  ]
+}

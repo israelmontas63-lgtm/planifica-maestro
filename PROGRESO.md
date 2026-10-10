@@ -55,7 +55,25 @@ Cuando se configure el nuevo proyecto activo de Supabase para el lanzamiento mas
 5. Conservar intacto todo lo que ya funciona (modo hablado, cámara/ojo digital, PWA, dictado continuo).
 
 ## Respaldo de Producción (Fase 0.1)
-- **Deployment ID actual**: `52e6fb92-f2f2-4215-8636-f6731ea6e205`
-- **Fecha de creación**: `2026-10-09T19:51:50.190Z`
-- **Deployment previo inmediato**: `ee9499cf-cb40-40e4-b2ca-a9b12140e9fd` (`2026-10-09T19:48:17.439Z`)
-- **Comando de reversa inmediata**: `npx wrangler rollback 52e6fb92-f2f2-4215-8636-f6731ea6e205` (o `npx wrangler rollback ee9499cf-cb40-40e4-b2ca-a9b12140e9fd`)
+- **Tag git de respaldo creado**: `pre-limpieza-despliegue`
+- **Deployment ID activo**: `38b42ec3-2b9e-451b-b1f2-c38919df5bb3`
+- **Fecha de creación**: `2026-10-09T21:23:03.712Z`
+- **Mensaje**: `deploy fff699b`
+- **Deployment previo inmediato**: `52e6fb92-f2f2-4215-8636-f6731ea6e205` (`2026-10-09T19:51:50.190Z`)
+- **Comando de reversa inmediata**: `npx wrangler rollback 38b42ec3-2b9e-451b-b1f2-c38919df5bb3` (o `npx wrangler rollback 52e6fb92-f2f2-4215-8636-f6731ea6e205`)
+- **Ruta del panel de Cloudflare**: `Workers & Pages` → `planifica-maestro` → `Deployments` → `View rollout history`
+- **Tipo de autenticación**: Token de API (Account API Token de `Israelmontas65@gmail.com's Account`, ID `9513f780180c7be282365f811706b695`) desde `CLOUDFLARE_API_TOKEN`.
+
+## Decisiones tomadas (Fase 0 - SRE/DevOps)
+- **Tag git de protección**: Creado `pre-limpieza-despliegue` antes de cualquier acción.
+- **Rollback documentado**: IDs `38b42ec3` y `52e6fb92`.
+- **Estrategia de Un Solo Desplegador**: El build conectado en Cloudflare se diagnostica y repara para ser el único desplegador oficial conectado a GitHub sin requerir tokens ni actions.
+
+## Decisiones tomadas (Fase 1 y 2 - Limpieza y Pipeline)
+- **Workspaces en package.json**: Añadido `"workspaces": ["client"]` y script `scripts/ensure_client_deps.js` para asegurar dependencias en entornos de CI/CD limpios sin alterar el flujo local.
+- **Generación de versión**: Script `scripts/build_version.js` inyecta automáticamente `client/dist/version.json` con el SHA de commit.
+- **Encabezados de seguridad HTTP**: `client/public/_headers` y `worker/index.js` (tanto para assets estáticos como cabeceras API CORS) incorporan `X-Content-Type-Options: nosniff` y `Referrer-Policy: strict-origin-when-cross-origin`.
+- **Limpieza de repositorio**: `.gitignore` actualizado con `scratch_*`, `pwa_descarga.zip`, `shared/`. Eliminados temporales no rastreados.
+- **Reversibilidad**: Si se requiere revertir cambios en package.json o worker/index.js, `git restore` o `git revert` al commit previo `fff699b`.
+
+

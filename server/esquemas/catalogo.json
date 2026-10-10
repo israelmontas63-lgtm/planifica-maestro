@@ -1,0 +1,179 @@
+{
+  "version": "1.0.0",
+  "actualizacion": "2026-10-09",
+  "reglas_enrutamiento": {
+    "primer_ciclo_primaria": {
+      "grados": [
+        "1ro_prim",
+        "2do_prim",
+        "3ro_prim",
+        "1",
+        "2",
+        "3",
+        "1ro",
+        "2do",
+        "3ro"
+      ],
+      "un_grado": "con_base_secuencia",
+      "multigrado": "con_base_multigrado",
+      "nota": "1.º a 3.º aplican programa oficial CON BASE."
+    },
+    "segundo_ciclo_primaria": {
+      "grados": [
+        "4to_prim",
+        "5to_prim",
+        "6to_prim",
+        "4",
+        "5",
+        "6",
+        "4to",
+        "5to",
+        "6to"
+      ],
+      "esquema_preferido": "secuencia_pucmm_minerd",
+      "esquema_fallback": "unidad_aprendizaje",
+      "prohibido": "NUNCA rotular CON BASE en 4.º a 6.º"
+    },
+    "nivel_inicial": {
+      "grados": [
+        "maternal",
+        "infantes",
+        "parvulos",
+        "pre_primario",
+        "kinder"
+      ],
+      "esquema": "unidad_aprendizaje_inicial",
+      "rotulo_obligatorio": "adaptación a partir de la Adecuación Curricular 2023"
+    },
+    "nivel_secundario": {
+      "grados": [
+        "1ro_sec",
+        "2do_sec",
+        "3ro_sec",
+        "4to_sec",
+        "5to_sec",
+        "6to_sec",
+        "1ro_secundaria",
+        "2do_secundaria",
+        "3ro_secundaria",
+        "4to_secundaria",
+        "5to_secundaria",
+        "6to_secundaria"
+      ],
+      "esquema": "unidad_aprendizaje_secundaria",
+      "rotulo_obligatorio": "adaptación a partir de la Adecuación Curricular 2023"
+    }
+  },
+  "esquemas": [
+    {
+      "id": "con_base_secuencia",
+      "nombre": "Secuencia Didáctica CON BASE (por grado)",
+      "nivel": "Primario",
+      "ciclo": "Primer Ciclo",
+      "grados": [
+        "1.º",
+        "2.º",
+        "3.º"
+      ],
+      "areas": [
+        "Lengua Española",
+        "Matemática"
+      ],
+      "descripcion": "Formato oficial de 6 momentos y 7 competencias para 1.º a 3.º de Primaria (Guías CON BASE).",
+      "rotulo": "Secuencia Didáctica (CON BASE)",
+      "momentos": [
+        "Momento 1: Inicio",
+        "Momento 2: Recuperación de saberes",
+        "Momento 3: Construcción guiada",
+        "Momento 4: Práctica independiente",
+        "Momento 5: Cierre pedagógico",
+        "Momento 6: Evaluación formativa"
+      ]
+    },
+    {
+      "id": "con_base_multigrado",
+      "nombre": "Secuencia Didáctica CON BASE Multigrado",
+      "nivel": "Primario",
+      "ciclo": "Primer Ciclo",
+      "grados": [
+        "1.º a 3.º Multigrado"
+      ],
+      "areas": [
+        "Lengua Española",
+        "Matemática"
+      ],
+      "descripcion": "Formato articulado por alcances (elemental, básico, intermedio, avanzado) para aulas con 2 o más grados.",
+      "rotulo": "Secuencia Didáctica CON BASE Multigrado",
+      "alcances": [
+        "Elemental (1.º)",
+        "Básico (2.º)",
+        "Intermedio (3.º)",
+        "Avanzado"
+      ]
+    },
+    {
+      "id": "secuencia_pucmm_minerd",
+      "nombre": "Secuencia Didáctica de Segundo Ciclo (MINERD / PUCMM)",
+      "nivel": "Primario",
+      "ciclo": "Segundo Ciclo",
+      "grados": [
+        "4.º",
+        "5.º",
+        "6.º"
+      ],
+      "areas": [
+        "Lengua Española",
+        "Matemática",
+        "Ciencias Sociales",
+        "Ciencias de la Naturaleza"
+      ],
+      "descripcion": "Secuencia estructurada para 4.º a 6.º según guías y fascículos MINERD / PUCMM (sin etiqueta CON BASE).",
+      "rotulo": "Secuencia Didáctica (MINERD / PUCMM)"
+    },
+    {
+      "id": "unidad_aprendizaje",
+      "nombre": "Unidad de Aprendizaje (Adecuación Curricular 2023)",
+      "nivel": "Primario",
+      "ciclo": "Segundo Ciclo",
+      "grados": [
+        "4.º",
+        "5.º",
+        "6.º"
+      ],
+      "areas": [
+        "Todas"
+      ],
+      "descripcion": "Unidad estructurada con situación de aprendizaje, competencias fundamentales/específicas, contenidos e indicadores.",
+      "rotulo": "adaptación a partir de la Adecuación Curricular 2023"
+    },
+    {
+      "id": "unidad_aprendizaje_inicial",
+      "nombre": "Centro de Interés / Proyecto de Aula (Nivel Inicial)",
+      "nivel": "Inicial",
+      "ciclo": "Segundo Ciclo (Pre-Primario)",
+      "grados": [
+        "Pre-Primario",
+        "Kínder"
+      ],
+      "areas": [
+        "Integradas / Dimensiones"
+      ],
+      "descripcion": "Planificación por dimensiones y competencias basada en la Adecuación Curricular del Nivel Inicial.",
+      "rotulo": "adaptación a partir de la Adecuación Curricular 2023"
+    },
+    {
+      "id": "unidad_aprendizaje_secundaria",
+      "nombre": "Unidad de Aprendizaje / Proyecto de Investigación (Nivel Secundario)",
+      "nivel": "Secundario",
+      "ciclo": "Primer y Segundo Ciclo",
+      "grados": [
+        "1.º a 6.º de Secundaria"
+      ],
+      "areas": [
+        "Todas"
+      ],
+      "descripcion": "Planificación por situación de aprendizaje y competencias según Adecuación Curricular Nivel Secundario 2023.",
+      "rotulo": "adaptación a partir de la Adecuación Curricular 2023"
+    }
+  ]
+}
