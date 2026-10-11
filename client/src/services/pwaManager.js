@@ -25,22 +25,55 @@ let currentRegistration = null;
 /**
  * Recarga la aplicación protegiendo contra bucles infinitos en sessionStorage
  */
-export function safeReload() {
+export function safeReload(targetVersion = null) {
   if (isReloading) return;
   isReloading = true;
 
   try {
-    const lastReload = parseInt(sessionStorage.getItem("pm_sw_last_reload") || "0", 10);
+    if (targetVersion) {
+      const alreadyReloadedFor = sessionStorage.getItem('pm_sw_reloaded_version');
+      if (alreadyReloadedFor === targetVersion) {
+        console.warn('[PWA] Ya se recargó para la versión:', targetVersion);
+        isReloading = false;
+        return;
+      }
+      sessionStorage.setItem('pm_sw_reloaded_version', targetVersion);
+    }
+    const lastReload = parseInt(sessionStorage.getItem('pm_sw_last_reload') || '0', 10);
     const now = Date.now();
     if (now - lastReload < 8000) {
-      console.warn("[PWA] Recarga pospuesta para evitar bucle continuo.");
+      console.warn('[PWA] Recarga pospuesta para evitar bucle continuo.');
       isReloading = false;
       return;
     }
-    sessionStorage.setItem("pm_sw_last_reload", String(now));
+    sessionStorage.setItem('pm_sw_last_reload', String(now));
   } catch (e) {}
 
   window.location.reload();
+}
+
+async function checkVersionAndUpdate(registration) {
+  try {
+    if (registration) {
+      registration.update().catch(() => {});
+    }
+
+    const res = await fetch('/version.json', { cache: 'no-store' });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.commit) {
+        const appVer = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '';
+        if (appVer && !appVer.includes(data.commit)) {
+          const yaRecargada = sessionStorage.getItem('pm_sw_reloaded_version');
+          if (yaRecargada === data.commit) {
+            return;
+          }
+          console.warn('[PWA] Nueva versión detectada en servidor:', data.commit);
+          safeReload(data.commit);
+        }
+      }
+    }
+  } catch (err) {}
 }
 
 /**

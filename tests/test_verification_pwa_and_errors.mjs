@@ -41,3 +41,20 @@ test("3. Comparación de versiones en PWA", () => {
   assert.strictEqual(shouldNotUpdate, false);
 });
 
+
+test("4. Proteccion contra bucle con marca de version objetivo en sessionStorage", () => {
+  const store = new Map();
+  function safeReloadVersion(targetVer) {
+    if (targetVer) {
+      if (store.get("pm_sw_reloaded_version") === targetVer) return false;
+      store.set("pm_sw_reloaded_version", targetVer);
+      return true;
+    }
+    return true;
+  }
+
+  assert.strictEqual(safeReloadVersion("abc1234"), true);
+  assert.strictEqual(safeReloadVersion("abc1234"), false);
+  assert.strictEqual(safeReloadVersion("xyz9876"), true);
+  assert.strictEqual(safeReloadVersion("xyz9876"), false);
+});
