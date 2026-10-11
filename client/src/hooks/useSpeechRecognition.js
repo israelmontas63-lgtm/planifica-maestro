@@ -212,10 +212,10 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
         return;
       }
 
-      if (e.error === "language-not-supported" && idiomaIndexRef.current < IDIOMAS_FALLBACK.length - 1) {
+      if ((e.error === "language-not-supported" || e.error === "network") && idiomaIndexRef.current < IDIOMAS_FALLBACK.length - 1) {
         idiomaIndexRef.current += 1;
         const nextLang = IDIOMAS_FALLBACK[idiomaIndexRef.current];
-        console.warn(`🎙️ [SpeechRecognition] Idioma no soportado, probando fallback: ${nextLang}`);
+        console.warn(`🎙️ [SpeechRecognition] Fallo (${e.error}), probando fallback de idioma: ${nextLang}`);
         try {
           const next = initRecognitionInstance();
           if (next) {
@@ -231,7 +231,7 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
       if (e.error === "not-allowed") {
         errorMsg = "Permiso de micrófono denegado. Habilítalo en los ajustes del navegador o escribe tu consulta.";
       } else if (e.error === "network") {
-        errorMsg = "Error de red o conexión con el servicio de voz. Puedes reintentar o escribir tu consulta.";
+        errorMsg = "El servicio de voz de Google no pudo conectar. Puedes reintentar o escribir tu consulta con el teclado.";
       } else if (e.error === "audio-capture") {
         errorMsg = "No se detectó entrada de audio en el micrófono. Verifica que no esté en uso por otra app.";
       } else if (e.error === "service-not-allowed") {
@@ -244,9 +244,13 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
       setError(errorMsg);
       onErrorCallbackRef.current?.(errorMsg, e.error);
 
-      // En errores terminales (permiso denegado), detener escucha
-      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+      // En errores terminales (permiso denegado, fallo de red definitivo, audio-capture), detener escucha limpia
+      if (e.error === "not-allowed" || e.error === "service-not-allowed" || e.error === "network" || e.error === "audio-capture") {
         isExplicitStopRef.current = true;
+        if (activeStreamRef.current) {
+          activeStreamRef.current.getTracks().forEach((track) => track.stop());
+          activeStreamRef.current = null;
+        }
         setListening(false);
         setInterimTranscript("");
       }

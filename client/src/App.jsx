@@ -516,6 +516,12 @@ export default function App() {
   }
 
   function handleReintentar() {
+    if (errorGeneracion?.onRetry) {
+      const fn = errorGeneracion.onRetry;
+      setErrorGeneracion(null);
+      fn();
+      return;
+    }
     if (!errorGeneracion?.lastHistory) return;
     const history = errorGeneracion.lastHistory;
     const lastMsg = history[history.length - 1];
@@ -682,9 +688,10 @@ export default function App() {
       stopSpeaking();
       start((errMsg, rawCode) => {
         setErrorGeneracion({
-          message: `${errMsg} Puedes escribir tu consulta directamente con el teclado o consultar el currículo.`,
+          message: `${errMsg} Puedes escribir tu consulta directamente o consultar el currículo.`,
           codigoTecnico: rawCode || null,
-          canRetry: false,
+          canRetry: rawCode === "network",
+          onRetry: () => handleDictadoClick(),
           accionTexto: true
         });
       });
