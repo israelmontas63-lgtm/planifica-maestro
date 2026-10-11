@@ -326,9 +326,14 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      const msg = "Tu navegador no soporta dictado por voz. Usa Chrome o Edge, o escribe el tema directamente.";
+      const isIOS = typeof navigator !== "undefined" && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
+      const isStandalone = typeof window !== "undefined" && (window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone);
+      let msg = "Tu navegador no soporta dictado por voz. Usa Chrome o Edge, o escribe el tema directamente.";
+      if (isIOS && isStandalone) {
+        msg = "Apple iOS restringe el dictado por voz en PWAs instaladas en la pantalla de inicio. Abre la app en Safari para usar el micr�fono o escribe tu consulta directamente.";
+      }
       setError(msg);
-      onErrorCallback?.(msg);
+      onErrorCallback?.(msg, "MIC_NOT_SUPPORTED_IOS_PWA");
       return;
     }
 
