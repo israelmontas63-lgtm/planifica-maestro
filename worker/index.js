@@ -400,6 +400,48 @@ async function consumirCuota(env, docenteId, isOwner) {
   return consultarCuota(env, docenteId, false);
 }
 
+/**
+ * Verificación unificada y estricta de acceso institucional (Fail-Closed)
+ * - 500 si falta APP_ACCESS_KEY en env del servidor.
+ * - 401 si falta o no coincide x-app-key (o x-access-token) y no es dueño autenticado.
+ * - Retorna { errorResponse: Response | null, isOwner: boolean }
+ */
+function requerirAcceso(request, env, corsHeaders) {
+  if (!env || !env.APP_ACCESS_KEY) {
+    return {
+      errorResponse: new Response(
+        JSON.stringify({ ok: false, error: "Servidor mal configurado. Falta clave institucional." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      ),
+      isOwner: false,
+    };
+  }
+
+  const appKey = request.headers.get("x-app-key") || request.headers.get("x-access-token");
+  const ownerKey = request.headers.get("x-owner-key");
+  const isOwner = Boolean(
+    env.OWNER_MASTER_KEY &&
+    ownerKey &&
+    timingSafeEqualStr(ownerKey.trim(), env.OWNER_MASTER_KEY.trim())
+  );
+  const isAppKeyValid = Boolean(
+    appKey &&
+    timingSafeEqualStr(appKey.trim(), env.APP_ACCESS_KEY.trim())
+  );
+
+  if (!isAppKeyValid && !isOwner) {
+    return {
+      errorResponse: new Response(
+        JSON.stringify({ ok: false, error: "Acceso no autorizado. Se requiere x-app-key válida." }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      ),
+      isOwner: false,
+    };
+  }
+
+  return { errorResponse: null, isOwner };
+}
+
 // ─────────────────────────────────────────────────────────────
 // ROUTER DE API
 // ─────────────────────────────────────────────────────────────
@@ -477,21 +519,33 @@ async function handleApiRequest(request, env, ctx) {
       );
     }
 
+    const ownerKey = request.headers.get("x-owner-key");
+    const isOwner = Boolean(
+      env.OWNER_MASTER_KEY &&
+      ownerKey &&
+      timingSafeEqualStr(ownerKey.trim(), env.OWNER_MASTER_KEY.trim())
+    );
+
+    const services = {
+      text_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
+      vision_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
+      ocr_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
+      voice_mode: "browser_speechSynthesis",
+      database: (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) ? "ok" : "en_memoria",
+      ia_apagada: (await verificarIaApagada(env)) ? "apagada" : "activa",
+    };
+
+    if (isOwner) {
+      services.auth = env.APP_ACCESS_KEY ? "activa" : "abierta";
+      services.owner = env.OWNER_MASTER_KEY ? "configurada" : "sin_configurar";
+    }
+
     const health = {
       status: "ok",
       worker: "cloudflare-workers",
       timestamp: new Date().toISOString(),
       tablas_disponibles: tablasDisponibles,
-      services: {
-        text_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
-        vision_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
-        ocr_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
-        voice_mode: "browser_speechSynthesis",
-        auth: env.APP_ACCESS_KEY ? "activa" : "abierta",
-        owner: env.OWNER_MASTER_KEY ? "configurada" : "sin_configurar",
-        database: (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) ? "ok" : "en_memoria",
-        ia_apagada: (await verificarIaApagada(env)) ? "apagada" : "activa",
-      },
+      services,
     };
     return new Response(JSON.stringify(health, null, 2), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -631,6 +685,10 @@ async function handleApiRequest(request, env, ctx) {
 
   // 7. POST /api/plan/generate y /api/plan (Generación con Gemini y soporte SSE Streaming)
   if ((path === "/api/plan/generate" || path === "/api/plan") && method === "POST") {
+    const auth = requerirAcceso(request, env, corsHeaders);
+    if (auth.errorResponse) return auth.errorResponse;
+    const isOwner = auth.isOwner;
+
     const body = await request.json().catch(() => ({}));
     let { messages = [], nivel, periodo = "diaria", docenteId = "docente_default", stream = false } = body;
     if ((!messages || messages.length === 0) && (body.tema || body.prompt)) {
@@ -638,9 +696,6 @@ async function handleApiRequest(request, env, ctx) {
       messages = [{ role: "user", text: query }];
     }
     const resolvedDocenteId = docenteId || request.headers.get("x-docente-id") || "docente_default";
-
-    const ownerKey = request.headers.get("x-owner-key");
-    const isOwner = env.OWNER_MASTER_KEY && ownerKey && timingSafeEqualStr(ownerKey.trim(), env.OWNER_MASTER_KEY.trim());
 
     // Verificar cuota
     const cheqCuota = await consultarCuota(env, resolvedDocenteId, isOwner);
@@ -1693,6 +1748,20 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
 
   // 8. POST /api/plan/consultar-curriculo
   if (path === "/api/plan/consultar-curriculo" && method === "POST") {
+    const auth = requerirAcceso(request, env, corsHeaders);
+    if (auth.errorResponse) return auth.errorResponse;
+    const isOwner = auth.isOwner;
+
+    if (!isOwner) {
+      const rlAnonimo = await verificarRateLimitAnonimo(clientIp, 30, env);
+      if (!rlAnonimo.permitido) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Has alcanzado el límite diario de consultas para este dispositivo." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const body = await request.json().catch(() => ({}));
     const { nivel = "primario", grado = "3ro de Primaria", area = "Matemática", tema, esquemaActivo = "primario", periodoActivo = "diaria" } = body;
 
@@ -2007,6 +2076,20 @@ Genera un JSON estricto con:
 
   // 11. POST /api/voice/generate o /api/voz (Voz de IA fluida: ElevenLabs -> Fallback Local)
   if ((path === "/api/voice/generate" || path === "/api/voz" || path === "/api/voice" || path === "/api/voz/generate") && method === "POST") {
+    const auth = requerirAcceso(request, env, corsHeaders);
+    if (auth.errorResponse) return auth.errorResponse;
+    const isOwner = auth.isOwner;
+
+    if (!isOwner) {
+      const rlAnonimo = await verificarRateLimitAnonimo(clientIp, 30, env);
+      if (!rlAnonimo.permitido) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Has alcanzado el límite diario de consultas para este dispositivo." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     try {
       const body = await request.json().catch(() => ({}));
       const text = body.text || body.texto || "";
@@ -2043,6 +2126,20 @@ Genera un JSON estricto con:
 
   // 12. POST /api/ocr/scan (Gemini Vision con aiProvider)
   if (path === "/api/ocr/scan" && method === "POST") {
+    const auth = requerirAcceso(request, env, corsHeaders);
+    if (auth.errorResponse) return auth.errorResponse;
+    const isOwner = auth.isOwner;
+
+    if (!isOwner) {
+      const rlAnonimo = await verificarRateLimitAnonimo(clientIp, 30, env);
+      if (!rlAnonimo.permitido) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Has alcanzado el límite diario de consultas para este dispositivo." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const body = await request.json().catch(() => ({}));
     if (!body.imageBase64) {
       return new Response(JSON.stringify({ error: "Falta imageBase64." }), {
@@ -2098,18 +2195,10 @@ Genera un JSON estricto con:
 
   // 12.5. POST /api/transcribir y /api/audio/transcribe (Transcripción de audio con Gemini / Groq Whisper)
   if ((path === "/api/transcribir" || path === "/api/audio/transcribe") && method === "POST") {
-    // 1. Verificación estricta de x-app-key o x-owner-key
-    const appKey = request.headers.get("x-app-key") || request.headers.get("x-access-token");
-    const ownerKey = request.headers.get("x-owner-key");
-    const isOwner = env.OWNER_MASTER_KEY && ownerKey && timingSafeEqualStr(ownerKey.trim(), env.OWNER_MASTER_KEY.trim());
-    const isAppKeyValid = env.APP_ACCESS_KEY && appKey && timingSafeEqualStr(appKey.trim(), env.APP_ACCESS_KEY.trim());
-
-    if (!isAppKeyValid && !isOwner) {
-      return new Response(JSON.stringify({ ok: false, error: "Acceso no autorizado. Se requiere x-app-key válida." }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // 1. Verificación estricta de x-app-key o x-owner-key (fail-closed)
+    const auth = requerirAcceso(request, env, corsHeaders);
+    if (auth.errorResponse) return auth.errorResponse;
+    const isOwner = auth.isOwner;
 
     // 2. Control de cuota y rate limiting por IP/docente
     const docenteId = request.headers.get("x-docente-id") || "docente_default";

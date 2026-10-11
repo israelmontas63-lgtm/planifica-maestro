@@ -97,7 +97,7 @@ async function request(endpoint, options = {}, retries = 2) {
 
       if (res.status === 401) {
         type = "AUTH";
-        friendlyMessage = "Clave de acceso incorrecta o sesión no autorizada.";
+        friendlyMessage = data.error || "Clave institucional requerida. Introduce la clave de acceso para continuar.";
         canRetry = false;
       } else if (res.status === 403) {
         type = "AUTH";

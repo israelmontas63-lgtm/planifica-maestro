@@ -220,10 +220,12 @@ test("ETAPA 3: Correcciones Inteligentes de Texto y Voz Pedagógica", async (t) 
     // 11a. Worker: verificar respuesta JSON con corrección
     const workerModule = await import("../worker/index.js");
     const worker = workerModule.default;
+    const testEnv = { GEMINI_API_KEY: "fake_key", APP_ACCESS_KEY: "clave_test_123" };
+    const authHeaders = { "Content-Type": "application/json", "x-app-key": "clave_test_123" };
 
     const reqWorker = new Request("http://localhost/api/plan/generate", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders,
       body: JSON.stringify({
         messages: [{ role: "user", text: "hola profe didactica" }],
         nivel: "primario",
@@ -231,10 +233,7 @@ test("ETAPA 3: Correcciones Inteligentes de Texto y Voz Pedagógica", async (t) 
       })
     });
 
-    const resWorker = await worker.fetch(reqWorker, {
-      GEMINI_API_KEY: "fake_key",
-      ACCESO_ABIERTO: "true"
-    });
+    const resWorker = await worker.fetch(reqWorker, testEnv);
 
     const dataWorker = await resWorker.json();
     assert.equal(dataWorker.texto_original, "hola profe didactica");
@@ -246,7 +245,7 @@ test("ETAPA 3: Correcciones Inteligentes de Texto y Voz Pedagógica", async (t) 
     // 11b. Worker: verificar streaming SSE emite evento { tipo: "correccion", ... }
     const reqStream = new Request("http://localhost/api/plan/generate", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders,
       body: JSON.stringify({
         messages: [{ role: "user", text: "hola profe didactica" }],
         nivel: "primario",
@@ -255,10 +254,7 @@ test("ETAPA 3: Correcciones Inteligentes de Texto y Voz Pedagógica", async (t) 
       })
     });
 
-    const resStream = await worker.fetch(reqStream, {
-      GEMINI_API_KEY: "fake_key",
-      ACCESO_ABIERTO: "true"
-    });
+    const resStream = await worker.fetch(reqStream, testEnv);
 
     const textStream = await resStream.text();
     assert.ok(textStream.includes('"tipo":"correccion"'));
@@ -269,7 +265,7 @@ test("ETAPA 3: Correcciones Inteligentes de Texto y Voz Pedagógica", async (t) 
     // 11c. Opción forzarOriginal desactiva la corrección
     const reqForzar = new Request("http://localhost/api/plan/generate", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders,
       body: JSON.stringify({
         messages: [{ role: "user", text: "hola profe didactica" }],
         nivel: "primario",
@@ -278,10 +274,7 @@ test("ETAPA 3: Correcciones Inteligentes de Texto y Voz Pedagógica", async (t) 
       })
     });
 
-    const resForzar = await worker.fetch(reqForzar, {
-      GEMINI_API_KEY: "fake_key",
-      ACCESO_ABIERTO: "true"
-    });
+    const resForzar = await worker.fetch(reqForzar, testEnv);
 
     const dataForzar = await resForzar.json();
     assert.equal(dataForzar.texto_original, "hola profe didactica");
@@ -317,18 +310,20 @@ test("ETAPA 3: Correcciones Inteligentes de Texto y Voz Pedagógica", async (t) 
     // 12c. Contrato API en Worker: cambio_significado viaja en JSON y SSE
     const workerModule = await import("../worker/index.js");
     const worker = workerModule.default;
+    const testEnv = { GEMINI_API_KEY: "fake_key", APP_ACCESS_KEY: "clave_test_123" };
+    const authHeaders = { "Content-Type": "application/json", "x-app-key": "clave_test_123" };
 
     // Caso solo tildes: cambio_significado = false
     const reqTildes = new Request("http://localhost/api/plan/generate", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders,
       body: JSON.stringify({
         messages: [{ role: "user", text: "didactica de matematicas" }],
         nivel: "primario",
         periodo: "diaria"
       })
     });
-    const resTildes = await worker.fetch(reqTildes, { GEMINI_API_KEY: "fake_key", ACCESO_ABIERTO: "true" });
+    const resTildes = await worker.fetch(reqTildes, testEnv);
     const dataTildes = await resTildes.json();
     assert.equal(dataTildes.hubo_correcciones, true);
     assert.equal(dataTildes.cambio_significado, false, "La respuesta JSON del Worker debe indicar cambio_significado: false para tildes");
@@ -336,7 +331,7 @@ test("ETAPA 3: Correcciones Inteligentes de Texto y Voz Pedagógica", async (t) 
     // Caso homófono: cambio_significado = true
     const reqHomofono = new Request("http://localhost/api/plan/generate", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders,
       body: JSON.stringify({
         messages: [{ role: "user", text: "vamos haber los planetas" }],
         nivel: "primario",
@@ -344,7 +339,7 @@ test("ETAPA 3: Correcciones Inteligentes de Texto y Voz Pedagógica", async (t) 
         stream: true
       })
     });
-    const resHomofono = await worker.fetch(reqHomofono, { GEMINI_API_KEY: "fake_key", ACCESO_ABIERTO: "true" });
+    const resHomofono = await worker.fetch(reqHomofono, testEnv);
     const streamHomofono = await resHomofono.text();
     assert.ok(streamHomofono.includes('"cambio_significado":true'), "El stream SSE debe reportar cambio_significado: true para homófonos");
   });
