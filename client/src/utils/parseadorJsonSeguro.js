@@ -16,7 +16,15 @@ function objetoDesde(texto, inicio) {
     if (c === '"') enCadena = true;
     else if (c === "{") prof++;
     else if (c === "}" && --prof === 0) {
-      try { return JSON.parse(texto.slice(inicio, i + 1)); } catch { return null; }
+      const candidate = texto.slice(inicio, i + 1);
+      try { return JSON.parse(candidate); } catch {
+        try {
+          const saneado = candidate.replace(/(?<=:\s*"[^"]*)\r?\n(?=[^"]*")/g, "\\n");
+          return JSON.parse(saneado);
+        } catch {
+          return null;
+        }
+      }
     }
   }
   return null;
@@ -28,15 +36,25 @@ export function extraerJson(texto, campoRequerido = "mensaje_chat") {
   let pos = limpio.indexOf("{");
   while (pos !== -1) {
     const obj = objetoDesde(limpio, pos);
-    if (obj && typeof obj === "object" && !Array.isArray(obj) && campoRequerido in obj) return obj;
+    if (obj && typeof obj === "object" && !Array.isArray(obj)) {
+      if (campoRequerido in obj || "datos_planificacion" in obj || "plan_completado" in obj || "mensaje" in obj) {
+        if (!obj.mensaje_chat && (obj.datos_planificacion || obj.mensaje)) {
+          obj.mensaje_chat = obj.mensaje || "Aquí tienes la planificación curricular elaborada para tu clase.";
+        }
+        return obj;
+      }
+    }
     pos = limpio.indexOf("{", pos + 1);
   }
   return null;
 }
 
 export function mensajeParaChat(obj) {
-  const m = obj && typeof obj.mensaje_chat === "string" ? obj.mensaje_chat.trim() : "";
-  return m && !m.startsWith("{") ? m : null;
+  if (!obj) return null;
+  const m = typeof obj.mensaje_chat === "string" ? obj.mensaje_chat.trim()
+    : typeof obj.mensaje === "string" ? obj.mensaje.trim()
+    : "";
+  return m && !m.startsWith("{") ? m : (obj.datos_planificacion ? "Aquí tienes la planificación curricular elaborada para tu clase." : null);
 }
 
 export function validarCamposPlanificacion(obj) {

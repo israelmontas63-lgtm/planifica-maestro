@@ -1356,17 +1356,22 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
       }
 
       if (!geminiRes) {
-        console.error(`[AI Error] Modelos agotados. Código: ${ultimoStatus}`);
-        const mensajeMaestro = (ultimoStatus === 503 || ultimoStatus === 429 || ultimoStatus === 502 || ultimoStatus === 504)
-          ? "La IA está ocupada, intenta de nuevo en un minuto."
-          : (ultimoStatus === 401 || ultimoStatus === 403)
-          ? "Hay un problema de configuración en el servicio de generación. Por favor, contacta a soporte."
-          : "La IA está ocupada, intenta de nuevo en un minuto.";
-
-        return new Response(JSON.stringify({ error: mensajeMaestro }), {
-          status: (ultimoStatus === 401 || ultimoStatus === 403) ? 500 : 503,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        const incidentId = "INC-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+        console.error(`[AI Error ${incidentId}] Modelos agotados. Código: ${ultimoStatus} - ${ultimoError}`);
+        const codigo = (ultimoStatus === 429)
+          ? "CUOTA_DIARIA_AGOTADA"
+          : (ultimoStatus === 503 || ultimoStatus === 502 || ultimoStatus === 504)
+          ? "IA_NO_DISPONIBLE"
+          : "ERROR_INTERNO";
+        const mensaje = (ultimoStatus === 429)
+          ? "Se agotó temporalmente la cuota con el proveedor de IA."
+          : (ultimoStatus === 503 || ultimoStatus === 502 || ultimoStatus === 504)
+          ? "El servidor de inteligencia artificial está ocupado en este momento."
+          : "Ocurrió un problema de configuración o conexión con el proveedor de IA.";
+        const sugerencia = (ultimoStatus === 429 || ultimoStatus === 503 || ultimoStatus === 502 || ultimoStatus === 504)
+          ? "Espera un minuto y pulsa 'Reintentar'."
+          : "Contacta a soporte indicando tu código de incidente.";
+        return generarErrorPlanificacion(codigo, mensaje, sugerencia, true, 200);
       }
 
       // Transformar el stream de Gemini a SSE limpio para el cliente
