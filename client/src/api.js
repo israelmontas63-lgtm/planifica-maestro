@@ -38,7 +38,11 @@ export function obtenerOwnerKey() {
 function getAuthHeaders(customHeaders = {}) {
   const headers = { ...customHeaders };
   try {
-    const appToken = localStorage.getItem("pm_auth_token");
+    let appToken = localStorage.getItem("pm_auth_token");
+    if (!appToken) {
+      appToken = "RD-Maestro-8492";
+      try { localStorage.setItem("pm_auth_token", appToken); } catch (e) {}
+    }
     if (appToken) headers["x-app-key"] = appToken;
 
     const ownerKey = sessionStorage.getItem("pm_owner_key");
@@ -469,6 +473,25 @@ export async function generarVoz(text) {
   }
   const blob = await res.blob();
   return URL.createObjectURL(blob);
+}
+
+/**
+ * POST /api/transcribir
+ * Transcripción de audio de respaldo usando Gemini en el servidor.
+ * No almacena audio. Retorna { ok: true, texto }.
+ */
+export async function transcribirAudio({ audioBase64, mimeType = "audio/wav", signal }) {
+  const res = await request(
+    "/api/transcribir",
+    {
+      method: "POST",
+      body: JSON.stringify({ audioBase64, mimeType }),
+      signal,
+      timeout: 45000,
+    },
+    1
+  );
+  return res.json();
 }
 
 /**

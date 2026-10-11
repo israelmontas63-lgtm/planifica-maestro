@@ -43,6 +43,7 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
   const lastRestartTimeRef = useRef(0);
   const onErrorCallbackRef = useRef(null);
   const activeStreamRef = useRef(null);
+  const networkRetryAttemptedRef = useRef(false);
 
   useEffect(() => {
     silenceTimeoutRef.current = silenceTimeout;
@@ -202,58 +203,78 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
       resetSilenceTimer();
     };
 
+    function handleErrorTerminal(codigoError) {
+      isExplicitStopRef.current = true;
+      if (recognitionRef.current) {
+        try { recognitionRef.current.abort(); } catch (err) {}
+      }
+      if (activeStreamRef.current) {
+        activeStreamRef.current.getTracks().forEach((track) => track.stop());
+        activeStreamRef.current = null;
+      }
+      setListening(false);
+      setInterimTranscript("");
+
+      let errorMsg = "Error en el reconocimiento de voz. Puedes escribir tu consulta directamente.";
+      if (codigoError === "network") {
+        errorMsg = "No pude conectar con el servicio de voz de tu navegador. Puedes reintentar, grabar y transcribir, o escribir tu consulta.";
+      } else if (codigoError === "not-allowed") {
+        errorMsg = "Permiso de micrófono denegado. Habilítalo en los ajustes del navegador o escribe tu consulta.";
+      } else if (codigoError === "service-not-allowed") {
+        errorMsg = "El servicio de reconocimiento de voz no está habilitado en este navegador o modo PWA. Puedes grabar y transcribir o escribir tu consulta.";
+      } else if (codigoError === "audio-capture") {
+        errorMsg = "No se detectó entrada de audio en el micrófono. Verifica que no esté en uso por otra app.";
+      } else if (codigoError === "language-not-supported") {
+        errorMsg = "El idioma de voz no está soportado en este dispositivo.";
+      }
+
+      console.warn("SpeechRecognition error terminal:", codigoError);
+      setError(errorMsg);
+      onErrorCallbackRef.current?.(errorMsg, codigoError);
+    }
+
     recognition.onerror = (e) => {
       clearSilenceTimer();
       lastErrorRef.current = e.error;
       console.log("🎙️ [SpeechRecognition] onerror:", e.error);
 
+      // 1b: no-speech y aborted NO son errores graves: no mostrar error en UI
       if (e.error === "no-speech" || e.error === "aborted") {
-        setInterimTranscript("");
-        return;
-      }
-
-      if ((e.error === "language-not-supported" || e.error === "network") && idiomaIndexRef.current < IDIOMAS_FALLBACK.length - 1) {
-        idiomaIndexRef.current += 1;
-        const nextLang = IDIOMAS_FALLBACK[idiomaIndexRef.current];
-        console.warn(`🎙️ [SpeechRecognition] Fallo (${e.error}), probando fallback de idioma: ${nextLang}`);
-        try {
-          const next = initRecognitionInstance();
-          if (next) {
-            recognitionRef.current = next;
-            next.start();
-            setListening(true);
-            return;
-          }
-        } catch (err) {}
-      }
-
-      let errorMsg = "Error en el reconocimiento de voz. Puedes escribir tu consulta directamente.";
-      if (e.error === "not-allowed") {
-        errorMsg = "Permiso de micrófono denegado. Habilítalo en los ajustes del navegador o escribe tu consulta.";
-      } else if (e.error === "network") {
-        errorMsg = "El servicio de voz de Google no pudo conectar. Puedes reintentar o escribir tu consulta con el teclado.";
-      } else if (e.error === "audio-capture") {
-        errorMsg = "No se detectó entrada de audio en el micrófono. Verifica que no esté en uso por otra app.";
-      } else if (e.error === "service-not-allowed") {
-        errorMsg = "El servicio de reconocimiento no está habilitado en este navegador o modo PWA.";
-      } else if (e.error === "language-not-supported") {
-        errorMsg = "El idioma de voz no está soportado en este dispositivo.";
-      }
-
-      console.warn("SpeechRecognition error:", e.error);
-      setError(errorMsg);
-      onErrorCallbackRef.current?.(errorMsg, e.error);
-
-      // En errores terminales (permiso denegado, fallo de red definitivo, audio-capture), detener escucha limpia
-      if (e.error === "not-allowed" || e.error === "service-not-allowed" || e.error === "network" || e.error === "audio-capture") {
         isExplicitStopRef.current = true;
+        setListening(false);
+        setInterimTranscript("");
         if (activeStreamRef.current) {
           activeStreamRef.current.getTracks().forEach((track) => track.stop());
           activeStreamRef.current = null;
         }
-        setListening(false);
-        setInterimTranscript("");
+        return;
       }
+
+      // 1c: Para 'network': un solo reintento automático tras 1 segundo, sin bucles
+      if (e.error === "network" && !networkRetryAttemptedRef.current) {
+        networkRetryAttemptedRef.current = true;
+        console.warn("🎙️ [SpeechRecognition] Error 'network'. Reintentando automáticamente en 1s...");
+        setListening(false);
+        setTimeout(() => {
+          try {
+            if (recognitionRef.current) {
+              try { recognitionRef.current.abort(); } catch (err) {}
+            }
+            const next = initRecognitionInstance();
+            if (next) {
+              recognitionRef.current = next;
+              next.start();
+              setListening(true);
+              resetSilenceTimer();
+            }
+          } catch (retryErr) {
+            handleErrorTerminal("network");
+          }
+        }, 1000);
+        return;
+      }
+
+      handleErrorTerminal(e.error);
     };
 
     recognition.onend = () => {
@@ -327,6 +348,7 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
     onErrorCallbackRef.current = onErrorCallback;
     rapidRestartsRef.current = 0;
     lastRestartTimeRef.current = 0;
+    networkRetryAttemptedRef.current = false;
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -337,7 +359,7 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
         msg = "Apple iOS restringe el dictado por voz en PWAs instaladas en la pantalla de inicio. Abre la app en Safari para usar el micr�fono o escribe tu consulta directamente.";
       }
       setError(msg);
-      onErrorCallback?.(msg, "MIC_NOT_SUPPORTED_IOS_PWA");
+      onErrorCallback?.(msg, "service-not-allowed");
       return;
     }
 

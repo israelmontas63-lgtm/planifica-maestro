@@ -2096,20 +2096,69 @@ Genera un JSON estricto con:
     }
   }
 
-  // 12.5. POST /api/audio/transcribe (Transcripción de audio con Groq Whisper / Gemini)
-  if (path === "/api/audio/transcribe" && method === "POST") {
+  // 12.5. POST /api/transcribir y /api/audio/transcribe (Transcripción de audio con Gemini / Groq Whisper)
+  if ((path === "/api/transcribir" || path === "/api/audio/transcribe") && method === "POST") {
+    // 1. Verificación estricta de x-app-key o x-owner-key
+    const appKey = request.headers.get("x-app-key") || request.headers.get("x-access-token");
+    const ownerKey = request.headers.get("x-owner-key");
+    const isOwner = env.OWNER_MASTER_KEY && ownerKey && timingSafeEqualStr(ownerKey.trim(), env.OWNER_MASTER_KEY.trim());
+    const isAppKeyValid = env.APP_ACCESS_KEY && appKey && timingSafeEqualStr(appKey.trim(), env.APP_ACCESS_KEY.trim());
+
+    if (!isAppKeyValid && !isOwner) {
+      return new Response(JSON.stringify({ ok: false, error: "Acceso no autorizado. Se requiere x-app-key válida." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // 2. Control de cuota y rate limiting por IP/docente
+    const docenteId = request.headers.get("x-docente-id") || "docente_default";
+    const cheqCuota = await consultarCuota(env, docenteId, isOwner);
+    if (!cheqCuota.permitido) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Has alcanzado tu cuota de uso para este periodo.", limiteAlcanzado: true, agotado: true }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!isOwner) {
+      const rlAnonimo = await verificarRateLimitAnonimo(clientIp, 30, env);
+      if (!rlAnonimo.permitido) {
+        return new Response(
+          JSON.stringify({ ok: false, error: "Has alcanzado el límite diario de consultas para este dispositivo." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    // 3. Verificación de tamaño de payload (máximo 2 MB binario / ~2.8 MB base64)
+    const contentLength = request.headers.get("content-length");
+    if (contentLength && parseInt(contentLength, 10) > 2.8 * 1024 * 1024) {
+      return new Response(JSON.stringify({ ok: false, error: "El audio supera el tamaño máximo permitido de 2 MB." }), {
+        status: 413,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const body = await request.json().catch(() => ({}));
     if (!body.audioBase64) {
-      return new Response(JSON.stringify({ error: "Falta audioBase64." }), {
+      return new Response(JSON.stringify({ ok: false, error: "Falta audioBase64." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const cleanBase64 = body.audioBase64.replace(/^data:[^;]+;base64,/, "");
-    const mimeType = body.mimeType || "audio/webm";
+    if (cleanBase64.length > 2.8 * 1024 * 1024) {
+      return new Response(JSON.stringify({ ok: false, error: "El audio supera el tamaño máximo permitido de 2 MB." }), {
+        status: 413,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    // 1. Groq Whisper si env.GROQ_API_KEY
+    const mimeType = body.mimeType || "audio/wav";
+
+    // 4. Intentar transcripción con Groq Whisper si está disponible
     if (env.GROQ_API_KEY) {
       try {
         const binStr = atob(cleanBase64);
@@ -2152,44 +2201,50 @@ Genera un JSON estricto con:
       }
     }
 
-    // 2. Gemini fallback
+    // 5. Transcripción con Google Gemini (modelo multimodal oficial)
     if (env.GEMINI_API_KEY) {
-      try {
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${env.GEMINI_API_KEY}`;
-        const gRes = await fetch(geminiUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{
-              role: "user",
-              parts: [
-                { inlineData: { mimeType, data: cleanBase64 } },
-                { text: "Transcribe exactamente las palabras habladas en este audio en español. Devuelve SOLO el texto transcrito." }
-              ]
-            }],
-            generationConfig: { temperature: 0.0 }
-          })
-        });
-        if (gRes.ok) {
-          const gData = await gRes.json();
-          const texto = gData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
-          if (texto) {
-            return new Response(JSON.stringify({
-              ok: true,
-              texto,
-              proveedor: "gemini_transcribe",
-              modelo: "gemini-3.5-flash-lite"
-            }), {
-              headers: { ...corsHeaders, "Content-Type": "application/json" }
-            });
+      const modelosGemini = [env.GEMINI_MODEL || "gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
+      for (const modelo of modelosGemini) {
+        try {
+          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${env.GEMINI_API_KEY}`;
+          const gRes = await fetch(geminiUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{
+                role: "user",
+                parts: [
+                  { inlineData: { mimeType, data: cleanBase64 } },
+                  { text: "Transcribe fielmente en español lo que dice la persona en este audio. Devuelve ÚNICAMENTE el texto transcrito, sin comentarios ni explicaciones adicionales." }
+                ]
+              }],
+              generationConfig: {
+                temperature: 0.0,
+                maxOutputTokens: 1000
+              }
+            })
+          });
+          if (gRes.ok) {
+            const gData = await gRes.json();
+            const texto = gData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+            if (texto) {
+              return new Response(JSON.stringify({
+                ok: true,
+                texto,
+                proveedor: "gemini",
+                modelo
+              }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" }
+              });
+            }
           }
+        } catch (errGem) {
+          console.warn(`Worker Gemini Audio (${modelo}) error:`, errGem.message);
         }
-      } catch (errGem) {
-        console.warn("Worker Gemini Audio error:", errGem.message);
       }
     }
 
-    return new Response(JSON.stringify({ error: "No se pudo transcribir el audio." }), {
+    return new Response(JSON.stringify({ ok: false, error: "No se pudo transcribir el audio." }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

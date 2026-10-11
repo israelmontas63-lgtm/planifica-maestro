@@ -9,7 +9,8 @@ import { useSpeechRecognition } from "./hooks/useSpeechRecognition.js";
 import { useSpeechSynthesis } from "./hooks/useSpeechSynthesis.js";
 import { useTrialStatus } from "./hooks/useTrialStatus.js";
 import { useAuth } from "./hooks/useAuth.js";
-import { generarPlanificacion, exportarWord, generarVoz, guardarAjustesPlan, obtenerCuotaDocente, obtenerOwnerKey } from "./services/api.js";
+import { generarPlanificacion, exportarWord, generarVoz, guardarAjustesPlan, obtenerCuotaDocente, obtenerOwnerKey, transcribirAudio } from "./services/api.js";
+import { iniciarGrabacionRespaldo, detenerGrabacionRespaldo } from "./services/audioBackupRecorder.js";
 import { registrarAjusteConRespaldoOffline, sincronizarAjustesPendientes } from "./services/offlineSync.js";
 import { guardarPlanEnBiblioteca } from "./services/bibliotecaStorage.js";
 import { comprimirYRedimensionarImagen } from "./services/imageOptimizer.js";
@@ -108,6 +109,8 @@ export default function App() {
   // Voice states
   const [escuchando, setEscuchando] = useState(false);
   const [audioUrl, setAudioUrl] = useState(null);
+  const [grabandoRespaldo, setGrabandoRespaldo] = useState(false);
+  const [transcribiendoRespaldo, setTranscribiendoRespaldo] = useState(false);
   const globalAudioRef = useRef(null);
 
   // Image states
@@ -688,13 +691,74 @@ export default function App() {
       stopSpeaking();
       start((errMsg, rawCode) => {
         setErrorGeneracion({
-          message: `${errMsg} Puedes escribir tu consulta directamente o consultar el currículo.`,
+          message: errMsg,
           codigoTecnico: rawCode || null,
           canRetry: rawCode === "network",
+          canTranscribeBackup: rawCode === "network" || rawCode === "service-not-allowed" || rawCode === "not-allowed",
           onRetry: () => handleDictadoClick(),
           accionTexto: true
         });
       });
+    }
+  }
+
+  async function handleAlternarGrabacionRespaldo() {
+    if (grabandoRespaldo) {
+      setGrabandoRespaldo(false);
+      setTranscribiendoRespaldo(true);
+      try {
+        const { audioBase64, mimeType } = await detenerGrabacionRespaldo();
+        const res = await transcribirAudio({ audioBase64, mimeType });
+        if (res && res.ok && res.texto) {
+          setErrorGeneracion(null);
+          handleAbrirTexto(res.texto, "Revisa tu consulta antes de enviar");
+        } else {
+          setErrorGeneracion({
+            message: res?.error || "No se pudo transcribir el audio grabado. Puedes escribir con el teclado.",
+            canRetry: false,
+            canTranscribeBackup: true,
+            accionTexto: true,
+          });
+        }
+      } catch (err) {
+        setErrorGeneracion({
+          message: err.friendlyMessage || err.message || "Error al procesar el audio grabado.",
+          canRetry: false,
+          canTranscribeBackup: true,
+          accionTexto: true,
+        });
+      } finally {
+        setTranscribiendoRespaldo(false);
+      }
+    } else {
+      try {
+        await iniciarGrabacionRespaldo({
+          maxSegundos: 30,
+          onAutoStop: async ({ audioBase64, mimeType }) => {
+            setGrabandoRespaldo(false);
+            setTranscribiendoRespaldo(true);
+            try {
+              const res = await transcribirAudio({ audioBase64, mimeType });
+              if (res && res.ok && res.texto) {
+                setErrorGeneracion(null);
+                handleAbrirTexto(res.texto, "Revisa tu consulta antes de enviar");
+              }
+            } catch (e) {
+              console.warn("Fallo transcripción tras 30s:", e);
+            } finally {
+              setTranscribiendoRespaldo(false);
+            }
+          }
+        });
+        setGrabandoRespaldo(true);
+      } catch (err) {
+        setErrorGeneracion({
+          message: err.message || "No se pudo acceder al micrófono para grabar.",
+          canRetry: false,
+          canTranscribeBackup: false,
+          accionTexto: true,
+        });
+      }
     }
   }
 
@@ -935,7 +999,7 @@ export default function App() {
           width: '100%',
           maxWidth: '100%',
           boxSizing: 'border-box',
-          padding: '10px 10px 100px 10px', 
+          padding: '10px 10px calc(85px + env(safe-area-inset-bottom, 0px)) 10px', 
           background: 'var(--pm-bg)', 
           display: 'flex', 
           flexDirection: 'column', 
@@ -1473,6 +1537,20 @@ export default function App() {
               </div>
             </div>
             <div className="pm-error-actions">
+              {errorGeneracion.canTranscribeBackup && (
+                <button
+                  type="button"
+                  className="pm-btn-retry"
+                  style={{
+                    background: grabandoRespaldo ? "#dc2626" : "#059669",
+                    color: "white"
+                  }}
+                  onClick={handleAlternarGrabacionRespaldo}
+                  disabled={transcribiendoRespaldo}
+                >
+                  {grabandoRespaldo ? "⏹️ Detener y transcribir" : transcribiendoRespaldo ? "⏳ Transcribiendo..." : "🎙️ Grabar y transcribir"}
+                </button>
+              )}
               {errorGeneracion.accionTexto && (
                 <button
                   type="button"
@@ -1513,6 +1591,19 @@ export default function App() {
           onRemoveImage={() => setImageSrc(null)}
           procesando={procesandoImagen}
         />
+
+        {/* Versión instalada y garantía de privacidad integrada en el scroll */}
+        <footer style={{
+          textAlign: "center",
+          padding: "16px 8px 8px 8px",
+          fontSize: "11px",
+          color: "#94a3b8",
+          lineHeight: "1.5"
+        }}>
+          Planifica Maestro &bull; Versión: {typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "v1.0.0"}
+          <br />
+          Privacidad: no guardamos tus audios ni fotos en ningún servidor.
+        </footer>
       </div>
       
       <BottomPanel
@@ -1674,11 +1765,6 @@ export default function App() {
         onEnded={() => setEscuchando(false)}
         onError={() => setEscuchando(false)}
       />
-
-      {/* Versión instalada visible para diagnóstico */}
-      <footer style={{ textAlign: "center", padding: "16px 8px 32px 8px", fontSize: "11px", color: "#94a3b8" }}>
-        Planifica Maestro &bull; Versión: {typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "v1.0.0"}
-      </footer>
     </div>
   );
 }
