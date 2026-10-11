@@ -26,6 +26,7 @@ const ownerLoginAttempts = new Map(); // ip -> { count: number, resetAt: number 
 
 // Rate limit anónimo por hash SHA-256 de IP + fecha (sin almacenar la IP en texto claro)
 const anonymousDailyRateLimit = new Map(); // hashHex -> { count: number, resetAt: number }
+const cacheConsultasCurriculares = new Map(); // key -> { data, expiraEn }
 
 async function verificarRateLimitAnonimo(clientIp, limiteDiario = 30, env = null) {
   if (!clientIp || clientIp === "127.0.0.1" || clientIp === "localhost") {
@@ -1451,7 +1452,13 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
 
             if (!esValido || !parsedFinal) {
               parsedFinal = {
-                mensaje_chat: "No pude armar la planificación, ¿intentamos otra vez?",
+                ok: false,
+                isError: true,
+                codigo: "IA_RESPUESTA_INVALIDA",
+                mensaje: "El modelo de IA devolvió una respuesta incompleta o desordenada.",
+                sugerencia: "Intenta pedir la planificación nuevamente con términos más específicos.",
+                reintentable: true,
+                mensaje_chat: "Tuve dificultades para organizar los componentes de esta planificación.\n\n💡 Sugerencia: Intenta solicitarla nuevamente.",
                 plan_completado: false,
               };
             }
@@ -1502,7 +1509,16 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
             await writer.write(encoder.encode("data: [DONE]\n\n"));
           } catch (err) {
             await writer.write(
-              encoder.encode(`data: ${JSON.stringify({ error: "No pude armar la planificación, ¿intentamos otra vez?" })}\n\n`)
+              encoder.encode(`data: ${JSON.stringify({ final: {
+                ok: false,
+                isError: true,
+                codigo: "ERROR_INTERNO",
+                mensaje: "Error inesperado al procesar la respuesta del modelo.",
+                sugerencia: "Intenta de nuevo en unos momentos.",
+                reintentable: true,
+                mensaje_chat: "Ocurrió un error inesperado al procesar la planificación.\n\n💡 Sugerencia: Intenta de nuevo.",
+                plan_completado: false
+              } })}\n\n`)
             );
           } finally {
             writer.close();
@@ -1682,6 +1698,14 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
       });
     }
 
+    const cacheKeyCurriculo = `${nivel}|${grado}|${area}|${tema.trim().toLowerCase()}|${esquemaActivo}|${periodoActivo}`;
+    const cachedItem = cacheConsultasCurriculares.get(cacheKeyCurriculo);
+    if (cachedItem && Date.now() < cachedItem.expiraEn) {
+      return new Response(JSON.stringify(cachedItem.data), {
+        headers: { ...corsHeaders, "Content-Type": "application/json", "x-cache": "HIT" },
+      });
+    }
+
     if (!env.GEMINI_API_KEY) {
         return generarErrorPlanificacion("ERROR_INTERNO", "Tuve un problema interno y no sé la causa exacta; te dejo un código para soporte.", "Falta GEMINI_API_KEY en la configuración del servidor.", false);
       }
@@ -1746,6 +1770,11 @@ Genera un JSON estricto con:
       const text = curricularData.candidates?.[0]?.content?.parts?.[0]?.text || "";
       const parsed = extraerJsonValido(text);
       if (parsed) {
+        if (cacheConsultasCurriculares.size > 200) {
+          const primerKey = cacheConsultasCurriculares.keys().next().value;
+          cacheConsultasCurriculares.delete(primerKey);
+        }
+        cacheConsultasCurriculares.set(cacheKeyCurriculo, { data: parsed, expiraEn: Date.now() + 3600000 });
         return new Response(JSON.stringify(parsed), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });

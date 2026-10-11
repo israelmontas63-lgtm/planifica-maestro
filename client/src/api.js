@@ -353,26 +353,40 @@ export async function generarPlanificacion({
       reader.releaseLock();
     }
 
-    if (finalData && validarCamposPlanificacion(finalData)) {
-      return finalData;
+    if (finalData) {
+      if (finalData.ok === false || finalData.isError) return finalData;
+      if (validarCamposPlanificacion(finalData)) return finalData;
     }
     const parsedAccum = extraerJson(accumulatedText);
-    if (parsedAccum && validarCamposPlanificacion(parsedAccum)) {
-      return parsedAccum;
+    if (parsedAccum) {
+      if (parsedAccum.ok === false || parsedAccum.isError) return parsedAccum;
+      if (validarCamposPlanificacion(parsedAccum)) return parsedAccum;
     }
-    return {
-      mensaje_chat: "No pude armar la planificación, ¿intentamos otra vez?",
+    return finalData || {
+      ok: false,
+      isError: true,
+      codigo: "IA_RESPUESTA_INVALIDA",
+      mensaje: "El modelo de IA devolvió una respuesta incompleta o desordenada.",
+      sugerencia: "Intenta pedir la planificación nuevamente con términos más específicos.",
+      reintentable: true,
+      mensaje_chat: "Tuve dificultades para organizar los componentes de esta planificación.\n\n💡 Sugerencia: Intenta solicitarla nuevamente.",
       plan_completado: false
     };
   }
 
   // 2. Respuesta estándar JSON
   const resJson = await res.json().catch(() => null);
-  if (resJson && validarCamposPlanificacion(resJson)) {
-    return resJson;
+  if (resJson) {
+    if (resJson.ok === false || resJson.isError) return resJson;
+    if (validarCamposPlanificacion(resJson)) return resJson;
   }
   return {
-    mensaje_chat: (resJson && mensajeParaChat(resJson)) || "No pude armar la planificación, ¿intentamos otra vez?",
+    ok: false,
+    isError: true,
+    codigo: resJson?.codigo || "ERROR_INTERNO",
+    mensaje: resJson?.mensaje || "Error al procesar la respuesta del servidor.",
+    sugerencia: resJson?.sugerencia || "Intenta de nuevo en unos momentos.",
+    mensaje_chat: (resJson && mensajeParaChat(resJson)) || resJson?.mensaje || "Tuve un problema técnico y no pude completar la solicitud.",
     plan_completado: Boolean(resJson?.plan_completado && resJson?.datos_planificacion),
     ...resJson
   };
