@@ -172,37 +172,28 @@ ORDER BY p.creado_en DESC;
 
 ---
 
-## 🔐 Control de Acceso Institucional y Modo de Uso Personal
+## 🔐 Control de Acceso Institucional
 
-La aplicación cuenta con dos modalidades de acceso configurables:
+La aplicación exige una **clave institucional** antes de usarse. Funciona así:
 
-### A. Modo de Uso Personal (Activo por Defecto)
-Permite ingresar a la aplicación directamente sin pantalla de bloqueo ni contraseñas.
-- **Frontend (`client/src/App.jsx`):**
-  ```javascript
-  const MODO_USO_PERSONAL = true;
-  ```
-- **Backend (`server/.env`):**
-  ```env
-  REQUIRE_ACCESS_KEY=false
-  ```
+- El docente escribe la clave en la pantalla de acceso (`AccessGate.jsx`, montada en `AppGate.jsx`). El
+  Worker la valida en `POST /api/auth/verify` (con límite de intentos fallidos por IP) y el navegador la guarda.
+- Todas las rutas `/api/*` exigen esa clave (cabecera `x-app-key`) **o** la llave de propietario (`x-owner-key`).
+  Las únicas rutas públicas son `/api/health`, `/api/auth/verify` y `/api/auth/owner-verify`. Una ruta nueva
+  queda protegida automáticamente.
+- Si el servidor no tiene `APP_ACCESS_KEY`, responde 500 y no deja pasar a nadie (nunca queda abierto).
+- Si la clave cambia, los navegadores con la clave vieja reciben un 401 y vuelven solos a la pantalla de acceso.
 
-### B. Cómo Reactivar la Contraseña Institucional para Compartir con Otros Maestros
-Cuando decidas abrir el enlace de Cloudflare a otros docentes o autoridades escolares y quieras exigir clave de acceso:
+**Cambiar la clave** (la elige el dueño; no se guarda en el repositorio):
 
-1. **En `server/.env`:**
-   Cambia la bandera a `true` y verifica la contraseña deseada:
-   ```env
-   REQUIRE_ACCESS_KEY=true
-   APP_ACCESS_KEY=RD-Maestro-8492
-   ```
-2. **En `client/src/App.jsx`:**
-   Cambia la constante a `false`:
-   ```javascript
-   const MODO_USO_PERSONAL = false;
-   ```
-3. **Reinicia el backend (`node index.js`)**:
-   El componente `AccessGate.jsx` se presentará automáticamente al abrir la app, y el backend rechazará con HTTP 401 cualquier petición externa que no incluya el token válido.
+```bash
+npx wrangler secret put APP_ACCESS_KEY
+```
+
+Después, comparte la clave nueva con los docentes de la prueba. **Nunca escribas la clave en este repositorio**:
+el repositorio es público.
+
+**Desarrollo local:** define `APP_ACCESS_KEY` en `server/.env` (o `.dev.vars` para el Worker) y úsala en la pantalla de acceso.
 
 ---
 
