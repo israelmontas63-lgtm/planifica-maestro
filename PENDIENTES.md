@@ -29,6 +29,7 @@
 - ~~Dos pruebas de interfaz antiguas fallan en `client/src/test/fase15_pruebas.test.jsx`~~: **COMPLETADO**. Selectores adaptados al diseño actual de la UI (clase `pm-ai-notice` y botones de menú actualizados en `BottomPanel.jsx`). Pruebas Vitest 4/4 superadas.
 - ~~`package.json` de la raíz declara `docx@8.5.0`~~: **COMPLETADO**. Versión de `docx` actualizada a `^9.7.1` en la raíz para total paridad con el cliente (`9.7.1`) y servidor (`9.0.2`), con importación resiliente en pruebas.
 - ~~**Clon limpio y dependencias de servidor/datos**~~: **COMPLETADO**. `server/data/.gitkeep` añadido y `.gitignore` ajustado para preservar el directorio; `server` agregado a `workspaces` de `package.json` y auto-creación/auto-instalación garantizada en `scripts/run_tests.js` y `tests/setup_test_env.mjs`.
-
+- ~~**Aislamiento de pruebas y muestras_word**~~: **COMPLETADO**. En `tests/test_con_base_multigrado.mjs`, los archivos de prueba ahora se generan en `os.tmpdir()` y se eliminan tras verificar, evitando ensuciar archivos binarios en el árbol de trabajo git.
+- ~~**Guía pedagógica de formatos y modo sin conexión**~~: **COMPLETADO**. Incorporada la "Secuencia didáctica CON BASE" y las pautas para aulas rurales en `client/src/components/AyudaModal.jsx`.
 - ~~`Math.random()` genera el token de confirmación de eliminación de cuenta~~: **COMPLETADO**. Migrado a `crypto.getRandomValues` criptográficamente seguro mediante `generarCodigoSeguro()` en `worker/index.js`.
 - ~~PDFs duplicados en el repositorio~~: **COMPLETADO**. Eliminados 55.6 MB de duplicados en `server/curriculum/referencias/con-base/`. Duplicación de lógica entre `server/` y `worker/` documentada en Bloque 1.
