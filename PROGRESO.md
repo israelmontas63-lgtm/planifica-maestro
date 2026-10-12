@@ -17,8 +17,9 @@
 | **10** | RESILIENCIA Y CLON LIMPIO (Workspaces, `server/data/`, higiene de tests) | OK |
 | **11** | UX Y CURRÍCULO MINERD (CON BASE, sugerencias de inicio, modo offline) | OK |
 | **12** | MULTIUSUARIO INSTITUCIONAL (Migración, Rollback, Panel Coordinación y Tests) | OK |
+| **13** | INFORME DE SUPERVISIÓN DOCX (Constructor canónico MINERD, descarga en cliente y tests) | OK |
 
 ## Resumen de Verificación Vigente
-- **Suites de prueba**: 325 pruebas en 26 suites aprobadas (100% pass) + 4/4 Vitest frontend.
+- **Suites de prueba**: 333 pruebas en 26 suites aprobadas (100% pass) + 4/4 Vitest frontend.
 - **Despliegue producción**: En vivo en Cloudflare Workers (`https://planifica-maestro.israelmontas65.workers.dev`).
 - **Riesgos abiertos mitigados**: Rate limit IP escuela ampliado a 50 peticiones/día; aislamiento estricto de binarios de prueba en `os.tmpdir()`.
