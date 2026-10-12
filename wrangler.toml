@@ -10,6 +10,10 @@ GEMINI_VISION_MODELS = "gemini-3.1-flash-lite,gemini-3-flash-preview,gemini-3.5-
 AI_PROVIDER = "gemini"
 IA_APAGADA = "false"
 
+[[kv_namespaces]]
+binding = "RATE_LIMIT_KV"
+id = "761bb5993306419ab6eebca4c526282d"
+
 [assets]
 directory = "./client/dist"
 binding = "ASSETS"

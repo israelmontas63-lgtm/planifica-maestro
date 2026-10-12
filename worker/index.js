@@ -110,10 +110,25 @@ function timingSafeEqualStr(a, b) {
   return diff === 0;
 }
 
-function checkOwnerRateLimit(ip) {
+async function checkOwnerRateLimit(ip, env = null) {
   const now = Date.now();
   const windowMs = 15 * 60 * 1000; // 15 minutos
   const maxAttempts = 5;
+
+  if (env && env.RATE_LIMIT_KV) {
+    try {
+      const key = `rl_owner_${ip}`;
+      let count = 0;
+      const val = await env.RATE_LIMIT_KV.get(key);
+      if (val) count = parseInt(val, 10);
+      if (count >= maxAttempts) return false;
+
+      await env.RATE_LIMIT_KV.put(key, (count + 1).toString(), { expirationTtl: 15 * 60 });
+      return true;
+    } catch (kvError) {
+      console.warn("WARN: Error en KV Owner Rate Limit, cayendo a Map:", kvError);
+    }
+  }
 
   const entry = ownerLoginAttempts.get(ip);
   if (!entry || now > entry.resetAt) {
@@ -577,7 +592,7 @@ async function handleApiRequest(request, env, ctx) {
 
   // 3. POST /api/auth/owner-verify (Llave maestra de dueño con rate limit e igualdad en tiempo constante)
   if (path === "/api/auth/owner-verify" && method === "POST") {
-    if (!checkOwnerRateLimit(clientIp)) {
+    if (!(await checkOwnerRateLimit(clientIp, env))) {
       return new Response(
         JSON.stringify({ ok: false, error: "Demasiados intentos fallidos. Bloqueado temporalmente por 15 minutos." }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
