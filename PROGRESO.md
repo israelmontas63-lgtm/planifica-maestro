@@ -16,6 +16,7 @@
 | **9** | DEUDA TÉCNICA CANÓNICA (`shared/` unificado, -2400 líneas) | OK |
 | **10** | RESILIENCIA Y CLON LIMPIO (Workspaces, `server/data/`, higiene de tests) | OK |
 | **11** | UX Y CURRÍCULO MINERD (CON BASE, sugerencias de inicio, modo offline) | OK |
+| **12** | MULTIUSUARIO INSTITUCIONAL (Migración y Rollback Fase 12) | OK (Preparada para ejecución en Supabase) |
 
 ## Resumen de Verificación Vigente
 - **Suites de prueba**: 314 pruebas en 26 suites aprobadas (100% pass) + 4/4 Vitest frontend.
