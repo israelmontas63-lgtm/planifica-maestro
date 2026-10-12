@@ -25,8 +25,9 @@
 | **18** | CICLO CIRCULAR DE REENVÍO CON AJUSTES Y NOTA DEL DOCENTE (Reenvío tras dictamen, nota de entrega, insignia de ciclo e historial) | OK |
 | **19** | SELLO Y CERTIFICACIÓN OFICIAL MINERD EN WORD DOCX (Cuadro verde de dictamen, resoluciones, supervisor, firmas y sello ministerial) | OK |
 | **20** | RÚBRICAS E INSTRUMENTOS DE EVALUACIÓN FORMATIVA MINERD (Ordenanza 04-2023, 4 niveles D/L/P/I, lista de cotejo, exportación Word e interactiva) | OK |
+| **21** | PANEL DE ANALÍTICA CURRICULAR Y COBERTURA DE COMPETENCIAS (7 Competencias Fundamentales MINERD, KPIs estratégicos, DUA, alertas tempranas y gráficos SVG) | OK |
 
 ## Resumen de Verificación Vigente
-- **Suites de prueba**: 379 pruebas en 26 suites aprobadas (100% pass) + 4/4 Vitest frontend.
+- **Suites de prueba**: 387 pruebas en 26 suites aprobadas (100% pass) + 4/4 Vitest frontend.
 - **Despliegue producción**: En vivo en Cloudflare Workers (`https://planifica-maestro.israelmontas65.workers.dev`).
 - **Riesgos abiertos mitigados**: Rate limit IP escuela ampliado a 50 peticiones/día; aislamiento estricto de binarios de prueba en `os.tmpdir()`.

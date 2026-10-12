@@ -7,6 +7,7 @@ import {
 import { exportarWord } from "../services/api.js";
 import { cargarPerfil } from "../services/perfilStorage.js";
 import { descargarInformeSupervisionWord } from "../services/generadorInformeSupervisionWord.js";
+import { calcularAnaliticaInstitucional } from "../services/analiticaCurricularService.js";
 
 // Plantillas de sugerencias pedagógicas oficiales MINERD para retroalimentación rápida
 const SUGERENCIAS_COMENTARIOS_MINERD = [
@@ -60,6 +61,7 @@ export default function PanelCoordinacionModal({
 }) {
   const [planes, setPlanes] = useState([]);
   const [cargando, setCargando] = useState(true);
+  const [vistaActiva, setVistaActiva] = useState("planes"); // "planes" | "analitica"
   const [filtroEstado, setFiltroEstado] = useState("todas");
   const [filtroGrado, setFiltroGrado] = useState("todos");
   const [filtroArea, setFiltroArea] = useState("todas");
@@ -109,6 +111,11 @@ export default function PanelCoordinacionModal({
     const aprobadas = planes.filter((p) => p.estado === "aprobada").length;
     const observadas = planes.filter((p) => p.estado === "observada").length;
     return { total, pendientes, aprobadas, observadas };
+  }, [planes]);
+
+  // Analítica curricular y cobertura institucional completa
+  const analitica = useMemo(() => {
+    return calcularAnaliticaInstitucional(planes);
   }, [planes]);
 
   // Extracción dinámica de grados únicos presentes en los planes escolares
@@ -350,8 +357,54 @@ export default function PanelCoordinacionModal({
           </div>
         </div>
 
-        {/* Tarjetas de Métricas */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "10px", margin: "14px 0" }}>
+        {/* Selector de Pestañas: Supervisión vs Analítica */}
+        <div style={{ display: "flex", gap: "8px", borderBottom: "1px solid #e2e8f0", paddingBottom: "10px", marginTop: "10px" }}>
+          <button
+            type="button"
+            onClick={() => setVistaActiva("planes")}
+            style={{
+              padding: "7px 16px",
+              borderRadius: "8px",
+              border: vistaActiva === "planes" ? "1.5px solid #0d9488" : "1px solid #e2e8f0",
+              background: vistaActiva === "planes" ? "#f0fdfa" : "#ffffff",
+              color: vistaActiva === "planes" ? "#0f766e" : "#64748b",
+              fontWeight: vistaActiva === "planes" ? "700" : "500",
+              fontSize: "13px",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px"
+            }}
+          >
+            <span>📋</span>
+            <span>Supervisión y Planes ({planes.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setVistaActiva("analitica")}
+            style={{
+              padding: "7px 16px",
+              borderRadius: "8px",
+              border: vistaActiva === "analitica" ? "1.5px solid #0d9488" : "1px solid #e2e8f0",
+              background: vistaActiva === "analitica" ? "#f0fdfa" : "#ffffff",
+              color: vistaActiva === "analitica" ? "#0f766e" : "#64748b",
+              fontWeight: vistaActiva === "analitica" ? "700" : "500",
+              fontSize: "13px",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px"
+            }}
+          >
+            <span>📈</span>
+            <span>Analítica y Cobertura Curricular</span>
+          </button>
+        </div>
+
+        {vistaActiva === "planes" ? (
+          <>
+            {/* Tarjetas de Métricas */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "10px", margin: "14px 0" }}>
           <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "10px", textAlign: "center" }}>
             <span style={{ display: "block", fontSize: "11px", color: "#64748b", fontWeight: "600" }}>Total Planes</span>
             <strong style={{ fontSize: "20px", color: "#1e293b" }}>{metricas.total}</strong>
@@ -932,6 +985,194 @@ export default function PanelCoordinacionModal({
             </div>
           )}
         </div>
+      </>
+    ) : (
+      /* Vista de Analítica y Cobertura Curricular Institucional */
+      <div style={{ flex: 1, overflowY: "auto", paddingRight: "4px", marginTop: "12px" }}>
+        {/* 1. Tarjetas de Indicadores Estratégicos (KPIs) */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "10px", marginBottom: "16px" }}>
+          <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "10px", padding: "12px", textAlign: "center" }}>
+            <span style={{ display: "block", fontSize: "11px", color: "#166534", fontWeight: "600", textTransform: "uppercase" }}>Tasa de Aprobación</span>
+            <strong style={{ fontSize: "22px", color: "#15803d" }}>{analitica.tasaAprobacion}%</strong>
+            <span style={{ display: "block", fontSize: "11px", color: "#15803d", marginTop: "2px" }}>
+              {analitica.conteoEstados.aprobadas} de {analitica.total} planes
+            </span>
+          </div>
+          <div style={{ background: "#f0fdfa", border: "1px solid #99f6e4", borderRadius: "10px", padding: "12px", textAlign: "center" }}>
+            <span style={{ display: "block", fontSize: "11px", color: "#0f766e", fontWeight: "600", textTransform: "uppercase" }}>Inclusión DUA / NEAE</span>
+            <strong style={{ fontSize: "22px", color: "#0d9488" }}>{analitica.tasaDua}%</strong>
+            <span style={{ display: "block", fontSize: "11px", color: "#0f766e", marginTop: "2px" }}>
+              Adecuaciones curriculares
+            </span>
+          </div>
+          <div style={{ background: "#faf5ff", border: "1px solid #e9d5ff", borderRadius: "10px", padding: "12px", textAlign: "center" }}>
+            <span style={{ display: "block", fontSize: "11px", color: "#6b21a8", fontWeight: "600", textTransform: "uppercase" }}>Con Observaciones</span>
+            <strong style={{ fontSize: "22px", color: "#7e22ce" }}>{analitica.tasaObservadas}%</strong>
+            <span style={{ display: "block", fontSize: "11px", color: "#7e22ce", marginTop: "2px" }}>
+              {analitica.conteoEstados.observadas} planes con ajustes
+            </span>
+          </div>
+          <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "10px", padding: "12px", textAlign: "center" }}>
+            <span style={{ display: "block", fontSize: "11px", color: "#92400e", fontWeight: "600", textTransform: "uppercase" }}>Por Revisar</span>
+            <strong style={{ fontSize: "22px", color: "#b45309" }}>{analitica.conteoEstados.pendientes}</strong>
+            <span style={{ display: "block", fontSize: "11px", color: "#b45309", marginTop: "2px" }}>
+              {analitica.tasaPendientes}% de carga escolar
+            </span>
+          </div>
+        </div>
+
+        {/* 2. Cobertura de las 7 Competencias Fundamentales MINERD */}
+        <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "16px", marginBottom: "16px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+            <div>
+              <h4 style={{ margin: 0, fontSize: "15px", color: "#0f766e" }}>
+                🎯 Cobertura de las 7 Competencias Fundamentales
+              </h4>
+              <p style={{ margin: "2px 0 0 0", fontSize: "11px", color: "#64748b" }}>
+                Adecuación Curricular 2023 • Balance institucional de competencias trabajadas
+              </p>
+            </div>
+            <span style={{ fontSize: "11px", background: "#f1f5f9", color: "#475569", padding: "3px 8px", borderRadius: "6px", fontWeight: "600" }}>
+              MINERD 04-2023
+            </span>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            {analitica.coberturaCompetencias.map((comp) => {
+              const colorBarra = comp.porcentaje >= 65 ? "#10b981" : comp.porcentaje >= 25 ? "#0284c7" : "#f59e0b";
+              const bgBadge = comp.porcentaje >= 65 ? "#ecfdf5" : comp.porcentaje >= 25 ? "#f0f9ff" : "#fffbeb";
+              const colorBadge = comp.porcentaje >= 65 ? "#065f46" : comp.porcentaje >= 25 ? "#0369a1" : "#92400e";
+              return (
+                <div key={comp.id} style={{ background: "#f8fafc", padding: "10px 12px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                    <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e293b" }}>
+                      {comp.nombre}
+                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <span style={{ fontSize: "11px", color: "#64748b" }}>
+                        {comp.conteo} de {analitica.total} ({comp.porcentaje}%)
+                      </span>
+                      <span style={{ fontSize: "11px", fontWeight: "700", background: bgBadge, color: colorBadge, padding: "2px 8px", borderRadius: "12px" }}>
+                        {comp.nivelTrabajo}
+                      </span>
+                    </div>
+                  </div>
+                  <svg width="100%" height="8" style={{ display: "block", borderRadius: "4px", overflow: "hidden" }}>
+                    <rect width="100%" height="8" fill="#e2e8f0" rx="4" />
+                    <rect width={`${comp.porcentaje}%`} height="8" fill={colorBarra} rx="4" />
+                  </svg>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 3. Distribución Curricular: Áreas y Grados */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px", marginBottom: "16px" }}>
+          {/* Desglose por Área */}
+          <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "14px" }}>
+            <h4 style={{ margin: "0 0 10px 0", fontSize: "14px", color: "#0f766e" }}>
+              📚 Distribución por Área Curricular
+            </h4>
+            {analitica.distribucionAreas.length === 0 ? (
+              <p style={{ fontSize: "12px", color: "#94a3b8", margin: 0 }}>Sin datos registrados</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {analitica.distribucionAreas.map((item) => {
+                  const pct = analitica.total > 0 ? Math.round((item.total / analitica.total) * 100) : 0;
+                  return (
+                    <div key={item.area} style={{ fontSize: "12px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
+                        <span style={{ fontWeight: "600", color: "#334155" }}>{item.area}</span>
+                        <span style={{ color: "#64748b" }}>{item.total} {item.total === 1 ? "plan" : "planes"} ({pct}%)</span>
+                      </div>
+                      <div style={{ display: "flex", height: "7px", borderRadius: "4px", overflow: "hidden", background: "#e2e8f0" }}>
+                        {item.aprobadas > 0 && (
+                          <div style={{ width: `${(item.aprobadas / item.total) * 100}%`, background: "#16a34a" }} title={`Aprobadas: ${item.aprobadas}`} />
+                        )}
+                        {item.observadas > 0 && (
+                          <div style={{ width: `${(item.observadas / item.total) * 100}%`, background: "#9333ea" }} title={`Observadas: ${item.observadas}`} />
+                        )}
+                        {item.pendientes > 0 && (
+                          <div style={{ width: `${(item.pendientes / item.total) * 100}%`, background: "#f59e0b" }} title={`Pendientes: ${item.pendientes}`} />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Desglose por Grado Escolar */}
+          <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "14px" }}>
+            <h4 style={{ margin: "0 0 10px 0", fontSize: "14px", color: "#0f766e" }}>
+              🎓 Distribución por Grado Escolar
+            </h4>
+            {analitica.distribucionGrados.length === 0 ? (
+              <p style={{ fontSize: "12px", color: "#94a3b8", margin: 0 }}>Sin datos registrados</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {analitica.distribucionGrados.map((item) => {
+                  const pct = analitica.total > 0 ? Math.round((item.total / analitica.total) * 100) : 0;
+                  return (
+                    <div key={item.grado} style={{ fontSize: "12px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
+                        <span style={{ fontWeight: "600", color: "#334155" }}>{item.grado}</span>
+                        <span style={{ color: "#64748b" }}>{item.total} {item.total === 1 ? "plan" : "planes"} ({pct}%)</span>
+                      </div>
+                      <div style={{ display: "flex", height: "7px", borderRadius: "4px", overflow: "hidden", background: "#e2e8f0" }}>
+                        {item.aprobadas > 0 && (
+                          <div style={{ width: `${(item.aprobadas / item.total) * 100}%`, background: "#16a34a" }} title={`Aprobadas: ${item.aprobadas}`} />
+                        )}
+                        {item.observadas > 0 && (
+                          <div style={{ width: `${(item.observadas / item.total) * 100}%`, background: "#9333ea" }} title={`Observadas: ${item.observadas}`} />
+                        )}
+                        {item.pendientes > 0 && (
+                          <div style={{ width: `${(item.pendientes / item.total) * 100}%`, background: "#f59e0b" }} title={`Pendientes: ${item.pendientes}`} />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 4. Diagnóstico Pedagógico y Alertas Tempranas */}
+        <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "16px", marginBottom: "8px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+            <div>
+              <h4 style={{ margin: 0, fontSize: "15px", color: "#0f766e" }}>
+                🚨 Diagnóstico Pedagógico y Alertas Tempranas
+              </h4>
+              <p style={{ margin: "2px 0 0 0", fontSize: "11px", color: "#64748b" }}>
+                Detección proactiva de brechas curriculares y recomendaciones institucionales
+              </p>
+            </div>
+          </div>
+
+          {analitica.alertasPedagogicas.map((alerta, idx) => {
+            const borderColor = alerta.tipo === "exito" ? "#86efac" : alerta.tipo === "advertencia" ? "#fca5a5" : alerta.tipo === "atencion" ? "#fcd34d" : "#93c5fd";
+            const bgColor = alerta.tipo === "exito" ? "#f0fdf4" : alerta.tipo === "advertencia" ? "#fef2f2" : alerta.tipo === "atencion" ? "#fffbeb" : "#eff6ff";
+            return (
+              <div key={idx} style={{ background: bgColor, border: `1px solid ${borderColor}`, borderRadius: "8px", padding: "12px", marginBottom: "10px" }}>
+                <strong style={{ display: "block", fontSize: "13px", color: "#1e293b", marginBottom: "4px" }}>
+                  {alerta.titulo}
+                </strong>
+                <p style={{ margin: "0 0 6px 0", fontSize: "12px", color: "#475569" }}>
+                  {alerta.descripcion}
+                </p>
+                <div style={{ background: "rgba(255,255,255,0.7)", padding: "6px 10px", borderRadius: "6px", fontSize: "11px", color: "#334155" }}>
+                  💡 <strong>Recomendación MINERD:</strong> {alerta.recomendacion}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    )}
       </div>
     </div>
   );
