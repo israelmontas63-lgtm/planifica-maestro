@@ -3,7 +3,13 @@ import assert from "node:assert";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
-const { Document, Packer, Paragraph, HeadingLevel, TextRun } = require("../server/node_modules/docx");
+let docxModule;
+try {
+  docxModule = require("docx");
+} catch {
+  docxModule = require("../server/node_modules/docx");
+}
+const { Document, Packer, Paragraph, HeadingLevel, TextRun } = docxModule;
 const { LEVELS } = require("../server/curriculum/levels.js");
 const { consultarEstadoCuota, verificarYConsumirCuota } = require("../server/curriculum/quotaManager.js");
 

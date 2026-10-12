@@ -12,7 +12,7 @@
 
 ## Bloque 1: Deuda Técnica y Optimización
 - **Unificación Node/Worker**: Abstraer la lógica duplicada (`ojoDigital.js`, `parseador.js`, etc.) en una carpeta `shared/` para unificar el código de ambos entornos.
-- **Refactorización de npm scripts**: Mejorar el script `test` en el `package.json` raíz utilizando wildcards en lugar de enumerar todos los archivos estáticos.
+- ~~**Refactorización de npm scripts**~~: **COMPLETADO**. El script `test` en `package.json` raíz ahora ejecuta `scripts/run_tests.js` (descubrimiento dinámico de suites de prueba `test_*.mjs` y `*.test.mjs`), junto con `npm run test:client` y `npm run test:all`.
 - [Futuro] Rotar las API Keys y Supabase Anon Key filtradas en los .env.example y eliminarlas del control de versiones (riesgo aceptado temporalmente por el dueño).
 - [Futuro] Mover pm_owner_key y tokens a cookies HttpOnly (Backlog H6).
 
@@ -29,10 +29,8 @@
   los límites de gasto en los paneles de Google AI Studio y ElevenLabs.
 
 **Calidad / mantenimiento**
-- Dos pruebas de interfaz antiguas fallan en `client/src/test/fase15_pruebas.test.jsx` (ya fallaban antes de este
-  cambio): prueban una interfaz que cambió.
-- `package.json` de la raíz declara `docx@8.5.0` (añadido como "arreglo"), pero el cliente y el servidor usan
-  `docx@9.7.1`. Las pruebas del directorio `tests/` y la aplicación pueden usar versiones distintas de `docx`.
+- ~~Dos pruebas de interfaz antiguas fallan en `client/src/test/fase15_pruebas.test.jsx`~~: **COMPLETADO**. Selectores adaptados al diseño actual de la UI (clase `pm-ai-notice` y botones de menú actualizados en `BottomPanel.jsx`). Pruebas Vitest 4/4 superadas.
+- ~~`package.json` de la raíz declara `docx@8.5.0`~~: **COMPLETADO**. Versión de `docx` actualizada a `^9.7.1` en la raíz para total paridad con el cliente (`9.7.1`) y servidor (`9.0.2`), con importación resiliente en pruebas.
 - `npm test` necesita `server/node_modules` y la carpeta `server/data/` (ignorada por git): en un clon limpio hay
   que ejecutar `npm ci` en `server/` y crear `server/data/`.
 - ~~`Math.random()` genera el token de confirmación de eliminación de cuenta~~: **COMPLETADO**. Migrado a `crypto.getRandomValues` criptográficamente seguro mediante `generarCodigoSeguro()` en `worker/index.js`.

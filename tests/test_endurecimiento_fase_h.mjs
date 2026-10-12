@@ -132,6 +132,7 @@ describe("ENDURECIMIENTO FASE H: Circuit Breaker, Persistencia, Privacidad y Pro
     });
 
     it("2.3 Error 400/401 NO activa proveedores de respaldo y se registra como error de configuración", async () => {
+      registrarExitoCircuito("gemini_flash");
       const provId = "prov_test_config_401";
       const estadoAntes = obtenerEstadoCircuito(provId);
       assert.strictEqual(estadoAntes.estado, "CERRADO");

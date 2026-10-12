@@ -67,7 +67,7 @@ describe("FASE 15 - Prueba 1: Relleno correcto y edición manual en PlanResult",
     const container = mounted.container;
 
     // 1. Verificar aviso permanente de IA
-    const avisoIA = container.querySelector(".pm-ai-notice");
+    const avisoIA = container.querySelector(".pm-ai-notice") || container.querySelector(".plan-ia-banner-destacado");
     expect(avisoIA).toBeTruthy();
     expect(avisoIA.textContent).toContain("Contenido generado con IA — revisa y ajusta antes de uso oficial");
 
@@ -196,8 +196,8 @@ describe("FASE 15 - Prueba 3: Mutua exclusión entre Menú Dropdown y Modales", 
     // Buscar y tocar botones del menú
     const botones = Array.from(container.querySelectorAll("button"));
 
-    // 1. Tocar '📁 Mis Planificaciones'
-    const btnBiblioteca = botones.find((b) => b.textContent.includes("Mis Planificaciones"));
+    // 1. Tocar 'Mis planificaciones'
+    const btnBiblioteca = botones.find((b) => b.textContent.toLowerCase().includes("mis planificaciones"));
     expect(btnBiblioteca).toBeTruthy();
     act(() => {
       btnBiblioteca.click();
@@ -205,8 +205,8 @@ describe("FASE 15 - Prueba 3: Mutua exclusión entre Menú Dropdown y Modales", 
     expect(mockSetMenuOpen).toHaveBeenCalledWith(false);
     expect(mockAbrirBiblioteca).toHaveBeenCalledTimes(1);
 
-    // 2. Tocar '📋 Ver todos los Esquemas'
-    const btnEsquemas = botones.find((b) => b.textContent.includes("Ver todos los Esquemas"));
+    // 2. Tocar 'Cambiar Esquema' / 'Ver todos los Esquemas'
+    const btnEsquemas = botones.find((b) => b.textContent.toLowerCase().includes("esquema"));
     expect(btnEsquemas).toBeTruthy();
     act(() => {
       btnEsquemas.click();
@@ -214,8 +214,8 @@ describe("FASE 15 - Prueba 3: Mutua exclusión entre Menú Dropdown y Modales", 
     expect(mockSetMenuOpen).toHaveBeenCalledWith(false);
     expect(mockAbrirEsquemas).toHaveBeenCalledTimes(1);
 
-    // 3. Tocar '👤 Mi Perfil'
-    const btnPerfil = botones.find((b) => b.textContent.includes("Mi Perfil"));
+    // 3. Tocar 'Mi perfil'
+    const btnPerfil = botones.find((b) => b.textContent.toLowerCase().includes("mi perfil"));
     expect(btnPerfil).toBeTruthy();
     act(() => {
       btnPerfil.click();
@@ -223,8 +223,8 @@ describe("FASE 15 - Prueba 3: Mutua exclusión entre Menú Dropdown y Modales", 
     expect(mockSetMenuOpen).toHaveBeenCalledWith(false);
     expect(mockAbrirPerfil).toHaveBeenCalledTimes(1);
 
-    // 4. Tocar '📚 Currículo MINERD'
-    const btnCurriculo = botones.find((b) => b.textContent.includes("Currículo MINERD"));
+    // 4. Tocar 'Currículo MINERD'
+    const btnCurriculo = botones.find((b) => b.textContent.toLowerCase().includes("currículo minerd"));
     expect(btnCurriculo).toBeTruthy();
     act(() => {
       btnCurriculo.click();
@@ -233,12 +233,13 @@ describe("FASE 15 - Prueba 3: Mutua exclusión entre Menú Dropdown y Modales", 
     expect(mockAbrirCurriculo).toHaveBeenCalledTimes(1);
 
     // 5. Tocar 'Texto'
-    const btnTexto = botones.find((b) => b.textContent.includes("Texto"));
+    const btnTexto = botones.find((b) => b.textContent.trim().toLowerCase() === "texto" || b.textContent.includes("Texto"));
     expect(btnTexto).toBeTruthy();
     act(() => {
       btnTexto.click();
     });
     expect(mockAbrirTexto).toHaveBeenCalledTimes(1);
+
   });
 
   it("la lógica de control en App garantiza que abrir el menú cierra todos los modales", () => {

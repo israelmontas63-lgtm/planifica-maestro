@@ -140,7 +140,7 @@ export default function PlanResult({
       </div>
 
       {/* FASE 10: Aviso de IA destacado y permanente (no cerrable ni desactivable) */}
-      <div className="plan-ia-banner-destacado no-print">
+      <div className="plan-ia-banner-destacado pm-ai-notice no-print">
         <div className="plan-ia-banner-icon">⚠️</div>
         <div className="plan-ia-banner-texto">
           <span className="plan-ia-banner-tag">Aviso Institucional</span>
