@@ -24,3 +24,12 @@
 - **Motivo**: Evitar que la ejecución de pruebas ensucie el árbol de trabajo git con archivos binarios de muestra.
 - **Decisión (Límite IP en Escuelas)**: Se parametrizó RATE_LIMIT_ANONIMO_DIARIO = '50' (ajustable por variable de entorno) para prevenir que múltiples docentes en la misma red escolar agoten la cuota diaria prematuramente.
 - **Decisión (Modo Offline en Aulas Rurales)**: La PWA almacena planificaciones y perfiles directamente en el dispositivo (localStorage) y encola ajustes para sincronización automática cuando el dispositivo detecta el evento online.
+
+## Bloque 12: Multiusuario Institucional y Supervisión Pedagógica
+- **Decisión (Aislamiento RLS y Estados Canónicos)**:
+  1. Los borradores (`borrador`) son de estricta privacidad del docente autor (`(select auth.uid()) = docente_id`).
+  2. Los coordinadores y directores únicamente tienen acceso de lectura a planes explícitamente enviados a revisión (`enviada_revision`, `aprobada`, `observada`) pertenecientes a su misma escuela (`escuela_id`).
+  3. Los estados del dictamen del coordinador se estandarizaron como `aprobada`, `requiere_ajustes` y `sugerencias`, incorporando retroalimentación de momentos de clase (Inicio, Desarrollo, Cierre) y pautas DUA para atención a la diversidad (NEAE).
+- **Decisión (Carga Diferida y Resiliencia Offline)**:
+  1. `PanelCoordinacionModal.jsx` se empaqueta como chunk diferido (`React.lazy`), garantizando 0 KB de impacto en el primer renderizado de la PWA para docentes.
+  2. El servicio `coordinacionService.js` opera de manera transparente tanto conectado a Supabase como en modo local offline, permitiendo que docentes y supervisores en zonas sin conectividad estable continúen trabajando sin interrupciones.
