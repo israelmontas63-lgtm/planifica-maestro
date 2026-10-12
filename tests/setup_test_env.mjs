@@ -9,5 +9,13 @@ if (!fs.existsSync(testDataDir)) {
   } catch (e) {}
 }
 
+const serverDataDir = path.resolve(process.cwd(), "server", "data");
+if (!fs.existsSync(serverDataDir)) {
+  try {
+    fs.mkdirSync(serverDataDir, { recursive: true });
+  } catch (e) {}
+}
+
 process.env.PM_DATA_DIR = testDataDir;
 process.env.NODE_ENV = "test";
+

@@ -18,7 +18,8 @@
     "wrangler": "^4.135.0"
   },
   "workspaces": [
-    "client"
+    "client",
+    "server"
   ],
   "dependencies": {
     "docx": "^9.7.1"

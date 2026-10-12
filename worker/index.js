@@ -29,8 +29,12 @@ const anonymousDailyRateLimit = new Map(); // hashHex -> { count: number, resetA
 const cacheConsultasCurriculares = new Map(); // key -> { data, expiraEn }
 
 async function verificarRateLimitAnonimo(clientIp, limiteDiario = 30, env = null) {
+  const limiteEfectivo = (env && env.RATE_LIMIT_ANONIMO_DIARIO)
+    ? (parseInt(env.RATE_LIMIT_ANONIMO_DIARIO, 10) || limiteDiario)
+    : limiteDiario;
+
   if (!clientIp || clientIp === "127.0.0.1" || clientIp === "localhost") {
-    return { permitido: true, restantes: limiteDiario };
+    return { permitido: true, restantes: limiteEfectivo };
   }
   try {
     const fechaHoy = new Date().toISOString().substring(0, 10);
@@ -55,10 +59,10 @@ async function verificarRateLimitAnonimo(clientIp, limiteDiario = 30, env = null
         const val = await env.RATE_LIMIT_KV.get(key);
         if (val) count = parseInt(val, 10);
 
-        if (count >= limiteDiario) return { permitido: false, restantes: 0, hash: hashHex };
+        if (count >= limiteEfectivo) return { permitido: false, restantes: 0, hash: hashHex };
         
         await env.RATE_LIMIT_KV.put(key, (count + 1).toString(), { expirationTtl: Math.max(60, ttlSeconds) });
-        return { permitido: true, restantes: limiteDiario - (count + 1), hash: hashHex };
+        return { permitido: true, restantes: limiteEfectivo - (count + 1), hash: hashHex };
       } catch (kvError) {
         console.error("WARN: Error en KV Rate Limit, cayendo a Map:", kvError);
       }
@@ -71,17 +75,17 @@ async function verificarRateLimitAnonimo(clientIp, limiteDiario = 30, env = null
     const entry = anonymousDailyRateLimit.get(hashHex);
     if (!entry || now > entry.resetAt) {
       anonymousDailyRateLimit.set(hashHex, { count: 1, resetAt });
-      return { permitido: true, restantes: limiteDiario - 1, hash: hashHex };
+      return { permitido: true, restantes: limiteEfectivo - 1, hash: hashHex };
     }
 
-    if (entry.count >= limiteDiario) {
+    if (entry.count >= limiteEfectivo) {
       return { permitido: false, restantes: 0, hash: hashHex };
     }
 
     entry.count++;
-    return { permitido: true, restantes: limiteDiario - entry.count, hash: hashHex };
+    return { permitido: true, restantes: limiteEfectivo - entry.count, hash: hashHex };
   } catch (e) {
-    return { permitido: true, restantes: limiteDiario };
+    return { permitido: true, restantes: limiteEfectivo };
   }
 }
 

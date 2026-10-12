@@ -29,6 +29,9 @@ function cargarHistorial() {
 
 function guardarHistorial(historial) {
   try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
     fs.writeFileSync(DATA_FILE, JSON.stringify(historial, null, 2), "utf-8");
   } catch (err) {
     console.error("Error guardando historial_docente.json:", err.message);

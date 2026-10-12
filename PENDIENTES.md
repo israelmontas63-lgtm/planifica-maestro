@@ -22,8 +22,7 @@
 - La clave institucional anterior estuvo publicada en el README, en un test y como valor por defecto del
   cliente, y sigue en el historial público de git. Hay que **cambiar `APP_ACCESS_KEY`** por una clave nueva
   (`npx wrangler secret put APP_ACCESS_KEY`) y compartirla solo con los docentes de la prueba.
-- `plan/generate` conserva su límite de 30 consultas por día por IP (decisión anterior, no modificada). Varios
-  docentes de una misma escuela comparten IP: revisar si ese límite es adecuado.
+- ~~**Límite diario por IP en escuelas**~~: **COMPLETADO**. Parametrizado mediante variable `RATE_LIMIT_ANONIMO_DIARIO` en `worker/index.js` y `wrangler.toml` (elevado a 50 consultas/día por defecto con ajuste dinámico), previniendo saturación accidental entre docentes en la misma red escolar.
 - Los limitadores por IP viven en memoria de cada instancia del Worker (no se comparten ni sobreviven a
   reinicios). Configurar `RATE_LIMIT_KV` los hace distribuidos. El control real del gasto es la clave de acceso y
   los límites de gasto en los paneles de Google AI Studio y ElevenLabs.
@@ -31,7 +30,7 @@
 **Calidad / mantenimiento**
 - ~~Dos pruebas de interfaz antiguas fallan en `client/src/test/fase15_pruebas.test.jsx`~~: **COMPLETADO**. Selectores adaptados al diseño actual de la UI (clase `pm-ai-notice` y botones de menú actualizados en `BottomPanel.jsx`). Pruebas Vitest 4/4 superadas.
 - ~~`package.json` de la raíz declara `docx@8.5.0`~~: **COMPLETADO**. Versión de `docx` actualizada a `^9.7.1` en la raíz para total paridad con el cliente (`9.7.1`) y servidor (`9.0.2`), con importación resiliente en pruebas.
-- `npm test` necesita `server/node_modules` y la carpeta `server/data/` (ignorada por git): en un clon limpio hay
-  que ejecutar `npm ci` en `server/` y crear `server/data/`.
+- ~~**Clon limpio y dependencias de servidor/datos**~~: **COMPLETADO**. `server/data/.gitkeep` añadido y `.gitignore` ajustado para preservar el directorio; `server` agregado a `workspaces` de `package.json` y auto-creación/auto-instalación garantizada en `scripts/run_tests.js` y `tests/setup_test_env.mjs`.
+
 - ~~`Math.random()` genera el token de confirmación de eliminación de cuenta~~: **COMPLETADO**. Migrado a `crypto.getRandomValues` criptográficamente seguro mediante `generarCodigoSeguro()` en `worker/index.js`.
 - ~~PDFs duplicados en el repositorio~~: **COMPLETADO**. Eliminados 55.6 MB de duplicados en `server/curriculum/referencias/con-base/`. Duplicación de lógica entre `server/` y `worker/` documentada en Bloque 1.

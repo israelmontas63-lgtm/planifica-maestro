@@ -1,6 +1,23 @@
 import fs from "node:fs";
 import path from "node:path";
-import { spawn } from "node:child_process";
+import { spawn, execSync } from "node:child_process";
+
+// Garantizar que la carpeta server/data/ exista en clones limpios
+const serverDataDir = path.resolve(process.cwd(), "server", "data");
+if (!fs.existsSync(serverDataDir)) {
+  try { fs.mkdirSync(serverDataDir, { recursive: true }); } catch (e) {}
+}
+
+// Garantizar dependencias del servidor si faltan en un clon limpio
+if (!fs.existsSync("server/node_modules/express")) {
+  console.log("📦 [Tests] Instalando dependencias del servidor en entorno limpio...");
+  try {
+    const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
+    execSync(`${npmCmd} ci --prefix server`, { stdio: "inherit" });
+  } catch (err) {
+    console.warn("⚠️ [Tests] Advertencia instalando dependencias del servidor:", err.message);
+  }
+}
 
 const EXCLUDED_BY_DEFAULT = new Set([
   "test_archivos_congelados.mjs",
