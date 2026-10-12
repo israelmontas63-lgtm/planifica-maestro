@@ -11,10 +11,10 @@ function timingSafeEqualStr(a, b) {
 }
 
 /**
- * POST /api/auth/verify
- * Verifica la clave institucional enviada por el frontend
+ * GET o POST /api/auth/verify
+ * Verifica la clave institucional o el acceso libre en beta abierta
  */
-router.post("/verify", (req, res) => {
+const handleVerify = (req, res) => {
   if (process.env.REQUIRE_ACCESS_KEY === "false" || process.env.ACCESO_ABIERTO === "true") {
     return res.json({
       ok: true,
@@ -24,7 +24,8 @@ router.post("/verify", (req, res) => {
     });
   }
 
-  const { password } = req.body;
+  const headerKey = req.headers["x-app-key"];
+  const password = (req.body && req.body.password) || headerKey;
   const expectedKey = process.env.APP_ACCESS_KEY;
 
   if (!expectedKey) {
@@ -43,7 +44,10 @@ router.post("/verify", (req, res) => {
     ok: false,
     error: "Clave de acceso incorrecta. Solicita la clave institucional a tu coordinador o administrador."
   });
-});
+};
+
+router.post("/verify", handleVerify);
+router.get("/verify", handleVerify);
 
 const fs = require("fs");
 const path = require("path");

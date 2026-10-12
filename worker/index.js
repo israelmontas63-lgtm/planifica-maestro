@@ -307,10 +307,12 @@ async function consultarCuota(env, docenteId, isOwner, clientIp = "127.0.0.1") {
       usadas: 0,
       limite: 999999,
       restantes: 999999,
+      restante: 999999,
       porcentaje: 0,
       agotado: false,
       alerta80: false,
       isOwner: true,
+      esOwner: true,
       origen_cuota: "owner_bypass",
     };
   }
@@ -807,8 +809,8 @@ async function handleApiRequest(request, env, ctx) {
     });
   }
 
-  // 2. POST /api/auth/verify (Clave institucional)
-  if (path === "/api/auth/verify" && method === "POST") {
+  // 2. GET o POST /api/auth/verify (Clave institucional o acceso libre en beta abierta)
+  if (path === "/api/auth/verify" && (method === "GET" || method === "POST")) {
     const accesoAbierto = Boolean(
       env &&
       (env.ACCESO_ABIERTO === "true" || env.REQUIRE_ACCESS_KEY === "false")
@@ -819,7 +821,9 @@ async function handleApiRequest(request, env, ctx) {
       });
     }
 
-    const body = await request.json().catch(() => ({}));
+    const headerKey = request.headers.get("x-app-key");
+    const body = (method === "POST") ? await request.json().catch(() => ({})) : {};
+    const candidateKey = (headerKey && headerKey.trim()) || (body.password && typeof body.password === "string" ? body.password.trim() : "");
     const expected = env.APP_ACCESS_KEY;
     if (!expected) {
       return new Response(JSON.stringify({ ok: false, error: "Servidor mal configurado. Falta clave institucional." }), {
@@ -828,7 +832,7 @@ async function handleApiRequest(request, env, ctx) {
       });
     }
 
-    if (body.password && timingSafeEqualStr(body.password.trim(), expected.trim())) {
+    if (candidateKey && timingSafeEqualStr(candidateKey, expected.trim())) {
       return new Response(JSON.stringify({ ok: true, token: expected.trim() }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
