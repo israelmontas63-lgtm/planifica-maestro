@@ -35,6 +35,5 @@
   `docx@9.7.1`. Las pruebas del directorio `tests/` y la aplicación pueden usar versiones distintas de `docx`.
 - `npm test` necesita `server/node_modules` y la carpeta `server/data/` (ignorada por git): en un clon limpio hay
   que ejecutar `npm ci` en `server/` y crear `server/data/`.
-- `Math.random()` genera el token de confirmación de eliminación de cuenta; usar `crypto.getRandomValues`
-  (la ruta hoy está inactiva porque Supabase no está configurado).
-- Duplicación de lógica entre `server/` y `worker/`; PDFs duplicados en el repositorio.
+- ~~`Math.random()` genera el token de confirmación de eliminación de cuenta~~: **COMPLETADO**. Migrado a `crypto.getRandomValues` criptográficamente seguro mediante `generarCodigoSeguro()` en `worker/index.js`.
+- ~~PDFs duplicados en el repositorio~~: **COMPLETADO**. Eliminados 55.6 MB de duplicados en `server/curriculum/referencias/con-base/`. Duplicación de lógica entre `server/` y `worker/` documentada en Bloque 1.

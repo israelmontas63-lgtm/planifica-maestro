@@ -110,6 +110,13 @@ function timingSafeEqualStr(a, b) {
   return diff === 0;
 }
 
+function generarCodigoSeguro(longitud = 6) {
+  const bytes = new Uint8Array(longitud);
+  crypto.getRandomValues(bytes);
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  return Array.from(bytes, b => chars[b % chars.length]).join("");
+}
+
 async function checkOwnerRateLimit(ip, env = null) {
   const now = Date.now();
   const windowMs = 15 * 60 * 1000; // 15 minutos
@@ -476,7 +483,7 @@ async function handleApiRequest(request, env, ctx) {
   };
 
   function generarErrorPlanificacion(codigo, mensaje, sugerencia, reintentable = true, status = 200, cuota = null) {
-    const incidentId = "INC-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+    const incidentId = "INC-" + generarCodigoSeguro(6);
     console.warn(`[PlanError ${incidentId}] ${codigo} - ${mensaje}`);
     const payload = {
       ok: false,
@@ -1426,7 +1433,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
       }
 
       if (!geminiRes) {
-        const incidentId = "INC-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+        const incidentId = "INC-" + generarCodigoSeguro(6);
         console.error(`[AI Error ${incidentId}] Modelos agotados. Código: ${ultimoStatus} - ${ultimoError}`);
         const codigo = (ultimoStatus === 429)
           ? "CUOTA_DIARIA_AGOTADA"
@@ -1934,8 +1941,8 @@ Genera un JSON estricto con:
       );
     }
 
-    // Generar token de confirmación de un solo uso (6 caracteres alfanuméricos)
-    const confirmationToken = Math.random().toString(36).substring(2, 8).toUpperCase();
+    // Generar token de confirmación de un solo uso criptográficamente seguro (6 caracteres)
+    const confirmationToken = generarCodigoSeguro(6);
     const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutos TTL
 
     pendingAccountDeletions.set(userId, {
