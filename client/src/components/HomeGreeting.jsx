@@ -7,7 +7,35 @@ const PHRASES = [
   "¿En qué te ayudo?"
 ];
 
-export default function HomeGreeting({ user }) {
+const SUGERENCIAS_CURRICULARES = [
+  {
+    icono: "🔢",
+    texto: "Fracciones para 3.º",
+    prompt: "Planificar una clase de Matemática sobre fracciones con material concreto para 3.º de Primaria."
+  },
+  {
+    icono: "📖",
+    texto: "La anécdota (4.º)",
+    prompt: "Planificar una clase de Lengua Española sobre la anécdota y comprensión lectora para 4.º de Primaria."
+  },
+  {
+    icono: "🌱",
+    texto: "Ecosistemas (5.º)",
+    prompt: "Planificar una sesión de Ciencias de la Naturaleza sobre ecosistemas y biodiversidad dominicana para 5.º de Primaria."
+  },
+  {
+    icono: "🇩🇴",
+    texto: "Símbolos patrios (2.º)",
+    prompt: "Planificar una clase de Ciencias Sociales sobre los símbolos patrios y Juan Pablo Duarte para 2.º de Primaria."
+  },
+  {
+    icono: "📚",
+    texto: "Secuencia Con Base",
+    prompt: "Estructurar una secuencia didáctica del programa Con Base para primer ciclo de Primaria enfocada en alfabetización inicial."
+  }
+];
+
+export default function HomeGreeting({ user, onSeleccionarSugerencia }) {
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [displayText, setDisplayText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -108,6 +136,28 @@ export default function HomeGreeting({ user }) {
         <span className="pm-greeting-serif-text">{displayText}</span>
         <span className="pm-typewriter-cursor" aria-hidden="true">|</span>
       </h1>
+
+      {onSeleccionarSugerencia && (
+        <div className="pm-home-suggestions-container" style={{ marginTop: "14px", animation: "fadeIn 0.3s ease" }}>
+          <div style={{ fontSize: "11.5px", fontWeight: "600", color: "#64748b", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+            💡 Ideas curriculares para empezar hoy:
+          </div>
+          <div className="pm-quick-replies-row" style={{ justifyContent: "center" }}>
+            {SUGERENCIAS_CURRICULARES.map((sug, idx) => (
+              <button
+                key={idx}
+                type="button"
+                className="pm-quick-reply-pill"
+                onClick={() => onSeleccionarSugerencia(sug.prompt)}
+                title={`Crear: ${sug.prompt}`}
+              >
+                <span>{sug.icono}</span>
+                <span>{sug.texto}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1006,10 +1006,32 @@ export default function App() {
           gap: '12px' 
         }}
       >
+        {!isOnline && (
+          <div style={{
+            background: "#fffbeb",
+            border: "1px solid #fde68a",
+            color: "#92400e",
+            padding: "8px 12px",
+            borderRadius: "8px",
+            fontSize: "12.5px",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            margin: "0 4px"
+          }}>
+            <span>📡</span>
+            <span><strong>Modo sin conexión:</strong> Tus consultas y planificaciones se guardan en este dispositivo.</span>
+          </div>
+        )}
+
         {/* FASE A: Saludo vivo contextual con tipografía serifa y efecto máquina de escribir */}
         {messages.length === 0 && !cargando && !listening && (
-          <HomeGreeting user={user} />
+          <HomeGreeting 
+            user={user} 
+            onSeleccionarSugerencia={(prompt) => handleAbrirTexto(prompt, "Personaliza tu planificación")} 
+          />
         )}
+
 
         {/* Aviso de almacenamiento local en dispositivo (mostrado una sola vez, sin jerga técnica) */}
         {!avisoDispositivoVisto && messages.length === 0 && !cargando && !listening && (
