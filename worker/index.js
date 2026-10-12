@@ -291,13 +291,19 @@ function extraerJsonValido(text) {
 // ─────────────────────────────────────────────────────────────
 // GESTIÓN DE CUOTAS (SUPABASE CON FALLBACK EN MEMORIA)
 // ─────────────────────────────────────────────────────────────
-async function consultarCuota(env, docenteId, isOwner) {
-  const limiteDefault = env.PLAN_LIMIT_MAX ? parseInt(env.PLAN_LIMIT_MAX, 10) : 20;
-  const periodoActual = new Date().toISOString().substring(0, 7); // YYYY-MM
+// Rate limit en memoria por dispositivo (SHA-256 de device_id + fecha_YYYY-MM-DD)
+const deviceDailyRateLimit = new Map(); // hashHex -> { count: number, resetAt: number }
+// Rate limit por red IP escolar (SHA-256 de ip + fecha_YYYY-MM-DD)
+const ipDailyRateLimit = new Map(); // hashHex -> { count: number, resetAt: number }
+// Contador diario global en memoria
+let globalDailyCounter = { date: "", count: 0 };
 
+async function consultarCuota(env, docenteId, isOwner, clientIp = "127.0.0.1") {
   if (isOwner) {
     return {
       permitido: true,
+      docenteId: "owner",
+      periodo: "dia",
       usadas: 0,
       limite: 999999,
       restantes: 999999,
@@ -305,14 +311,15 @@ async function consultarCuota(env, docenteId, isOwner) {
       agotado: false,
       alerta80: false,
       isOwner: true,
-      periodo: periodoActual,
       origen_cuota: "owner_bypass",
     };
   }
 
-  // Si Supabase está configurado con service role key
-  if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
+  const esModoCerrado = env && (env.ACCESO_ABIERTO === "false" || env.REQUIRE_ACCESS_KEY === "true");
+  // Si está en Modo Cerrado con Supabase configurado, usar Supabase
+  if (esModoCerrado && env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
     try {
+      const periodoActual = new Date().toISOString().substring(0, 7);
       const url = `${env.SUPABASE_URL}/rest/v1/uso_docentes?docente_id=eq.${encodeURIComponent(docenteId)}&periodo=eq.${periodoActual}&select=*`;
       const res = await fetch(url, {
         headers: {
@@ -325,9 +332,10 @@ async function consultarCuota(env, docenteId, isOwner) {
         if (rows && rows.length > 0) {
           const row = rows[0];
           const usadas = row.usadas || 0;
-          const limite = row.limite || limiteDefault;
+          const limite = row.limite || (env.PLAN_LIMIT_MAX ? parseInt(env.PLAN_LIMIT_MAX, 10) : 20);
           return {
             permitido: usadas < limite,
+            docenteId,
             usadas,
             limite,
             restantes: Math.max(0, limite - usadas),
@@ -345,30 +353,182 @@ async function consultarCuota(env, docenteId, isOwner) {
     }
   }
 
-  // Fallback en memoria
-  const key = `${docenteId}_${periodoActual}`;
-  const entry = inMemoryQuotas.get(key) || { usadas: 0, limite: limiteDefault };
+  // BETA ABIERTA: Cuota diaria por dispositivo (Hash SHA-256 de device_id + fecha_YYYY-MM-DD)
+  const limiteDispositivo = (env && env.RATE_LIMIT_DISPOSITIVO_DIARIO)
+    ? (parseInt(env.RATE_LIMIT_DISPOSITIVO_DIARIO, 10) || 25)
+    : 25;
+
+  const fechaHoy = new Date().toISOString().substring(0, 10);
+  const now = Date.now();
+  const midnight = new Date();
+  midnight.setHours(24, 0, 0, 0);
+  const resetAt = midnight.getTime();
+
+  const idParaDispositivo = (docenteId && docenteId !== "docente_default" && docenteId.trim().length > 0)
+    ? docenteId.trim()
+    : `fallback_ip_${clientIp || "127.0.0.1"}`;
+
+  const encoder = new TextEncoder();
+  const devData = encoder.encode(`${idParaDispositivo}_pm_device_${fechaHoy}`);
+  const devHashBuf = await crypto.subtle.digest("SHA-256", devData);
+  const devHashHex = Array.from(new Uint8Array(devHashBuf))
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("")
+    .substring(0, 32);
+
+  let devCount = 0;
+  if (env && env.RATE_LIMIT_KV) {
+    try {
+      const devKey = `rl_dev_${devHashHex}`;
+      const devVal = await env.RATE_LIMIT_KV.get(devKey);
+      if (devVal) devCount = parseInt(devVal, 10);
+    } catch (e) {
+      console.warn("WARN: Error en KV consultando cuota:", e);
+    }
+  } else {
+    const entry = deviceDailyRateLimit.get(devHashHex);
+    if (entry && now <= entry.resetAt) {
+      devCount = entry.count;
+    }
+  }
+
+  const usadas = devCount;
+  const restantes = Math.max(0, limiteDispositivo - usadas);
+  const porcentaje = Math.round((usadas / limiteDispositivo) * 100);
+  const agotado = usadas >= limiteDispositivo;
+  const alerta80 = (usadas / limiteDispositivo) >= 0.8 && !agotado;
+
   return {
-    permitido: entry.usadas < entry.limite,
-    usadas: entry.usadas,
-    limite: entry.limite,
-    restantes: Math.max(0, entry.limite - entry.usadas),
-    porcentaje: Math.round((entry.usadas / entry.limite) * 100),
-    agotado: entry.usadas >= entry.limite,
-    alerta80: entry.usadas / entry.limite >= 0.8,
+    permitido: !agotado,
+    docenteId: idParaDispositivo,
+    periodo: "dia",
+    usadas,
+    limite: limiteDispositivo,
+    restantes,
+    porcentaje,
+    agotado,
+    alerta80,
     isOwner: false,
-    periodo: periodoActual,
-    origen_cuota: "memoria",
+    origen_cuota: "dispositivo",
+    fechaReinicio: midnight.toISOString(),
   };
 }
 
-async function consumirCuota(env, docenteId, isOwner) {
-  if (isOwner) return consultarCuota(env, docenteId, true);
+async function verificarTopesMultinivel({ deviceId, clientIp, env, isOwner }) {
+  if (isOwner) {
+    return {
+      permitido: true,
+      cuota: {
+        permitido: true,
+        docenteId: "owner",
+        periodo: "dia",
+        usadas: 0,
+        limite: 999999,
+        restantes: 999999,
+        porcentaje: 0,
+        agotado: false,
+        alerta80: false,
+        isOwner: true,
+        origen_cuota: "owner_bypass"
+      }
+    };
+  }
 
-  const periodoActual = new Date().toISOString().substring(0, 7);
+  const fechaHoy = new Date().toISOString().substring(0, 10);
+  const now = Date.now();
+  const encoder = new TextEncoder();
 
-  if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
+  // 1. Tope Global Diario (Red de seguridad de gasto, por defecto 500)
+  const limiteGlobal = (env && env.RATE_LIMIT_GLOBAL_DIARIO)
+    ? (parseInt(env.RATE_LIMIT_GLOBAL_DIARIO, 10) || 500)
+    : 500;
+
+  let globalCount = 0;
+  if (env && env.RATE_LIMIT_KV) {
     try {
+      const gKey = `rl_global_${fechaHoy}`;
+      const gVal = await env.RATE_LIMIT_KV.get(gKey);
+      if (gVal) globalCount = parseInt(gVal, 10);
+    } catch (e) {}
+  } else {
+    if (globalDailyCounter.date === fechaHoy) {
+      globalCount = globalDailyCounter.count;
+    }
+  }
+
+  if (globalCount >= limiteGlobal) {
+    return {
+      permitido: false,
+      error: "El servicio ha alcanzado su límite diario global de consultas para proteger el presupuesto del sistema. Intenta nuevamente mañana.",
+      tipo: "global",
+      limiteAlcanzado: true,
+      agotado: true,
+    };
+  }
+
+  // 2. Tope de IP de la Red / Escuela (RATE_LIMIT_IP_DIARIO, configurable, por defecto 75)
+  const limiteIp = (env && env.RATE_LIMIT_IP_DIARIO)
+    ? (parseInt(env.RATE_LIMIT_IP_DIARIO, 10) || 75)
+    : 75;
+
+  const ipParaHash = clientIp || "unknown";
+  const ipData = encoder.encode(`${ipParaHash}_pm_ip_${fechaHoy}`);
+  const ipHashBuf = await crypto.subtle.digest("SHA-256", ipData);
+  const ipHashHex = Array.from(new Uint8Array(ipHashBuf))
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("")
+    .substring(0, 32);
+
+  let ipCount = 0;
+  if (env && env.RATE_LIMIT_KV) {
+    try {
+      const ipKey = `rl_ip_${ipHashHex}`;
+      const ipVal = await env.RATE_LIMIT_KV.get(ipKey);
+      if (ipVal) ipCount = parseInt(ipVal, 10);
+    } catch (e) {}
+  } else {
+    const ipEntry = ipDailyRateLimit.get(ipHashHex);
+    if (ipEntry && now <= ipEntry.resetAt) {
+      ipCount = ipEntry.count;
+    }
+  }
+
+  if (ipCount >= limiteIp) {
+    return {
+      permitido: false,
+      error: `Demasiadas solicitudes desde esta red escolar hoy (límite de ${limiteIp} consultas/día por red alcanzado). Regresa mañana o utiliza otra conexión.`,
+      tipo: "ip",
+      limiteAlcanzado: true,
+      agotado: true,
+    };
+  }
+
+  // 3. Cuota por Maestro por Dispositivo (RATE_LIMIT_DISPOSITIVO_DIARIO, por defecto 25)
+  const cuota = await consultarCuota(env, deviceId, false, clientIp);
+  if (!cuota.permitido) {
+    return {
+      permitido: false,
+      error: `Has alcanzado tu cuota diaria de la beta abierta (${cuota.limite} planes). Se reinicia a medianoche. Gracias por probar Planifica Maestro.`,
+      tipo: "dispositivo",
+      limiteAlcanzado: true,
+      agotado: true,
+      cuota,
+    };
+  }
+
+  return {
+    permitido: true,
+    cuota,
+  };
+}
+
+async function consumirCuota(env, docenteId, isOwner, clientIp = "127.0.0.1") {
+  if (isOwner) return consultarCuota(env, docenteId, true, clientIp);
+
+  const esModoCerrado = env && (env.ACCESO_ABIERTO === "false" || env.REQUIRE_ACCESS_KEY === "true");
+  if (esModoCerrado && env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      const periodoActual = new Date().toISOString().substring(0, 7);
       const selectUrl = `${env.SUPABASE_URL}/rest/v1/uso_docentes?docente_id=eq.${encodeURIComponent(docenteId)}&periodo=eq.${periodoActual}&select=*`;
       const res = await fetch(selectUrl, {
         headers: {
@@ -376,54 +536,103 @@ async function consumirCuota(env, docenteId, isOwner) {
           Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
         },
       });
-
       if (res.ok) {
         const rows = await res.json();
         if (rows && rows.length > 0) {
           const row = rows[0];
-          const nuevasUsadas = (row.usadas || 0) + 1;
           await fetch(`${env.SUPABASE_URL}/rest/v1/uso_docentes?id=eq.${row.id}`, {
             method: "PATCH",
             headers: {
               apikey: env.SUPABASE_SERVICE_ROLE_KEY,
               Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
               "Content-Type": "application/json",
-              Prefer: "return=representation",
             },
-            body: JSON.stringify({ usadas: nuevasUsadas, updated_at: new Date().toISOString() }),
+            body: JSON.stringify({ usadas: (row.usadas || 0) + 1, updated_at: new Date().toISOString() }),
           });
-          return consultarCuota(env, docenteId, false);
-        } else {
-          const limiteCreacion = env.PLAN_LIMIT_MAX ? parseInt(env.PLAN_LIMIT_MAX, 10) : 20;
-          await fetch(`${env.SUPABASE_URL}/rest/v1/uso_docentes`, {
-            method: "POST",
-            headers: {
-              apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-              Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              docente_id: docenteId,
-              periodo: periodoActual,
-              usadas: 1,
-              limite: limiteCreacion,
-            }),
-          });
-          return consultarCuota(env, docenteId, false);
+          return consultarCuota(env, docenteId, false, clientIp);
         }
       }
-    } catch (e) {
-      console.warn("Fallo al consumir cuota en Supabase:", e);
-    }
+    } catch (e) {}
   }
 
-  // Fallback en memoria
-  const limiteMemoria = env.PLAN_LIMIT_MAX ? parseInt(env.PLAN_LIMIT_MAX, 10) : 20;
-  const key = `${docenteId}_${periodoActual}`;
-  const entry = inMemoryQuotas.get(key) || { usadas: 0, limite: limiteMemoria };
-  entry.usadas += 1;
-  inMemoryQuotas.set(key, entry);
-  return consultarCuota(env, docenteId, false);
+  // BETA ABIERTA: Consumir en dispositivo, IP y global
+  const fechaHoy = new Date().toISOString().substring(0, 10);
+  const now = Date.now();
+  const midnight = new Date();
+  midnight.setHours(24, 0, 0, 0);
+  const resetAt = midnight.getTime();
+  const ttlSeconds = Math.max(60, Math.floor((resetAt - now) / 1000));
+  const encoder = new TextEncoder();
+
+  // Consumir Global
+  if (env && env.RATE_LIMIT_KV) {
+    try {
+      const gKey = `rl_global_${fechaHoy}`;
+      const gVal = await env.RATE_LIMIT_KV.get(gKey);
+      const gCount = gVal ? parseInt(gVal, 10) : 0;
+      await env.RATE_LIMIT_KV.put(gKey, (gCount + 1).toString(), { expirationTtl: ttlSeconds });
+    } catch (e) {}
+  } else {
+    if (globalDailyCounter.date !== fechaHoy) {
+      globalDailyCounter = { date: fechaHoy, count: 0 };
+    }
+    globalDailyCounter.count++;
+  }
+
+  // Consumir IP
+  const ipParaHash = clientIp || "unknown";
+  const ipData = encoder.encode(`${ipParaHash}_pm_ip_${fechaHoy}`);
+  const ipHashBuf = await crypto.subtle.digest("SHA-256", ipData);
+  const ipHashHex = Array.from(new Uint8Array(ipHashBuf))
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("")
+    .substring(0, 32);
+
+  if (env && env.RATE_LIMIT_KV) {
+    try {
+      const ipKey = `rl_ip_${ipHashHex}`;
+      const ipVal = await env.RATE_LIMIT_KV.get(ipKey);
+      const ipCount = ipVal ? parseInt(ipVal, 10) : 0;
+      await env.RATE_LIMIT_KV.put(ipKey, (ipCount + 1).toString(), { expirationTtl: ttlSeconds });
+    } catch (e) {}
+  } else {
+    let ipEntry = ipDailyRateLimit.get(ipHashHex);
+    if (!ipEntry || now > ipEntry.resetAt) {
+      ipEntry = { count: 0, resetAt };
+      ipDailyRateLimit.set(ipHashHex, ipEntry);
+    }
+    ipEntry.count++;
+  }
+
+  // Consumir Dispositivo
+  const idParaDispositivo = (docenteId && docenteId !== "docente_default" && docenteId.trim().length > 0)
+    ? docenteId.trim()
+    : `fallback_ip_${clientIp || "127.0.0.1"}`;
+
+  const devData = encoder.encode(`${idParaDispositivo}_pm_device_${fechaHoy}`);
+  const devHashBuf = await crypto.subtle.digest("SHA-256", devData);
+  const devHashHex = Array.from(new Uint8Array(devHashBuf))
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("")
+    .substring(0, 32);
+
+  if (env && env.RATE_LIMIT_KV) {
+    try {
+      const devKey = `rl_dev_${devHashHex}`;
+      const devVal = await env.RATE_LIMIT_KV.get(devKey);
+      const devCount = devVal ? parseInt(devVal, 10) : 0;
+      await env.RATE_LIMIT_KV.put(devKey, (devCount + 1).toString(), { expirationTtl: ttlSeconds });
+    } catch (e) {}
+  } else {
+    let devEntry = deviceDailyRateLimit.get(devHashHex);
+    if (!devEntry || now > devEntry.resetAt) {
+      devEntry = { count: 0, resetAt };
+      deviceDailyRateLimit.set(devHashHex, devEntry);
+    }
+    devEntry.count++;
+  }
+
+  return consultarCuota(env, docenteId, false, clientIp);
 }
 
 /**
@@ -729,11 +938,11 @@ async function handleApiRequest(request, env, ctx) {
 
   // 6. GET /api/plan/cuota
   if (path === "/api/plan/cuota" && method === "GET") {
-    const docenteId = url.searchParams.get("docenteId") || request.headers.get("x-docente-id") || "docente_default";
+    const rawDev = request.headers.get("x-device-id") || request.headers.get("X-Device-Id") || url.searchParams.get("docenteId") || request.headers.get("x-docente-id") || "docente_default";
     const ownerKey = request.headers.get("x-owner-key");
-    const isOwner = env.OWNER_MASTER_KEY && ownerKey && timingSafeEqualStr(ownerKey.trim(), env.OWNER_MASTER_KEY.trim());
+    const isOwner = Boolean(env.OWNER_MASTER_KEY && ownerKey && timingSafeEqualStr(ownerKey.trim(), env.OWNER_MASTER_KEY.trim()));
 
-    const estado = await consultarCuota(env, docenteId, isOwner);
+    const estado = await consultarCuota(env, rawDev, isOwner, clientIp);
     return new Response(JSON.stringify(estado), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -751,36 +960,29 @@ async function handleApiRequest(request, env, ctx) {
       const query = body.prompt || `Planifica el tema: ${body.tema} (${body.grado || ""} - ${body.area || ""})`;
       messages = [{ role: "user", text: query }];
     }
-    const resolvedDocenteId = docenteId || request.headers.get("x-docente-id") || "docente_default";
+    const rawDevId = request.headers.get("x-device-id") || request.headers.get("X-Device-Id") || (docenteId && docenteId !== "docente_default" ? docenteId : null) || request.headers.get("x-docente-id") || ("dev_anon_" + clientIp);
+    const resolvedDocenteId = rawDevId;
 
-    // Verificar cuota
-    const cheqCuota = await consultarCuota(env, resolvedDocenteId, isOwner);
-    if (!cheqCuota.permitido) {
+    // Verificar topes multinivel (dispositivo, IP de red y límite global) antes de procesar
+    const checkTopes = await verificarTopesMultinivel({
+      deviceId: resolvedDocenteId,
+      clientIp,
+      env,
+      isOwner,
+    });
+
+    if (!checkTopes.permitido) {
       return new Response(
         JSON.stringify({
-          error: `Has alcanzado tu cuota de ${cheqCuota.limite} planificaciones de este periodo.`,
+          error: checkTopes.error,
           limiteAlcanzado: true,
           agotado: true,
-          cuota: cheqCuota,
+          cuota: checkTopes.cuota || null,
         }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    // Verificar rate limit anónimo por hash diario de IP (límite de 30 consultas/día por IP sin guardar IP en texto claro)
-    if (!isOwner) {
-      const rlAnonimo = await verificarRateLimitAnonimo(clientIp, 30, env);
-      if (!rlAnonimo.permitido) {
-        return new Response(
-          JSON.stringify({
-            error: "Has alcanzado el límite diario de consultas para este dispositivo. Puedes continuar consultando el currículo oficial del MINERD o regresar mañana.",
-            limiteAlcanzado: true,
-            agotado: true,
-          }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-    }
+    const cheqCuota = checkTopes.cuota;
 
     const iaApagada = await verificarIaApagada(env);
 
@@ -1581,7 +1783,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
 
             let estadoActualizado = cheqCuota;
             if (parsedFinal && parsedFinal.plan_completado) {
-              estadoActualizado = await consumirCuota(env, resolvedDocenteId, isOwner);
+              estadoActualizado = await consumirCuota(env, resolvedDocenteId, isOwner, clientIp);
             }
 
             if (!baseOficialCargada && parsedFinal.plan_completado) {
@@ -1745,7 +1947,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
 
       let cuotaActualizada = cheqCuota;
       if (parsed.plan_completado) {
-        cuotaActualizada = await consumirCuota(env, resolvedDocenteId, isOwner);
+        cuotaActualizada = await consumirCuota(env, resolvedDocenteId, isOwner, clientIp);
       }
 
       if (!baseOficialCargada && parsed.plan_completado) {

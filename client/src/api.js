@@ -1,4 +1,5 @@
 import { obtenerDocenteId } from "./services/perfilStorage.js";
+import { obtenerOrearDispositivoId } from "./hooks/useAuth.js";
 import { extraerJson, mensajeParaChat, validarCamposPlanificacion } from "./utils/parseadorJsonSeguro.js";
 
 /**
@@ -39,16 +40,18 @@ function getAuthHeaders(customHeaders = {}) {
   const headers = { ...customHeaders };
   try {
     let appToken = localStorage.getItem("pm_auth_token");
-    if (!appToken) {
-      appToken = "RD-Maestro-8492";
-      try { localStorage.setItem("pm_auth_token", appToken); } catch (e) {}
-    }
     if (appToken) headers["x-app-key"] = appToken;
 
     const ownerKey = sessionStorage.getItem("pm_owner_key");
     if (ownerKey) headers["x-owner-key"] = ownerKey;
 
-    const docenteId = obtenerDocenteId();
+    const devId = obtenerOrearDispositivoId();
+    if (devId) {
+      headers["x-device-id"] = devId;
+      headers["X-Device-Id"] = devId;
+    }
+
+    const docenteId = obtenerDocenteId() || devId;
     if (docenteId) headers["x-docente-id"] = docenteId;
   } catch (e) {}
   return headers;
@@ -113,7 +116,7 @@ async function request(endpoint, options = {}, retries = 2) {
         canRetry = false;
       } else if (res.status === 429 || data.limiteAlcanzado || data.agotado) {
         type = "QUOTA";
-        friendlyMessage = data.error || "Has alcanzado el límite de tu cuota de planificaciones de este periodo.";
+        friendlyMessage = data.error || "Has alcanzado tu cuota diaria de la beta abierta (25 planes). Se reinicia a medianoche. Gracias por probar Planifica Maestro.";
         canRetry = false;
       } else if (res.status >= 500) {
         type = "SERVER";
@@ -261,7 +264,8 @@ export async function obtenerEsquemasCurriculares() {
  * Consulta la cuota mensual del docente
  */
 export async function obtenerCuotaDocente(docenteIdOverride) {
-  const docenteId = docenteIdOverride || obtenerDocenteId();
+  const devId = obtenerOrearDispositivoId();
+  const docenteId = docenteIdOverride || obtenerDocenteId() || devId;
   const res = await request(`/api/plan/cuota?docenteId=${encodeURIComponent(docenteId)}`, {
     method: "GET",
   }, 1);

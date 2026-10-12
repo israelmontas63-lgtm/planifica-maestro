@@ -126,10 +126,10 @@ export default function Header({
         ) : estadoCuota && (
           <div 
             className={`pm-cuota-badge ${estadoCuota.agotado ? 'cuota-agotada' : estadoCuota.alerta80 ? 'cuota-alerta' : ''}`}
-            title={`Cuota: ${estadoCuota.usadas} de ${estadoCuota.limite} planificaciones generadas en este periodo`}
+            title={`Cuota de hoy: ${estadoCuota.usadas}/${estadoCuota.limite} planes generados. Se reinicia a medianoche.`}
           >
             <span className="pm-cuota-icon">⚡</span>
-            <span className="pm-cuota-text">{estadoCuota.usadas}/{estadoCuota.limite}</span>
+            <span className="pm-cuota-text">Cuota de hoy: {estadoCuota.usadas}/{estadoCuota.limite} planes</span>
           </div>
         )}
 

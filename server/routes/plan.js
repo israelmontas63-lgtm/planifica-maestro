@@ -314,7 +314,7 @@ const handleGeneratePlan = async (req, res) => {
     const cheqCuota = verificarYConsumirCuota(resolvedDocenteId, false, isOwner);
     if (!cheqCuota.permitido) {
       return res.status(429).json({
-        error: `Has alcanzado tu cuota de ${cheqCuota.estado.limite} planificaciones de este ${cheqCuota.estado.periodo}. Puedes seguir viendo, editando y exportando tus trabajos guardados.`,
+        error: `Has alcanzado tu cuota diaria de la beta abierta (${cheqCuota.estado.limite} planes). Se reinicia a medianoche. Gracias por probar Planifica Maestro.`,
         limiteAlcanzado: true,
         agotado: true,
         cuota: cheqCuota.estado

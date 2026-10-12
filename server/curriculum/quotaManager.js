@@ -25,6 +25,11 @@ const PLAN_LIMIT_MAX = process.env.PLAN_LIMIT_MAX
   ? parseInt(process.env.PLAN_LIMIT_MAX, 10)
   : 20;
 
+// Límite por dispositivo en Beta Abierta (por defecto: 25 generaciones/día)
+const RATE_LIMIT_DISPOSITIVO_DIARIO = process.env.RATE_LIMIT_DISPOSITIVO_DIARIO
+  ? parseInt(process.env.RATE_LIMIT_DISPOSITIVO_DIARIO, 10)
+  : 25;
+
 // Periodo de cálculo: "mes" (por defecto) o "dia"
 const PLAN_LIMIT_PERIOD = process.env.PLAN_LIMIT_PERIOD || "mes";
 
@@ -32,6 +37,23 @@ const PLAN_LIMIT_PERIOD = process.env.PLAN_LIMIT_PERIOD || "mes";
 const PLAN_LIMIT_WARNING_THRESHOLD = process.env.PLAN_LIMIT_WARNING_THRESHOLD
   ? parseFloat(process.env.PLAN_LIMIT_WARNING_THRESHOLD)
   : 0.8;
+
+function resolverPeriodo(id) {
+  if (process.env.PLAN_LIMIT_PERIOD) return process.env.PLAN_LIMIT_PERIOD;
+  if (id && (id.startsWith("dev_") || id.startsWith("device_") || id.startsWith("anon_"))) {
+    return "dia";
+  }
+  return PLAN_LIMIT_PERIOD;
+}
+
+function resolverLimite(id) {
+  if (id && (id.startsWith("dev_") || id.startsWith("device_") || id.startsWith("anon_"))) {
+    return RATE_LIMIT_DISPOSITIVO_DIARIO;
+  }
+  return process.env.PLAN_LIMIT_MAX
+    ? parseInt(process.env.PLAN_LIMIT_MAX, 10)
+    : (process.env.RATE_LIMIT_DISPOSITIVO_DIARIO ? parseInt(process.env.RATE_LIMIT_DISPOSITIVO_DIARIO, 10) : PLAN_LIMIT_MAX);
+}
 
 // Caché en memoria para evitar colisiones entre lecturas/escrituras concurrentes
 let cacheCuotas = null;
@@ -42,11 +64,11 @@ let lockEscritura = false;
  * - Mensual: "YYYY-MM" (ej: "2026-09")
  * - Diario: "YYYY-MM-DD" (ej: "2026-09-15")
  */
-function obtenerClavePeriodoActual() {
+function obtenerClavePeriodoActual(periodo = PLAN_LIMIT_PERIOD) {
   const ahora = new Date();
   const yyyy = ahora.getFullYear();
   const mm = String(ahora.getMonth() + 1).padStart(2, "0");
-  if (PLAN_LIMIT_PERIOD === "dia") {
+  if (periodo === "dia") {
     const dd = String(ahora.getDate()).padStart(2, "0");
     return `${yyyy}-${mm}-${dd}`;
   }
@@ -56,9 +78,9 @@ function obtenerClavePeriodoActual() {
 /**
  * Calcula la fecha de reinicio de la cuota
  */
-function calcularFechaReinicio() {
+function calcularFechaReinicio(periodo = PLAN_LIMIT_PERIOD) {
   const ahora = new Date();
-  if (PLAN_LIMIT_PERIOD === "dia") {
+  if (periodo === "dia") {
     const manana = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + 1);
     return manana.toISOString();
   }
@@ -167,13 +189,14 @@ function consultarEstadoCuota(docenteId = "docente_default", isOwner = false) {
 
   const id = (docenteId || "docente_default").trim();
   const datos = cargarDatosCuotas();
-  const clavePeriodo = obtenerClavePeriodoActual();
+  const periodo = resolverPeriodo(id);
+  const clavePeriodo = obtenerClavePeriodoActual(periodo);
 
   const registroDocente = datos[id] || {};
   
   // Si el registro del docente pertenece a un periodo anterior, se renueva automáticamente a 0
   const usadas = registroDocente.periodo === clavePeriodo ? (registroDocente.usadas || 0) : 0;
-  const limite = PLAN_LIMIT_MAX;
+  const limite = resolverLimite(id);
   const restantes = Math.max(0, limite - usadas);
   const porcentaje = limite > 0 ? (usadas / limite) : 0;
   const agotado = usadas >= limite;
@@ -181,7 +204,7 @@ function consultarEstadoCuota(docenteId = "docente_default", isOwner = false) {
 
   return {
     docenteId: id,
-    periodo: PLAN_LIMIT_PERIOD,
+    periodo,
     clavePeriodo,
     usadas,
     limite,
@@ -189,7 +212,7 @@ function consultarEstadoCuota(docenteId = "docente_default", isOwner = false) {
     porcentaje: Math.round(porcentaje * 100),
     alerta80,
     agotado,
-    fechaReinicio: calcularFechaReinicio()
+    fechaReinicio: calcularFechaReinicio(periodo)
   };
 }
 
@@ -210,7 +233,9 @@ function verificarYConsumirCuota(docenteId = "docente_default", consumir = true,
 
   const id = (docenteId || "docente_default").trim();
   const datos = cargarDatosCuotas();
-  const clavePeriodo = obtenerClavePeriodoActual();
+  const periodo = resolverPeriodo(id);
+  const clavePeriodo = obtenerClavePeriodoActual(periodo);
+  const limite = resolverLimite(id);
 
   let registroDocente = datos[id];
   if (!registroDocente || registroDocente.periodo !== clavePeriodo) {
@@ -221,7 +246,7 @@ function verificarYConsumirCuota(docenteId = "docente_default", consumir = true,
     };
   }
 
-  if (registroDocente.usadas >= PLAN_LIMIT_MAX) {
+  if (registroDocente.usadas >= limite) {
     return {
       permitido: false,
       estado: consultarEstadoCuota(id)

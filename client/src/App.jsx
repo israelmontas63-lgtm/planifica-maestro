@@ -423,7 +423,7 @@ export default function App() {
     // Manejo de límite de cuota alcanzado antes de consumir red
     if (estadoCuota?.agotado) {
       setErrorGeneracion({
-        message: `🛑 Has alcanzado tu cuota de ${estadoCuota.limite} planificaciones de este periodo. Puedes seguir viendo, editando y exportando tus trabajos guardados.`,
+        message: `Has alcanzado tu cuota diaria de la beta abierta (${estadoCuota.limite} planes). Se reinicia a medianoche. Gracias por probar Planifica Maestro.`,
         canRetry: false,
         lastHistory: newHistory,
       });
@@ -915,16 +915,16 @@ export default function App() {
         </div>
       )}
 
-      {/* FASE 14: Banners dinámicos de control de cuota de IA */}
+      {/* Banners dinámicos de control de cuota de IA */}
       {estadoCuota?.alerta80 && !estadoCuota?.agotado && (
         <div className="banner-alerta-80 flex justify-between items-center px-4 py-2 no-print">
-          <span>⚠️ Estás cerca del límite de tu cuota de planificaciones de este periodo ({estadoCuota.usadas}/{estadoCuota.limite}).</span>
+          <span>⚠️ Estás cerca del límite de tu cuota de hoy ({estadoCuota.usadas}/{estadoCuota.limite} planes). Se reinicia a medianoche.</span>
         </div>
       )}
 
       {estadoCuota?.agotado && (
         <div className="banner-limite-100 flex justify-between items-center px-4 py-2 no-print">
-          <span>🛑 Has alcanzado tu cuota de {estadoCuota.limite} planificaciones. Puedes seguir viendo, editando y exportando tus trabajos guardados.</span>
+          <span>🛑 Has alcanzado tu cuota diaria de la beta abierta ({estadoCuota.limite} planes). Se reinicia a medianoche. Gracias por probar Planifica Maestro.</span>
         </div>
       )}
 
