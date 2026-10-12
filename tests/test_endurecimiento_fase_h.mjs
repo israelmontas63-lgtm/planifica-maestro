@@ -137,31 +137,50 @@ describe("ENDURECIMIENTO FASE H: Circuit Breaker, Persistencia, Privacidad y Pro
       const estadoAntes = obtenerEstadoCircuito(provId);
       assert.strictEqual(estadoAntes.estado, "CERRADO");
 
-      // Llamada con API key inválida (error 400 de configuración)
-      const res = await enrutarPeticion({
-        tema: "Los Ecosistemas Dominicanos",
-        grado: "4to grado",
-        area: "Ciencias de la Naturaleza",
-        env: {
-          GEMINI_API_KEY: "CLAVE_TEST_INVALIDA_400",
-          GROQ_API_KEY: "GROQ_MOCK_KEY" // Este respaldo NO debe activarse
+      const originalFetch = global.fetch;
+      global.fetch = async (url, opts) => {
+        const urlStr = String(url || "");
+        if (urlStr.includes("CLAVE_TEST_INVALIDA_400")) {
+          return {
+            ok: false,
+            status: 400,
+            statusText: "Bad Request",
+            headers: new Headers(),
+            text: async () => JSON.stringify({ error: { code: 400, message: "API key not valid. Please pass a valid API key.", status: "INVALID_ARGUMENT" } })
+          };
         }
-      });
+        return originalFetch(url, opts);
+      };
 
-      // 1. Debe haber resuelto de inmediato con Biblioteca Oficial
-      assert.ok(res, "Debe retornar planificación de respaldo seguro");
-      assert.ok(res.datos_planificacion || res.plan_completado, "Debe tener contenido curricular");
-      assert.strictEqual(res.origen, "biblioteca_oficial");
+      try {
+        // Llamada con API key inválida (error 400 de configuración)
+        const res = await enrutarPeticion({
+          tema: "Los Ecosistemas Dominicanos",
+          grado: "4to grado",
+          area: "Ciencias de la Naturaleza",
+          env: {
+            GEMINI_API_KEY: "CLAVE_TEST_INVALIDA_400",
+            GROQ_API_KEY: "GROQ_MOCK_KEY" // Este respaldo NO debe activarse
+          }
+        });
 
-      // 2. Telemetría debe contener el log de fallo de configuración
-      const ultimos = obtenerMetricas().ultimosRegistros;
-      const logConfig = ultimos.find(l => l.codigoError === "400" || l.tipoFallo === "configuracion");
-      assert.ok(logConfig, "Debe haberse registrado como fallo de configuración en telemetría");
-      assert.strictEqual(logConfig.tipoFallo, "configuracion");
+        // 1. Debe haber resuelto de inmediato con Biblioteca Oficial
+        assert.ok(res, "Debe retornar planificación de respaldo seguro");
+        assert.ok(res.datos_planificacion || res.plan_completado, "Debe tener contenido curricular");
+        assert.strictEqual(res.origen, "biblioteca_oficial");
 
-      // 3. No debe haberse llamado a Groq como respaldo de IA generativa
-      const llamadasGroq = ultimos.filter(l => l.proveedorId === "groq_llama" && l.timestamp > logConfig.timestamp);
-      assert.strictEqual(llamadasGroq.length, 0, "No debe activar proveedores de IA de respaldo ante error 400/401 de configuración");
+        // 2. Telemetría debe contener el log de fallo de configuración
+        const ultimos = obtenerMetricas().ultimosRegistros;
+        const logConfig = ultimos.find(l => l.codigoError === "400" || l.tipoFallo === "configuracion");
+        assert.ok(logConfig, "Debe haberse registrado como fallo de configuración en telemetría");
+        assert.strictEqual(logConfig.tipoFallo, "configuracion");
+
+        // 3. No debe haberse llamado a Groq como respaldo de IA generativa
+        const llamadasGroq = ultimos.filter(l => l.proveedorId === "groq_llama" && l.timestamp > logConfig.timestamp);
+        assert.strictEqual(llamadasGroq.length, 0, "No debe activar proveedores de IA de respaldo ante error 400/401 de configuración");
+      } finally {
+        global.fetch = originalFetch;
+      }
     });
   });
 
