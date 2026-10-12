@@ -316,7 +316,8 @@ export default function MisPlanificaciones({
                         const texto = Object.entries(plan.datosPlanificacion || {})
                           .map(([k, v]) => `${k}\n${v}`)
                           .join("\n\n");
-                        onExportarWord(plan.titulo, texto);
+                        const rev = plan.ultimaRevision || (Array.isArray(plan.revisiones) ? plan.revisiones[0] : null);
+                        onExportarWord(plan.titulo, texto, plan.datosPlanificacion, rev);
                       }}
                       title="Exportar a Microsoft Word"
                     >

@@ -788,13 +788,15 @@ export default function App() {
     }
   }
 
-  async function handleExportar(planText, datos = null) {
+  async function handleExportar(planText, datos = null, revision = null) {
     setExportando(true);
     try {
       await exportarWord({
         titulo: "Planificacion_" + periodo + "_" + nivel,
         plan: typeof planText === "string" ? planText : "",
-        datos: datos || (typeof planText === "object" ? planText : null)
+        datos: datos || (typeof planText === "object" ? planText : null),
+        perfil,
+        revision
       });
     } catch (err) {
       setErrorGeneracion({
@@ -1774,7 +1776,7 @@ export default function App() {
               setPlanInicialMisPlanificaciones(null);
             }}
             onAbrirPlan={handleAbrirPlanDesdeBiblioteca}
-            onExportarWord={(titulo, texto) => exportarWord({ titulo, plan: texto })}
+            onExportarWord={(titulo, texto, datos, revision) => exportarWord({ titulo, plan: texto, datos, revision, perfil })}
             user={user}
             supabaseClient={supabase}
             planInicialId={planInicialMisPlanificaciones}

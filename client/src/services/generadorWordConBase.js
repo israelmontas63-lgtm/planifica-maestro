@@ -40,6 +40,21 @@ const COLOR_AZUL_ENCABEZADO = "CDEEF6";
 const COLOR_BORDE = "94A3B8";
 const COLOR_TEXTO_TITULO = "0F172A";
 const COLOR_TEXTO_NORMAL = "1E293B";
+const COLOR_VERDE_FONDO = "DCFCE7";
+const COLOR_VERDE_TEXTO = "166534";
+
+function formatearFechaRevision(fechaRaw) {
+  if (!fechaRaw) {
+    return new Date().toLocaleDateString("es-DO", { year: "numeric", month: "long", day: "numeric" });
+  }
+  try {
+    const d = new Date(fechaRaw);
+    if (isNaN(d.getTime())) return String(fechaRaw);
+    return d.toLocaleDateString("es-DO", { year: "numeric", month: "long", day: "numeric" });
+  } catch {
+    return String(fechaRaw);
+  }
+}
 
 const BORDE_CELDA = {
   top: { style: BorderStyle.SINGLE, size: 4, color: COLOR_BORDE },
@@ -429,7 +444,8 @@ export async function construirDocumentoWordOficial({
   plan = "",
   datos = null,
   perfil = null,
-  titulo = "Planificación Docente"
+  titulo = "Planificación Docente",
+  revision = null
 } = {}) {
   // Cargar perfil docente si no fue proporcionado explícitamente
   let perfilActivo = perfil;
@@ -872,7 +888,8 @@ export async function construirDocumentoWordOficial({
     "centro educativo", "docente", "grado", "grados", "seccion", "area", "secuencia", "fecha", "tanda",
     "competencias fundamentales", "competencias especificas", "intencion pedagogica", "estrategias", "estrategias de ensenanza",
     "bloque", "actividad", "evaluacion", "actividades diferenciadas", "general", "momentos", "inicio", "desarrollo", "cierre",
-    "titulo", "title"
+    "titulo", "title", "estado", "estado_revision", "id", "fecha_creacion", "created_at", "updated_at",
+    "revision", "revisiones", "ultimaRevision", "notaDocente", "ciclo_revision", "docenteNombre", "escuela"
   ].map(normalizarClave);
 
   const camposAdicionales = Object.entries(datosObj).filter(([k]) => {
@@ -896,6 +913,198 @@ export async function construirDocumentoWordOficial({
       );
     });
   }
+
+  // Determinar si la planificación cuenta con dictamen oficial aprobado
+  const revEfectiva =
+    revision ||
+    datosObj?.ultimaRevision ||
+    datosObj?.revision ||
+    (Array.isArray(datosObj?.revisiones) && datosObj.revisiones.length > 0 ? datosObj.revisiones[0] : null);
+
+  const estaAprobada =
+    Boolean(revEfectiva && (revEfectiva.estado_revision === "aprobada" || revEfectiva.estado === "aprobada")) ||
+    datosObj?.estado === "aprobada";
+
+  if (estaAprobada) {
+    const revObj = revEfectiva || {
+      estado_revision: "aprobada",
+      fecha_revision: datosObj?.fecha_aprobacion || datosObj?.fecha || new Date().toISOString()
+    };
+    const fechaRevFormateada = formatearFechaRevision(revObj.fecha_revision || revObj.fecha);
+    const supervisorNombre =
+      revObj.supervisor_nombre ||
+      revObj.coordinadorNombre ||
+      "Coordinación Pedagógica Institucional";
+    const cicloRevNum = revObj.ciclo_revision
+      ? `Ciclo ${revObj.ciclo_revision}`
+      : "Ciclo Regular";
+    const comentariosRev =
+      revObj.comentarios_generales ||
+      "Planificación pedagógica alineada a las competencias curriculares, indicadores de logro y pautas del MINERD.";
+    const obsDua = revObj.bloques_observados?.dua || null;
+
+    // Fila 18: Título de Validación y Dictamen Oficial MINERD
+    filasTabla.push(
+      new TableRow({
+        children: [
+          crearCelda({
+            columnSpan: 4,
+            shadingColor: COLOR_VERDE_FONDO,
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 80, after: 20 },
+                children: [
+                  new TextRun({
+                    text: "MINISTERIO DE EDUCACIÓN DE LA REPÚBLICA DOMINICANA (MINERD)",
+                    bold: true,
+                    size: 20,
+                    color: COLOR_VERDE_TEXTO,
+                    font: "Calibri"
+                  })
+                ]
+              }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 0, after: 60 },
+                children: [
+                  new TextRun({
+                    text: "✓ DICTAMEN OFICIAL: PLANIFICACIÓN DOCENTE VALIDADA Y APROBADA",
+                    bold: true,
+                    size: 22,
+                    color: COLOR_VERDE_TEXTO,
+                    font: "Calibri"
+                  })
+                ]
+              })
+            ]
+          })
+        ]
+      })
+    );
+
+    // Fila 19: Metadatos del dictamen institucional (2 celdas de 50%, colSpan: 2)
+    filasTabla.push(
+      new TableRow({
+        children: [
+          crearCelda({
+            columnSpan: 2,
+            widthPct: 50,
+            children: [
+              crearParrafoCampo("Estado de Validación", "APROBADA PARA APLICACIÓN EN AULA"),
+              crearParrafoCampo("Acompañado por", supervisorNombre),
+              crearParrafoCampo("Fecha de Dictamen", fechaRevFormateada),
+              crearParrafoCampo("Proceso de Revisión", cicloRevNum)
+            ]
+          }),
+          crearCelda({
+            columnSpan: 2,
+            widthPct: 50,
+            children: [
+              crearParrafoCampo("Dictamen Pedagógico", comentariosRev),
+              ...(obsDua ? [crearParrafoCampo("Orientaciones DUA / Inclusión", obsDua)] : [])
+            ]
+          })
+        ]
+      })
+    );
+
+    // Fila 20: Cuadro de Firmas y Sellos Institucionales (Docente vs Coordinación/MINERD)
+    filasTabla.push(
+      new TableRow({
+        children: [
+          crearCelda({
+            columnSpan: 2,
+            widthPct: 50,
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 300, after: 20 },
+                children: [
+                  new TextRun({
+                    text: "________________________________________________",
+                    color: COLOR_BORDE,
+                    font: "Calibri"
+                  })
+                ]
+              }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 0, after: 20 },
+                children: [
+                  new TextRun({
+                    text: docente,
+                    bold: true,
+                    size: 20,
+                    color: COLOR_TEXTO_TITULO,
+                    font: "Calibri"
+                  })
+                ]
+              }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 0, after: 60 },
+                children: [
+                  new TextRun({
+                    text: "Docente de Aula — Elaboración y Ejecución",
+                    size: 18,
+                    color: COLOR_TEXTO_NORMAL,
+                    font: "Calibri"
+                  })
+                ]
+              })
+            ]
+          }),
+          crearCelda({
+            columnSpan: 2,
+            widthPct: 50,
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 300, after: 20 },
+                children: [
+                  new TextRun({
+                    text: "________________________________________________",
+                    color: COLOR_BORDE,
+                    font: "Calibri"
+                  })
+                ]
+              }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 0, after: 20 },
+                children: [
+                  new TextRun({
+                    text: supervisorNombre,
+                    bold: true,
+                    size: 20,
+                    color: COLOR_TEXTO_TITULO,
+                    font: "Calibri"
+                  })
+                ]
+              }),
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 0, after: 60 },
+                children: [
+                  new TextRun({
+                    text: "Coordinación Pedagógica — Aprobación y Sello MINERD",
+                    size: 18,
+                    color: COLOR_TEXTO_NORMAL,
+                    font: "Calibri"
+                  })
+                ]
+              })
+            ]
+          })
+        ]
+      })
+    );
+  }
+
+  const textoPie = estaAprobada
+    ? "Documento oficial validado institucionalmente — Formato de secuencia didáctica (CON BASE / MINERD)"
+    : "Documento generado por Planifica Maestro — Formato de secuencia didáctica (CON BASE)";
 
   // Creación del Documento A4 Horizontal (Landscape) con márgenes oficiales de plantilla (1701 dxa top/bottom, 1417 dxa left/right)
   const doc = new Document({
@@ -926,7 +1135,7 @@ export async function construirDocumentoWordOficial({
             spacing: { before: 140 },
             children: [
               new TextRun({
-                text: "Documento generado por Planifica Maestro — Formato de secuencia didáctica (CON BASE)",
+                text: textoPie,
                 size: 16,
                 color: "94A3B8",
                 italics: true,
@@ -949,13 +1158,15 @@ export async function descargarWordConBase({
   titulo = "Planificacion_MINERD",
   plan = "",
   datos = null,
-  perfil = null
+  perfil = null,
+  revision = null
 } = {}) {
   const doc = await construirDocumentoWordOficial({
     plan,
     datos,
     perfil,
-    titulo
+    titulo,
+    revision
   });
 
   const blob = await Packer.toBlob(doc);

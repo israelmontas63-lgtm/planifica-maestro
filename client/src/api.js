@@ -516,13 +516,44 @@ export async function escanearMaterial({ imageBase64, mediaType = "image/jpeg", 
 /**
  * Exportar a Word (.docx) — Formato Oficial MINERD / CON BASE (A4 Horizontal, 17 filas)
  * 100% en el cliente sin consumir CPU del servidor.
+ * Admite tanto llamada por objeto ({ titulo, plan, datos, perfil, revision })
+ * como llamada posicional (exportarWord(plan, opciones)).
  */
-export async function exportarWord({ titulo = "Planificacion", plan = "", datos = null, perfil = null }) {
+export async function exportarWord(arg1 = {}, arg2 = {}) {
+  let titulo = "Planificacion";
+  let plan = "";
+  let datos = null;
+  let perfil = null;
+  let revision = null;
+
+  if (arg1 && typeof arg1 === "object" && ("plan" in arg1 || "datos" in arg1 || "titulo" in arg1 || "perfil" in arg1 || "revision" in arg1)) {
+    titulo = arg1.titulo || "Planificacion";
+    plan = arg1.plan || "";
+    datos = arg1.datos || null;
+    perfil = arg1.perfil || null;
+    revision = arg1.revision || null;
+  } else if (typeof arg1 === "string") {
+    plan = arg1;
+    if (arg2 && typeof arg2 === "object") {
+      titulo = arg2.titulo || "Planificacion";
+      datos = arg2.datos || null;
+      perfil = arg2.perfil || null;
+      revision = arg2.revision || null;
+    }
+  } else if (arg1 && typeof arg1 === "object") {
+    datos = arg1.datosPlanificacion || arg1.datos || arg1;
+    plan = arg1.texto || arg1.contenido || arg1.plan || "";
+    titulo = arg1.titulo || arg2?.titulo || "Planificacion";
+    revision = arg1.ultimaRevision || arg1.revision || (Array.isArray(arg1.revisiones) ? arg1.revisiones[0] : null) || arg2?.revision || null;
+    perfil = arg2?.perfil || (arg2?.nombreDocente ? { nombre: arg2.nombreDocente, escuela: arg2.escuela } : null);
+  }
+
   if (!plan && (!datos || Object.keys(datos).length === 0)) {
     throw new Error("No hay contenido de planificación para exportar.");
   }
 
   const { descargarWordConBase } = await import("./services/generadorWordConBase.js");
-  return descargarWordConBase({ titulo, plan, datos, perfil });
+  return descargarWordConBase({ titulo, plan, datos, perfil, revision });
 }
+
 

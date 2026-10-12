@@ -261,9 +261,11 @@ export default function PanelCoordinacionModal({
   async function handleExportarWord(plan, e) {
     if (e) e.stopPropagation();
     try {
+      const rev = plan.ultimaRevision || (Array.isArray(plan.revisiones) ? plan.revisiones[0] : null);
       await exportarWord(plan.datosPlanificacion || plan, {
         nombreDocente: plan.docenteNombre || perfil?.nombre,
-        escuela: escuelaNombre
+        escuela: escuelaNombre,
+        revision: rev
       });
     } catch (err) {
       alert("Error exportando a Word: " + err.message);

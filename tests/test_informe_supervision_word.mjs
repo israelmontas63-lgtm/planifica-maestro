@@ -13,6 +13,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Packer, Document } from "docx";
 import { construirDocumentoInformeSupervision } from "../shared/construirInformeSupervisionDocx.js";
+import { construirDocumentoWordOficial } from "../client/src/services/generadorWordConBase.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -168,3 +169,131 @@ test("INFORME SUPERVISIÓN WORD - 3. Verificación de Integración en el Cliente
     );
   });
 });
+
+test("INFORME SUPERVISIÓN WORD - 4. Sello y Certificación Oficial MINERD en Planificación Individual (.docx)", async (t) => {
+  const datosPlanPrueba = {
+    area: "Lengua Española",
+    grado: "4to Primaria",
+    seccion: "A",
+    docente: "Prof. Rafael Encarnación",
+    centro_educativo: "Escuela Primaria República de Colombia",
+    intencion_pedagogica: "Comprender la función del informe de lectura",
+    estrategias: "Indagación dialógica y trabajo colaborativo",
+    momentos: [
+      { momento: "Inicio", descripcion: "Exploración de saberes previos", tiempo: "10 min", recursos: "Pizarra" },
+      { momento: "Desarrollo", descripcion: "Lectura guiada del texto modelo", tiempo: "25 min", recursos: "Fascículo" },
+      { momento: "Cierre", descripcion: "Metacognición y síntesis reflexiva", tiempo: "10 min", recursos: "Cuaderno" }
+    ],
+    evaluacion: "Lista de cotejo formativa",
+    actividades_diferenciadas: "Apoyo con tarjetas léxicas y pictogramas"
+  };
+
+  const contarFilasTabla = (doc) => {
+    const tabla = doc?.documentWrapper?.document?.body?.root?.find(
+      (el) => el.constructor.name === "Table"
+    );
+    return tabla ? tabla.root.filter((r) => r.constructor.name === "TableRow").length : 0;
+  };
+
+  await t.test("Plan borrador sin dictamen genera DOCX estándar sin filas de certificación", async () => {
+    const docBorrador = await construirDocumentoWordOficial({
+      datos: datosPlanPrueba,
+      revision: null
+    });
+    assert.ok(docBorrador?.documentWrapper, "El documento debe contener su documentWrapper inicializado");
+
+    const buffer = await Packer.toBuffer(docBorrador);
+    assert.ok(Buffer.isBuffer(buffer));
+    assert.strictEqual(buffer[0], 0x50, "Byte 0 debe ser 'P'");
+    assert.strictEqual(buffer[1], 0x4b, "Byte 1 debe ser 'K'");
+
+    const filasBorrador = contarFilasTabla(docBorrador);
+    assert.strictEqual(filasBorrador, 17, `Debe contener exactamente 17 filas base (obtenidas: ${filasBorrador})`);
+  });
+
+  await t.test("Plan con dictamen 'aprobada' genera DOCX con certificación oficial MINERD, sellos y firmas", async () => {
+    const revisionAprobada = {
+      id: "rev-101",
+      estado_revision: "aprobada",
+      supervisor_nombre: "Lic. Francisca Rosario - Coordinación Pedagógica",
+      fecha_revision: "2026-10-12T14:00:00Z",
+      ciclo_revision: 2,
+      comentarios_generales: "Alineación pedagógica sobresaliente con la Adecuación Curricular 2023.",
+      bloques_observados: {
+        dua: "Excelente integración de apoyos visuales y tiempo extendido para NEAE."
+      }
+    };
+
+    const docAprobado = await construirDocumentoWordOficial({
+      datos: datosPlanPrueba,
+      revision: revisionAprobada
+    });
+    assert.ok(docAprobado?.documentWrapper);
+
+    const buffer = await Packer.toBuffer(docAprobado);
+    assert.ok(Buffer.isBuffer(buffer));
+    assert.strictEqual(buffer[0], 0x50, "Byte 0 debe ser 'P'");
+    assert.strictEqual(buffer[1], 0x4b, "Byte 1 debe ser 'K'");
+
+    const docBorrador = await construirDocumentoWordOficial({
+      datos: datosPlanPrueba,
+      revision: null
+    });
+    const filasBorrador = contarFilasTabla(docBorrador);
+    const filasAprobado = contarFilasTabla(docAprobado);
+
+    assert.strictEqual(
+      filasAprobado,
+      filasBorrador + 3,
+      `El documento aprobado debe tener exactamente 3 filas adicionales de certificación y firmas (${filasAprobado} vs ${filasBorrador})`
+    );
+  });
+
+  await t.test("Plan con datos.estado = 'aprobada' activa automáticamente la certificación ministerial", async () => {
+    const datosAutoAprobados = {
+      ...datosPlanPrueba,
+      estado: "aprobada"
+    };
+
+    const docAuto = await construirDocumentoWordOficial({
+      datos: datosAutoAprobados
+    });
+    assert.ok(docAuto?.documentWrapper);
+
+    const docBorrador = await construirDocumentoWordOficial({
+      datos: datosPlanPrueba,
+      revision: null
+    });
+    const filasBorrador = contarFilasTabla(docBorrador);
+    const filasAuto = contarFilasTabla(docAuto);
+
+    assert.strictEqual(
+      filasAuto,
+      filasBorrador + 3,
+      "Debe incluir la certificación al detectar estado: 'aprobada' en datos"
+    );
+
+    const buffer = await Packer.toBuffer(docAuto);
+    assert.ok(buffer.length > 5000, "Debe generar buffer binario mayor a 5 KB");
+  });
+
+  await t.test("Propagación de 'revision' conectada en componentes de exportación", () => {
+    const rutaApi = path.join(rootDir, "client/src/api.js");
+    const rutaMisPlanes = path.join(rootDir, "client/src/components/MisPlanificaciones.jsx");
+    const rutaModalCoord = path.join(rootDir, "client/src/components/PanelCoordinacionModal.jsx");
+    const rutaApp = path.join(rootDir, "client/src/App.jsx");
+
+    const contenidoApi = fs.readFileSync(rutaApi, "utf-8");
+    assert.ok(contenidoApi.includes("revision"), "client/src/api.js debe recibir y propagar revision");
+
+    const contenidoMisPlanes = fs.readFileSync(rutaMisPlanes, "utf-8");
+    assert.ok(contenidoMisPlanes.includes("onExportarWord(plan.titulo, texto, plan.datosPlanificacion, rev)"), "MisPlanificaciones debe pasar rev a onExportarWord");
+
+    const contenidoModalCoord = fs.readFileSync(rutaModalCoord, "utf-8");
+    assert.ok(contenidoModalCoord.includes("revision: rev"), "PanelCoordinacionModal debe pasar revision en handleExportarWord");
+
+    const contenidoApp = fs.readFileSync(rutaApp, "utf-8");
+    assert.ok(contenidoApp.includes("onExportarWord={(titulo, texto, datos, revision)"), "App.jsx debe recibir revision en onExportarWord");
+  });
+});
+
