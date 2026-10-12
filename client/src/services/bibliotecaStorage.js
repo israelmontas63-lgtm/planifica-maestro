@@ -219,3 +219,45 @@ export function limpiarBibliotecaUsuario(userId) {
     localStorage.removeItem(`pm_biblioteca_${userId}`);
   } catch (e) {}
 }
+
+/**
+ * FASE 12: Sincroniza las planificaciones locales del docente hacia la tabla multiusuario institucional 'planificaciones'.
+ * @param {object} options
+ * @param {object} options.supabaseClient - Cliente Supabase autenticado
+ * @param {string} options.userId - ID del docente autenticado
+ * @param {string} options.escuelaId - ID de la escuela del docente
+ */
+export async function sincronizarPlanificacionesInstitucionales({ supabaseClient, userId, escuelaId }) {
+  if (!supabaseClient || !userId || !escuelaId) return { total: 0, sincronizados: 0 };
+  const locales = obtenerTodasLasPlanificaciones(userId);
+  if (!locales.length) return { total: 0, sincronizados: 0 };
+
+  let sincronizados = 0;
+  for (const pl of locales) {
+    try {
+      const { error } = await supabaseClient
+        .from("planificaciones")
+        .upsert({
+          id: pl.id,
+          escuela_id: escuelaId,
+          docente_id: userId,
+          titulo: pl.titulo || "Planificación Docente",
+          nivel: pl.nivel || "primario",
+          grado: pl.grado || "General",
+          area: pl.area || "General",
+          periodo: pl.periodo || "diaria",
+          esquema_id: pl.esquema_id || pl.esquemaLabel || "primario",
+          datos_planificacion: pl.datosPlanificacion || {},
+          ajustes_manuales: pl.ajustesManuales || {},
+          estado: pl.estado || "borrador",
+          creado_en: pl.fecha || new Date().toISOString(),
+          actualizado_en: new Date().toISOString()
+        });
+      if (!error) sincronizados++;
+    } catch (e) {
+      console.warn("Aviso en sincronización institucional de plan:", pl.id, e.message);
+    }
+  }
+
+  return { total: locales.length, sincronizados };
+}
