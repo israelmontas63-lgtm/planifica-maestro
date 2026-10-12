@@ -17,6 +17,8 @@ export default function PanelCoordinacionModal({
   const [planes, setPlanes] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [filtroEstado, setFiltroEstado] = useState("todas");
+  const [filtroGrado, setFiltroGrado] = useState("todos");
+  const [filtroArea, setFiltroArea] = useState("todas");
   const [busqueda, setBusqueda] = useState("");
   const [planSeleccionado, setPlanSeleccionado] = useState(null);
   const [revisionesActuales, setRevisionesActuales] = useState([]);
@@ -65,7 +67,45 @@ export default function PanelCoordinacionModal({
     return { total, pendientes, aprobadas, observadas };
   }, [planes]);
 
-  // Filtrado reactivo
+  // Extracción dinámica de grados únicos presentes en los planes escolares
+  const listaGrados = useMemo(() => {
+    const set = new Set();
+    for (const p of planes) {
+      if (p.grado && String(p.grado).trim()) {
+        set.add(String(p.grado).trim());
+      }
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "es", { numeric: true }));
+  }, [planes]);
+
+  // Extracción dinámica de áreas curriculares únicas presentes en los planes escolares
+  const listaAreas = useMemo(() => {
+    const set = new Set();
+    for (const p of planes) {
+      if (p.area && String(p.area).trim()) {
+        set.add(String(p.area).trim());
+      }
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "es"));
+  }, [planes]);
+
+  const hayFiltrosActivos = useMemo(() => {
+    return (
+      filtroEstado !== "todas" ||
+      filtroGrado !== "todos" ||
+      filtroArea !== "todas" ||
+      busqueda.trim() !== ""
+    );
+  }, [filtroEstado, filtroGrado, filtroArea, busqueda]);
+
+  function handleLimpiarFiltros() {
+    setFiltroEstado("todas");
+    setFiltroGrado("todos");
+    setFiltroArea("todas");
+    setBusqueda("");
+  }
+
+  // Filtrado reactivo multidimensional (Estado + Grado + Área + Búsqueda)
   const planesFiltrados = useMemo(() => {
     return planes.filter((p) => {
       const matchEstado =
@@ -74,6 +114,14 @@ export default function PanelCoordinacionModal({
         (filtroEstado === "aprobada" && p.estado === "aprobada") ||
         (filtroEstado === "observada" && p.estado === "observada");
 
+      const matchGrado =
+        filtroGrado === "todos" ||
+        (p.grado && p.grado.toLowerCase().trim() === filtroGrado.toLowerCase().trim());
+
+      const matchArea =
+        filtroArea === "todas" ||
+        (p.area && p.area.toLowerCase().trim() === filtroArea.toLowerCase().trim());
+
       const matchBusqueda =
         !busqueda.trim() ||
         p.titulo?.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -81,9 +129,9 @@ export default function PanelCoordinacionModal({
         p.grado?.toLowerCase().includes(busqueda.toLowerCase()) ||
         p.docenteNombre?.toLowerCase().includes(busqueda.toLowerCase());
 
-      return matchEstado && matchBusqueda;
+      return matchEstado && matchGrado && matchArea && matchBusqueda;
     });
-  }, [planes, filtroEstado, busqueda]);
+  }, [planes, filtroEstado, filtroGrado, filtroArea, busqueda]);
 
   // Seleccionar plan para revisar
   async function handleSeleccionarPlan(plan) {
@@ -163,6 +211,12 @@ export default function PanelCoordinacionModal({
   async function handleDescargarInformeWord() {
     setGenerandoInformeDocx(true);
     try {
+      // Si el coordinador aplicó filtro focalizado por grado o área, exportar dicho conjunto
+      const planesAExportar =
+        (filtroGrado !== "todos" || filtroArea !== "todas") && planesFiltrados.length > 0
+          ? planesFiltrados
+          : planes;
+
       await descargarInformeSupervisionWord({
         escuelaInfo: {
           nombre: escuelaNombre,
@@ -171,7 +225,7 @@ export default function PanelCoordinacionModal({
           distrito: perfil?.distrito,
           tanda: perfil?.tanda
         },
-        planes,
+        planes: planesAExportar,
         revisiones: revisionesActuales,
         coordinadorNombre: user?.user_metadata?.nombre || perfil?.nombre || "Coordinador/a Pedagógico/a",
         directorNombre: perfil?.directorNombre || "Director/a del Centro Educativo"
@@ -252,46 +306,122 @@ export default function PanelCoordinacionModal({
           </div>
         </div>
 
-        {/* Barra de Filtros y Búsqueda */}
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "14px" }}>
-          <input
-            type="text"
-            placeholder="🔍 Buscar por docente, título, área..."
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            style={{
-              flex: "1 1 200px",
-              padding: "8px 12px",
-              borderRadius: "8px",
-              border: "1px solid #cbd5e1",
-              fontSize: "13px"
-            }}
-          />
-          <div style={{ display: "flex", gap: "6px" }}>
-            {[
-              { id: "todas", label: "Todas" },
-              { id: "enviada_revision", label: "Por Revisar" },
-              { id: "aprobada", label: "Aprobadas" },
-              { id: "observada", label: "Observadas" }
-            ].map((f) => (
+        {/* Barra de Filtros y Búsqueda Multidimensional */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "14px" }}>
+          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+            <input
+              type="text"
+              placeholder="🔍 Buscar por docente, título, tema..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              style={{
+                flex: "1 1 200px",
+                padding: "8px 12px",
+                borderRadius: "8px",
+                border: "1px solid #cbd5e1",
+                fontSize: "13px"
+              }}
+            />
+
+            {/* Selector de Grado */}
+            <select
+              value={filtroGrado}
+              onChange={(e) => setFiltroGrado(e.target.value)}
+              aria-label="Filtrar por Grado"
+              style={{
+                padding: "8px 12px",
+                borderRadius: "8px",
+                border: filtroGrado !== "todos" ? "1.5px solid #0d9488" : "1px solid #cbd5e1",
+                background: filtroGrado !== "todos" ? "#ccfbf1" : "#ffffff",
+                color: filtroGrado !== "todos" ? "#0f766e" : "#334155",
+                fontWeight: filtroGrado !== "todos" ? "600" : "normal",
+                fontSize: "13px",
+                cursor: "pointer"
+              }}
+              title="Filtrar planificaciones por grado escolar"
+            >
+              <option value="todos">🎓 Todos los Grados</option>
+              {listaGrados.map((g) => (
+                <option key={g} value={g}>{g}</option>
+              ))}
+            </select>
+
+            {/* Selector de Área Curricular */}
+            <select
+              value={filtroArea}
+              onChange={(e) => setFiltroArea(e.target.value)}
+              aria-label="Filtrar por Área Curricular"
+              style={{
+                padding: "8px 12px",
+                borderRadius: "8px",
+                border: filtroArea !== "todas" ? "1.5px solid #0d9488" : "1px solid #cbd5e1",
+                background: filtroArea !== "todas" ? "#ccfbf1" : "#ffffff",
+                color: filtroArea !== "todas" ? "#0f766e" : "#334155",
+                fontWeight: filtroArea !== "todas" ? "600" : "normal",
+                fontSize: "13px",
+                cursor: "pointer"
+              }}
+              title="Filtrar planificaciones por área curricular MINERD"
+            >
+              <option value="todas">📚 Todas las Áreas</option>
+              {listaAreas.map((a) => (
+                <option key={a} value={a}>{a}</option>
+              ))}
+            </select>
+
+            {hayFiltrosActivos && (
               <button
-                key={f.id}
                 type="button"
-                onClick={() => setFiltroEstado(f.id)}
+                onClick={handleLimpiarFiltros}
                 style={{
-                  padding: "6px 12px",
-                  borderRadius: "20px",
+                  background: "#f1f5f9",
+                  color: "#475569",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "8px",
+                  padding: "7px 11px",
                   fontSize: "12px",
-                  fontWeight: filtroEstado === f.id ? "700" : "500",
-                  border: filtroEstado === f.id ? "1.5px solid #0d9488" : "1px solid #e2e8f0",
-                  background: filtroEstado === f.id ? "#ccfbf1" : "#ffffff",
-                  color: filtroEstado === f.id ? "#0f766e" : "#475569",
+                  fontWeight: "500",
                   cursor: "pointer"
                 }}
+                title="Limpiar todos los filtros"
               >
-                {f.label}
+                ✕ Limpiar
               </button>
-            ))}
+            )}
+          </div>
+
+          {/* Fila de Estados y Conteo */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+            <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+              {[
+                { id: "todas", label: "Todas" },
+                { id: "enviada_revision", label: "Por Revisar" },
+                { id: "aprobada", label: "Aprobadas" },
+                { id: "observada", label: "Observadas" }
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setFiltroEstado(f.id)}
+                  style={{
+                    padding: "5px 12px",
+                    borderRadius: "20px",
+                    fontSize: "12px",
+                    fontWeight: filtroEstado === f.id ? "700" : "500",
+                    border: filtroEstado === f.id ? "1.5px solid #0d9488" : "1px solid #e2e8f0",
+                    background: filtroEstado === f.id ? "#ccfbf1" : "#ffffff",
+                    color: filtroEstado === f.id ? "#0f766e" : "#475569",
+                    cursor: "pointer"
+                  }}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            <span style={{ fontSize: "12px", color: "#64748b" }}>
+              Mostrando <strong>{planesFiltrados.length}</strong> de {planes.length} {planes.length === 1 ? "plan" : "planes"}
+            </span>
           </div>
         </div>
 

@@ -210,3 +210,109 @@ test("FASE 12 - 2. Ciclo de Vida: Envío a Coordinación y Dictamen Pedagógico"
     assert.equal(aprobacion.revision.estado_revision, "aprobada");
   });
 });
+
+// ─────────────────────────────────────────────────────────────
+// 3. FILTRADO MULTIDIMENSIONAL POR GRADO, ÁREA Y ESTADO
+// ─────────────────────────────────────────────────────────────
+test("FASE 12 - 3. Filtrado Multidimensional por Grado y Área Curricular en Coordinación", async (t) => {
+  const planesPrueba = [
+    {
+      id: "p1",
+      titulo: "Secuencia Didáctica La Noticia",
+      area: "Lengua Española",
+      grado: "4.º",
+      docenteNombre: "Prof. Laura Gómez",
+      estado: "aprobada"
+    },
+    {
+      id: "p2",
+      titulo: "Fracciones Propias e Impropias",
+      area: "Matemáticas",
+      grado: "4.º",
+      docenteNombre: "Prof. Laura Gómez",
+      estado: "enviada_revision"
+    },
+    {
+      id: "p3",
+      titulo: "Los Ecosistemas Dominicanos",
+      area: "Ciencias de la Naturaleza",
+      grado: "5.º",
+      docenteNombre: "Prof. Marcos Díaz",
+      estado: "observada"
+    },
+    {
+      id: "p4",
+      titulo: "Independencia Nacional",
+      area: "Ciencias Sociales",
+      grado: "6.º",
+      docenteNombre: "Prof. Ana Medina",
+      estado: "aprobada"
+    }
+  ];
+
+  await t.test("Extrae y ordena grados y áreas únicos sin duplicados", () => {
+    const setGrados = new Set();
+    const setAreas = new Set();
+    for (const p of planesPrueba) {
+      if (p.grado) setGrados.add(p.grado.trim());
+      if (p.area) setAreas.add(p.area.trim());
+    }
+
+    const grados = Array.from(setGrados).sort((a, b) => a.localeCompare(b, "es", { numeric: true }));
+    const areas = Array.from(setAreas).sort((a, b) => a.localeCompare(b, "es"));
+
+    assert.deepEqual(grados, ["4.º", "5.º", "6.º"], "Debe extraer los 3 grados únicos en orden");
+    assert.deepEqual(
+      areas,
+      ["Ciencias de la Naturaleza", "Ciencias Sociales", "Lengua Española", "Matemáticas"],
+      "Debe extraer las 4 áreas únicas ordenadas"
+    );
+  });
+
+  await t.test("Filtra eficazmente por grado escolar específico", () => {
+    const filtrados = planesPrueba.filter((p) => p.grado === "4.º");
+    assert.equal(filtrados.length, 2, "Deben encontrarse 2 planes para 4.º");
+    assert.ok(filtrados.every((p) => p.grado === "4.º"));
+  });
+
+  await t.test("Filtra eficazmente por área curricular específica", () => {
+    const filtrados = planesPrueba.filter((p) => p.area === "Matemáticas");
+    assert.equal(filtrados.length, 1);
+    assert.equal(filtrados[0].titulo, "Fracciones Propias e Impropias");
+  });
+
+  await t.test("Filtrado multidimensional combinado (Estado + Grado + Área + Búsqueda)", () => {
+    const filtro = {
+      estado: "aprobada",
+      grado: "4.º",
+      area: "Lengua Española",
+      busqueda: "noticia"
+    };
+
+    const resultado = planesPrueba.filter((p) => {
+      const matchEstado = filtro.estado === "todas" || p.estado === filtro.estado;
+      const matchGrado = filtro.grado === "todos" || p.grado === filtro.grado;
+      const matchArea = filtro.area === "todas" || p.area === filtro.area;
+      const matchBusqueda = !filtro.busqueda || p.titulo.toLowerCase().includes(filtro.busqueda);
+      return matchEstado && matchGrado && matchArea && matchBusqueda;
+    });
+
+    assert.equal(resultado.length, 1);
+    assert.equal(resultado[0].id, "p1");
+  });
+
+  await t.test("PanelCoordinacionModal.jsx declara selectores de Grado, Área y botón Limpiar", () => {
+    const modalPath = path.join(rootDir, "client/src/components/PanelCoordinacionModal.jsx");
+    const contenido = fs.readFileSync(modalPath, "utf-8");
+
+    assert.ok(contenido.includes("filtroGrado"), "Debe tener estado filtroGrado");
+    assert.ok(contenido.includes("filtroArea"), "Debe tener estado filtroArea");
+    assert.ok(contenido.includes("listaGrados"), "Debe tener listaGrados calculada");
+    assert.ok(contenido.includes("listaAreas"), "Debe tener listaAreas calculada");
+    assert.ok(contenido.includes("handleLimpiarFiltros"), "Debe tener handleLimpiarFiltros");
+    assert.ok(contenido.includes("Todos los Grados"), "Debe contener opción Todos los Grados");
+    assert.ok(contenido.includes("Todas las Áreas"), "Debe contener opción Todas las Áreas");
+    assert.ok(contenido.includes("Mostrando"), "Debe contener indicador visual de planes encontrados");
+  });
+});
+
