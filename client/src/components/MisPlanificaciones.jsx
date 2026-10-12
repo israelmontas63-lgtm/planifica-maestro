@@ -16,7 +16,8 @@ export default function MisPlanificaciones({
   user,
   supabaseClient,
   planInicialId = null,
-  onAbrirRubrica
+  onAbrirRubrica,
+  onAbrirRegistro
 }) {
   const [planes, setPlanes] = useState(() => obtenerTodasLasPlanificaciones(user?.id));
   const [filtroArea, setFiltroArea] = useState("todas");
@@ -336,6 +337,20 @@ export default function MisPlanificaciones({
                       title="Generar Rúbrica Analítica e Instrumentos de Evaluación Formativa MINERD"
                     >
                       📊 Rúbrica
+                    </button>
+                  )}
+
+                  {onAbrirRegistro && (
+                    <button
+                      className="biblio-action-btn btn-registro"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAbrirRegistro(plan);
+                      }}
+                      title="Generar Registro de Calificaciones y Asistencia Oficial MINERD en Excel"
+                      style={{ background: "#f0fdf4", color: "#15803d", border: "1px solid #bbf7d0", fontWeight: "600" }}
+                    >
+                      📊 Registro
                     </button>
                   )}
 

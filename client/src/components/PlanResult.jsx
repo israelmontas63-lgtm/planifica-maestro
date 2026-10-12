@@ -17,7 +17,8 @@ export default function PlanResult({
   distintivo,
   esRespaldo,
   origen,
-  onAbrirRubrica
+  onAbrirRubrica,
+  onAbrirRegistro
 }) {
   const [campos, setCampos] = useState(datosGenerados || {});
   const [editandoCampo, setEditandoCampo] = useState(null);
@@ -249,6 +250,17 @@ export default function PlanResult({
             style={{ background: "#0284c7" }}
           >
             📊 Rúbrica MINERD
+          </button>
+        )}
+
+        {onAbrirRegistro && (
+          <button
+            className="export-btn btn-registro"
+            onClick={() => onAbrirRegistro(campos)}
+            title="Generar Registro de Calificaciones y Asistencia Oficial MINERD en Excel (Ordenanza 04-2023)"
+            style={{ background: "#15803d" }}
+          >
+            📊 Registro y Asistencia
           </button>
         )}
 

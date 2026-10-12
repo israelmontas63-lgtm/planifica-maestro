@@ -570,5 +570,13 @@ export async function exportarRubricaWord({
   return descargarRubricaWord({ plan, datos, perfil, tipoInstrumento, titulo });
 }
 
+/**
+ * Exportar Registro de Calificaciones y Asistencia a Excel (.xls) — Ordenanza 04-2023 MINERD
+ */
+export async function exportarRegistroExcel(plan = {}, perfil = null, nomina = null) {
+  const { descargarRegistroExcel } = await import("./services/generadorExcelRegistro.js");
+  return descargarRegistroExcel(plan, perfil, nomina);
+}
+
 
 

@@ -35,6 +35,7 @@ const NotificacionesModal = lazy(() => import("./components/NotificacionesModal.
 const ConfiguracionModal = lazy(() => import("./components/ConfiguracionModal.jsx"));
 const AyudaModal = lazy(() => import("./components/AyudaModal.jsx"));
 const RubricaModal = lazy(() => import("./components/RubricaModal.jsx"));
+const RegistroCalificacionesModal = lazy(() => import("./components/RegistroCalificacionesModal.jsx"));
 
 export default function App() {
   const {
@@ -93,6 +94,7 @@ export default function App() {
   const [configuracionOpen, setConfiguracionOpen] = useState(false);
   const [ayudaOpen, setAyudaOpen] = useState(false);
   const [rubricaModalPlan, setRubricaModalPlan] = useState(null);
+  const [registroModalPlan, setRegistroModalPlan] = useState(null);
   const [planInicialMisPlanificaciones, setPlanInicialMisPlanificaciones] = useState(null);
   const [contadorNotificaciones, setContadorNotificaciones] = useState(0);
   const [isOwner, setIsOwner] = useState(!!obtenerOwnerKey());
@@ -1225,6 +1227,12 @@ export default function App() {
                     datosPlanificacion: datos,
                     titulo: m.text?.substring(0, 45) || "Planificación Docente"
                   })}
+                  onAbrirRegistro={(datos) => setRegistroModalPlan({
+                    datosPlanificacion: datos,
+                    titulo: m.text?.substring(0, 45) || "Planificación Docente",
+                    grado: datos["Grado"] || datos["grado"] || "4to Primaria",
+                    area: datos["Área"] || datos["area"] || datos["Asignatura"] || "Lengua Española"
+                  })}
                   onDatosActualizados={(nuevosDatos) => {
                     // FASE 13: Actualizar biblioteca local inmediatamente para persistencia offline
                     guardarPlanEnBiblioteca({
@@ -1790,6 +1798,7 @@ export default function App() {
               exportarWord({ titulo, plan: texto, datos, revision, perfil: p });
             }}
             onAbrirRubrica={(plan) => setRubricaModalPlan(plan)}
+            onAbrirRegistro={(plan) => setRegistroModalPlan(plan)}
             user={user}
             supabaseClient={supabase}
             planInicialId={planInicialMisPlanificaciones}
@@ -1805,6 +1814,15 @@ export default function App() {
               try { return cargarPerfil() || {}; } catch (e) { return {}; }
             })()}
             onCerrar={() => setRubricaModalPlan(null)}
+          />
+        </Suspense>
+      )}
+
+      {registroModalPlan && (
+        <Suspense fallback={null}>
+          <RegistroCalificacionesModal
+            plan={registroModalPlan}
+            onCerrar={() => setRegistroModalPlan(null)}
           />
         </Suspense>
       )}
