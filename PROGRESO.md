@@ -1,4 +1,4 @@
-# PROGRESO DE AUDITORÍA Y BETA CERRADA
+# PROGRESO DE AUDITORÍA, DEUDA TÉCNICA Y BETA CERRADA
 
 ## Estado de los Bloques
 
@@ -6,13 +6,18 @@
 |--------|-------------|--------|
 | **0** | PREPARACIÓN (Línea base, backups y branch) | OK |
 | **1** | VERIFICAR HALLAZGOS (Solo lectura y diagnósticos) | OK |
-| **2** | SECRETOS Y ACCESO (H2, H3) | OK |
-| **3** | RLS DE SUPABASE (H1) | OK (Requiere acción manual) |
-| **4** | DEPENDENCIAS (H4) | OK |
-| **5** | RATE LIMIT DEL WORKER (H5) | OK |
-| **6** | LLAVE DEL DUEÑO EN EL CLIENTE (H6) | OK |
-| **7** | CAPACITOR Y CI/CD (H7, H8) | OK |
-| **8** | VERIFICACIÓN FINAL Y ENTREGA | OK |
+| **2** | SECRETOS Y ACCESO (H2, H3, `APP_ACCESS_KEY`) | OK |
+| **3** | RLS DE SUPABASE (H1 - Migración preparada) | OK (Requiere acción manual en Supabase) |
+| **4** | DEPENDENCIAS (H4 - docx ^9.7.1 homologado) | OK |
+| **5** | RATE LIMIT DEL WORKER (H5 - Cloudflare KV distribuido) | OK |
+| **6** | LLAVE DEL DUEÑO EN EL CLIENTE (H6 - sessionStorage) | OK |
+| **7** | CAPACITOR Y CI/CD (H7, H8 - Builds automáticos Cloudflare) | OK |
+| **8** | VERIFICACIÓN FINAL AUDITORÍA | OK |
+| **9** | DEUDA TÉCNICA CANÓNICA (`shared/` unificado, -2400 líneas) | OK |
+| **10** | RESILIENCIA Y CLON LIMPIO (Workspaces, `server/data/`, higiene de tests) | OK |
+| **11** | UX Y CURRÍCULO MINERD (CON BASE, sugerencias de inicio, modo offline) | OK |
 
-## Riesgos abiertos
-- Pendiente de verificar en Bloque 1.
+## Resumen de Verificación Vigente
+- **Suites de prueba**: 314 pruebas en 26 suites aprobadas (100% pass) + 4/4 Vitest frontend.
+- **Despliegue producción**: En vivo en Cloudflare Workers (`https://planifica-maestro.israelmontas65.workers.dev`).
+- **Riesgos abiertos mitigados**: Rate limit IP escuela ampliado a 50 peticiones/día; aislamiento estricto de binarios de prueba en `os.tmpdir()`.
