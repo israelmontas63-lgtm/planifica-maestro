@@ -47,16 +47,43 @@ export default function MisPlanificaciones({
       const perfil = cargarPerfil() || {};
       const docenteNombre = user?.user_metadata?.nombre || perfil?.nombre || "Docente";
       const escuelaId = user?.user_metadata?.escuela_id || perfil?.codigoMinerd;
-      await enviarPlanACoordinacion({
+      const esReenvio = plan.estado === "observada";
+      let notaDocente = "";
+
+      if (esReenvio) {
+        const respuesta = window.prompt(
+          "📝 Nota de Ajustes para el Coordinador (Opcional):\nDescribe brevemente las mejoras o adecuaciones realizadas:",
+          ""
+        );
+        if (respuesta === null) return; // Si el docente cancela el diálogo, no reenvía
+        notaDocente = respuesta.trim();
+      }
+
+      const planActualizado = await enviarPlanACoordinacion({
         supabaseClient,
         plan,
         userId: user?.id,
         escuelaId,
-        docenteNombre
+        docenteNombre,
+        notaDocente
       });
-      actualizarEstadoPlanEnBiblioteca(plan.id, "enviada_revision", null, user?.id);
+
+      actualizarEstadoPlanEnBiblioteca(
+        plan.id,
+        "enviada_revision",
+        null,
+        user?.id,
+        {
+          ciclo_revision: planActualizado.ciclo_revision,
+          notaDocente: planActualizado.notaDocente
+        }
+      );
       setPlanes(obtenerTodasLasPlanificaciones(user?.id));
-      alert("¡Planificación enviada a Coordinación para revisión!");
+      alert(
+        esReenvio
+          ? `¡Planificación reenviada a Coordinación (Ciclo ${planActualizado.ciclo_revision}) con tus ajustes!`
+          : "¡Planificación enviada a Coordinación para revisión oficial!"
+      );
     } catch (err) {
       alert("Error enviando a coordinación: " + err.message);
     }
@@ -227,6 +254,14 @@ export default function MisPlanificaciones({
                   <span className="biblio-badge badge-grado">🎓 {plan.grado || "Primaria"}</span>
                   <span className="biblio-badge badge-esquema">📋 {plan.esquemaLabel || "Esquema"}</span>
                   <span className="biblio-badge badge-periodo">⏱️ {plan.periodo || "Diaria"}</span>
+                  {plan.ciclo_revision && plan.ciclo_revision > 1 && (
+                    <span
+                      className="biblio-badge"
+                      style={{ background: "#e0f2fe", color: "#0369a1", fontWeight: "700" }}
+                    >
+                      🔄 Ciclo {plan.ciclo_revision}
+                    </span>
+                  )}
                 </div>
 
                 {/* Acciones principales de la tarjeta */}
@@ -246,10 +281,22 @@ export default function MisPlanificaciones({
                     <button
                       className="biblio-action-btn"
                       onClick={(e) => handleEnviarACoordinacion(plan, e)}
-                      title="Enviar a Coordinación Pedagógica para revisión oficial"
-                      style={{ background: "#f0fdfa", color: "#0d9488", border: "1px solid #99f6e4", fontWeight: "600" }}
+                      title={plan.estado === "observada"
+                        ? "Reenviar a Coordinación tras realizar los ajustes pedagógicos solicitados"
+                        : "Enviar a Coordinación Pedagógica para revisión oficial"}
+                      style={plan.estado === "observada" ? {
+                        background: "#fffbeb",
+                        color: "#b45309",
+                        border: "1px solid #fde68a",
+                        fontWeight: "700"
+                      } : {
+                        background: "#f0fdfa",
+                        color: "#0d9488",
+                        border: "1px solid #99f6e4",
+                        fontWeight: "600"
+                      }}
                     >
-                      📤 Enviar
+                      {plan.estado === "observada" ? "🔄 Reenviar con Ajustes" : "📤 Enviar"}
                     </button>
                   )}
 
@@ -289,7 +336,57 @@ export default function MisPlanificaciones({
                 {/* Vista previa expandida si se toca la tarjeta */}
                 {planSeleccionado?.id === plan.id && (
                   <div className="biblio-card-preview" onClick={(e) => e.stopPropagation()}>
-                    {plan.ultimaRevision && (
+                    {plan.notaDocente && (
+                      <div style={{ background: "#f0fdfa", border: "1px solid #99f6e4", borderRadius: "8px", padding: "8px 10px", marginBottom: "10px" }}>
+                        <strong style={{ fontSize: "11.5px", color: "#0f766e" }}>
+                          📝 Nota de Entrega del Docente:
+                        </strong>
+                        <p style={{ margin: "2px 0 0 0", fontSize: "12px", color: "#134e4a" }}>
+                          "{plan.notaDocente}"
+                        </p>
+                      </div>
+                    )}
+
+                    {Array.isArray(plan.revisiones) && plan.revisiones.length > 1 ? (
+                      <div style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", padding: "10px", marginBottom: "12px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+                          <strong style={{ fontSize: "12px", color: "#1e293b" }}>
+                            📜 Historial de Supervisión ({plan.revisiones.length} dictámenes)
+                          </strong>
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                          {plan.revisiones.map((rev, rIdx) => (
+                            <div key={rev.id || rIdx} style={{
+                              padding: "6px 8px",
+                              background: "#ffffff",
+                              borderRadius: "6px",
+                              borderLeft: `3px solid ${rev.estado_revision === "aprobada" ? "#16a34a" : "#ea580c"}`,
+                              border: "1px solid #e2e8f0",
+                              borderLeftWidth: "3px"
+                            }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", marginBottom: "2px" }}>
+                                <span style={{ fontWeight: "700", color: rev.estado_revision === "aprobada" ? "#166534" : "#b45309" }}>
+                                  {rev.estado_revision === "aprobada" ? "✓ Aprobada" : "⚠️ Con Observaciones"}
+                                </span>
+                                <span style={{ color: "#64748b" }}>
+                                  {new Date(rev.fecha_revision).toLocaleDateString()}
+                                </span>
+                              </div>
+                              {rev.comentarios_generales && (
+                                <p style={{ margin: "2px 0", fontSize: "11.5px", color: "#334155" }}>
+                                  {rev.comentarios_generales}
+                                </p>
+                              )}
+                              {rev.bloques_observados?.dua && (
+                                <p style={{ margin: "2px 0", fontSize: "11px", color: "#0f766e", fontStyle: "italic" }}>
+                                  DUA: {rev.bloques_observados.dua}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : plan.ultimaRevision && (
                       <div style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", padding: "10px", marginBottom: "12px" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
                           <strong style={{ fontSize: "12px", color: plan.ultimaRevision.estado_revision === "aprobada" ? "#166534" : "#b45309" }}>

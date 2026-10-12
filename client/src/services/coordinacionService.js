@@ -98,11 +98,19 @@ export async function enviarPlanACoordinacion({
   plan,
   userId,
   escuelaId,
-  docenteNombre = "Docente"
+  docenteNombre = "Docente",
+  notaDocente = ""
 }) {
   if (!plan || !plan.id) {
     throw new Error("Planificación inválida para enviar a coordinación.");
   }
+
+  const cicloActual = Number(plan.ciclo_revision) || 1;
+  const esReenvio = plan.estado === "observada";
+  const nuevoCiclo = esReenvio ? cicloActual + 1 : cicloActual;
+  const notaLimpia = (notaDocente && typeof notaDocente === "string")
+    ? notaDocente.trim()
+    : (plan.notaDocente || "");
 
   const planActualizado = {
     ...plan,
@@ -110,6 +118,8 @@ export async function enviarPlanACoordinacion({
     docenteNombre,
     docente_id: userId || plan.docente_id || "docente_local",
     escuela_id: escuelaId || plan.escuela_id || "escuela_general",
+    ciclo_revision: nuevoCiclo,
+    notaDocente: notaLimpia,
     fecha_envio: new Date().toISOString(),
     actualizado_en: new Date().toISOString()
   };
@@ -124,7 +134,30 @@ export async function enviarPlanACoordinacion({
   }
   guardarPlanesLocalesSupervision(locales);
 
-  // 2. Si hay conexión a Supabase autenticada, enviar a la tabla oficial
+  // 2. Sincronizar también con la biblioteca local del docente si existe
+  try {
+    const claves = obtenerClavesLocalStorage();
+    for (const k of claves) {
+      if (k && k.startsWith("pm_biblioteca_")) {
+        const raw = localStorage.getItem(k);
+        if (raw && raw.includes(plan.id)) {
+          const arr = JSON.parse(raw);
+          if (Array.isArray(arr)) {
+            const pIdx = arr.findIndex((p) => p.id === plan.id);
+            if (pIdx !== -1) {
+              arr[pIdx].estado = "enviada_revision";
+              arr[pIdx].ciclo_revision = nuevoCiclo;
+              if (notaLimpia) arr[pIdx].notaDocente = notaLimpia;
+              arr[pIdx].actualizado_en = planActualizado.actualizado_en;
+              localStorage.setItem(k, JSON.stringify(arr));
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {}
+
+  // 3. Si hay conexión a Supabase autenticada, enviar a la tabla oficial
   if (supabaseClient && userId) {
     try {
       const { error } = await supabaseClient
@@ -140,7 +173,11 @@ export async function enviarPlanACoordinacion({
           periodo: plan.periodo || "diaria",
           esquema_id: plan.esquema_id || plan.esquemaLabel || "primario",
           datos_planificacion: plan.datosPlanificacion || {},
-          ajustes_manuales: plan.ajustesManuales || {},
+          ajustes_manuales: {
+            ...(plan.ajustesManuales || {}),
+            ciclo_revision: nuevoCiclo,
+            notaDocente: notaLimpia
+          },
           estado: "enviada_revision",
           actualizado_en: new Date().toISOString()
         });

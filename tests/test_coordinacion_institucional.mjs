@@ -556,5 +556,133 @@ test("FASE 12 - 6. Notificaciones Reactivas de Dictamen Pedagógico para el Doce
   });
 });
 
+// ─────────────────────────────────────────────────────────────
+// 7. CICLO CIRCULAR DE REENVÍO CON AJUSTES Y NOTA DEL DOCENTE
+// ─────────────────────────────────────────────────────────────
+test("FASE 12 - 7. Ciclo Circular de Reenvío con Ajustes y Nota de Entrega", async (t) => {
+  const globalMock = new MockLocalStorage();
+  global.localStorage = globalMock;
+
+  const {
+    enviarPlanACoordinacion,
+    guardarRevisionPedagogica,
+    obtenerPlanificacionesParaSupervision
+  } = await import("../client/src/services/coordinacionService.js");
+
+  const {
+    guardarPlanEnBiblioteca,
+    obtenerTodasLasPlanificaciones,
+    actualizarEstadoPlanEnBiblioteca
+  } = await import("../client/src/services/bibliotecaStorage.js");
+
+  const testDocenteId = "docente_lucia_789";
+
+  // 1. Docente crea un plan inicial (Borrador)
+  const planInicial = guardarPlanEnBiblioteca({
+    id: "plan_ciclo_001",
+    titulo: "El Cuento y la Narración Estructurada",
+    area: "Lengua Española",
+    grado: "3ro Primaria"
+  }, testDocenteId);
+
+  await t.test("Envío inicial a coordinación establece ciclo 1 sin nota", async () => {
+    const enviado = await enviarPlanACoordinacion({
+      plan: planInicial,
+      userId: testDocenteId,
+      docenteNombre: "Profe Lucía"
+    });
+
+    assert.equal(enviado.estado, "enviada_revision");
+    assert.equal(enviado.ciclo_revision, 1, "El ciclo inicial debe ser 1");
+    assert.equal(enviado.notaDocente, "", "No debe haber nota de ajustes en primer envío");
+
+    actualizarEstadoPlanEnBiblioteca(planInicial.id, "enviada_revision", null, testDocenteId, {
+      ciclo_revision: enviado.ciclo_revision
+    });
+  });
+
+  await t.test("Coordinador dictamina 'requiere_ajustes' pasando el plan a 'observada'", async () => {
+    const res = await guardarRevisionPedagogica({
+      planificacionId: "plan_ciclo_001",
+      coordinadorId: "coord_01",
+      coordinadorNombre: "Coordinador Marcos",
+      estadoRevision: "requiere_ajustes",
+      comentariosGenerales: "Ajustar las actividades del momento de Cierre para incluir metacognición.",
+      bloquesObservados: { dua: "Añadir tarjetas ilustradas para estudiantes no alfabetizados." }
+    });
+
+    assert.equal(res.nuevoEstadoPlan, "observada");
+
+    // Verificar en la biblioteca del docente
+    const planesDoc = obtenerTodasLasPlanificaciones(testDocenteId);
+    const planObs = planesDoc.find(p => p.id === "plan_ciclo_001");
+    assert.equal(planObs.estado, "observada");
+    assert.ok(planObs.ultimaRevision);
+  });
+
+  await t.test("Reenvío con ajustes incrementa automáticamente ciclo a 2 y persiste notaDocente", async () => {
+    const planesDoc = obtenerTodasLasPlanificaciones(testDocenteId);
+    const planObs = planesDoc.find(p => p.id === "plan_ciclo_001");
+
+    const reenviado = await enviarPlanACoordinacion({
+      plan: planObs,
+      userId: testDocenteId,
+      docenteNombre: "Profe Lucía",
+      notaDocente: "Se agregaron preguntas metacognitivas en el Cierre y tarjetas visuales DUA."
+    });
+
+    assert.equal(reenviado.estado, "enviada_revision", "El estado debe volver a enviada_revision");
+    assert.equal(reenviado.ciclo_revision, 2, "El ciclo debe incrementarse a 2");
+    assert.equal(
+      reenviado.notaDocente,
+      "Se agregaron preguntas metacognitivas en el Cierre y tarjetas visuales DUA.",
+      "Debe conservar la nota de ajustes del docente"
+    );
+
+    // Verificar visibilidad en el pool de supervisión
+    const planesSupervision = await obtenerPlanificacionesParaSupervision({
+      userId: "coord_01",
+      rol: "coordinador_area"
+    });
+    const enSupervision = planesSupervision.find(p => p.id === "plan_ciclo_001");
+    assert.ok(enSupervision);
+    assert.equal(enSupervision.ciclo_revision, 2);
+    assert.equal(enSupervision.notaDocente, "Se agregaron preguntas metacognitivas en el Cierre y tarjetas visuales DUA.");
+  });
+
+  await t.test("Segunda revisión del coordinador aprueba el ciclo 2 con historial completo", async () => {
+    const resSegunda = await guardarRevisionPedagogica({
+      planificacionId: "plan_ciclo_001",
+      coordinadorId: "coord_01",
+      coordinadorNombre: "Coordinador Marcos",
+      estadoRevision: "aprobada",
+      comentariosGenerales: "Ajustes incorporados satisfactoriamente. Secuencia didáctica aprobada."
+    });
+
+    assert.equal(resSegunda.nuevoEstadoPlan, "aprobada");
+
+    const planesDoc = obtenerTodasLasPlanificaciones(testDocenteId);
+    const planFinal = planesDoc.find(p => p.id === "plan_ciclo_001");
+    assert.equal(planFinal.estado, "aprobada");
+    assert.ok(planFinal.revisiones.length >= 2, "Debe preservar el historial completo de dictámenes");
+    assert.equal(planFinal.revisiones[0].estado_revision, "aprobada");
+    assert.equal(planFinal.revisiones[1].estado_revision, "requiere_ajustes");
+  });
+
+  await t.test("Componentes UI declaran soporte para notas de entrega, ciclo e historial", () => {
+    const misPlanesPath = path.join(rootDir, "client/src/components/MisPlanificaciones.jsx");
+    const misPlanesContent = fs.readFileSync(misPlanesPath, "utf-8");
+    assert.ok(misPlanesContent.includes("Reenviar con Ajustes"), "MisPlanificaciones debe tener botón Reenviar con Ajustes");
+    assert.ok(misPlanesContent.includes("Nota de Entrega del Docente"), "MisPlanificaciones debe mostrar nota del docente");
+    assert.ok(misPlanesContent.includes("Historial de Supervisión"), "MisPlanificaciones debe tener Historial de Supervisión");
+    assert.ok(misPlanesContent.includes("Ciclo"), "MisPlanificaciones debe mostrar insignia de Ciclo");
+
+    const coordModalPath = path.join(rootDir, "client/src/components/PanelCoordinacionModal.jsx");
+    const coordModalContent = fs.readFileSync(coordModalPath, "utf-8");
+    assert.ok(coordModalContent.includes("Nota de Ajustes del Docente"), "PanelCoordinacionModal debe mostrar nota del docente");
+    assert.ok(coordModalContent.includes("Reenvío"), "PanelCoordinacionModal debe mostrar insignia de reenvío");
+  });
+});
+
 
 

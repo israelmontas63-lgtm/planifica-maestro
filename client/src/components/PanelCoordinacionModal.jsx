@@ -530,6 +530,23 @@ export default function PanelCoordinacionModal({
                 </div>
               </div>
 
+              {planSeleccionado.ciclo_revision && planSeleccionado.ciclo_revision > 1 && (
+                <div style={{ display: "inline-block", background: "#e0f2fe", color: "#0369a1", border: "1px solid #bae6fd", padding: "3px 10px", borderRadius: "12px", fontSize: "12px", fontWeight: "700", marginBottom: "8px" }}>
+                  🔄 Reenvío para Supervisión (Ciclo {planSeleccionado.ciclo_revision})
+                </div>
+              )}
+
+              {planSeleccionado.notaDocente && (
+                <div style={{ background: "#f0fdfa", border: "1.5px solid #5eead4", borderRadius: "8px", padding: "10px 14px", marginBottom: "12px" }}>
+                  <strong style={{ fontSize: "12.5px", color: "#0f766e" }}>
+                    📝 Nota de Entrega y Ajustes del Docente:
+                  </strong>
+                  <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#115e59" }}>
+                    "{planSeleccionado.notaDocente}"
+                  </p>
+                </div>
+              )}
+
               {mensajeExito && (
                 <div style={{ background: "#ecfdf5", border: "1px solid #a7f3d0", color: "#065f46", padding: "10px 14px", borderRadius: "8px", fontSize: "13px", marginBottom: "14px" }}>
                   ✓ {mensajeExito}
@@ -796,6 +813,23 @@ export default function PanelCoordinacionModal({
                           </span>
                         )}
 
+                        {p.ciclo_revision && p.ciclo_revision > 1 && (
+                          <span
+                            style={{
+                              background: "#e0f2fe",
+                              color: "#0369a1",
+                              border: "1px solid #bae6fd",
+                              padding: "2px 7px",
+                              borderRadius: "12px",
+                              fontSize: "11px",
+                              fontWeight: "700"
+                            }}
+                            title={`Plan reenviado tras adecuaciones (Ciclo ${p.ciclo_revision})`}
+                          >
+                            🔄 Reenvío (Ciclo {p.ciclo_revision})
+                          </span>
+                        )}
+
                         {alertaAntiguedad && (
                           <span
                             style={{
@@ -826,6 +860,18 @@ export default function PanelCoordinacionModal({
                       <p style={{ margin: 0, fontSize: "12px", color: "#64748b" }}>
                         👤 Docente: <strong style={{ color: "#334155" }}>{p.docenteNombre || "Docente"}</strong> • 🎓 {p.grado} • 📚 {p.area} • ⏱️ {p.periodo || "diaria"}
                       </p>
+
+                      {/* Nota de Ajustes del Docente si existe */}
+                      {p.notaDocente && (
+                        <div style={{ marginTop: "6px", background: "#f0fdfa", border: "1px solid #99f6e4", borderRadius: "6px", padding: "6px 10px", fontSize: "11px" }}>
+                          <span style={{ color: "#0f766e", fontWeight: "700" }}>
+                            📝 Nota de Ajustes del Docente:
+                          </span>
+                          <p style={{ margin: "2px 0 0 0", color: "#134e4a" }}>
+                            "{p.notaDocente}"
+                          </p>
+                        </div>
+                      )}
 
                       {/* Snippet de Observación Pedagógica si está observada */}
                       {p.estado === "observada" && (observacionSnippet || duaSnippet) && (

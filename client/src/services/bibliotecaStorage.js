@@ -78,7 +78,7 @@ export function guardarPlanEnBiblioteca({
   }
 }
 
-export function actualizarEstadoPlanEnBiblioteca(id, nuevoEstado, revision, userId) {
+export function actualizarEstadoPlanEnBiblioteca(id, nuevoEstado, revision, userId, extraData = {}) {
   const key = getStorageKey(userId);
   if (!key) return null;
 
@@ -92,6 +92,9 @@ export function actualizarEstadoPlanEnBiblioteca(id, nuevoEstado, revision, user
       lista[idx].ultimaRevision = revision;
       if (!lista[idx].revisiones) lista[idx].revisiones = [];
       lista[idx].revisiones.unshift(revision);
+    }
+    if (extraData && typeof extraData === "object") {
+      Object.assign(lista[idx], extraData);
     }
     lista[idx].actualizado_en = new Date().toISOString();
 
