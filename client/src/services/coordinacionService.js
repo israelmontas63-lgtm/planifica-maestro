@@ -11,6 +11,7 @@
  *    o el dispositivo no tiene red, persiste y recupera del almacenamiento local.
  */
 import { obtenerTodasLasPlanificaciones } from "./bibliotecaStorage.js";
+import { obtenerDocenteId } from "./perfilStorage.js";
 
 const LOCAL_COORDINACION_KEY = "pm_coordinacion_supervision_planes";
 const LOCAL_REVISIONES_KEY = "pm_coordinacion_revisiones";
@@ -134,23 +135,22 @@ export async function enviarPlanACoordinacion({
   }
   guardarPlanesLocalesSupervision(locales);
 
-  // 2. Sincronizar también con la biblioteca local del docente si existe
+  // 2. Sincronizar también con la biblioteca local del docente dueño si existe (aislamiento estricto por dispositivo/usuario)
   try {
-    const claves = obtenerClavesLocalStorage();
-    for (const k of claves) {
-      if (k && k.startsWith("pm_biblioteca_")) {
-        const raw = localStorage.getItem(k);
-        if (raw && raw.includes(plan.id)) {
-          const arr = JSON.parse(raw);
-          if (Array.isArray(arr)) {
-            const pIdx = arr.findIndex((p) => p.id === plan.id);
-            if (pIdx !== -1) {
-              arr[pIdx].estado = "enviada_revision";
-              arr[pIdx].ciclo_revision = nuevoCiclo;
-              if (notaLimpia) arr[pIdx].notaDocente = notaLimpia;
-              arr[pIdx].actualizado_en = planActualizado.actualizado_en;
-              localStorage.setItem(k, JSON.stringify(arr));
-            }
+    const targetDocenteId = userId || plan.docente_id || null;
+    if (targetDocenteId) {
+      const k = `pm_biblioteca_${targetDocenteId}`;
+      const raw = localStorage.getItem(k);
+      if (raw && raw.includes(plan.id)) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) {
+          const pIdx = arr.findIndex((p) => p.id === plan.id);
+          if (pIdx !== -1) {
+            arr[pIdx].estado = "enviada_revision";
+            arr[pIdx].ciclo_revision = nuevoCiclo;
+            if (notaLimpia) arr[pIdx].notaDocente = notaLimpia;
+            arr[pIdx].actualizado_en = planActualizado.actualizado_en;
+            localStorage.setItem(k, JSON.stringify(arr));
           }
         }
       }
@@ -302,7 +302,10 @@ export async function guardarRevisionPedagogica({
   coordinadorNombre = "Coordinador Pedagógico",
   estadoRevision = "aprobada", // 'aprobada' | 'requiere_ajustes' | 'sugerencias'
   comentariosGenerales = "",
-  bloquesObservados = {} // { secuencia_didactica: "...", dua: "..." }
+  bloquesObservados = {}, // { secuencia_didactica: "...", dua: "..." }
+  targetDocenteId = null,
+  docenteId = null,
+  userId = null
 }) {
   if (!planificacionId) throw new Error("ID de planificación requerido.");
 
@@ -337,23 +340,38 @@ export async function guardarRevisionPedagogica({
     guardarPlanesLocalesSupervision(locales);
   }
 
-  // 3. Sincronizar también con la biblioteca del docente local si el plan existe en almacenamiento
+  // 3. Sincronizar también con la biblioteca del docente local si el plan existe en almacenamiento (aislamiento estricto)
   try {
-    const claves = obtenerClavesLocalStorage();
-    for (const k of claves) {
-      if (k && k.startsWith("pm_biblioteca_")) {
+    const planLocal = (idx !== -1) ? locales[idx] : null;
+    let finalDocenteId = targetDocenteId || docenteId || (planLocal && planLocal.docente_id) || userId;
+    if (!finalDocenteId) {
+      try {
+        finalDocenteId = obtenerDocenteId();
+      } catch (e) {}
+    }
+    if (!finalDocenteId) {
+      const bibKeys = obtenerClavesLocalStorage().filter((k) => k && k.startsWith("pm_biblioteca_"));
+      if (bibKeys.length === 1) {
+        const k = bibKeys[0];
         const raw = localStorage.getItem(k);
         if (raw && raw.includes(planificacionId)) {
-          const arr = JSON.parse(raw);
-          if (Array.isArray(arr)) {
-            const pIdx = arr.findIndex((p) => p.id === planificacionId);
-            if (pIdx !== -1) {
-              arr[pIdx].estado = nuevoEstadoPlan;
-              arr[pIdx].ultimaRevision = revisionObj;
-              if (!arr[pIdx].revisiones) arr[pIdx].revisiones = [];
-              arr[pIdx].revisiones.unshift(revisionObj);
-              localStorage.setItem(k, JSON.stringify(arr));
-            }
+          finalDocenteId = k.replace("pm_biblioteca_", "");
+        }
+      }
+    }
+    if (finalDocenteId) {
+      const k = `pm_biblioteca_${finalDocenteId}`;
+      const raw = localStorage.getItem(k);
+      if (raw && raw.includes(planificacionId)) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) {
+          const pIdx = arr.findIndex((p) => p.id === planificacionId);
+          if (pIdx !== -1) {
+            arr[pIdx].estado = nuevoEstadoPlan;
+            arr[pIdx].ultimaRevision = revisionObj;
+            if (!arr[pIdx].revisiones) arr[pIdx].revisiones = [];
+            arr[pIdx].revisiones.unshift(revisionObj);
+            localStorage.setItem(k, JSON.stringify(arr));
           }
         }
       }

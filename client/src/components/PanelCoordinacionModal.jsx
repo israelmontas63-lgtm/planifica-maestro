@@ -232,6 +232,7 @@ export default function PanelCoordinacionModal({
       const { revision, nuevoEstadoPlan } = await guardarRevisionPedagogica({
         supabaseClient,
         planificacionId: planSeleccionado.id,
+        targetDocenteId: planSeleccionado.docente_id,
         coordinadorId: user?.id,
         coordinadorNombre: user?.user_metadata?.nombre || perfil?.nombre || "Coordinador Pedagógico",
         estadoRevision,
@@ -355,6 +356,29 @@ export default function PanelCoordinacionModal({
             </button>
             <button className="schema-close-btn" onClick={onCerrar}>✕</button>
           </div>
+        </div>
+
+        {/* Aviso de versión de prueba / beta abierta */}
+        <div
+          role="note"
+          style={{
+            background: "#fffbeb",
+            border: "1px solid #fde68a",
+            borderRadius: "8px",
+            padding: "9px 12px",
+            marginTop: "12px",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            color: "#92400e",
+            fontSize: "12px",
+            lineHeight: "1.4"
+          }}
+        >
+          <span style={{ fontSize: "16px", flexShrink: 0 }}>ℹ️</span>
+          <span>
+            En esta versión de prueba, la coordinación funciona solo en este dispositivo. La sincronización entre docentes y coordinadores estará disponible en la versión oficial con cuentas.
+          </span>
         </div>
 
         {/* Selector de Pestañas: Supervisión vs Analítica */}
