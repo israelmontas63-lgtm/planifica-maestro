@@ -25,6 +25,7 @@ const { verificarYSanearCitas } = require("../curriculum/verificadorCitas");
 const { tieneIntencionExplicita, identificarImagenConVision, analizarCalidadImagen } = require("../ia/ojoDigital");
 const { corregirTextoPedagogico } = require("../ia/correctorTexto");
 const { puedeRealizarConsulta } = require("../ia/gestorGasto");
+const { buscarEnCurriculo } = require("../curriculum/buscadorCurricular.js");
 const crypto = require("crypto");
 
 const rateLimitPorDispositivo = new Map();
