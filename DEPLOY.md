@@ -58,6 +58,8 @@ npx wrangler secret put OWNER_MASTER_KEY
 
 Wrangler pide el valor de forma interactiva.
 
+> **Nota sobre Beta Abierta:** En la versión actual con `ACCESO_ABIERTO = "true"` en `wrangler.toml`, los docentes entran directo a la app sin pedir clave. La variable secreta `APP_ACCESS_KEY` se conserva configurada en Cloudflare para poder cerrar el acceso de forma reversible e instantánea cuando termine el periodo de beta abierta.
+
 ---
 
 ## 4. Build y deploy

@@ -36,6 +36,8 @@ const ConfiguracionModal = lazy(() => import("./components/ConfiguracionModal.js
 const AyudaModal = lazy(() => import("./components/AyudaModal.jsx"));
 const RubricaModal = lazy(() => import("./components/RubricaModal.jsx"));
 const RegistroCalificacionesModal = lazy(() => import("./components/RegistroCalificacionesModal.jsx"));
+const AccessGate = lazy(() => import("./components/AccessGate.jsx"));
+import { verificarAccesoAutorizado } from "./components/AccessGate.jsx";
 
 export default function App() {
   const {
@@ -50,6 +52,11 @@ export default function App() {
     resetPassword,
     updateProfile
   } = useAuth();
+  const requireAccessKey = import.meta.env.VITE_REQUIRE_ACCESS_KEY === "true";
+  const [accesoDesbloqueado, setAccesoDesbloqueado] = useState(() => {
+    if (!requireAccessKey) return true;
+    return verificarAccesoAutorizado();
+  });
   const [avisoDispositivoVisto, setAvisoDispositivoVisto] = useState(() => {
     try {
       return localStorage.getItem("pm_aviso_dispositivo_visto") === "true";
@@ -870,6 +877,15 @@ export default function App() {
 
   // El registro/inicio de sesión es 100% opcional (acceso abierto al público).
   // Se abre a petición del usuario desde el avatar o el menú.
+
+  // Si la protección por clave de acceso está explícitamente activada (VITE_REQUIRE_ACCESS_KEY="true")
+  if (requireAccessKey && !accesoDesbloqueado) {
+    return (
+      <Suspense fallback={null}>
+        <AccessGate onUnlock={() => setAccesoDesbloqueado(true)} />
+      </Suspense>
+    );
+  }
 
   if (expirado) {
     return (

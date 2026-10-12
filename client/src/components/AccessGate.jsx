@@ -12,6 +12,11 @@ export function obtenerAuthToken() {
 }
 
 export function verificarAccesoAutorizado() {
+  // En BETA ABIERTA (por defecto o si VITE_REQUIRE_ACCESS_KEY !== "true"): entrada libre sin barreras
+  const requireKey = (typeof import.meta !== "undefined" && import.meta.env?.VITE_REQUIRE_ACCESS_KEY === "true");
+  if (!requireKey) {
+    return true;
+  }
   try {
     const token = localStorage.getItem(AUTH_TOKEN_STORAGE);
     return Boolean(token && token.trim().length > 0);

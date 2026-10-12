@@ -172,28 +172,28 @@ ORDER BY p.creado_en DESC;
 
 ---
 
-## 🔐 Control de Acceso Institucional
+## 🚀 Beta Abierta y Control de Acceso
 
-La aplicación exige una **clave institucional** antes de usarse. Funciona así:
+La aplicación opera por defecto en **BETA ABIERTA** sin contraseñas, claves ni registro:
+- **Entrada Directa:** Quien reciba el enlace entra directo a la aplicación. Cada maestro ve solo su propio trabajo y cuenta con su propia cuota diaria por dispositivo (25 planes/día).
+- **Llave de Propietario (`x-owner-key`):** Permite al administrador acceder con cuota infinita y gestionar el sistema sin consumir límites.
+- **Configuración de Beta Abierta:** `ACCESO_ABIERTO = "true"` en `wrangler.toml` y `REQUIRE_ACCESS_KEY="false"` en el servidor Node.
 
-- El docente escribe la clave en la pantalla de acceso (`AccessGate.jsx`, montada en `AppGate.jsx`). El
-  Worker la valida en `POST /api/auth/verify` (con límite de intentos fallidos por IP) y el navegador la guarda.
-- Todas las rutas `/api/*` exigen esa clave (cabecera `x-app-key`) **o** la llave de propietario (`x-owner-key`).
-  Las únicas rutas públicas son `/api/health`, `/api/auth/verify` y `/api/auth/owner-verify`. Una ruta nueva
-  queda protegida automáticamente.
-- Si el servidor no tiene `APP_ACCESS_KEY`, responde 500 y no deja pasar a nadie (nunca queda abierto).
-- Si la clave cambia, los navegadores con la clave vieja reciben un 401 y vuelven solos a la pantalla de acceso.
+### Cómo Volver al Modo Cerrado con Clave Institucional (Reversible)
+Si deseas cerrar el acceso y volver a exigir la contraseña institucional a los docentes:
+1. En `wrangler.toml`, cambia `ACCESO_ABIERTO = "false"`.
+2. En `client/.env`, define `VITE_REQUIRE_ACCESS_KEY=true`.
+3. En `server/.env`, define `REQUIRE_ACCESS_KEY=true`.
+4. El docente escribirá la clave en la pantalla de acceso (`AccessGate.jsx`), validada con `POST /api/auth/verify`.
+5. Si falta `APP_ACCESS_KEY` en modo cerrado, el servidor rechaza con 500 (Fail-Closed seguro).
 
-**Cambiar la clave** (la elige el dueño; no se guarda en el repositorio):
+**Cambiar la clave institucional** (en modo cerrado; no se guarda en el repositorio):
 
 ```bash
 npx wrangler secret put APP_ACCESS_KEY
 ```
 
-Después, comparte la clave nueva con los docentes de la prueba. **Nunca escribas la clave en este repositorio**:
-el repositorio es público.
-
-**Desarrollo local:** define `APP_ACCESS_KEY` en `server/.env` (o `.dev.vars` para el Worker) y úsala en la pantalla de acceso.
+**Desarrollo local:** define `ACCESO_ABIERTO=true` o `REQUIRE_ACCESS_KEY=false` en `.env` para saltar la clave. Para probar el bloqueo, usa `REQUIRE_ACCESS_KEY=true` y `APP_ACCESS_KEY`.
 
 ---
 

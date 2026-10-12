@@ -15,6 +15,15 @@ function timingSafeEqualStr(a, b) {
  * Verifica la clave institucional enviada por el frontend
  */
 router.post("/verify", (req, res) => {
+  if (process.env.REQUIRE_ACCESS_KEY === "false" || process.env.ACCESO_ABIERTO === "true") {
+    return res.json({
+      ok: true,
+      token: "beta_abierta",
+      modo: "abierto",
+      mensaje: "Acceso libre a la beta abierta de Planifica Maestro."
+    });
+  }
+
   const { password } = req.body;
   const expectedKey = process.env.APP_ACCESS_KEY;
 

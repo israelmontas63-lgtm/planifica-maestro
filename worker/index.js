@@ -428,11 +428,37 @@ async function consumirCuota(env, docenteId, isOwner) {
 
 /**
  * Verificación unificada y estricta de acceso institucional (Fail-Closed)
- * - 500 si falta APP_ACCESS_KEY en env del servidor.
- * - 401 si falta o no coincide x-app-key (o x-access-token) y no es dueño autenticado.
+ * - Si es dueño autenticado (x-owner-key), permite acceso inmediato con bypass de cuota.
+ * - Si ACCESO_ABIERTO="true" o REQUIRE_ACCESS_KEY="false" (Beta Abierta), permite acceso libre a docentes.
+ * - Si ACCESO_ABIERTO="false" (Modo Cerrado):
+ *   - 500 si falta APP_ACCESS_KEY en env del servidor.
+ *   - 401 si falta o no coincide x-app-key (o x-access-token).
  * - Retorna { errorResponse: Response | null, isOwner: boolean }
  */
 function requerirAcceso(request, env, corsHeaders) {
+  const ownerKey = request.headers.get("x-owner-key");
+  const isOwner = Boolean(
+    env &&
+    env.OWNER_MASTER_KEY &&
+    ownerKey &&
+    timingSafeEqualStr(ownerKey.trim(), env.OWNER_MASTER_KEY.trim())
+  );
+
+  // 1. Dueño autenticado: acceso concedido sin restricciones
+  if (isOwner) {
+    return { errorResponse: null, isOwner: true };
+  }
+
+  // 2. Beta Abierta: entrada libre sin contraseñas ni registro
+  const accesoAbierto = Boolean(
+    env &&
+    (env.ACCESO_ABIERTO === "true" || env.REQUIRE_ACCESS_KEY === "false")
+  );
+  if (accesoAbierto) {
+    return { errorResponse: null, isOwner: false };
+  }
+
+  // 3. Modo Cerrado (Seguridad estricta institucional Fail-Closed)
   if (!env || !env.APP_ACCESS_KEY) {
     return {
       errorResponse: new Response(
@@ -444,18 +470,12 @@ function requerirAcceso(request, env, corsHeaders) {
   }
 
   const appKey = request.headers.get("x-app-key") || request.headers.get("x-access-token");
-  const ownerKey = request.headers.get("x-owner-key");
-  const isOwner = Boolean(
-    env.OWNER_MASTER_KEY &&
-    ownerKey &&
-    timingSafeEqualStr(ownerKey.trim(), env.OWNER_MASTER_KEY.trim())
-  );
   const isAppKeyValid = Boolean(
     appKey &&
     timingSafeEqualStr(appKey.trim(), env.APP_ACCESS_KEY.trim())
   );
 
-  if (!isAppKeyValid && !isOwner) {
+  if (!isAppKeyValid) {
     return {
       errorResponse: new Response(
         JSON.stringify({ ok: false, error: "Acceso no autorizado. Se requiere x-app-key válida." }),
@@ -465,7 +485,7 @@ function requerirAcceso(request, env, corsHeaders) {
     };
   }
 
-  return { errorResponse: null, isOwner };
+  return { errorResponse: null, isOwner: false };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -580,6 +600,16 @@ async function handleApiRequest(request, env, ctx) {
 
   // 2. POST /api/auth/verify (Clave institucional)
   if (path === "/api/auth/verify" && method === "POST") {
+    const accesoAbierto = Boolean(
+      env &&
+      (env.ACCESO_ABIERTO === "true" || env.REQUIRE_ACCESS_KEY === "false")
+    );
+    if (accesoAbierto) {
+      return new Response(JSON.stringify({ ok: true, token: "beta_abierta", modo: "abierto", mensaje: "Acceso libre a la beta abierta de Planifica Maestro." }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const body = await request.json().catch(() => ({}));
     const expected = env.APP_ACCESS_KEY;
     if (!expected) {
