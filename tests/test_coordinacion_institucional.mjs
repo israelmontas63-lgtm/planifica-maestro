@@ -390,4 +390,44 @@ test("FASE 12 - 4. Insignias Visuales de Retroalimentación y Alertas SLA en Tar
   });
 });
 
+// ─────────────────────────────────────────────────────────────
+// 5. PLANTILLAS DE SUGERENCIAS RÁPIDAS MINERD PARA DICTAMEN
+// ─────────────────────────────────────────────────────────────
+test("FASE 12 - 5. Plantillas de Sugerencias Rápidas para Dictamen del Coordinador", async (t) => {
+  function insertarTexto(prev, nuevo) {
+    const limpia = prev ? prev.trim() : "";
+    if (!limpia) return nuevo;
+    if (limpia.includes(nuevo)) return limpia;
+    return `${limpia} ${nuevo}`;
+  }
+
+  await t.test("Inserta la sugerencia en campo vacío", () => {
+    const resultado = insertarTexto("", "Fortalecer saberes previos.");
+    assert.equal(resultado, "Fortalecer saberes previos.");
+  });
+
+  await t.test("Concatena sin duplicar cuando el texto ya fue añadido", () => {
+    const primero = insertarTexto("", "Fortalecer saberes previos.");
+    const duplicado = insertarTexto(primero, "Fortalecer saberes previos.");
+    assert.equal(duplicado, "Fortalecer saberes previos.", "No debe duplicar texto idéntico");
+
+    const conSegundo = insertarTexto(primero, "Incluir rúbricas.");
+    assert.equal(conSegundo, "Fortalecer saberes previos. Incluir rúbricas.");
+  });
+
+  await t.test("PanelCoordinacionModal.jsx declara las plantillas MINERD y botones de un clic", () => {
+    const modalPath = path.join(rootDir, "client/src/components/PanelCoordinacionModal.jsx");
+    const contenido = fs.readFileSync(modalPath, "utf-8");
+
+    assert.ok(contenido.includes("SUGERENCIAS_COMENTARIOS_MINERD"), "Debe definir SUGERENCIAS_COMENTARIOS_MINERD");
+    assert.ok(contenido.includes("SUGERENCIAS_DUA_MINERD"), "Debe definir SUGERENCIAS_DUA_MINERD");
+    assert.ok(contenido.includes("handleInsertarComentario"), "Debe tener handleInsertarComentario");
+    assert.ok(contenido.includes("handleInsertarDua"), "Debe tener handleInsertarDua");
+    assert.ok(contenido.includes("Saberes Previos"), "Debe incluir plantilla de Saberes Previos");
+    assert.ok(contenido.includes("Secuencia CON BASE"), "Debe incluir plantilla CON BASE");
+    assert.ok(contenido.includes("Apoyos Visuales"), "Debe incluir plantilla DUA de Apoyos Visuales");
+  });
+});
+
+
 

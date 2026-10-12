@@ -20,8 +20,9 @@
 | **13** | INFORME DE SUPERVISIÓN DOCX (Constructor canónico MINERD, descarga en cliente y tests) | OK |
 | **14** | FILTROS POR GRADO Y ÁREA EN COORDINACIÓN (Selectores reactivos, búsqueda multidimensional y tests) | OK |
 | **15** | INSIGNIAS DE RETROALIMENTACIÓN Y ALERTAS SLA (Indicadores DUA, antigüedad de espera, fechas y snippets) | OK |
+| **16** | PLANTILLAS DE SUGERENCIAS RÁPIDAS MINERD (Botones de un clic para momentos de clase y pautas DUA) | OK |
 
 ## Resumen de Verificación Vigente
-- **Suites de prueba**: 343 pruebas en 26 suites aprobadas (100% pass) + 4/4 Vitest frontend.
+- **Suites de prueba**: 347 pruebas en 26 suites aprobadas (100% pass) + 4/4 Vitest frontend.
 - **Despliegue producción**: En vivo en Cloudflare Workers (`https://planifica-maestro.israelmontas65.workers.dev`).
 - **Riesgos abiertos mitigados**: Rate limit IP escuela ampliado a 50 peticiones/día; aislamiento estricto de binarios de prueba en `os.tmpdir()`.

@@ -8,6 +8,50 @@ import { exportarWord } from "../services/api.js";
 import { cargarPerfil } from "../services/perfilStorage.js";
 import { descargarInformeSupervisionWord } from "../services/generadorInformeSupervisionWord.js";
 
+// Plantillas de sugerencias pedagógicas oficiales MINERD para retroalimentación rápida
+const SUGERENCIAS_COMENTARIOS_MINERD = [
+  {
+    etiqueta: "Saberes Previos",
+    texto: "Fortalecer el momento de Inicio garantizando la recuperación de saberes previos y explicitando la intención pedagógica del día."
+  },
+  {
+    etiqueta: "Secuencia CON BASE",
+    texto: "Secuencia didáctica alineada al programa CON BASE; se sugiere profundizar en la modelación docente antes de la práctica autónoma."
+  },
+  {
+    etiqueta: "Evaluación y Rúbricas",
+    texto: "Diversificar los instrumentos de evaluación formativa (rúbricas y listas de cotejo) articulados a los criterios del Registro de Grado."
+  },
+  {
+    etiqueta: "Cierre Metacognitivo",
+    texto: "Consolidar el momento de Cierre incorporando preguntas de metacognición (¿qué aprendimos?, ¿para qué nos sirve?) y síntesis colectiva."
+  },
+  {
+    etiqueta: "Alineación Excelente",
+    texto: "Excelente congruencia entre competencias específicas, contenidos curriculares y momentos de clase según la Malla MINERD."
+  }
+];
+
+// Plantillas de sugerencias DUA para atención a la diversidad (NEAE)
+const SUGERENCIAS_DUA_MINERD = [
+  {
+    etiqueta: "Apoyos Visuales",
+    texto: "Incorporar apoyos visuales, organizadores gráficos y material concreto para facilitar el acceso multisensorial al contenido."
+  },
+  {
+    etiqueta: "Tiempo Extendido",
+    texto: "Dosificar las tareas complejas y otorgar tiempo extendido en consignas de trabajo individual para estudiantes con NEAE."
+  },
+  {
+    etiqueta: "Lectura Fácil",
+    texto: "Adaptar textos a formato de lectura fácil y combinar explicaciones orales con modelado guiado paso a paso."
+  },
+  {
+    etiqueta: "Tutoría entre Pares",
+    texto: "Fomentar el aprendizaje colaborativo mediante tutoría entre pares para fortalecer la inclusión académica y socioemocional."
+  }
+];
+
 export default function PanelCoordinacionModal({
   onCerrar,
   user,
@@ -132,6 +176,24 @@ export default function PanelCoordinacionModal({
       return matchEstado && matchGrado && matchArea && matchBusqueda;
     });
   }, [planes, filtroEstado, filtroGrado, filtroArea, busqueda]);
+
+  function handleInsertarComentario(texto) {
+    setComentarios((prev) => {
+      const limpia = prev ? prev.trim() : "";
+      if (!limpia) return texto;
+      if (limpia.includes(texto)) return limpia;
+      return `${limpia} ${texto}`;
+    });
+  }
+
+  function handleInsertarDua(texto) {
+    setSugerenciasDua((prev) => {
+      const limpia = prev ? prev.trim() : "";
+      if (!limpia) return texto;
+      if (limpia.includes(texto)) return limpia;
+      return `${limpia} ${texto}`;
+    });
+  }
 
   // Seleccionar plan para revisar
   async function handleSeleccionarPlan(plan) {
@@ -495,10 +557,33 @@ export default function PanelCoordinacionModal({
                   </select>
                 </div>
 
-                <div style={{ marginBottom: "10px" }}>
+                <div style={{ marginBottom: "12px" }}>
                   <label style={{ display: "block", fontSize: "12px", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>
                     Comentarios Pedagógicos Generales:
                   </label>
+                  {/* Plantillas rápidas de retroalimentación pedagógica */}
+                  <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "6px" }}>
+                    {SUGERENCIAS_COMENTARIOS_MINERD.map((s) => (
+                      <button
+                        key={s.etiqueta}
+                        type="button"
+                        onClick={() => handleInsertarComentario(s.texto)}
+                        style={{
+                          background: "#f1f5f9",
+                          border: "1px solid #cbd5e1",
+                          borderRadius: "14px",
+                          padding: "3px 8px",
+                          fontSize: "11px",
+                          color: "#334155",
+                          cursor: "pointer",
+                          fontWeight: "500"
+                        }}
+                        title={s.texto}
+                      >
+                        + {s.etiqueta}
+                      </button>
+                    ))}
+                  </div>
                   <textarea
                     rows={3}
                     placeholder="Escribe observaciones sobre la secuencia, actividades de inicio/desarrollo/cierre..."
@@ -508,10 +593,33 @@ export default function PanelCoordinacionModal({
                   />
                 </div>
 
-                <div style={{ marginBottom: "12px" }}>
+                <div style={{ marginBottom: "14px" }}>
                   <label style={{ display: "block", fontSize: "12px", fontWeight: "600", color: "#334155", marginBottom: "4px" }}>
                     Recomendaciones DUA (Atención a la Diversidad / NEAE):
                   </label>
+                  {/* Plantillas rápidas DUA */}
+                  <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginBottom: "6px" }}>
+                    {SUGERENCIAS_DUA_MINERD.map((s) => (
+                      <button
+                        key={s.etiqueta}
+                        type="button"
+                        onClick={() => handleInsertarDua(s.texto)}
+                        style={{
+                          background: "#f0fdfa",
+                          border: "1px solid #99f6e4",
+                          borderRadius: "14px",
+                          padding: "3px 8px",
+                          fontSize: "11px",
+                          color: "#0f766e",
+                          cursor: "pointer",
+                          fontWeight: "500"
+                        }}
+                        title={s.texto}
+                      >
+                        + {s.etiqueta}
+                      </button>
+                    ))}
+                  </div>
                   <input
                     type="text"
                     placeholder="Ej: Proporcionar apoyos visuales y tiempo extendido para estudiantes que lo requieran..."
