@@ -33,7 +33,8 @@ export default function Header({
   estadoCuota,
   onInstallApp,
   onAbrirNotificaciones,
-  onAbrirConfiguracion
+  onAbrirConfiguracion,
+  contadorNotificaciones = 0
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
@@ -135,11 +136,16 @@ export default function Header({
         <button 
           type="button"
           className="pm-icon-btn" 
-          aria-label="Notificaciones" 
-          title="Notificaciones del sistema"
+          aria-label={contadorNotificaciones > 0 ? `${contadorNotificaciones} notificaciones pendientes` : "Notificaciones"} 
+          title={contadorNotificaciones > 0 ? `${contadorNotificaciones} notificaciones del sistema y dictámenes pendientes` : "Notificaciones del sistema"}
           onClick={onAbrirNotificaciones}
         >
           <BellOutlineIcon />
+          {contadorNotificaciones > 0 && (
+            <span className="pm-notif-badge">
+              {contadorNotificaciones > 9 ? "9+" : contadorNotificaciones}
+            </span>
+          )}
         </button>
 
         {/* Botón visible de Iniciar Sesión solo cuando la autenticación está activa */}

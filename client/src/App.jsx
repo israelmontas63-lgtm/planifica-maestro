@@ -13,6 +13,7 @@ import { generarPlanificacion, exportarWord, generarVoz, guardarAjustesPlan, obt
 import { iniciarGrabacionRespaldo, detenerGrabacionRespaldo } from "./services/audioBackupRecorder.js";
 import { registrarAjusteConRespaldoOffline, sincronizarAjustesPendientes } from "./services/offlineSync.js";
 import { guardarPlanEnBiblioteca } from "./services/bibliotecaStorage.js";
+import { obtenerConteoNotificacionesNoLeidas } from "./services/coordinacionService.js";
 import { comprimirYRedimensionarImagen } from "./services/imageOptimizer.js";
 import { cargarPerfil } from "./services/perfilStorage.js";
 import { supabase } from "./services/supabaseClient.js";
@@ -90,12 +91,34 @@ export default function App() {
   const [notificacionesOpen, setNotificacionesOpen] = useState(false);
   const [configuracionOpen, setConfiguracionOpen] = useState(false);
   const [ayudaOpen, setAyudaOpen] = useState(false);
+  const [planInicialMisPlanificaciones, setPlanInicialMisPlanificaciones] = useState(null);
+  const [contadorNotificaciones, setContadorNotificaciones] = useState(0);
   const [isOwner, setIsOwner] = useState(!!obtenerOwnerKey());
   const [ownerModalOpen, setOwnerModalOpen] = useState(false);
   const [ownerStatsModalOpen, setOwnerStatsModalOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [notificacionSync, setNotificacionSync] = useState(null);
   const [estadoCuota, setEstadoCuota] = useState(null);
+
+  const refrescarContadorNotificaciones = useCallback(() => {
+    try {
+      const c = obtenerConteoNotificacionesNoLeidas({ userId: user?.id });
+      setContadorNotificaciones(c);
+    } catch (e) {
+      setContadorNotificaciones(0);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    refrescarContadorNotificaciones();
+  }, [refrescarContadorNotificaciones, notificacionesOpen, bibliotecaOpen, coordinacionOpen]);
+
+  const handleAbrirPlanConRevision = useCallback((planId) => {
+    setNotificacionesOpen(false);
+    setPlanInicialMisPlanificaciones(planId);
+    setBibliotecaOpen(true);
+    refrescarContadorNotificaciones();
+  }, [refrescarContadorNotificaciones]);
   
   // Chat History
   const [messages, setMessages] = useState([]);
@@ -935,6 +958,7 @@ export default function App() {
         onInstallApp={installPrompt ? handleInstallApp : null}
         onAbrirNotificaciones={() => { setNotificacionesOpen(true); setMenuOpen(false); }}
         onAbrirConfiguracion={() => { setConfiguracionOpen(true); setMenuOpen(false); }}
+        contadorNotificaciones={contadorNotificaciones}
       />
       
       <section className="pm-title-card no-print">
@@ -1745,11 +1769,15 @@ export default function App() {
       {bibliotecaOpen && (
         <Suspense fallback={null}>
           <MisPlanificaciones
-            onCerrar={() => setBibliotecaOpen(false)}
+            onCerrar={() => {
+              setBibliotecaOpen(false);
+              setPlanInicialMisPlanificaciones(null);
+            }}
             onAbrirPlan={handleAbrirPlanDesdeBiblioteca}
             onExportarWord={(titulo, texto) => exportarWord({ titulo, plan: texto })}
             user={user}
             supabaseClient={supabase}
+            planInicialId={planInicialMisPlanificaciones}
           />
         </Suspense>
       )}
@@ -1770,7 +1798,12 @@ export default function App() {
           <NotificacionesModal
             isOnline={isOnline}
             estadoCuota={estadoCuota}
-            onCerrar={() => setNotificacionesOpen(false)}
+            user={user}
+            onAbrirPlanConRevision={handleAbrirPlanConRevision}
+            onCerrar={() => {
+              setNotificacionesOpen(false);
+              refrescarContadorNotificaciones();
+            }}
           />
         </Suspense>
       )}

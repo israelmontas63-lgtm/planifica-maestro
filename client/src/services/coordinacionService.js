@@ -47,6 +47,48 @@ function guardarRevisionesLocales(revisiones) {
   } catch (e) {}
 }
 
+const LOCAL_NOTIF_LEIDAS_KEY_PREFIX = "pm_notificaciones_dictamen_leidas_";
+
+function getNotifLeidasKey(userId) {
+  return `${LOCAL_NOTIF_LEIDAS_KEY_PREFIX}${userId || "docente_local"}`;
+}
+
+function obtenerClavesLocalStorage() {
+  try {
+    if (typeof localStorage === "undefined" || !localStorage) return [];
+    if (localStorage.store && typeof localStorage.store === "object") {
+      return Object.keys(localStorage.store);
+    }
+    if (typeof localStorage.length === "number" && typeof localStorage.key === "function") {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k) keys.push(k);
+      }
+      return keys;
+    }
+    return Object.keys(localStorage);
+  } catch (e) {
+    return [];
+  }
+}
+
+function leerNotificacionesLeidasSet(userId) {
+  try {
+    const raw = localStorage.getItem(getNotifLeidasKey(userId));
+    const arr = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch (e) {
+    return new Set();
+  }
+}
+
+function guardarNotificacionesLeidasSet(userId, set) {
+  try {
+    localStorage.setItem(getNotifLeidasKey(userId), JSON.stringify(Array.from(set)));
+  } catch (e) {}
+}
+
 /**
  * Envía una planificación a coordinación pedagógica para revisión.
  * Cambia el estado a 'enviada_revision'.
@@ -258,7 +300,30 @@ export async function guardarRevisionPedagogica({
     guardarPlanesLocalesSupervision(locales);
   }
 
-  // 3. Persistir en Supabase si hay cliente activo
+  // 3. Sincronizar también con la biblioteca del docente local si el plan existe en almacenamiento
+  try {
+    const claves = obtenerClavesLocalStorage();
+    for (const k of claves) {
+      if (k && k.startsWith("pm_biblioteca_")) {
+        const raw = localStorage.getItem(k);
+        if (raw && raw.includes(planificacionId)) {
+          const arr = JSON.parse(raw);
+          if (Array.isArray(arr)) {
+            const pIdx = arr.findIndex((p) => p.id === planificacionId);
+            if (pIdx !== -1) {
+              arr[pIdx].estado = nuevoEstadoPlan;
+              arr[pIdx].ultimaRevision = revisionObj;
+              if (!arr[pIdx].revisiones) arr[pIdx].revisiones = [];
+              arr[pIdx].revisiones.unshift(revisionObj);
+              localStorage.setItem(k, JSON.stringify(arr));
+            }
+          }
+        }
+      }
+    }
+  } catch (e) {}
+
+  // 4. Persistir en Supabase si hay cliente activo
   if (supabaseClient && coordinadorId) {
     try {
       // a) Insertar en revisiones_coordinador
@@ -322,4 +387,103 @@ export async function obtenerRevisionesPlan({ supabaseClient, planificacionId })
   return Array.from(mapa.values()).sort(
     (a, b) => new Date(b.fecha_revision) - new Date(a.fecha_revision)
   );
+}
+
+/**
+ * Obtiene las notificaciones de dictamen emitidas para las planificaciones de un docente.
+ * @param {Object} params
+ * @param {string} [params.userId] - ID del docente autenticado.
+ * @param {Array} [params.planes] - Lista opcional de planes del docente.
+ * @returns {Array} Lista de notificaciones estructuradas ordenadas por fecha descendente.
+ */
+export function obtenerNotificacionesDocente({ userId, planes } = {}) {
+  // 1. Obtener los planes del docente
+  const planesDocente = Array.isArray(planes) && planes.length > 0 
+    ? planes 
+    : obtenerTodasLasPlanificaciones(userId);
+
+  if (!planesDocente || planesDocente.length === 0) {
+    return [];
+  }
+
+  // Mapa de id de plan -> objeto plan
+  const mapaPlanes = new Map();
+  planesDocente.forEach((p) => {
+    if (p && p.id) mapaPlanes.set(p.id, p);
+  });
+
+  const revsLocales = leerRevisionesLocales();
+  const leidasSet = leerNotificacionesLeidasSet(userId);
+  const notificaciones = [];
+  const vistas = new Set();
+
+  // 2. Extraer revisiones para los planes del docente
+  for (const [planId, plan] of mapaPlanes.entries()) {
+    const revs = Array.isArray(revsLocales[planId]) ? revsLocales[planId] : [];
+    const todasLasRevs = [...revs];
+    
+    if (plan.ultimaRevision && !todasLasRevs.some((r) => r.id === plan.ultimaRevision.id)) {
+      todasLasRevs.push(plan.ultimaRevision);
+    }
+    if (Array.isArray(plan.revisiones)) {
+      plan.revisiones.forEach((r) => {
+        if (!todasLasRevs.some((x) => x.id === r.id)) {
+          todasLasRevs.push(r);
+        }
+      });
+    }
+
+    todasLasRevs.forEach((rev) => {
+      if (!rev || !rev.id || vistas.has(rev.id)) return;
+      vistas.add(rev.id);
+      const notifId = `notif_${rev.id}`;
+      notificaciones.push({
+        id: notifId,
+        revisionId: rev.id,
+        planId: plan.id,
+        tituloPlan: plan.titulo || "Planificación Escolar",
+        area: plan.area || "General",
+        grado: plan.grado || "General",
+        estadoRevision: rev.estado_revision || (plan.estado === "aprobada" ? "aprobada" : "requiere_ajustes"),
+        coordinadorNombre: rev.coordinadorNombre || "Coordinador Pedagógico",
+        comentariosGenerales: rev.comentarios_generales || "",
+        bloquesObservados: rev.bloques_observados || {},
+        fecha: rev.fecha_revision || plan.actualizado_en || new Date().toISOString(),
+        leida: leidasSet.has(notifId) || leidasSet.has(rev.id)
+      });
+    });
+  }
+
+  return notificaciones.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+}
+
+/**
+ * Marca una notificación de dictamen como leída.
+ */
+export function marcarNotificacionLeida(notificacionId, userId) {
+  if (!notificacionId) return;
+  const leidasSet = leerNotificacionesLeidasSet(userId);
+  leidasSet.add(notificacionId);
+  guardarNotificacionesLeidasSet(userId, leidasSet);
+}
+
+/**
+ * Marca todas las notificaciones vigentes del docente como leídas.
+ */
+export function marcarTodasNotificacionesLeidas(userId, planes) {
+  const notifs = obtenerNotificacionesDocente({ userId, planes });
+  const leidasSet = leerNotificacionesLeidasSet(userId);
+  notifs.forEach((n) => {
+    leidasSet.add(n.id);
+    if (n.revisionId) leidasSet.add(n.revisionId);
+  });
+  guardarNotificacionesLeidasSet(userId, leidasSet);
+}
+
+/**
+ * Obtiene el conteo de notificaciones no leídas para el docente.
+ */
+export function obtenerConteoNotificacionesNoLeidas({ userId, planes } = {}) {
+  const notifs = obtenerNotificacionesDocente({ userId, planes });
+  return notifs.filter((n) => !n.leida).length;
 }

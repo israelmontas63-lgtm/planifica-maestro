@@ -717,7 +717,32 @@ body {
 .pm-logo-text { font-weight: 700; font-size: 18px; line-height: 1.1; color: var(--pm-white); }
 .pm-logo-accent { color: var(--pm-green); }
 .pm-header-actions { display: flex; align-items: center; gap: 16px; }
-.pm-icon-btn { background: none; border: none; cursor: pointer; padding: 0; display: flex; }
+.pm-icon-btn { background: none; border: none; cursor: pointer; padding: 0; display: flex; position: relative; align-items: center; justify-content: center; }
+.pm-notif-badge {
+  position: absolute;
+  top: -5px;
+  right: -7px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--pm-navy, #12304a);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  animation: pmBadgePop 0.25s ease-out;
+}
+@keyframes pmBadgePop {
+  0% { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
 .pm-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--pm-white); cursor: pointer; }
 
 .pm-title-card {

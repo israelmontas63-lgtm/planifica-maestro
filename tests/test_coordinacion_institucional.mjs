@@ -429,5 +429,132 @@ test("FASE 12 - 5. Plantillas de Sugerencias Rápidas para Dictamen del Coordina
   });
 });
 
+// ─────────────────────────────────────────────────────────────
+// 6. NOTIFICACIONES REACTIVAS DE DICTAMEN PEDAGÓGICO PARA EL DOCENTE
+// ─────────────────────────────────────────────────────────────
+test("FASE 12 - 6. Notificaciones Reactivas de Dictamen Pedagógico para el Docente", async (t) => {
+  const globalMock = new MockLocalStorage();
+  global.localStorage = globalMock;
+
+  const {
+    guardarRevisionPedagogica,
+    obtenerNotificacionesDocente,
+    marcarNotificacionLeida,
+    marcarTodasNotificacionesLeidas,
+    obtenerConteoNotificacionesNoLeidas
+  } = await import("../client/src/services/coordinacionService.js");
+
+  const {
+    guardarPlanEnBiblioteca,
+    obtenerTodasLasPlanificaciones
+  } = await import("../client/src/services/bibliotecaStorage.js");
+
+  const testDocenteId = "docente_ramon_456";
+
+  // 1. Crear un plan en la biblioteca del docente
+  guardarPlanEnBiblioteca({
+    id: "plan_notif_001",
+    titulo: "La Célula y su Estructura",
+    area: "Ciencias de la Naturaleza",
+    grado: "5to Primaria"
+  }, testDocenteId);
+
+  await t.test("Inicialmente el docente no tiene dictámenes ni notificaciones", () => {
+    const notifs = obtenerNotificacionesDocente({ userId: testDocenteId });
+    const count = obtenerConteoNotificacionesNoLeidas({ userId: testDocenteId });
+    assert.equal(notifs.length, 0, "No debe haber notificaciones sin revisiones emitidas");
+    assert.equal(count, 0, "El conteo de no leídas debe ser 0");
+  });
+
+  await t.test("Al emitir dictamen, se sincroniza con la biblioteca y genera notificación no leída", async () => {
+    const res = await guardarRevisionPedagogica({
+      planificacionId: "plan_notif_001",
+      coordinadorId: "coord_pedagogica_01",
+      coordinadorNombre: "Coordinadora Carmen",
+      estadoRevision: "aprobada",
+      comentariosGenerales: "Excelente secuencia con base e integración curricular.",
+      bloquesObservados: { dua: "Añadir material concreto para apoyos táctiles." }
+    });
+
+    assert.ok(res.revision, "Debe generar objeto de revisión");
+
+    // Verificar sincronización automática en la biblioteca del docente
+    const planesDoc = obtenerTodasLasPlanificaciones(testDocenteId);
+    const planActualizado = planesDoc.find(p => p.id === "plan_notif_001");
+    assert.ok(planActualizado, "El plan debe persistir en la biblioteca");
+    assert.equal(planActualizado.estado, "aprobada", "El estado del plan docente debe actualizarse a 'aprobada'");
+    assert.ok(planActualizado.ultimaRevision, "Debe contener ultimaRevision en el plan local");
+
+    // Verificar notificación generada
+    const notifs = obtenerNotificacionesDocente({ userId: testDocenteId });
+    assert.equal(notifs.length, 1, "Debe existir exactamente 1 notificación");
+    assert.equal(notifs[0].planId, "plan_notif_001");
+    assert.equal(notifs[0].estadoRevision, "aprobada");
+    assert.equal(notifs[0].coordinadorNombre, "Coordinadora Carmen");
+    assert.equal(notifs[0].leida, false, "La notificación debe iniciar como no leída");
+    assert.equal(notifs[0].bloquesObservados.dua, "Añadir material concreto para apoyos táctiles.");
+
+    const count = obtenerConteoNotificacionesNoLeidas({ userId: testDocenteId });
+    assert.equal(count, 1, "El contador de notificaciones no leídas debe ser 1");
+  });
+
+  await t.test("Marcar notificación individual como leída actualiza el conteo", () => {
+    const notifs = obtenerNotificacionesDocente({ userId: testDocenteId });
+    assert.equal(notifs.length, 1);
+    
+    marcarNotificacionLeida(notifs[0].id, testDocenteId);
+
+    const notifsDespues = obtenerNotificacionesDocente({ userId: testDocenteId });
+    assert.equal(notifsDespues[0].leida, true, "La notificación debe figurar como leída");
+
+    const count = obtenerConteoNotificacionesNoLeidas({ userId: testDocenteId });
+    assert.equal(count, 0, "El conteo de no leídas debe ser 0 tras marcar como leída");
+  });
+
+  await t.test("Marcar todas como leídas procesa múltiples dictámenes pendientes", async () => {
+    // Añadir un segundo plan y revisión
+    guardarPlanEnBiblioteca({
+      id: "plan_notif_002",
+      titulo: "Fracciones y Números Decimales",
+      area: "Matemática",
+      grado: "4to Primaria"
+    }, testDocenteId);
+
+    await guardarRevisionPedagogica({
+      planificacionId: "plan_notif_002",
+      coordinadorId: "coord_pedagogica_01",
+      coordinadorNombre: "Coordinadora Carmen",
+      estadoRevision: "requiere_ajustes",
+      comentariosGenerales: "Ajustar el tiempo de la actividad de cierre."
+    });
+
+    const countAntes = obtenerConteoNotificacionesNoLeidas({ userId: testDocenteId });
+    assert.equal(countAntes, 1, "Debe haber 1 notificación pendiente (la segunda)");
+
+    marcarTodasNotificacionesLeidas(testDocenteId);
+
+    const countDespues = obtenerConteoNotificacionesNoLeidas({ userId: testDocenteId });
+    assert.equal(countDespues, 0, "Todas las notificaciones deben quedar leídas");
+  });
+
+  await t.test("NotificacionesModal.jsx, Header.jsx y MisPlanificaciones.jsx cumplen el contrato reactivo", () => {
+    const notifModalPath = path.join(rootDir, "client/src/components/NotificacionesModal.jsx");
+    const notifModalContent = fs.readFileSync(notifModalPath, "utf-8");
+    assert.ok(notifModalContent.includes("Dictámenes de Supervisión"), "Modal debe tener sección de dictámenes de supervisión");
+    assert.ok(notifModalContent.includes("obtenerNotificacionesDocente"), "Modal debe importar y usar obtenerNotificacionesDocente");
+    assert.ok(notifModalContent.includes("marcarNotificacionLeida"), "Modal debe usar marcarNotificacionLeida");
+    assert.ok(notifModalContent.includes("onAbrirPlanConRevision"), "Modal debe invocar onAbrirPlanConRevision");
+
+    const headerPath = path.join(rootDir, "client/src/components/Header.jsx");
+    const headerContent = fs.readFileSync(headerPath, "utf-8");
+    assert.ok(headerContent.includes("contadorNotificaciones"), "Header debe recibir contadorNotificaciones");
+    assert.ok(headerContent.includes("pm-notif-badge"), "Header debe renderizar pm-notif-badge");
+
+    const misPlanesPath = path.join(rootDir, "client/src/components/MisPlanificaciones.jsx");
+    const misPlanesContent = fs.readFileSync(misPlanesPath, "utf-8");
+    assert.ok(misPlanesContent.includes("planInicialId"), "MisPlanificaciones debe aceptar prop planInicialId");
+  });
+});
+
 
 

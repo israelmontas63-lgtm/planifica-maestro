@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   obtenerTodasLasPlanificaciones,
   duplicarPlanEnBiblioteca,
@@ -14,13 +14,32 @@ export default function MisPlanificaciones({
   onExportarWord,
   onEscuchar,
   user,
-  supabaseClient
+  supabaseClient,
+  planInicialId = null
 }) {
   const [planes, setPlanes] = useState(() => obtenerTodasLasPlanificaciones(user?.id));
   const [filtroArea, setFiltroArea] = useState("todas");
   const [filtroGrado, setFiltroGrado] = useState("todos");
   const [busqueda, setBusqueda] = useState("");
-  const [planSeleccionado, setPlanSeleccionado] = useState(null);
+  const [planSeleccionado, setPlanSeleccionado] = useState(() => {
+    if (planInicialId) {
+      const todos = obtenerTodasLasPlanificaciones(user?.id);
+      return todos.find((p) => p.id === planInicialId) || null;
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    if (planInicialId) {
+      const match = planes.find((p) => p.id === planInicialId);
+      if (match) {
+        setPlanSeleccionado(match);
+        setFiltroArea("todas");
+        setFiltroGrado("todos");
+        setBusqueda("");
+      }
+    }
+  }, [planInicialId, planes]);
 
   async function handleEnviarACoordinacion(plan, e) {
     if (e) e.stopPropagation();
