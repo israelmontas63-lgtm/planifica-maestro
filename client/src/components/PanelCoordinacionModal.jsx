@@ -6,6 +6,7 @@ import {
 } from "../services/coordinacionService.js";
 import { exportarWord } from "../services/api.js";
 import { cargarPerfil } from "../services/perfilStorage.js";
+import { descargarInformeSupervisionWord } from "../services/generadorInformeSupervisionWord.js";
 
 export default function PanelCoordinacionModal({
   onCerrar,
@@ -20,6 +21,7 @@ export default function PanelCoordinacionModal({
   const [planSeleccionado, setPlanSeleccionado] = useState(null);
   const [revisionesActuales, setRevisionesActuales] = useState([]);
   const [guardandoRevision, setGuardandoRevision] = useState(false);
+  const [generandoInformeDocx, setGenerandoInformeDocx] = useState(false);
   const [mensajeExito, setMensajeExito] = useState(null);
 
   // Formulario de dictamen
@@ -158,6 +160,30 @@ export default function PanelCoordinacionModal({
     }
   }
 
+  async function handleDescargarInformeWord() {
+    setGenerandoInformeDocx(true);
+    try {
+      await descargarInformeSupervisionWord({
+        escuelaInfo: {
+          nombre: escuelaNombre,
+          codigoMinerd: escuelaCodigo,
+          regional: perfil?.regional,
+          distrito: perfil?.distrito,
+          tanda: perfil?.tanda
+        },
+        planes,
+        revisiones: revisionesActuales,
+        coordinadorNombre: user?.user_metadata?.nombre || perfil?.nombre || "Coordinador/a Pedagógico/a",
+        directorNombre: perfil?.directorNombre || "Director/a del Centro Educativo"
+      });
+    } catch (err) {
+      console.error("Error al generar informe de supervisión Word:", err);
+      alert("Error generando informe de supervisión: " + err.message);
+    } finally {
+      setGenerandoInformeDocx(false);
+    }
+  }
+
   return (
     <div className="schema-overlay" onClick={onCerrar}>
       <div
@@ -166,7 +192,7 @@ export default function PanelCoordinacionModal({
         style={{ maxWidth: "860px", width: "95%", maxHeight: "90vh", display: "flex", flexDirection: "column" }}
       >
         {/* Cabecera Oficial */}
-        <div className="schema-header" style={{ borderBottom: "2px solid #0d9488", paddingBottom: "12px" }}>
+        <div className="schema-header" style={{ borderBottom: "2px solid #0d9488", paddingBottom: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ fontSize: "24px" }}>📋</span>
@@ -178,7 +204,32 @@ export default function PanelCoordinacionModal({
               {escuelaNombre} {escuelaCodigo && `• SIGERD: ${escuelaCodigo}`} • MINERD
             </p>
           </div>
-          <button className="schema-close-btn" onClick={onCerrar}>✕</button>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <button
+              type="button"
+              onClick={handleDescargarInformeWord}
+              disabled={generandoInformeDocx}
+              style={{
+                background: "#0f766e",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: "8px",
+                padding: "7px 13px",
+                fontSize: "12px",
+                fontWeight: "600",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                cursor: generandoInformeDocx ? "wait" : "pointer",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
+              }}
+              title="Descargar informe mensual de supervisión pedagógica en formato Word (.docx) oficial MINERD"
+            >
+              <span>📥</span>
+              <span>{generandoInformeDocx ? "Generando..." : "Informe Mensual (.docx)"}</span>
+            </button>
+            <button className="schema-close-btn" onClick={onCerrar}>✕</button>
+          </div>
         </div>
 
         {/* Tarjetas de Métricas */}
