@@ -18,6 +18,7 @@ export default function OwnerModal({ onCerrar, onSuccess }) {
 
     try {
       await verificarLlaveMaestra(key.trim());
+      localStorage.removeItem("pm_owner_key");
       sessionStorage.setItem("pm_owner_key", key.trim());
       onSuccess?.(key.trim());
       onCerrar?.();

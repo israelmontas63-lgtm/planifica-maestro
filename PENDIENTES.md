@@ -2,9 +2,9 @@
 
 ## Bloque 0: Parches Críticos de Seguridad y Estabilidad (Basado en Auditoría)
 1. ~~**[Backend] Migrar Rate Limit de Memoria**~~: **COMPLETADO**. El rate limit anónimo y el de verificación de propietario en `worker/index.js` ahora están respaldados por Cloudflare KV distribuido (`RATE_LIMIT_KV` binding `761bb5993306419ab6eebca4c526282d`) con fallback transparente a mapas en memoria si el KV falla.
-2. **[Frontend] Secretos en localStorage**: Mover almacenamiento de `pm_owner_key` fuera del `localStorage` en `OwnerModal.jsx` (riesgo XSS).
-3. **[Frontend] Conflicto Capacitor**: Eliminar `capacitor.config.json` para dejar como fuente única a `capacitor.config.ts`.
-4. **[DevOps] Consolidar PDFs**: Eliminar PDFs duplicados y archivos `.pdf.pdf` en `server/conocimiento/`, `server/curriculo/` y `server/curriculum/referencias/` para reducir bloat.
+2. ~~**[Frontend] Secretos en localStorage**~~: **COMPLETADO**. `pm_owner_key` se gestiona exclusivamente en `sessionStorage` (volátil por pestaña/sesión) con purga explícita y preventiva de cualquier rastro residual en `localStorage` en `OwnerModal.jsx` y `App.jsx`.
+3. ~~**[Frontend] Conflicto Capacitor**~~: **COMPLETADO**. Verificado que `capacitor.config.ts` es la única fuente de verdad (no existe `capacitor.config.json` conflictivo).
+4. ~~**[DevOps] Consolidar PDFs**~~: **COMPLETADO**. Eliminados 55.6 MB de PDFs duplicados y archivos con doble extensión `.pdf.pdf` en `server/curriculum/referencias/con-base/`. La capa canónica de originales se conserva intacta en `server/curriculo/capa1_originales/` y `server/conocimiento/minerd/`.
 5. **[Backend] Consolidar Políticas RLS**: Corregir políticas contradictorias en `supabase/migrations/` (ej. `Perfil docente` tiene `FOR ALL TO authenticated` vs `FOR ALL` exclusivo del propietario).
 6. **[Backend] Endurecer Autenticación**: Revisar `ACCESO_ABIERTO=true` y `REQUIRE_ACCESS_KEY=false` para no bypassar protección en producción. Rotar o purgar claves hardcodeadas en `.env.example`.
 7. **[Frontend] Vulnerabilidades npm**: Resolver `tinypool` (RCE) y `proxy-addr` (XSS) ejecutando `npm audit fix --force` o actualizando `vite`.
