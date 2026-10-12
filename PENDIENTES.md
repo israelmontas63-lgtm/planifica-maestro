@@ -23,9 +23,7 @@
   cliente, y sigue en el historial público de git. Hay que **cambiar `APP_ACCESS_KEY`** por una clave nueva
   (`npx wrangler secret put APP_ACCESS_KEY`) y compartirla solo con los docentes de la prueba.
 - ~~**Límite diario por IP en escuelas**~~: **COMPLETADO**. Parametrizado mediante variable `RATE_LIMIT_ANONIMO_DIARIO` en `worker/index.js` y `wrangler.toml` (elevado a 50 consultas/día por defecto con ajuste dinámico), previniendo saturación accidental entre docentes en la misma red escolar.
-- Los limitadores por IP viven en memoria de cada instancia del Worker (no se comparten ni sobreviven a
-  reinicios). Configurar `RATE_LIMIT_KV` los hace distribuidos. El control real del gasto es la clave de acceso y
-  los límites de gasto en los paneles de Google AI Studio y ElevenLabs.
+- ~~**Distribución de Rate Limit en KV**~~: **COMPLETADO**. El namespace `RATE_LIMIT_KV` (`id: 761bb5993306419ab6eebca4c526282d`) está vinculado y activo en `wrangler.toml` y en producción Cloudflare, permitiendo persistencia compartida entre instancias sin depender de memoria efímera.
 
 **Calidad / mantenimiento**
 - ~~Dos pruebas de interfaz antiguas fallan en `client/src/test/fase15_pruebas.test.jsx`~~: **COMPLETADO**. Selectores adaptados al diseño actual de la UI (clase `pm-ai-notice` y botones de menú actualizados en `BottomPanel.jsx`). Pruebas Vitest 4/4 superadas.
