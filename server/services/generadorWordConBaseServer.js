@@ -521,7 +521,6 @@ async function construirDocumentoWordOficial({
     })
   );
 
-  filasTabla.push(
   // Fila 9: Encabezado Momentos
   filasTabla.push(
     new TableRow({
