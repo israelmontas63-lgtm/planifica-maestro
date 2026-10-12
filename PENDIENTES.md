@@ -11,7 +11,7 @@
 8. ~~**[DevOps] Restaurar CI/CD**~~: **COMPLETADO**. Despliegue continuo gestionado nativamente por Cloudflare Workers Builds conectado a GitHub (`main`), con verificación de pruebas automatizadas en pre-push hook.
 
 ## Bloque 1: Deuda Técnica y Optimización
-- **Unificación Node/Worker**: Abstraer la lógica duplicada (`ojoDigital.js`, `parseador.js`, etc.) en una carpeta `shared/` para unificar el código de ambos entornos.
+- ~~**Unificación Node/Worker**~~: **COMPLETADO**. Creados módulos canónicos en `shared/` (`parseadorJsonSeguro.js`, `constantsOjoDigital.js`, `clasificadorIntencion.js`, `correctorTexto.js`, `modoConversacional.js`) con fachadas transparentes hacia `shared/` en `worker/`, `server/` y `client/`. Paridad total del 100% conservada sin breaking changes.
 - ~~**Refactorización de npm scripts**~~: **COMPLETADO**. El script `test` en `package.json` raíz ahora ejecuta `scripts/run_tests.js` (descubrimiento dinámico de suites de prueba `test_*.mjs` y `*.test.mjs`), junto con `npm run test:client` y `npm run test:all`.
 - [Futuro] Rotar las API Keys y Supabase Anon Key filtradas en los .env.example y eliminarlas del control de versiones (riesgo aceptado temporalmente por el dueño).
 - [Futuro] Mover pm_owner_key y tokens a cookies HttpOnly (Backlog H6).
