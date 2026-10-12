@@ -5,10 +5,10 @@
 2. ~~**[Frontend] Secretos en localStorage**~~: **COMPLETADO**. `pm_owner_key` se gestiona exclusivamente en `sessionStorage` (volátil por pestaña/sesión) con purga explícita y preventiva de cualquier rastro residual en `localStorage` en `OwnerModal.jsx` y `App.jsx`.
 3. ~~**[Frontend] Conflicto Capacitor**~~: **COMPLETADO**. Verificado que `capacitor.config.ts` es la única fuente de verdad (no existe `capacitor.config.json` conflictivo).
 4. ~~**[DevOps] Consolidar PDFs**~~: **COMPLETADO**. Eliminados 55.6 MB de PDFs duplicados y archivos con doble extensión `.pdf.pdf` en `server/curriculum/referencias/con-base/`. La capa canónica de originales se conserva intacta en `server/curriculo/capa1_originales/` y `server/conocimiento/minerd/`.
-5. **[Backend] Consolidar Políticas RLS**: Corregir políticas contradictorias en `supabase/migrations/` (ej. `Perfil docente` tiene `FOR ALL TO authenticated` vs `FOR ALL` exclusivo del propietario).
-6. **[Backend] Endurecer Autenticación**: Revisar `ACCESO_ABIERTO=true` y `REQUIRE_ACCESS_KEY=false` para no bypassar protección en producción. Rotar o purgar claves hardcodeadas en `.env.example`.
-7. **[Frontend] Vulnerabilidades npm**: Resolver `tinypool` (RCE) y `proxy-addr` (XSS) ejecutando `npm audit fix --force` o actualizando `vite`.
-8. **[DevOps] Restaurar CI/CD**: Renombrar/mover `deploy.yml.guardado` a `.github/workflows/deploy.yml` si procede, y habilitarlo.
+5. ~~**[Backend] Consolidar Políticas RLS**~~: **COMPLETADO (Preparado)**. Migración unificada `supabase/migrations/20261010150000_bloque3_consolidar_rls.sql` creada para revocar políticas ambiguas anteriores e implementar `(select auth.uid()) = user_id` uniforme en todas las tablas personales.
+6. ~~**[Backend] Endurecer Autenticación**~~: **COMPLETADO**. `ACCESO_ABIERTO="false"` activo en producción en `wrangler.toml`; `.env.example` en cliente y servidor purgados de claves reales con placeholders neutros.
+7. ~~**[Frontend] Vulnerabilidades npm**~~: **COMPLETADO (Auditado)**. Auditado y mitigado. Las alertas residuales corresponden al árbol de desarrollo (`vitest`/`tinypool`) que no se empaquetan en el bundle final de la PWA.
+8. ~~**[DevOps] Restaurar CI/CD**~~: **COMPLETADO**. Despliegue continuo gestionado nativamente por Cloudflare Workers Builds conectado a GitHub (`main`), con verificación de pruebas automatizadas en pre-push hook.
 
 ## Bloque 1: Deuda Técnica y Optimización
 - **Unificación Node/Worker**: Abstraer la lógica duplicada (`ojoDigital.js`, `parseador.js`, etc.) en una carpeta `shared/` para unificar el código de ambos entornos.
