@@ -15,7 +15,8 @@ export default function MisPlanificaciones({
   onEscuchar,
   user,
   supabaseClient,
-  planInicialId = null
+  planInicialId = null,
+  onAbrirRubrica
 }) {
   const [planes, setPlanes] = useState(() => obtenerTodasLasPlanificaciones(user?.id));
   const [filtroArea, setFiltroArea] = useState("todas");
@@ -322,6 +323,19 @@ export default function MisPlanificaciones({
                       title="Exportar a Microsoft Word"
                     >
                       📄 Word
+                    </button>
+                  )}
+
+                  {onAbrirRubrica && (
+                    <button
+                      className="biblio-action-btn btn-rubrica"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAbrirRubrica(plan);
+                      }}
+                      title="Generar Rúbrica Analítica e Instrumentos de Evaluación Formativa MINERD"
+                    >
+                      📊 Rúbrica
                     </button>
                   )}
 

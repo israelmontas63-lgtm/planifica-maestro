@@ -556,4 +556,19 @@ export async function exportarWord(arg1 = {}, arg2 = {}) {
   return descargarWordConBase({ titulo, plan, datos, perfil, revision });
 }
 
+/**
+ * Exportar Rúbrica o Instrumento de Evaluación a Word (.docx) — Ordenanza 04-2023 MINERD
+ */
+export async function exportarRubricaWord({
+  plan = "",
+  datos = null,
+  perfil = null,
+  tipoInstrumento = "rubrica_analitica",
+  titulo = "Rubrica_Evaluacion_MINERD"
+} = {}) {
+  const { descargarRubricaWord } = await import("./services/generadorRubricaWord.js");
+  return descargarRubricaWord({ plan, datos, perfil, tipoInstrumento, titulo });
+}
+
+
 

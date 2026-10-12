@@ -34,6 +34,7 @@ const OwnerStatsModal = lazy(() => import("./components/OwnerStatsModal.jsx"));
 const NotificacionesModal = lazy(() => import("./components/NotificacionesModal.jsx"));
 const ConfiguracionModal = lazy(() => import("./components/ConfiguracionModal.jsx"));
 const AyudaModal = lazy(() => import("./components/AyudaModal.jsx"));
+const RubricaModal = lazy(() => import("./components/RubricaModal.jsx"));
 
 export default function App() {
   const {
@@ -91,6 +92,7 @@ export default function App() {
   const [notificacionesOpen, setNotificacionesOpen] = useState(false);
   const [configuracionOpen, setConfiguracionOpen] = useState(false);
   const [ayudaOpen, setAyudaOpen] = useState(false);
+  const [rubricaModalPlan, setRubricaModalPlan] = useState(null);
   const [planInicialMisPlanificaciones, setPlanInicialMisPlanificaciones] = useState(null);
   const [contadorNotificaciones, setContadorNotificaciones] = useState(0);
   const [isOwner, setIsOwner] = useState(!!obtenerOwnerKey());
@@ -791,11 +793,13 @@ export default function App() {
   async function handleExportar(planText, datos = null, revision = null) {
     setExportando(true);
     try {
+      let p = {};
+      try { p = cargarPerfil() || {}; } catch (e) {}
       await exportarWord({
         titulo: "Planificacion_" + periodo + "_" + nivel,
         plan: typeof planText === "string" ? planText : "",
         datos: datos || (typeof planText === "object" ? planText : null),
-        perfil,
+        perfil: p,
         revision
       });
     } catch (err) {
@@ -1217,6 +1221,10 @@ export default function App() {
                   onEscuchar={(datos) => handleEscuchar(Object.values(datos).join(" ").substring(0, 500), "plan")}
                   escuchando={escuchando}
                   audioUrl={audioUrl}
+                  onAbrirRubrica={(datos) => setRubricaModalPlan({
+                    datosPlanificacion: datos,
+                    titulo: m.text?.substring(0, 45) || "Planificación Docente"
+                  })}
                   onDatosActualizados={(nuevosDatos) => {
                     // FASE 13: Actualizar biblioteca local inmediatamente para persistencia offline
                     guardarPlanEnBiblioteca({
@@ -1776,10 +1784,27 @@ export default function App() {
               setPlanInicialMisPlanificaciones(null);
             }}
             onAbrirPlan={handleAbrirPlanDesdeBiblioteca}
-            onExportarWord={(titulo, texto, datos, revision) => exportarWord({ titulo, plan: texto, datos, revision, perfil })}
+            onExportarWord={(titulo, texto, datos, revision) => {
+              let p = {};
+              try { p = cargarPerfil() || {}; } catch (e) {}
+              exportarWord({ titulo, plan: texto, datos, revision, perfil: p });
+            }}
+            onAbrirRubrica={(plan) => setRubricaModalPlan(plan)}
             user={user}
             supabaseClient={supabase}
             planInicialId={planInicialMisPlanificaciones}
+          />
+        </Suspense>
+      )}
+
+      {rubricaModalPlan && (
+        <Suspense fallback={null}>
+          <RubricaModal
+            plan={rubricaModalPlan}
+            perfil={(() => {
+              try { return cargarPerfil() || {}; } catch (e) { return {}; }
+            })()}
+            onCerrar={() => setRubricaModalPlan(null)}
           />
         </Suspense>
       )}

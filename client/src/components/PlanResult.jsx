@@ -16,7 +16,8 @@ export default function PlanResult({
   confianzaCurricular,
   distintivo,
   esRespaldo,
-  origen
+  origen,
+  onAbrirRubrica
 }) {
   const [campos, setCampos] = useState(datosGenerados || {});
   const [editandoCampo, setEditandoCampo] = useState(null);
@@ -239,6 +240,17 @@ export default function PlanResult({
         >
           {exportando ? "Preparando..." : "📄 Exportar a Word"}
         </button>
+
+        {onAbrirRubrica && (
+          <button
+            className="export-btn btn-rubrica"
+            onClick={() => onAbrirRubrica(campos)}
+            title="Generar Rúbrica Analítica e Instrumentos de Evaluación Formativa MINERD (Ordenanza 04-2023)"
+            style={{ background: "#0284c7" }}
+          >
+            📊 Rúbrica MINERD
+          </button>
+        )}
 
         <button
           className="export-btn btn-escuchar"
