@@ -6,6 +6,7 @@
 
 import fs from "fs";
 import path from "path";
+import os from "os";
 import { fileURLToPath } from "url";
 import { Packer } from "docx";
 
@@ -417,10 +418,7 @@ afirmativo(
 // PRUEBA 11: VERIFICACIÓN DE 0 CELDAS VACÍAS Y SANITIZACIÓN EN WORD GENERADO
 // ================================================================================
 console.log("\n--- 11. Inspección Binaria de Celdas en DOCX Generado ---");
-const dirMuestras = path.join(__dirname, "../muestras_word");
-if (!fs.existsSync(dirMuestras)) fs.mkdirSync(dirMuestras, { recursive: true });
-
-const rutaDocxMuestra = path.join(dirMuestras, "Muestra_CON_BASE_Multigrado_1erCiclo.docx");
+const rutaDocxMuestra = path.join(os.tmpdir(), "Muestra_CON_BASE_Multigrado_1erCiclo_test.docx");
 const bufferDocx = await Packer.toBuffer(docxTresGrados);
 fs.writeFileSync(rutaDocxMuestra, bufferDocx);
 
@@ -429,6 +427,7 @@ afirmativo(
   fs.existsSync(rutaDocxMuestra) && bufferDocx.length > 5000,
   `Ruta: ${rutaDocxMuestra} (${bufferDocx.length} bytes)`
 );
+try { fs.unlinkSync(rutaDocxMuestra); } catch (_) {}
 
 // ================================================================================
 // PRUEBA 10: RESUMEN DE EJECUCIÓN
