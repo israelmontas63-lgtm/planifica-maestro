@@ -42,10 +42,11 @@ export default function AyudaModal({ onCerrar }) {
               📋 Esquemas y Tipos de Planificación MINERD:
             </h4>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "12px", color: "#475569" }}>
+              <div><strong>• Secuencia CON BASE:</strong> Formato oficial MINERD / UNICEF para 1.º ciclo (regular y multigrado articulado con actividades diferenciadas).</div>
               <div><strong>• Diaria:</strong> Secuencia de 3 momentos (Inicio, Desarrollo y Cierre) con evaluación formativa.</div>
               <div><strong>• Semanal:</strong> Articulación de áreas curriculares con distribución de bloques de clase.</div>
               <div><strong>• Mensual:</strong> Alineada a efemérides y metas mensuales del calendario escolar oficial.</div>
-              <div><strong>• Anual:</strong> Dosificación macro por períodos (P1, P2, P3, P4) y proyectos de centro.</div>
+              <div><strong>• Anual:</strong> Dosificación macro por períodos (P1 a P4) y proyectos de centro.</div>
               <div><strong>• Unidad de Aprendizaje:</strong> Anclada a una Situación de Aprendizaje auténtica del contexto dominicano.</div>
               <div><strong>• Proyectos (ABP):</strong> Proyectos participativos de aula e institucionales centrados en resolver un problema real.</div>
             </div>
@@ -54,10 +55,13 @@ export default function AyudaModal({ onCerrar }) {
           {/* 3. Exportación y Guardado */}
           <div style={{ background: "#f0fdfa", border: "1.5px solid #99f6e4", borderRadius: "12px", padding: "14px" }}>
             <h4 style={{ margin: "0 0 8px 0", fontSize: "14px", color: "#0f766e" }}>
-              💾 Exportar y Compartir:
+              💾 Exportar, Compartir y Modo Sin Conexión:
             </h4>
             <p style={{ margin: 0, fontSize: "12.5px", color: "#115e59", lineHeight: "1.5" }}>
               Al generarse tu plan, puedes editar cualquier casilla directamente, exportarlo a <strong>Microsoft Word (.docx)</strong> con formato oficial, imprimirlo o compartirlo por <strong>WhatsApp</strong> y <strong>Bluetooth</strong>.
+            </p>
+            <p style={{ margin: "8px 0 0 0", fontSize: "12px", color: "#0f766e", lineHeight: "1.4" }}>
+              <strong>📶 Escuelas rurales / Sin conexión:</strong> Tus planificaciones se guardan automáticamente en tu dispositivo para que puedas revisarlas y editarlas aunque no haya señal en el aula.
             </p>
           </div>
 
