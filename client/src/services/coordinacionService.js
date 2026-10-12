@@ -167,24 +167,45 @@ export async function obtenerPlanificacionesParaSupervision({
     }
   }
 
-  // 2. Fallback / Enriquecimiento con planes del almacenamiento local
+  // 2. Fallback / Enriquecimiento con planes del almacenamiento local y revisiones
   const localesSupervision = leerPlanesLocalesSupervision();
   const misPlanesLocales = obtenerTodasLasPlanificaciones(userId);
+  const revsLocales = leerRevisionesLocales();
 
-  // Mezclar evitando duplicados
+  // Mezclar evitando duplicados y vinculando la última revisión pedagógica
   const mapa = new Map();
-  planes.forEach((p) => mapa.set(p.id, p));
+  planes.forEach((p) => {
+    const revs = revsLocales[p.id] || [];
+    mapa.set(p.id, {
+      ...p,
+      ultimaRevision: p.ultimaRevision || revs[0] || null
+    });
+  });
+
   localesSupervision.forEach((p) => {
-    if (!mapa.has(p.id)) mapa.set(p.id, p);
+    const revs = revsLocales[p.id] || [];
+    if (!mapa.has(p.id)) {
+      mapa.set(p.id, {
+        ...p,
+        ultimaRevision: p.ultimaRevision || revs[0] || null
+      });
+    } else {
+      const exist = mapa.get(p.id);
+      if (!exist.ultimaRevision && (p.ultimaRevision || revs[0])) {
+        exist.ultimaRevision = p.ultimaRevision || revs[0];
+      }
+    }
   });
 
   // Si no hay planes en la nube ni de supervisión, mostrar los locales del docente para facilitar pruebas
   if (mapa.size === 0 && misPlanesLocales.length > 0) {
     misPlanesLocales.forEach((p) => {
+      const revs = revsLocales[p.id] || [];
       mapa.set(p.id, {
         ...p,
         docente_id: userId || "docente_local",
-        estado: p.estado || "borrador"
+        estado: p.estado || "borrador",
+        ultimaRevision: p.ultimaRevision || revs[0] || null
       });
     });
   }

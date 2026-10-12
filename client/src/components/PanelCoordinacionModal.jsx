@@ -582,6 +582,61 @@ export default function PanelCoordinacionModal({
                   borrador: { bg: "#f1f5f9", color: "#475569", border: "#cbd5e1", text: "📝 Borrador" }
                 }[p.estado] || { bg: "#f1f5f9", color: "#475569", border: "#cbd5e1", text: p.estado };
 
+                // Detección de contenido DUA o adaptaciones inclusivas
+                const tieneDua = Boolean(
+                  (p.ultimaRevision?.bloques_observados?.dua && p.ultimaRevision.bloques_observados.dua.trim()) ||
+                  (p.datosPlanificacion?.dua && String(p.datosPlanificacion.dua).trim()) ||
+                  (p.datosPlanificacion?.actividades_diferenciadas && String(p.datosPlanificacion.actividades_diferenciadas).trim())
+                );
+
+                // Cálculo de antigüedad para SLA pedagógico (enviada_revision)
+                let alertaAntiguedad = null;
+                const fechaBase = p.fecha_envio || p.actualizado_en || p.creado_en;
+                if (p.estado === "enviada_revision" && fechaBase) {
+                  const diasEspera = Math.floor((Date.now() - new Date(fechaBase).getTime()) / (1000 * 60 * 60 * 24));
+                  if (diasEspera >= 3) {
+                    alertaAntiguedad = {
+                      texto: `⚡ En espera (> ${diasEspera} días)`,
+                      bg: "#fef2f2",
+                      color: "#991b1b",
+                      border: "#fecaca"
+                    };
+                  } else if (diasEspera > 0) {
+                    alertaAntiguedad = {
+                      texto: `⏱️ Enviado hace ${diasEspera}d`,
+                      bg: "#fefce8",
+                      color: "#854d0e",
+                      border: "#fef08a"
+                    };
+                  } else {
+                    alertaAntiguedad = {
+                      texto: "⏱️ Enviado hoy",
+                      bg: "#f0fdf4",
+                      color: "#166534",
+                      border: "#bbf7d0"
+                    };
+                  }
+                }
+
+                // Fecha formateada para visualización
+                const fechaMostrar = p.ultimaRevision?.fecha_revision
+                  ? `Dictamen: ${new Date(p.ultimaRevision.fecha_revision).toLocaleDateString()}`
+                  : fechaBase
+                    ? `Enviado: ${new Date(fechaBase).toLocaleDateString()}`
+                    : null;
+
+                const observacionSnippet = p.ultimaRevision?.comentarios_generales
+                  ? (p.ultimaRevision.comentarios_generales.length > 90
+                      ? p.ultimaRevision.comentarios_generales.substring(0, 90) + "..."
+                      : p.ultimaRevision.comentarios_generales)
+                  : null;
+
+                const duaSnippet = p.ultimaRevision?.bloques_observados?.dua
+                  ? (p.ultimaRevision.bloques_observados.dua.length > 70
+                      ? p.ultimaRevision.bloques_observados.dua.substring(0, 70) + "..."
+                      : p.ultimaRevision.bloques_observados.dua)
+                  : null;
+
                 return (
                   <div
                     key={p.id}
@@ -592,14 +647,16 @@ export default function PanelCoordinacionModal({
                       padding: "12px 14px",
                       background: "#ffffff",
                       cursor: "pointer",
-                      transition: "transform 0.1s, box-shadow 0.1s",
+                      transition: "box-shadow 0.15s, border-color 0.15s",
                       display: "flex",
                       justifyContent: "space-between",
-                      alignItems: "center"
+                      alignItems: "flex-start",
+                      gap: "12px"
                     }}
                   >
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      {/* Fila de Insignias de Estado y Metadatos */}
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap", marginBottom: "6px" }}>
                         <span
                           style={{
                             background: estadoBadge.bg,
@@ -613,18 +670,78 @@ export default function PanelCoordinacionModal({
                         >
                           {estadoBadge.text}
                         </span>
-                        <h4 style={{ margin: 0, fontSize: "14px", color: "#1e293b" }}>{p.titulo}</h4>
+
+                        {tieneDua && (
+                          <span
+                            style={{
+                              background: "#f0fdfa",
+                              color: "#0f766e",
+                              border: "1px solid #99f6e4",
+                              padding: "2px 7px",
+                              borderRadius: "12px",
+                              fontSize: "11px",
+                              fontWeight: "600"
+                            }}
+                            title="Incluye adecuaciones curriculares y Diseño Universal para el Aprendizaje (DUA / NEAE)"
+                          >
+                            🧩 DUA / Inclusiva
+                          </span>
+                        )}
+
+                        {alertaAntiguedad && (
+                          <span
+                            style={{
+                              background: alertaAntiguedad.bg,
+                              color: alertaAntiguedad.color,
+                              border: `1px solid ${alertaAntiguedad.border}`,
+                              padding: "2px 7px",
+                              borderRadius: "12px",
+                              fontSize: "11px",
+                              fontWeight: "600"
+                            }}
+                          >
+                            {alertaAntiguedad.texto}
+                          </span>
+                        )}
+
+                        {fechaMostrar && (
+                          <span style={{ fontSize: "11px", color: "#94a3b8", marginLeft: "auto" }}>
+                            🗓️ {fechaMostrar}
+                          </span>
+                        )}
                       </div>
+
+                      {/* Título y Datos Curriculares */}
+                      <h4 style={{ margin: "0 0 4px 0", fontSize: "14px", color: "#1e293b", fontWeight: "700" }}>
+                        {p.titulo}
+                      </h4>
                       <p style={{ margin: 0, fontSize: "12px", color: "#64748b" }}>
-                        Docente: <strong>{p.docenteNombre || "Docente"}</strong> • {p.grado} • {p.area} • {p.periodo || "diaria"}
+                        👤 Docente: <strong style={{ color: "#334155" }}>{p.docenteNombre || "Docente"}</strong> • 🎓 {p.grado} • 📚 {p.area} • ⏱️ {p.periodo || "diaria"}
                       </p>
+
+                      {/* Snippet de Observación Pedagógica si está observada */}
+                      {p.estado === "observada" && (observacionSnippet || duaSnippet) && (
+                        <div style={{ marginTop: "8px", background: "#faf5ff", border: "1px solid #f3e8ff", borderRadius: "6px", padding: "6px 10px", fontSize: "11px" }}>
+                          {observacionSnippet && (
+                            <p style={{ margin: 0, color: "#6b21a8" }}>
+                              💬 <em>"{observacionSnippet}"</em>
+                            </p>
+                          )}
+                          {duaSnippet && (
+                            <p style={{ margin: "2px 0 0 0", color: "#0f766e" }}>
+                              🧩 Pauta DUA: <em>"{duaSnippet}"</em>
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
 
-                    <div style={{ display: "flex", gap: "6px" }}>
+                    {/* Acciones Rápidas */}
+                    <div style={{ display: "flex", gap: "6px", flexShrink: 0, alignItems: "center" }}>
                       <button
                         type="button"
                         onClick={(e) => handleExportarWord(p, e)}
-                        title="Exportar a Word"
+                        title="Exportar plan a Word (.docx)"
                         style={{
                           background: "#f8fafc",
                           border: "1px solid #cbd5e1",

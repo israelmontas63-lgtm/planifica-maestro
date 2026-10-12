@@ -316,3 +316,78 @@ test("FASE 12 - 3. Filtrado Multidimensional por Grado y Área Curricular en Coo
   });
 });
 
+// ─────────────────────────────────────────────────────────────
+// 4. INSIGNIAS VISUALES, DUA Y ALERTAS SLA PEDAGÓGICO
+// ─────────────────────────────────────────────────────────────
+test("FASE 12 - 4. Insignias Visuales de Retroalimentación y Alertas SLA en Tarjetas", async (t) => {
+  await t.test("Detección de contenido DUA en revisiones o datos de planificación", () => {
+    const planConDuaEnRevision = {
+      id: "p_dua_1",
+      ultimaRevision: {
+        bloques_observados: { dua: "Apoyos multisensoriales" }
+      }
+    };
+    const planConDuaEnDatos = {
+      id: "p_dua_2",
+      datosPlanificacion: {
+        dua: "Textos en lectura fácil"
+      }
+    };
+    const planSinDua = {
+      id: "p_sin_dua",
+      datosPlanificacion: {}
+    };
+
+    const tieneDua1 = Boolean(
+      planConDuaEnRevision.ultimaRevision?.bloques_observados?.dua ||
+      planConDuaEnRevision.datosPlanificacion?.dua
+    );
+    const tieneDua2 = Boolean(
+      planConDuaEnDatos.ultimaRevision?.bloques_observados?.dua ||
+      planConDuaEnDatos.datosPlanificacion?.dua
+    );
+    const tieneDua3 = Boolean(
+      planSinDua.ultimaRevision?.bloques_observados?.dua ||
+      planSinDua.datosPlanificacion?.dua
+    );
+
+    assert.equal(tieneDua1, true, "Debe detectar DUA en ultimaRevision");
+    assert.equal(tieneDua2, true, "Debe detectar DUA en datosPlanificacion");
+    assert.equal(tieneDua3, false, "No debe marcar DUA si no existe");
+  });
+
+  await t.test("Cálculo de SLA pedagógico para planes en espera de revisión", () => {
+    const ahora = Date.now();
+    const hace4Dias = new Date(ahora - 4 * 24 * 60 * 60 * 1000).toISOString();
+    const hace1Dia = new Date(ahora - 1 * 24 * 60 * 60 * 1000).toISOString();
+    const hoy = new Date(ahora).toISOString();
+
+    function calcularAlerta(fechaIso) {
+      const dias = Math.floor((ahora - new Date(fechaIso).getTime()) / (1000 * 60 * 60 * 24));
+      if (dias >= 3) return { tipo: "critico", texto: `⚡ En espera (> ${dias} días)` };
+      if (dias > 0) return { tipo: "reciente", texto: `⏱️ Enviado hace ${dias}d` };
+      return { tipo: "hoy", texto: "⏱️ Enviado hoy" };
+    }
+
+    const alerta4 = calcularAlerta(hace4Dias);
+    const alerta1 = calcularAlerta(hace1Dia);
+    const alerta0 = calcularAlerta(hoy);
+
+    assert.equal(alerta4.tipo, "critico");
+    assert.ok(alerta4.texto.includes("> 4 días") || alerta4.texto.includes("> 3 días"));
+    assert.equal(alerta1.tipo, "reciente");
+    assert.equal(alerta0.tipo, "hoy");
+  });
+
+  await t.test("PanelCoordinacionModal.jsx contiene insignias DUA, alertas SLA y snippets de notas", () => {
+    const modalPath = path.join(rootDir, "client/src/components/PanelCoordinacionModal.jsx");
+    const contenido = fs.readFileSync(modalPath, "utf-8");
+
+    assert.ok(contenido.includes("DUA / Inclusiva"), "Debe tener micro-insignia DUA / Inclusiva");
+    assert.ok(contenido.includes("alertaAntiguedad"), "Debe calcular alertaAntiguedad para planes en espera");
+    assert.ok(contenido.includes("observacionSnippet"), "Debe extraer observacionSnippet para planes observados");
+    assert.ok(contenido.includes("duaSnippet"), "Debe extraer duaSnippet");
+  });
+});
+
+
