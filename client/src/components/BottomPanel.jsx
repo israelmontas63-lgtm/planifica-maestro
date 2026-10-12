@@ -327,6 +327,7 @@ export default function BottomPanel({
   onAbrirPerfil,
   onAbrirCurriculo,
   onAbrirBiblioteca,
+  onAbrirCoordinacion,
   user,
   tablasDisponibles = [],
   onAbrirAuth,
@@ -656,6 +657,26 @@ export default function BottomPanel({
                       <span>Mis planificaciones</span>
                     </div>
                   </button>
+
+                  {/* Supervisión Institucional */}
+                  {onAbrirCoordinacion && (
+                    <button
+                      type="button"
+                      className="pm-link-row pm-touch-row"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onAbrirCoordinacion();
+                      }}
+                      title="Supervisión pedagógica y dictamen institucional de planificaciones"
+                    >
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <div className="pm-link-icon-box" style={{ backgroundColor: "rgba(13, 148, 136, 0.15)", color: "#0d9488" }}>
+                          <ClipboardCheckIcon />
+                        </div>
+                        <span>Supervisión Institucional</span>
+                      </div>
+                    </button>
+                  )}
 
                   {/* Cambiar Esquema */}
                   <button

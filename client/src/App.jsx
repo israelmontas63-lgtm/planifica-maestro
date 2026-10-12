@@ -15,6 +15,7 @@ import { registrarAjusteConRespaldoOffline, sincronizarAjustesPendientes } from 
 import { guardarPlanEnBiblioteca } from "./services/bibliotecaStorage.js";
 import { comprimirYRedimensionarImagen } from "./services/imageOptimizer.js";
 import { cargarPerfil } from "./services/perfilStorage.js";
+import { supabase } from "./services/supabaseClient.js";
 import { extraerJson, mensajeParaChat, validarCamposPlanificacion } from "./utils/parseadorJsonSeguro.js";
 import { normalizarOrdinalesYNumeros, analizarEntidadesDictado } from "./utils/normalizadorVoz.js";
 
@@ -24,6 +25,7 @@ const SchemaSelector = lazy(() => import("./components/SchemaSelector.jsx"));
 const PerfilDocente = lazy(() => import("./components/PerfilDocente.jsx"));
 const CurriculumViewer = lazy(() => import("./components/CurriculumViewer.jsx"));
 const MisPlanificaciones = lazy(() => import("./components/MisPlanificaciones.jsx"));
+const PanelCoordinacionModal = lazy(() => import("./components/PanelCoordinacionModal.jsx"));
 const TextoModal = lazy(() => import("./components/TextoModal.jsx"));
 const AuthScreen = lazy(() => import("./components/AuthScreen.jsx"));
 const OwnerModal = lazy(() => import("./components/OwnerModal.jsx"));
@@ -83,6 +85,7 @@ export default function App() {
   const [perfilOpen, setPerfilOpen] = useState(false);
   const [curriculumOpen, setCurriculumOpen] = useState(false);
   const [bibliotecaOpen, setBibliotecaOpen] = useState(false);
+  const [coordinacionOpen, setCoordinacionOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [notificacionesOpen, setNotificacionesOpen] = useState(false);
   const [configuracionOpen, setConfiguracionOpen] = useState(false);
@@ -927,6 +930,7 @@ export default function App() {
         onAbrirAuth={() => { setAuthModalOpen(true); setMenuOpen(false); }}
         onAbrirOwnerModal={() => { setOwnerModalOpen(true); setMenuOpen(false); }}
         onAbrirOwnerStats={() => { setOwnerStatsModalOpen(true); setMenuOpen(false); }}
+        onAbrirCoordinacion={() => { setCoordinacionOpen(true); setMenuOpen(false); }}
         estadoCuota={estadoCuota}
         onInstallApp={installPrompt ? handleInstallApp : null}
         onAbrirNotificaciones={() => { setNotificacionesOpen(true); setMenuOpen(false); }}
@@ -1643,6 +1647,7 @@ export default function App() {
         onAbrirPerfil={() => { setPerfilOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); setAuthModalOpen(false); }}
         onAbrirCurriculo={() => { setCurriculumOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); setBibliotecaOpen(false); setAuthModalOpen(false); }}
         onAbrirBiblioteca={() => { setBibliotecaOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); setAuthModalOpen(false); }}
+        onAbrirCoordinacion={() => { setCoordinacionOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); setAuthModalOpen(false); }}
         user={user}
         onAbrirAuth={() => { setAuthModalOpen(true); setMenuOpen(false); setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); }}
         onLogout={signOut}
@@ -1743,6 +1748,19 @@ export default function App() {
             onCerrar={() => setBibliotecaOpen(false)}
             onAbrirPlan={handleAbrirPlanDesdeBiblioteca}
             onExportarWord={(titulo, texto) => exportarWord({ titulo, plan: texto })}
+            user={user}
+            supabaseClient={supabase}
+          />
+        </Suspense>
+      )}
+
+      {coordinacionOpen && (
+        <Suspense fallback={null}>
+          <PanelCoordinacionModal
+            onCerrar={() => setCoordinacionOpen(false)}
+            user={user}
+            supabaseClient={supabase}
+            onAbrirPlan={handleAbrirPlanDesdeBiblioteca}
           />
         </Suspense>
       )}

@@ -40,6 +40,8 @@ function generarEtiquetaGrados(listaGrados, nivel) {
 export default function PerfilDocente({ user, onActualizarPerfil, onCerrar }) {
   const [nombre, setNombre] = useState("");
   const [escuela, setEscuela] = useState("");
+  const [rol, setRol] = useState("docente");
+  const [codigoMinerd, setCodigoMinerd] = useState("");
   const [tanda, setTanda] = useState("Jornada Escolar Extendida (JEE)");
   const [seccion, setSeccion] = useState("A");
   const [nivel, setNivel] = useState("primario");
@@ -58,6 +60,8 @@ export default function PerfilDocente({ user, onActualizarPerfil, onCerrar }) {
 
     setNombre(userNombre);
     setEscuela(userEscuela);
+    setRol(user?.user_metadata?.rol || perfil?.rol || "docente");
+    setCodigoMinerd(user?.user_metadata?.codigoMinerd || perfil?.codigoMinerd || "");
     setTanda(perfil?.tanda || "Jornada Escolar Extendida (JEE)");
     setSeccion(perfil?.seccion || "A");
     
@@ -111,6 +115,8 @@ export default function PerfilDocente({ user, onActualizarPerfil, onCerrar }) {
       ...perfilActual,
       nombre: nombre.trim(),
       escuela: escuela.trim(),
+      rol,
+      codigoMinerd: codigoMinerd.trim(),
       tanda,
       seccion: seccion.trim(),
       nivel,
@@ -128,6 +134,8 @@ export default function PerfilDocente({ user, onActualizarPerfil, onCerrar }) {
         await onActualizarPerfil({
           nombre: perfilActualizado.nombre,
           escuela: perfilActualizado.escuela,
+          rol,
+          codigoMinerd: perfilActualizado.codigoMinerd,
           tanda,
           seccion: perfilActualizado.seccion,
           nivel,
@@ -197,6 +205,33 @@ export default function PerfilDocente({ user, onActualizarPerfil, onCerrar }) {
               onChange={(e) => setEscuela(e.target.value)}
             />
           </label>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "4px" }}>
+            <label className="perfil-label">
+              Rol Institucional
+              <select
+                className="perfil-input"
+                value={rol}
+                onChange={(e) => setRol(e.target.value)}
+                style={{ cursor: "pointer", fontWeight: "600" }}
+              >
+                <option value="docente">👩‍🏫 Docente de Aula</option>
+                <option value="coordinador_area">📋 Coordinador/a Pedagógico/a</option>
+                <option value="director">🏫 Director/a de Centro</option>
+              </select>
+            </label>
+
+            <label className="perfil-label">
+              Código SIGERD / MINERD
+              <input
+                type="text"
+                className="perfil-input"
+                placeholder="Ej: 04-01-0021"
+                value={codigoMinerd}
+                onChange={(e) => setCodigoMinerd(e.target.value)}
+              />
+            </label>
+          </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
             <label className="perfil-label">

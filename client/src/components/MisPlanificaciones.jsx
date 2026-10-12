@@ -2,20 +2,46 @@ import { useState, useMemo } from "react";
 import {
   obtenerTodasLasPlanificaciones,
   duplicarPlanEnBiblioteca,
-  eliminarPlanDeBiblioteca
+  eliminarPlanDeBiblioteca,
+  actualizarEstadoPlanEnBiblioteca
 } from "../services/bibliotecaStorage.js";
+import { enviarPlanACoordinacion } from "../services/coordinacionService.js";
+import { cargarPerfil } from "../services/perfilStorage.js";
 
 export default function MisPlanificaciones({
   onCerrar,
   onAbrirPlan,
   onExportarWord,
-  onEscuchar
+  onEscuchar,
+  user,
+  supabaseClient
 }) {
-  const [planes, setPlanes] = useState(() => obtenerTodasLasPlanificaciones());
+  const [planes, setPlanes] = useState(() => obtenerTodasLasPlanificaciones(user?.id));
   const [filtroArea, setFiltroArea] = useState("todas");
   const [filtroGrado, setFiltroGrado] = useState("todos");
   const [busqueda, setBusqueda] = useState("");
   const [planSeleccionado, setPlanSeleccionado] = useState(null);
+
+  async function handleEnviarACoordinacion(plan, e) {
+    if (e) e.stopPropagation();
+    try {
+      const perfil = cargarPerfil() || {};
+      const docenteNombre = user?.user_metadata?.nombre || perfil?.nombre || "Docente";
+      const escuelaId = user?.user_metadata?.escuela_id || perfil?.codigoMinerd;
+      await enviarPlanACoordinacion({
+        supabaseClient,
+        plan,
+        userId: user?.id,
+        escuelaId,
+        docenteNombre
+      });
+      actualizarEstadoPlanEnBiblioteca(plan.id, "enviada_revision", null, user?.id);
+      setPlanes(obtenerTodasLasPlanificaciones(user?.id));
+      alert("¡Planificación enviada a Coordinación para revisión!");
+    } catch (err) {
+      alert("Error enviando a coordinación: " + err.message);
+    }
+  }
 
   // Extraer áreas y grados únicos para los selectores de filtro
   const areasDisponibles = useMemo(() => {
@@ -161,6 +187,23 @@ export default function MisPlanificaciones({
                 </div>
 
                 <div className="biblio-card-badges">
+                  {(() => {
+                    const badgeEstado = {
+                      enviada_revision: { bg: "#fffbeb", color: "#b45309", text: "⏳ En Revisión" },
+                      aprobada: { bg: "#f0fdf4", color: "#166534", text: "✅ Aprobada" },
+                      observada: { bg: "#faf5ff", color: "#7e22ce", text: "💬 Con Observaciones" },
+                      borrador: { bg: "#f1f5f9", color: "#475569", text: "📝 Borrador" }
+                    }[plan.estado || "borrador"] || { bg: "#f1f5f9", color: "#475569", text: "📝 Borrador" };
+
+                    return (
+                      <span
+                        className="biblio-badge"
+                        style={{ background: badgeEstado.bg, color: badgeEstado.color, fontWeight: "700" }}
+                      >
+                        {badgeEstado.text}
+                      </span>
+                    );
+                  })()}
                   <span className="biblio-badge badge-area">📚 {plan.area || "General"}</span>
                   <span className="biblio-badge badge-grado">🎓 {plan.grado || "Primaria"}</span>
                   <span className="biblio-badge badge-esquema">📋 {plan.esquemaLabel || "Esquema"}</span>
@@ -179,6 +222,17 @@ export default function MisPlanificaciones({
                   >
                     ✏️ Ver / Editar
                   </button>
+
+                  {plan.estado !== "enviada_revision" && plan.estado !== "aprobada" && (
+                    <button
+                      className="biblio-action-btn"
+                      onClick={(e) => handleEnviarACoordinacion(plan, e)}
+                      title="Enviar a Coordinación Pedagógica para revisión oficial"
+                      style={{ background: "#f0fdfa", color: "#0d9488", border: "1px solid #99f6e4", fontWeight: "600" }}
+                    >
+                      📤 Enviar
+                    </button>
+                  )}
 
                   <button
                     className="biblio-action-btn btn-duplicar"
@@ -216,6 +270,28 @@ export default function MisPlanificaciones({
                 {/* Vista previa expandida si se toca la tarjeta */}
                 {planSeleccionado?.id === plan.id && (
                   <div className="biblio-card-preview" onClick={(e) => e.stopPropagation()}>
+                    {plan.ultimaRevision && (
+                      <div style={{ background: "#f8fafc", border: "1px solid #cbd5e1", borderRadius: "8px", padding: "10px", marginBottom: "12px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                          <strong style={{ fontSize: "12px", color: plan.ultimaRevision.estado_revision === "aprobada" ? "#166534" : "#b45309" }}>
+                            {plan.ultimaRevision.estado_revision === "aprobada" ? "✓ Dictamen de Coordinación: Aprobada" : "⚠️ Dictamen de Coordinación: Con Observaciones"}
+                          </strong>
+                          <span style={{ fontSize: "11px", color: "#64748b" }}>
+                            {new Date(plan.ultimaRevision.fecha_revision).toLocaleDateString()}
+                          </span>
+                        </div>
+                        {plan.ultimaRevision.comentarios_generales && (
+                          <p style={{ margin: "4px 0", fontSize: "12px", color: "#334155" }}>
+                            {plan.ultimaRevision.comentarios_generales}
+                          </p>
+                        )}
+                        {plan.ultimaRevision.bloques_observados?.dua && (
+                          <p style={{ margin: "4px 0", fontSize: "12px", color: "#0f766e", fontStyle: "italic" }}>
+                            Sugerencias DUA: {plan.ultimaRevision.bloques_observados.dua}
+                          </p>
+                        )}
+                      </div>
+                    )}
                     <h5 className="preview-heading">Contenido del Esquema:</h5>
                     <div className="preview-campos-list">
                       {Object.entries(plan.datosPlanificacion || {}).map(([k, v]) => (

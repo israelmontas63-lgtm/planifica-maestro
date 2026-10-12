@@ -19,6 +19,7 @@ export function crearMenuContext(handlers = {}) {
     abrirCamaraInput,
     iniciarVozHandler,
     abrirBibliotecaHandler,
+    abrirCoordinacionHandler,
     abrirCurriculoHandler,
     abrirEsquemasHandler,
     abrirPerfilHandler,
@@ -148,6 +149,14 @@ export function crearMenuContext(handlers = {}) {
         return;
       }
       abrirBibliotecaHandler?.();
+    },
+    abrirCoordinacion: () => {
+      if (!user) {
+        setToastMsg?.("Inicia sesión para usar esta función");
+        abrirAuthHandler?.();
+        return;
+      }
+      abrirCoordinacionHandler?.();
     },
     abrirCurriculo: () => {
       abrirCurriculoHandler?.();

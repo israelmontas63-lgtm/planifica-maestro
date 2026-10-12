@@ -29,6 +29,7 @@ export default function Header({
   onAbrirAuth, 
   onAbrirOwnerModal, 
   onAbrirOwnerStats, 
+  onAbrirCoordinacion,
   estadoCuota,
   onInstallApp,
   onAbrirNotificaciones,
@@ -71,11 +72,13 @@ export default function Header({
     };
   }, [open]);
 
-  const localPerfil = (!user && open) ? (cargarPerfil() || {}) : {};
+  const localPerfil = open ? (cargarPerfil() || {}) : {};
   const nombre = user?.user_metadata?.nombre || user?.user_metadata?.full_name || localPerfil.nombre || "";
   const escuela = user?.user_metadata?.escuela || localPerfil.escuela || "";
   const email = user?.email || "";
   const avatarUrl = user?.user_metadata?.avatar_url || null;
+  const userRol = user?.user_metadata?.rol || localPerfil.rol || "docente";
+  const esSupervisor = isOwner || userRol === "coordinador_area" || userRol === "director" || userRol === "admin";
 
   // Cálculo de iniciales dinámicas para usuario autenticado
   const getInitials = () => {
@@ -214,6 +217,13 @@ export default function Header({
                     </button>
                     <button
                       type="button"
+                      style={{ color: "#0f766e", fontWeight: "700", background: "#f0fdfa" }}
+                      onClick={() => { setOpen(false); onAbrirCoordinacion?.(); }}
+                    >
+                      📋 Panel de Coordinación
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => { setOpen(false); onAbrirPerfil?.(); }}
                     >
                       👤 Perfil del Docente
@@ -251,6 +261,15 @@ export default function Header({
                   </div>
 
                   <div className="pm-profile-menu-items">
+                    {esSupervisor && (
+                      <button
+                        type="button"
+                        style={{ color: "#0f766e", fontWeight: "700", background: "#f0fdfa" }}
+                        onClick={() => { setOpen(false); onAbrirCoordinacion?.(); }}
+                      >
+                        📋 Panel de Coordinación
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => { setOpen(false); onAbrirPerfil?.(); }}
@@ -302,6 +321,15 @@ export default function Header({
                         onClick={() => { setOpen(false); onAbrirAuth?.(); }}
                       >
                         🔐 Iniciar Sesión / Registrarse
+                      </button>
+                    )}
+                    {esSupervisor && (
+                      <button
+                        type="button"
+                        style={{ color: "#0f766e", fontWeight: "700", background: "#f0fdfa" }}
+                        onClick={() => { setOpen(false); onAbrirCoordinacion?.(); }}
+                      >
+                        📋 Panel de Coordinación
                       </button>
                     )}
                     <button

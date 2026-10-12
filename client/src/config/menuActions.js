@@ -370,6 +370,18 @@ export const ACCIONES_MENU = {
     servicioWorker: "bibliotecaStorage (scoped por userId)",
     descripcion: "Historial de planificaciones guardadas del docente"
   },
+  panel_coordinacion: {
+    key: "panel_coordinacion",
+    label: "Supervisión Institucional",
+    seccion: "espacio",
+    requiereAuth: true,
+    requiereTabla: "planificaciones",
+    esPlanGeneral: false,
+    metodoCtx: "abrirCoordinacion",
+    endpointWorker: "/api/docente/supervision",
+    servicioWorker: "coordinacionService (Supervisión MINERD)",
+    descripcion: "Supervisión pedagógica y dictamen de planificaciones escolares"
+  },
   curriculo_nacional: {
     key: "curriculo_nacional",
     label: "Malla Curricular",

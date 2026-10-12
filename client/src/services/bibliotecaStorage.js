@@ -59,6 +59,7 @@ export function guardarPlanEnBiblioteca({
       nivel: nivel || "primario",
       periodo: periodo || "diaria",
       esquemaLabel: esquemaLabel || "Tradicional",
+      estado: (existingIndex !== -1 && lista[existingIndex].estado) || "borrador",
       fecha: new Date().toISOString(),
       datosPlanificacion: datosPlanificacion || {}
     };
@@ -73,6 +74,31 @@ export function guardarPlanEnBiblioteca({
     return registro;
   } catch (err) {
     console.error("Error guardando en biblioteca:", err);
+    return null;
+  }
+}
+
+export function actualizarEstadoPlanEnBiblioteca(id, nuevoEstado, revision, userId) {
+  const key = getStorageKey(userId);
+  if (!key) return null;
+
+  try {
+    const lista = obtenerTodasLasPlanificaciones(userId);
+    const idx = lista.findIndex((p) => p.id === id);
+    if (idx === -1) return null;
+
+    lista[idx].estado = nuevoEstado;
+    if (revision) {
+      lista[idx].ultimaRevision = revision;
+      if (!lista[idx].revisiones) lista[idx].revisiones = [];
+      lista[idx].revisiones.unshift(revision);
+    }
+    lista[idx].actualizado_en = new Date().toISOString();
+
+    localStorage.setItem(key, JSON.stringify(lista));
+    return lista[idx];
+  } catch (err) {
+    console.error("Error actualizando estado del plan en biblioteca:", err);
     return null;
   }
 }
