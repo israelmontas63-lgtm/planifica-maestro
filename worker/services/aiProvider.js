@@ -151,8 +151,8 @@ export class GeminiProvider extends AiProvider {
   }
 
   async generateChat({ messages, tools, systemInstruction, stream = false, responseMimeType = "text/plain" }) {
-    const endpoint = stream ? "streamGenerateContent?alt=sse&" : "generateContent?";
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:${endpoint}key=${this.apiKey}`;
+    const endpoint = stream ? "streamGenerateContent?alt=sse" : "generateContent";
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:${endpoint}`;
 
     const bodyPayload = {
       contents: messages,
@@ -174,16 +174,22 @@ export class GeminiProvider extends AiProvider {
 
     return fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": this.apiKey,
+      },
       body: JSON.stringify(bodyPayload),
     });
   }
 
   async embedContent({ text, dimensions = 768 }) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent?key=${this.apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent`;
     const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": this.apiKey,
+      },
       body: JSON.stringify({
         model: "models/text-embedding-004",
         content: { parts: [{ text }] },

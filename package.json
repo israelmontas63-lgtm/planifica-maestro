@@ -9,9 +9,11 @@
     "preview": "npm run preview --prefix client",
     "deploy": "node scripts/deploy.js",
     "indexar-curriculo": "node scripts/extraer_textos.js && node scripts/estructurar_curriculo.js && node scripts/indexar_curriculo.js",
-    "test": "node scripts/run_tests.js",
+    "guardia": "node scripts/guardia.js",
+    "escanear-secretos": "node scripts/escanear_secretos.js",
+    "test": "node scripts/guardia.js && node scripts/escanear_secretos.js && node scripts/run_tests.js",
     "test:client": "npm test --prefix client",
-    "test:all": "node scripts/run_tests.js && npm test --prefix client"
+    "test:all": "node scripts/guardia.js && node scripts/escanear_secretos.js && node scripts/run_tests.js && npm test --prefix client"
   },
   "devDependencies": {
     "pdf-parse": "^2.4.5",

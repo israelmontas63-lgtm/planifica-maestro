@@ -6,9 +6,9 @@ test("PRUEBAS DE SERVICIO Y ENDPOINT /api/transcribir", async (t) => {
   const worker = workerModule.default;
 
   const mockEnv = {
-    APP_ACCESS_KEY: "RD-Maestro-8492",
-    OWNER_MASTER_KEY: "llave_maestra_test_123",
-    GEMINI_API_KEY: "test_gemini_key",
+    APP_ACCESS_KEY: process.env.APP_ACCESS_KEY || "pm_test_app_access_key_env",
+    OWNER_MASTER_KEY: process.env.OWNER_MASTER_KEY || "llave_maestra_test_123",
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY || "test_gemini_key",
     GEMINI_MODEL: "gemini-3.1-flash-lite",
   };
 
@@ -45,7 +45,7 @@ test("PRUEBAS DE SERVICIO Y ENDPOINT /api/transcribir", async (t) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-app-key": "RD-Maestro-8492",
+        "x-app-key": mockEnv.APP_ACCESS_KEY,
       },
       body: JSON.stringify({}),
     });
@@ -63,7 +63,7 @@ test("PRUEBAS DE SERVICIO Y ENDPOINT /api/transcribir", async (t) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-app-key": "RD-Maestro-8492",
+        "x-app-key": mockEnv.APP_ACCESS_KEY,
       },
       body: JSON.stringify({ audioBase64: oversizedBase64 }),
     });

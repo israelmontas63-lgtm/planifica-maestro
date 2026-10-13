@@ -147,6 +147,45 @@ function timingSafeEqualStr(a, b) {
   return diff === 0;
 }
 
+/**
+ * Función única de redacción y enmascaramiento de secretos en logs y errores.
+ * Garantiza que ninguna API key, token o credencial se filtre jamás.
+ */
+export function enmascararSecretos(texto, env = null) {
+  if (texto === null || texto === undefined) return texto;
+  let saneado = typeof texto === "string" ? texto : String(texto);
+
+  saneado = saneado
+    .replace(/AQ\.[A-Za-z0-9_-]{20,}/g, "[OCULTO]")
+    .replace(/AIza[0-9A-Za-z-_]{30,}/g, "[OCULTO]")
+    .replace(/gsk_[0-9A-Za-z]{30,}/g, "[OCULTO]")
+    .replace(/sk-or-v1-[0-9A-Za-z]{30,}/g, "[OCULTO]")
+    .replace(/sk-[0-9A-Za-z]{30,}/g, "[OCULTO]")
+    .replace(/cfat_[0-9A-Za-z]{25,}/g, "[OCULTO]")
+    .replace(/tvly-[0-9A-Za-z-_]{25,}/g, "[OCULTO]")
+    .replace(/RD-Maestro-[0-9]+/g, "[OCULTO]");
+
+  if (env && typeof env === "object") {
+    const keysToCheck = [
+      env.GEMINI_API_KEY,
+      env.GROQ_API_KEY,
+      env.OPENROUTER_API_KEY,
+      env.ELEVENLABS_API_KEY,
+      env.TAVILY_API_KEY,
+      env.APP_ACCESS_KEY,
+      env.OWNER_MASTER_KEY,
+      env.SUPABASE_SERVICE_ROLE_KEY,
+      env.CLOUDFLARE_API_TOKEN,
+    ];
+    for (const k of keysToCheck) {
+      if (typeof k === "string" && k.length > 5) {
+        saneado = saneado.replaceAll(k, "[OCULTO]");
+      }
+    }
+  }
+  return saneado;
+}
+
 function generarCodigoSeguro(longitud = 6) {
   const bytes = new Uint8Array(longitud);
   crypto.getRandomValues(bytes);
@@ -766,17 +805,19 @@ async function handleApiRequest(request, env, ctx) {
 
   function generarErrorPlanificacion(codigo, mensaje, sugerencia, reintentable = true, status = 200, cuota = null) {
     const incidentId = "INC-" + generarCodigoSeguro(6);
-    console.warn(`[PlanError ${incidentId}] ${codigo} - ${mensaje}`);
+    const mensajeLimpio = enmascararSecretos(mensaje, env);
+    const sugerenciaLimpia = enmascararSecretos(sugerencia, env);
+    console.warn(`[PlanError ${incidentId}] ${codigo} - ${mensajeLimpio}`);
     const payload = {
       ok: false,
       codigo,
-      mensaje,
-      sugerencia,
+      mensaje: mensajeLimpio,
+      sugerencia: sugerenciaLimpia,
       reintentable,
       incidentId,
-      mensaje_chat: `${mensaje}
+      mensaje_chat: `${mensajeLimpio}
 
-💡 Sugerencia: ${sugerencia}`,
+💡 Sugerencia: ${sugerenciaLimpia}`,
       plan_completado: false
     };
     if (cuota) payload.cuota = cuota;
@@ -2697,10 +2738,13 @@ Genera un JSON estricto con:
       const modelosGemini = [env.GEMINI_MODEL || "gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
       for (const modelo of modelosGemini) {
         try {
-          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${env.GEMINI_API_KEY}`;
+          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`;
           const gRes = await fetch(geminiUrl, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": env.GEMINI_API_KEY
+            },
             body: JSON.stringify({
               contents: [{
                 role: "user",
@@ -2876,10 +2920,13 @@ Genera un JSON estricto con:
         const cleanBase64 = (imagen || "").replace(/^data:[^;]+;base64,/, "");
         const mimeType = (imagen && imagen.startsWith("data:")) ? imagen.split(";")[0].replace("data:", "") : "image/jpeg";
 
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${env.GEMINI_API_KEY}`;
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`;
         const gRes = await fetch(geminiUrl, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": env.GEMINI_API_KEY
+          },
           body: JSON.stringify({
             contents: [{
               role: "user",
