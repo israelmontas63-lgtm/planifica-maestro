@@ -16,6 +16,9 @@ import { tieneIntencionExplicita, identificarImagenWorker, getGeminiVisionModels
 import { corregirTextoPedagogico } from "./correctorTexto.js";
 import { verificarYSanearCitas } from "./verificadorCitas.js";
 import { extraerJson, mensajeParaChat, validarCamposPlanificacion, repararJsonTruncado, extraerBloquesCompletados, planEsRecuperable } from "./parseadorJsonSeguro.js";
+import { evaluarPoliticaDignidad } from "./politicaDignidadImagen.js";
+import { obtenerOperacionPorId } from "./catalogoEdicionImagen.js";
+
 
 /**
  * Planifica Maestro - Cloudflare Worker Backend
@@ -567,8 +570,9 @@ async function verificarTopesMultinivel({ deviceId, clientIp, env, isOwner }) {
   };
 }
 
-async function consumirCuota(env, docenteId, isOwner, clientIp = "127.0.0.1") {
+async function consumirCuota(env, docenteId, isOwner, clientIp = "127.0.0.1", peso = 1) {
   if (isOwner) return consultarCuota(env, docenteId, true, clientIp);
+  const pesoEfectivo = Math.max(1, Math.floor(peso || 1));
 
   const esModoCerrado = env && (env.ACCESO_ABIERTO === "false" || env.REQUIRE_ACCESS_KEY === "true");
   if (esModoCerrado && env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -592,7 +596,7 @@ async function consumirCuota(env, docenteId, isOwner, clientIp = "127.0.0.1") {
               Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ usadas: (row.usadas || 0) + 1, updated_at: new Date().toISOString() }),
+            body: JSON.stringify({ usadas: (row.usadas || 0) + pesoEfectivo, updated_at: new Date().toISOString() }),
           });
           return consultarCuota(env, docenteId, false, clientIp);
         }
@@ -615,13 +619,13 @@ async function consumirCuota(env, docenteId, isOwner, clientIp = "127.0.0.1") {
       const gKey = `rl_global_${fechaHoy}`;
       const gVal = await env.RATE_LIMIT_KV.get(gKey);
       const gCount = gVal ? parseInt(gVal, 10) : 0;
-      await env.RATE_LIMIT_KV.put(gKey, (gCount + 1).toString(), { expirationTtl: ttlSeconds });
+      await env.RATE_LIMIT_KV.put(gKey, (gCount + pesoEfectivo).toString(), { expirationTtl: ttlSeconds });
     } catch (e) {}
   } else {
     if (globalDailyCounter.date !== fechaHoy) {
       globalDailyCounter = { date: fechaHoy, count: 0 };
     }
-    globalDailyCounter.count++;
+    globalDailyCounter.count += pesoEfectivo;
   }
 
   // Consumir IP
@@ -638,7 +642,7 @@ async function consumirCuota(env, docenteId, isOwner, clientIp = "127.0.0.1") {
       const ipKey = `rl_ip_${ipHashHex}`;
       const ipVal = await env.RATE_LIMIT_KV.get(ipKey);
       const ipCount = ipVal ? parseInt(ipVal, 10) : 0;
-      await env.RATE_LIMIT_KV.put(ipKey, (ipCount + 1).toString(), { expirationTtl: ttlSeconds });
+      await env.RATE_LIMIT_KV.put(ipKey, (ipCount + pesoEfectivo).toString(), { expirationTtl: ttlSeconds });
     } catch (e) {}
   } else {
     let ipEntry = ipDailyRateLimit.get(ipHashHex);
@@ -646,7 +650,7 @@ async function consumirCuota(env, docenteId, isOwner, clientIp = "127.0.0.1") {
       ipEntry = { count: 0, resetAt };
       ipDailyRateLimit.set(ipHashHex, ipEntry);
     }
-    ipEntry.count++;
+    ipEntry.count += pesoEfectivo;
   }
 
   // Consumir Dispositivo
@@ -666,7 +670,7 @@ async function consumirCuota(env, docenteId, isOwner, clientIp = "127.0.0.1") {
       const devKey = `rl_dev_${devHashHex}`;
       const devVal = await env.RATE_LIMIT_KV.get(devKey);
       const devCount = devVal ? parseInt(devVal, 10) : 0;
-      await env.RATE_LIMIT_KV.put(devKey, (devCount + 1).toString(), { expirationTtl: ttlSeconds });
+      await env.RATE_LIMIT_KV.put(devKey, (devCount + pesoEfectivo).toString(), { expirationTtl: ttlSeconds });
     } catch (e) {}
   } else {
     let devEntry = deviceDailyRateLimit.get(devHashHex);
@@ -674,7 +678,7 @@ async function consumirCuota(env, docenteId, isOwner, clientIp = "127.0.0.1") {
       devEntry = { count: 0, resetAt };
       deviceDailyRateLimit.set(devHashHex, devEntry);
     }
-    devEntry.count++;
+    devEntry.count += pesoEfectivo;
   }
 
   return consultarCuota(env, docenteId, false, clientIp);
@@ -2734,6 +2738,198 @@ Genera un JSON estricto con:
     return new Response(JSON.stringify({ ok: false, error: "No se pudo transcribir el audio." }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // 12.6. POST /api/imagen/editar (Edición de imágenes con política de dignidad, cuota y motor local/IA)
+  if (path === "/api/imagen/editar" && method === "POST") {
+    // 1. Verificación unificada de acceso institucional (Fail-Closed)
+    const auth = requerirAcceso(request, env, corsHeaders);
+    if (auth.errorResponse) return auth.errorResponse;
+    const isOwner = auth.isOwner;
+
+    // 2. Parsear cuerpo de la petición
+    const body = await request.json().catch(() => ({}));
+    const { imagen, operacionId, instruccion, parametros = {}, confirmadoPorUsuario } = body;
+
+    if (!imagen && !operacionId && !instruccion) {
+      return new Response(JSON.stringify({ ok: false, error: "Se requiere imagen u operacionId o instruccion." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // 3. Evaluar Política de Dignidad primero (Fail-Closed)
+    const evaluacionDignidad = evaluarPoliticaDignidad({
+      texto: `${instruccion || ""} ${operacionId || ""}`,
+      operacionId
+    });
+
+    if (evaluacionDignidad.veredicto === "BLOQUEADO") {
+      // Rechazo ético inmediato: CERO procesamiento, CERO llamadas a IA externa
+      const protocoloEfectivo = evaluacionDignidad.casoEspecialMenorEnRiesgo
+        ? "CONANI / Línea Vida (809-200-1202)"
+        : (evaluacionDignidad.protocolo || null);
+
+      return new Response(JSON.stringify({
+        ok: false,
+        bloqueadoPorDignidad: true,
+        veredicto: "BLOQUEADO",
+        categoria: evaluacionDignidad.categoria || (evaluacionDignidad.casoEspecialMenorEnRiesgo ? "infancia_proteccion_menores" : "dignidad_imagen"),
+        motivo: evaluacionDignidad.motivo,
+        razon: evaluacionDignidad.motivo,
+        protocolo: protocoloEfectivo,
+        lineaAyuda: protocoloEfectivo,
+        casoEspecialMenorEnRiesgo: evaluacionDignidad.casoEspecialMenorEnRiesgo || false,
+        mensaje: evaluacionDignidad.mensajeRespetuoso || "Esta solicitud de edición de imagen ha sido bloqueada por la Política de Dignidad y Protección de Menores.",
+        evaluacion: evaluacionDignidad
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    if (evaluacionDignidad.veredicto === "CONFIRMAR" && !confirmadoPorUsuario) {
+      return new Response(JSON.stringify({
+        ok: false,
+        requiereConfirmacion: true,
+        veredicto: "CONFIRMAR",
+        advertencia: evaluacionDignidad.mensajeRespetuoso || evaluacionDignidad.advertencia,
+        mensaje: evaluacionDignidad.mensajeRespetuoso || evaluacionDignidad.advertencia || "Esta operación requiere confirmación pedagógica del docente."
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // 4. Determinar operación del catálogo y peso de cuota
+    const operacion = operacionId ? obtenerOperacionPorId(operacionId) : null;
+    const pesoCuota = operacion?.pesoCuota || (operacion?.motor === "ia" ? 3 : 1);
+    const docenteId = request.headers.get("x-docente-id") || "docente_default";
+
+    // Verificar límites de cuota (diaria por dispositivo / IP / global)
+    const cheqCuota = await verificarTopesMultinivel({
+      deviceId: docenteId,
+      clientIp,
+      env,
+      isOwner,
+    });
+    if (!cheqCuota.permitido) {
+      return new Response(JSON.stringify({
+        ok: false,
+        error: cheqCuota.error || "Has alcanzado tu cuota de uso para este periodo.",
+        limiteAlcanzado: true,
+        agotado: true,
+        cuota: cheqCuota.cuota
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // 5. Motor IA vs Local (Arranque apagado por defecto: IMAGEN_IA_ACTIVA=false)
+    const iaActiva = (env && (env.IMAGEN_IA_ACTIVA === "true" || env.IMAGEN_IA_ACTIVA === "1")) || false;
+    const requiereIA = operacion?.motor === "ia" || (!operacion && Boolean(instruccion));
+
+    if (!requiereIA || !iaActiva || !env.GEMINI_API_KEY) {
+      if (requiereIA && (!iaActiva || !env.GEMINI_API_KEY)) {
+        return new Response(JSON.stringify({
+          ok: false,
+          motor: "ia",
+          estadoIa: "apagado por falta de facturación",
+          mensaje: "El motor de IA para imágenes está actualmente apagado por falta de facturación. Puedes utilizar las funciones del motor local.",
+          fallbackLocalSugerido: true,
+          operacion: operacion || null
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      // Procesar vía motor local (o devolver instrucción de procesamiento local en cliente)
+      await consumirCuota(env, docenteId, isOwner, clientIp, pesoCuota);
+      return new Response(JSON.stringify({
+        ok: true,
+        motor: "local",
+        operacionId: operacion?.id || operacionId,
+        mensaje: "Operación procesada con éxito por el motor local.",
+        cuotaDescontada: pesoCuota
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // 6. Si IA está activa, invocar familia de modelos de imagen de Gemini API
+    const MODELOS_IMAGEN_GEMINI = [
+      "gemini-3.1-flash-lite-image",
+      "gemini-nano-banana-2.1",
+      "gemini-3.1-flash-image",
+      "gemini-3-pro-image",
+      "gemini-2.5-flash-image"
+    ];
+
+    let respuestaIA = null;
+    let modeloUsado = null;
+
+    for (const modelo of MODELOS_IMAGEN_GEMINI) {
+      try {
+        const cleanBase64 = (imagen || "").replace(/^data:[^;]+;base64,/, "");
+        const mimeType = (imagen && imagen.startsWith("data:")) ? imagen.split(";")[0].replace("data:", "") : "image/jpeg";
+
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${env.GEMINI_API_KEY}`;
+        const gRes = await fetch(geminiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{
+              role: "user",
+              parts: [
+                ...(cleanBase64 ? [{ inlineData: { mimeType, data: cleanBase64 } }] : []),
+                { text: instruccion || operacion?.descripcion || "Edita esta imagen para uso pedagógico escolar." }
+              ]
+            }]
+          })
+        });
+
+        if (gRes.status === 429 || gRes.status === 403) {
+          continue;
+        }
+
+        if (gRes.ok) {
+          const gData = await gRes.json();
+          respuestaIA = gData;
+          modeloUsado = modelo;
+          break;
+        }
+      } catch (errG) {
+        console.warn(`Error llamando a modelo imagen ${modelo}:`, errG.message);
+      }
+    }
+
+    if (!respuestaIA) {
+      return new Response(JSON.stringify({
+        ok: false,
+        motor: "ia",
+        estadoIa: "apagado por falta de facturación",
+        error: "El motor de IA para imágenes no pudo procesar la solicitud debido a facturación inactiva en la API de Google.",
+        fallbackDisponible: true
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // Descontar cuota ponderada
+    await consumirCuota(env, docenteId, isOwner, clientIp, pesoCuota);
+
+    return new Response(JSON.stringify({
+      ok: true,
+      motor: "ia",
+      modelo: modeloUsado,
+      resultado: respuestaIA,
+      cuotaDescontada: pesoCuota
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   }
 

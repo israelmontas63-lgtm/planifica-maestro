@@ -155,10 +155,11 @@ const PATRONES_PERMITIDO_SEGURO = [
  * @param {string} [params.textoContexto] - Contexto pedagógico adicional.
  * @returns {Object} Veredicto y metadatos pedagógicos.
  */
-export function evaluarPoliticaDignidad({ instruccion = "", textoContexto = "" }) {
-  const texto = `${instruccion} ${textoContexto}`.trim();
+export function evaluarPoliticaDignidad(peticion = {}) {
+  const { instruccion = "", texto: textoParam = "", textoContexto = "", operacionId = "" } = peticion;
+  const textoAEvaluar = `${instruccion} ${textoParam} ${textoContexto} ${operacionId}`.trim();
 
-  if (!texto) {
+  if (!textoAEvaluar) {
     return {
       veredicto: VEREDICTOS_POLITICA.PERMITIDO,
       motivo: "Sin instrucción de edición específica.",
@@ -169,6 +170,8 @@ export function evaluarPoliticaDignidad({ instruccion = "", textoContexto = "" }
       sugerenciaAlternativa: null
     };
   }
+
+  const texto = textoAEvaluar;
 
   // 1. CASO ESPECIAL: Menor en riesgo o vulnerabilidad
   for (const rx of PATRONES_MENOR_EN_RIESGO) {
