@@ -137,6 +137,7 @@ export default function App() {
   const [cambiandoARespaldo, setCambiandoARespaldo] = useState(false);
   const timerRespaldoRef = useRef(null);
   const [streamingText, setStreamingText] = useState("");
+  const [bloquesProgresivos, setBloquesProgresivos] = useState({});
   const [modoOperacion, setModoOperacion] = useState("pensando");
   const [errorGeneracion, setErrorGeneracion] = useState(null);
   const abortControllerRef = useRef(null);
@@ -433,6 +434,7 @@ export default function App() {
     setCargando(true);
     setCambiandoARespaldo(false);
     setStreamingText("");
+    setBloquesProgresivos({});
     setModoOperacion("pensando");
     abortControllerRef.current = new AbortController();
 
@@ -449,9 +451,15 @@ export default function App() {
         forzarOriginal: Boolean(opcionesExtra.forzarOriginal),
         confirmado: Boolean(opcionesExtra.confirmado),
         signal: abortControllerRef.current.signal,
-        onChunk: (delta, accumulated, estado) => {
-          setStreamingText(accumulated);
+        onChunk: (delta, accumulated, estado, bloqueData) => {
+          if (accumulated) setStreamingText(accumulated);
           if (estado) setModoOperacion(estado);
+          if (bloqueData && bloqueData.tipo === "bloque") {
+            setBloquesProgresivos((prev) => ({
+              ...prev,
+              [bloqueData.bloque]: bloqueData.contenido,
+            }));
+          }
         },
       });
 
@@ -1583,7 +1591,7 @@ export default function App() {
                   : (modoOperacion === "charla" || modoOperacion === "conversando"
                       ? (streamingText ? "conversando con el profe…" : "pensando…")
                       : (modoOperacion === "curriculo"
-                          ? (streamingText ? "organizando los momentos de la clase…" : "estoy buscando en el currículo…")
+                          ? (streamingText || Object.keys(bloquesProgresivos).length > 0 ? "organizando la planificación curricular…" : "estoy buscando en el currículo…")
                           : (streamingText ? "organizando la respuesta…" : "pensando…")))}
               </span>
               <button
@@ -1595,7 +1603,89 @@ export default function App() {
                 ✕ Cancelar
               </button>
             </div>
-            {streamingText && !streamingText.trim().startsWith("{") && (
+
+            {/* Mensaje conversacional si se emitió antes de los bloques */}
+            {bloquesProgresivos.mensaje_chat && (
+              <div className="pm-streaming-chat-intro">
+                {bloquesProgresivos.mensaje_chat}
+              </div>
+            )}
+
+            {/* Bloques progresivos estructurados a medida que llegan */}
+            {Object.keys(bloquesProgresivos).filter((k) => k !== "mensaje_chat").length > 0 && (
+              <div className="pm-bloques-progresivos">
+                {bloquesProgresivos.datos_generales && (
+                  <div className="pm-bloque-card pm-bloque-datos-generales">
+                    <div className="pm-bloque-badge">📋 Datos Generales (listos)</div>
+                    <div className="pm-bloque-content">
+                      {typeof bloquesProgresivos.datos_generales === "object"
+                        ? Object.entries(bloquesProgresivos.datos_generales).map(([k, v]) => (
+                            <div key={k} className="pm-bloque-item">
+                              <strong>{k.replace(/_/g, " ")}:</strong>{" "}
+                              {typeof v === "object" ? JSON.stringify(v) : String(v)}
+                            </div>
+                          ))
+                        : String(bloquesProgresivos.datos_generales)}
+                    </div>
+                  </div>
+                )}
+                {bloquesProgresivos.intencion_pedagogica && (
+                  <div className="pm-bloque-card pm-bloque-intencion">
+                    <div className="pm-bloque-badge">🎯 Intención Pedagógica y Competencias</div>
+                    <div className="pm-bloque-content">
+                      {typeof bloquesProgresivos.intencion_pedagogica === "object"
+                        ? JSON.stringify(bloquesProgresivos.intencion_pedagogica, null, 2)
+                        : String(bloquesProgresivos.intencion_pedagogica)}
+                    </div>
+                  </div>
+                )}
+                {bloquesProgresivos.momentos && (
+                  <div className="pm-bloque-card pm-bloque-momentos">
+                    <div className="pm-bloque-badge">⏱️ Secuencia Didáctica / Momentos</div>
+                    <div className="pm-bloque-content">
+                      {typeof bloquesProgresivos.momentos === "object"
+                        ? Object.entries(bloquesProgresivos.momentos).map(([m, desc]) => (
+                            <div key={m} className="pm-momento-item">
+                              <span className="pm-momento-title">{m.toUpperCase()}:</span>{" "}
+                              {typeof desc === "object" ? JSON.stringify(desc) : String(desc)}
+                            </div>
+                          ))
+                        : String(bloquesProgresivos.momentos)}
+                    </div>
+                  </div>
+                )}
+                {bloquesProgresivos.actividades && !bloquesProgresivos.momentos && (
+                  <div className="pm-bloque-card pm-bloque-actividades">
+                    <div className="pm-bloque-badge">📝 Actividades de Aprendizaje</div>
+                    <div className="pm-bloque-content">
+                      {typeof bloquesProgresivos.actividades === "object"
+                        ? JSON.stringify(bloquesProgresivos.actividades, null, 2)
+                        : String(bloquesProgresivos.actividades)}
+                    </div>
+                  </div>
+                )}
+                {bloquesProgresivos.evaluacion && (
+                  <div className="pm-bloque-card pm-bloque-evaluacion">
+                    <div className="pm-bloque-badge">📊 Evaluación e Indicadores</div>
+                    <div className="pm-bloque-content">
+                      {typeof bloquesProgresivos.evaluacion === "object"
+                        ? JSON.stringify(bloquesProgresivos.evaluacion, null, 2)
+                        : String(bloquesProgresivos.evaluacion)}
+                    </div>
+                  </div>
+                )}
+                <div className="pm-bloques-pendientes">
+                  {!bloquesProgresivos.momentos && !bloquesProgresivos.actividades && (
+                    <span className="pm-chip-pendiente">✍️ Redactando momentos pedagógicos…</span>
+                  )}
+                  {!bloquesProgresivos.evaluacion && (
+                    <span className="pm-chip-pendiente">📐 Alineando indicadores de logro…</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {streamingText && !streamingText.trim().startsWith("{") && Object.keys(bloquesProgresivos).length === 0 && (
               <div className="pm-streaming-text">
                 {streamingText}
               </div>

@@ -1,0 +1,218 @@
+[
+  {
+    "pedido": "Ciencias Sociales 3.º (Relieve)",
+    "repeticion": 1,
+    "primerFragMs": 1,
+    "primerBloqueMs": 157,
+    "totalMs": 2370,
+    "frags": 14,
+    "bloques": [
+      {
+        "bloque": "mensaje_chat",
+        "ms": 157
+      },
+      {
+        "bloque": "datos_generales",
+        "ms": 327
+      },
+      {
+        "bloque": "intencion_pedagogica",
+        "ms": 532
+      },
+      {
+        "bloque": "contenidos",
+        "ms": 954
+      },
+      {
+        "bloque": "estrategias",
+        "ms": 1081
+      },
+      {
+        "bloque": "actividades",
+        "ms": 1885
+      },
+      {
+        "bloque": "recursos",
+        "ms": 2001
+      },
+      {
+        "bloque": "evaluacion",
+        "ms": 2198
+      },
+      {
+        "bloque": "nivel_certeza",
+        "ms": 2249
+      },
+      {
+        "bloque": "bloques_aproximados",
+        "ms": 2249
+      },
+      {
+        "bloque": "nota_revision",
+        "ms": 2326
+      }
+    ]
+  },
+  {
+    "pedido": "Ciencias Sociales 3.º (Relieve)",
+    "repeticion": 2,
+    "primerFragMs": 0,
+    "primerBloqueMs": 1,
+    "totalMs": 1,
+    "frags": 4,
+    "bloques": []
+  },
+  {
+    "pedido": "Ciencias Sociales 3.º (Relieve)",
+    "repeticion": 3,
+    "primerFragMs": 0,
+    "primerBloqueMs": 0,
+    "totalMs": 0,
+    "frags": 4,
+    "bloques": []
+  },
+  {
+    "pedido": "Matemática 2do (Sumas)",
+    "repeticion": 1,
+    "primerFragMs": 0,
+    "primerBloqueMs": 148,
+    "totalMs": 2385,
+    "frags": 14,
+    "bloques": [
+      {
+        "bloque": "mensaje_chat",
+        "ms": 148
+      },
+      {
+        "bloque": "datos_generales",
+        "ms": 353
+      },
+      {
+        "bloque": "intencion_pedagogica",
+        "ms": 511
+      },
+      {
+        "bloque": "contenidos",
+        "ms": 892
+      },
+      {
+        "bloque": "estrategias",
+        "ms": 1053
+      },
+      {
+        "bloque": "momentos",
+        "ms": 1884
+      },
+      {
+        "bloque": "recursos",
+        "ms": 1989
+      },
+      {
+        "bloque": "evaluacion",
+        "ms": 2188
+      },
+      {
+        "bloque": "nivel_certeza",
+        "ms": 2300
+      },
+      {
+        "bloque": "bloques_aproximados",
+        "ms": 2300
+      },
+      {
+        "bloque": "nota_revision",
+        "ms": 2320
+      }
+    ]
+  },
+  {
+    "pedido": "Matemática 2do (Sumas)",
+    "repeticion": 2,
+    "primerFragMs": 0,
+    "primerBloqueMs": 1,
+    "totalMs": 1,
+    "frags": 4,
+    "bloques": []
+  },
+  {
+    "pedido": "Matemática 2do (Sumas)",
+    "repeticion": 3,
+    "primerFragMs": 1,
+    "primerBloqueMs": 1,
+    "totalMs": 1,
+    "frags": 4,
+    "bloques": []
+  },
+  {
+    "pedido": "Multigrado Lengua Española (1.º y 2.º)",
+    "repeticion": 1,
+    "primerFragMs": 0,
+    "primerBloqueMs": 234,
+    "totalMs": 3455,
+    "frags": 14,
+    "bloques": [
+      {
+        "bloque": "mensaje_chat",
+        "ms": 234
+      },
+      {
+        "bloque": "1. Identificación y Contexto (Centro educativo, Docente, Grado, Sección, Área, Fecha, Tiempo)",
+        "ms": 569
+      },
+      {
+        "bloque": "2. Situación de Aprendizaje (Problema del contexto, Desafío o Pregunta generadora)",
+        "ms": 878
+      },
+      {
+        "bloque": "intencion_pedagogica",
+        "ms": 1131
+      },
+      {
+        "bloque": "evaluacion",
+        "ms": 1230
+      },
+      {
+        "bloque": "contenidos",
+        "ms": 1602
+      },
+      {
+        "bloque": "recursos",
+        "ms": 3110
+      },
+      {
+        "bloque": "estrategias",
+        "ms": 3203
+      },
+      {
+        "bloque": "nivel_certeza",
+        "ms": 3290
+      },
+      {
+        "bloque": "bloques_aproximados",
+        "ms": 3351
+      },
+      {
+        "bloque": "nota_revision",
+        "ms": 3426
+      }
+    ]
+  },
+  {
+    "pedido": "Multigrado Lengua Española (1.º y 2.º)",
+    "repeticion": 2,
+    "primerFragMs": 0,
+    "primerBloqueMs": 1,
+    "totalMs": 1,
+    "frags": 4,
+    "bloques": []
+  },
+  {
+    "pedido": "Multigrado Lengua Española (1.º y 2.º)",
+    "repeticion": 3,
+    "primerFragMs": 0,
+    "primerBloqueMs": 0,
+    "totalMs": 0,
+    "frags": 4,
+    "bloques": []
+  }
+]

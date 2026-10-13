@@ -3986,6 +3986,87 @@ body {
   word-break: break-word;
 }
 
+.pm-streaming-chat-intro {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-left: 3px solid #1a7d8c;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.pm-bloques-progresivos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.pm-bloque-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  animation: pmFadeIn 0.25s ease-out;
+}
+
+.pm-bloque-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #0f766e;
+  background: #ccfbf1;
+  padding: 2px 8px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+
+.pm-bloque-content {
+  font-size: 0.875rem;
+  color: #1e293b;
+  line-height: 1.45;
+}
+
+.pm-bloque-item {
+  margin-bottom: 3px;
+}
+
+.pm-momento-item {
+  margin-bottom: 4px;
+}
+
+.pm-momento-title {
+  font-weight: 700;
+  color: #0369a1;
+}
+
+.pm-bloques-pendientes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.pm-chip-pendiente {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 4px 10px;
+  border-radius: 12px;
+  animation: pmPulse 1.8s infinite ease-in-out;
+}
+
+@keyframes pmPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
 /* Tarjeta de Error Amigable con Reintentar */
 .pm-error-card {
   background: #fff1f2;

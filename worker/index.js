@@ -8,13 +8,14 @@ import { buscarEnGlosario } from "./glosarioDocente.js";
 import {
   generarClaveCurricularSha256,
   obtenerRespuestaDeCache,
+  obtenerRespuestaDeKv,
   guardarRespuestaEnCache,
   esRespuestaCacheable
 } from "./cacheRespuestas.js";
 import { tieneIntencionExplicita, identificarImagenWorker, getGeminiVisionModels, analizarCalidadImagen } from "./ojoDigital.js";
 import { corregirTextoPedagogico } from "./correctorTexto.js";
 import { verificarYSanearCitas } from "./verificadorCitas.js";
-import { extraerJson, mensajeParaChat, validarCamposPlanificacion } from "./parseadorJsonSeguro.js";
+import { extraerJson, mensajeParaChat, validarCamposPlanificacion, repararJsonTruncado, extraerBloquesCompletados, planEsRecuperable } from "./parseadorJsonSeguro.js";
 
 /**
  * Planifica Maestro - Cloudflare Worker Backend
@@ -1522,21 +1523,22 @@ async function handleApiRequest(request, env, ctx) {
     const esquema = LEVELS[nivel] || LEVELS["primario"];
     const instruccionesTemporal = PROFUNDIDAD_TEMPORAL[periodo] || PROFUNDIDAD_TEMPORAL["diaria"];
 
-    // Caché segura en memoria (SHA-256 curricular sin datos personales)
+    // Caché segura en memoria y KV (SHA-256 curricular sin datos personales)
     const claveCache = (!imageBase64 && textoConsulta)
       ? await generarClaveCurricularSha256({
           grado: body.grado || "",
           area: body.area || "",
           tema: textoConsulta,
           nivel: nivel || "primario",
-          periodo: periodo || "diaria",
-          perfilDocente: body.perfilDocente || null,
-          docenteId: resolvedDocenteId
+          periodo: periodo || "diaria"
         })
       : null;
 
     if (claveCache) {
-      const respCache = obtenerRespuestaDeCache(claveCache);
+      let respCache = obtenerRespuestaDeCache(claveCache);
+      if (!respCache && env && (env.CACHE_KV || env.CURRICULO_KV)) {
+        respCache = await obtenerRespuestaDeKv(claveCache, env);
+      }
       if (respCache) {
         return responderWorker({
           data: {
@@ -1624,10 +1626,24 @@ async function handleApiRequest(request, env, ctx) {
       }
     }
 
+    // Poda curricular relevante de ciclos y áreas
+    let ciclosTexto = esquema.ciclos.join(", ");
+    if (body.grado) {
+      const gNorm = body.grado.toLowerCase();
+      const ciclosFiltrados = esquema.ciclos.filter(c => c.toLowerCase().includes(gNorm.slice(0, 3)));
+      if (ciclosFiltrados.length > 0) ciclosTexto = ciclosFiltrados.join(", ");
+    }
+    let areasTexto = esquema.areas.join(", ");
+    if (body.area) {
+      const aNorm = body.area.toLowerCase();
+      const areasFiltradas = esquema.areas.filter(a => a.toLowerCase().includes(aNorm) || aNorm.includes(a.toLowerCase()));
+      if (areasFiltradas.length > 0) areasTexto = areasFiltradas.join(", ");
+    }
+
     const dynamicPrompt = `${SYSTEM_PROMPT}
 ## ESQUEMA SELECCIONADO: ${esquema.label}
-- Ciclos: ${esquema.ciclos.join(", ")}
-- Áreas: ${esquema.areas.join(", ")}
+- Ciclo relevante: ${ciclosTexto}
+- Área relevante: ${areasTexto}
 ${instruccionesTemporal}
 ${groundingConBase}
 ${directivaBorrador}
@@ -1744,6 +1760,11 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
         (async () => {
           let fullText = "";
           let corteOcurrio = null;
+          const bloquesEmitidos = new Set();
+          const streamingProgresivo = (env && env.STREAMING_PROGRESIVO !== undefined)
+            ? (env.STREAMING_PROGRESIVO === "true" || env.STREAMING_PROGRESIVO === true)
+            : true;
+
           try {
             await writer.write(encoder.encode(`data: ${JSON.stringify({ estado: "curriculo" })}\n\n`));
             while (true) {
@@ -1765,6 +1786,12 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                       const part = cand?.content?.parts?.[0]?.text;
                       if (part) {
                         fullText += part;
+                        if (streamingProgresivo) {
+                          const nuevosBloques = extraerBloquesCompletados(fullText, bloquesEmitidos);
+                          for (const b of nuevosBloques) {
+                            await writer.write(encoder.encode(`data: ${JSON.stringify(b)}\n\n`));
+                          }
+                        }
                       }
                     } catch (e) {}
                   }
@@ -1772,11 +1799,78 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
               }
             }
 
-            // Procesar el resultado completo con parseador seguro
+            // 1. Procesar con parseador seguro
             let parsedFinal = extraerJson(fullText);
+
+            // 2. Si no es válido o hubo corte, intentar reparación sintáctica inteligente de corchetes/llaves
+            if (!parsedFinal || !validarCamposPlanificacion(parsedFinal)) {
+              const reparado = repararJsonTruncado(fullText);
+              if (reparado && typeof reparado === "object") {
+                if (planEsRecuperable(reparado)) {
+                  if (!reparado.mensaje_chat) {
+                    reparado.mensaje_chat = "He organizado la planificación docente para tu clase.";
+                  }
+                  reparado.plan_completado = true;
+                  if (!reparado.confianza_curricular) {
+                    reparado.confianza_curricular = {
+                      nivel_certeza: "alta",
+                      bloques_aproximados: [],
+                      nota_revision: "Estructura recuperada exitosamente mediante reparación sintáctica segura."
+                    };
+                  }
+                  parsedFinal = reparado;
+                } else {
+                  parsedFinal = reparado;
+                }
+              }
+            }
+
             let esValido = Boolean(parsedFinal && validarCamposPlanificacion(parsedFinal) && !corteOcurrio);
 
-            // Reintento único si hubo corte, JSON inválido o campos faltantes
+            // 3. Si se recuperaron bloques esenciales (datos_generales + momentos/actividades), armar el plan con lo que hay sin reintentar llamada completa
+            if (!esValido && parsedFinal && planEsRecuperable(parsedFinal)) {
+              parsedFinal.plan_completado = true;
+              esValido = true;
+            } else if (!esValido && env.GEMINI_API_KEY && parsedFinal && parsedFinal.datos_planificacion) {
+              // 4. Reparación enfocada: solo si faltan bloques críticos, pedir ÚNICAMENTE los bloques faltantes
+              const claves = Object.keys(parsedFinal.datos_planificacion).map((k) => k.toLowerCase());
+              const faltaSecuencia = !claves.some((k) => k.includes("momento") || k.includes("actividad") || k.includes("secuencia"));
+              if (faltaSecuencia) {
+                try {
+                  const promptEnfocado = `Genera ÚNICAMENTE las actividades didácticas (Inicio, Desarrollo, Cierre) para una clase de grado ${body.grado || "3ro"} área ${body.area || "Ciencias Sociales"} tema ${textoConsulta || "clase"}. Devuelve SOLO un objeto JSON con la clave "momentos": {"inicio": "...", "desarrollo": "...", "cierre": "..."}.`;
+                  const retryModel = models[0] || "gemini-3.1-flash-lite";
+                  const retryUrl = `https://generativelanguage.googleapis.com/v1beta/models/${retryModel}:generateContent`;
+                  const resSec = await fetchGeminiWithRetry(retryUrl, {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "x-goog-api-key": env.GEMINI_API_KEY,
+                    },
+                    body: JSON.stringify({
+                      contents: [{ role: "user", parts: [{ text: promptEnfocado }] }],
+                      generationConfig: {
+                        temperature: 0.0,
+                        responseMimeType: "application/json",
+                        maxOutputTokens: 1024,
+                      },
+                    }),
+                    signal: request.signal,
+                  });
+                  if (resSec && resSec.ok) {
+                    const dSec = await resSec.json();
+                    const tSec = dSec.candidates?.[0]?.content?.parts?.[0]?.text;
+                    const pSec = extraerJson(tSec);
+                    if (pSec && (pSec.momentos || pSec.actividades)) {
+                      parsedFinal.datos_planificacion["6. Actividades: Inicio - Desarrollo - Cierre"] = pSec.momentos || pSec.actividades;
+                      parsedFinal.plan_completado = true;
+                      esValido = true;
+                    }
+                  }
+                } catch (eFocado) {}
+              }
+            }
+
+            // 5. Reintento único completo sólo si los pasos anteriores de recuperación fallaron
             if (!esValido && env.GEMINI_API_KEY) {
               try {
                 const promptReintento = `${dynamicPrompt}\n\nINSTRUCCIÓN CRÍTICA DE REINTENTO: En el intento previo la respuesta quedó incompleta o con JSON inválido. Por favor, genera la planificación completa en formato JSON estricto pero de manera más breve y sintetizada, asegurando que todos los campos requeridos estén presentes y el JSON cierre perfectamente con '}'.`;
@@ -1866,7 +1960,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
             };
 
             if (claveCache && esRespuestaCacheable(parsedFinal)) {
-              guardarRespuestaEnCache(claveCache, parsedFinal);
+              await guardarRespuestaEnCache(claveCache, parsedFinal, undefined, env, ctx);
             }
 
             await writer.write(encoder.encode(`data: ${JSON.stringify({ final: finalPayload })}\n\n`));

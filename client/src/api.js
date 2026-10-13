@@ -345,10 +345,14 @@ export async function generarPlanificacion({
             try {
               const parsed = JSON.parse(jsonStr);
               if (parsed.estado) {
-                onChunk("", "", parsed.estado);
+                onChunk("", accumulatedText, parsed.estado);
               }
               if (parsed.delta) {
                 accumulatedText += parsed.delta;
+                onChunk(parsed.delta, accumulatedText, null);
+              }
+              if (parsed.tipo === "bloque") {
+                onChunk(null, accumulatedText, null, parsed);
               }
               if (parsed.final) {
                 finalData = parsed.final;

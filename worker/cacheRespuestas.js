@@ -7,30 +7,21 @@
  * - Expiración por TTL (1 hora) y descarte por antigüedad (LRU, max 200 entradas).
  */
 
-const MAX_ENTRADAS_CACHE = 200;
-const TTL_DEFAULT_MS = 60 * 60 * 1000; // 1 hora
+const MAX_ENTRADAS_CACHE = 300;
+const TTL_DEFAULT_MS = 24 * 60 * 60 * 1000; // 24 horas
 
 const cacheCurricular = new Map(); // hash -> { datos, expiraEn }
 
-export function obtenerClaveStringRawWorker({ grado = "", area = "", tema = "", nivel = "", periodo = "", perfilDocente = null, docenteId = "" }) {
+export function obtenerClaveStringRawWorker({ grado = "", area = "", tema = "", nivel = "", periodo = "" }) {
   if (!tema || typeof tema !== "string" || !tema.trim()) return null;
 
-  let perfilIdentificador = "";
-  if (perfilDocente && typeof perfilDocente === "object") {
-    const clavesOrdenadas = Object.keys(perfilDocente).sort();
-    const partes = clavesOrdenadas.map(k => `${k}:${String(perfilDocente[k])}`);
-    perfilIdentificador = partes.join(";");
-  } else if (docenteId) {
-    perfilIdentificador = String(docenteId);
-  }
-
+  // Clave curricular pura sin PII ni identificadores docentes
   return [
     (grado || "").trim().toLowerCase(),
     (area || "").trim().toLowerCase(),
     (tema || "").trim().toLowerCase(),
     (nivel || "").trim().toLowerCase(),
-    (periodo || "").trim().toLowerCase(),
-    perfilIdentificador.trim().toLowerCase()
+    (periodo || "").trim().toLowerCase()
   ].join("|");
 }
 
@@ -71,7 +62,20 @@ export function obtenerRespuestaDeCache(clave) {
   return JSON.parse(JSON.stringify(entrada.datos));
 }
 
-export function guardarRespuestaEnCache(clave, datos, ttlMs = TTL_DEFAULT_MS) {
+export async function obtenerRespuestaDeKv(clave, env) {
+  if (!clave || !env || (!env.CACHE_KV && !env.CURRICULO_KV)) return null;
+  const kv = env.CACHE_KV || env.CURRICULO_KV;
+  try {
+    const val = await kv.get(`curriculo_${clave}`, "json");
+    if (val && esRespuestaCacheable(val)) {
+      guardarRespuestaEnCache(clave, val);
+      return val;
+    }
+  } catch (e) {}
+  return null;
+}
+
+export function guardarRespuestaEnCache(clave, datos, ttlMs = TTL_DEFAULT_MS, env = null, ctx = null) {
   if (!clave || !esRespuestaCacheable(datos)) return;
 
   if (cacheCurricular.size >= MAX_ENTRADAS_CACHE) {
@@ -84,7 +88,7 @@ export function guardarRespuestaEnCache(clave, datos, ttlMs = TTL_DEFAULT_MS) {
     plan_completado: true,
     datos_planificacion: datos.datos_planificacion,
     confianza_curricular: datos.confianza_curricular || null,
-    proveedor_utilizado: datos.proveedor_utilizado || "Caché de Currícuo Oficial",
+    proveedor_utilizado: datos.proveedor_utilizado || "Caché de Currículo Oficial",
     origen: datos.origen || "cache_en_memoria"
   };
 
@@ -92,6 +96,18 @@ export function guardarRespuestaEnCache(clave, datos, ttlMs = TTL_DEFAULT_MS) {
     datos: datosSeguros,
     expiraEn: Date.now() + ttlMs
   });
+
+  // Guardar en Cloudflare KV en segundo plano si existe
+  if (env && (env.CACHE_KV || env.CURRICULO_KV)) {
+    const kv = env.CACHE_KV || env.CURRICULO_KV;
+    const ttlSegundos = Math.max(60, Math.floor(ttlMs / 1000));
+    try {
+      const p = kv.put(`curriculo_${clave}`, JSON.stringify(datosSeguros), { expirationTtl: ttlSegundos });
+      if (ctx && typeof ctx.waitUntil === "function") {
+        ctx.waitUntil(p);
+      }
+    } catch (e) {}
+  }
 }
 
 export function limpiarCacheCurricular() {
