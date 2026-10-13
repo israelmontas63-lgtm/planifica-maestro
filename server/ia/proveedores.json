@@ -1,5 +1,14 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
+  "capacidades_registradas": [
+    "texto",
+    "vision",
+    "imagen_edicion",
+    "imagen_generacion",
+    "video",
+    "audio_voz",
+    "audio_transcripcion"
+  ],
   "configuracion_general": {
     "presupuesto_total_ms": 20000,
     "limite_consultas_diario": 500,
@@ -108,29 +117,92 @@
       "proveedor_id": "gemini_flash",
       "vision_aprobada": true,
       "activo": true
+    },
+    {
+      "id": "gemini_flash_lite_vision",
+      "nombre": "Gemini 3.1 Flash-Lite Visión",
+      "proveedor_id": "gemini_flash_lite",
+      "vision_aprobada": true,
+      "activo": true
     }
   ],
-  "proveedores_busqueda": [
+  "proveedores_imagen_edicion": [
     {
-      "id": "tavily_search",
-      "nombre": "Tavily Search API",
-      "tipo": "web",
+      "id": "motor_local_puro",
+      "nombre": "Motor Local Puro (Matrices de Píxeles RGBA)",
+      "tipo": "imagen_edicion",
+      "motor": "local",
       "prioridad": 1,
-      "activo": true
+      "activo": true,
+      "descripcion": "Procesamiento isomórfico sin dependencias externas ni consumo de tokens"
     },
     {
-      "id": "gemini_search_grounding",
-      "nombre": "Gemini Google Search Grounding",
-      "tipo": "web",
+      "id": "gemini_flash_lite_image",
+      "nombre": "Gemini 3.1 Flash-Lite Image",
+      "tipo": "imagen_edicion",
+      "modelo": "gemini-3.1-flash-lite-image",
       "prioridad": 2,
-      "activo": true
+      "activo": false,
+      "estado": "apagado_falta_facturacion",
+      "descripcion": "Rápido y económico (1K). Requiere facturación activa en Google Cloud."
     },
     {
-      "id": "biblioteca_minerd_search",
-      "nombre": "Buscador Curricular MINERD",
-      "tipo": "curricular_oficial",
+      "id": "gemini_nano_image",
+      "nombre": "Gemini Nano Banana 2.1",
+      "tipo": "imagen_edicion",
+      "modelo": "gemini-nano-banana-2.1",
       "prioridad": 3,
-      "activo": true
+      "activo": false,
+      "estado": "apagado_falta_facturacion"
+    },
+    {
+      "id": "gemini_flash_image",
+      "nombre": "Gemini 3.1 Flash Image",
+      "tipo": "imagen_edicion",
+      "modelo": "gemini-3.1-flash-image",
+      "prioridad": 4,
+      "activo": false,
+      "estado": "apagado_falta_facturacion"
+    },
+    {
+      "id": "gemini_pro_image",
+      "nombre": "Gemini 3 Pro Image",
+      "tipo": "imagen_edicion",
+      "modelo": "gemini-3-pro-image",
+      "prioridad": 5,
+      "activo": false,
+      "estado": "apagado_falta_facturacion"
+    },
+    {
+      "id": "gemini_2_5_flash_image",
+      "nombre": "Gemini 2.5 Flash Image",
+      "tipo": "imagen_edicion",
+      "modelo": "gemini-2.5-flash-image",
+      "prioridad": 6,
+      "activo": false,
+      "estado": "apagado_falta_facturacion"
+    }
+  ],
+  "proveedores_imagen_generacion": [
+    {
+      "id": "gemini_image_gen",
+      "nombre": "Gemini Native Image Generation",
+      "tipo": "imagen_generacion",
+      "modelo": "gemini-3.1-flash-image",
+      "activo": false,
+      "estado": "inactivo_futuro",
+      "descripcion": "Generación de ilustraciones educativas cuando se activen planes de pago"
+    }
+  ],
+  "proveedores_video": [
+    {
+      "id": "gemini_video_multimodal",
+      "nombre": "Gemini Multimodal Video Analysis",
+      "tipo": "video",
+      "modelo": "gemini-3.1-pro-video",
+      "activo": false,
+      "estado": "inactivo_futuro",
+      "descripcion": "Análisis de secuencias didácticas y videos de aula cuando se contraten planes"
     }
   ],
   "proveedores_voz": [
@@ -159,6 +231,47 @@
       "nombre": "Navegador Web Speech API",
       "prioridad": 3,
       "max_caracteres": 10000,
+      "activo": true
+    }
+  ],
+  "proveedores_audio_transcripcion": [
+    {
+      "id": "groq_whisper",
+      "nombre": "Groq Whisper Large v3 Turbo",
+      "tipo": "audio_transcripcion",
+      "prioridad": 1,
+      "modelo": "whisper-large-v3-turbo",
+      "activo": true
+    },
+    {
+      "id": "gemini_audio_transcribe",
+      "nombre": "Google Gemini Audio Transcribe",
+      "tipo": "audio_transcripcion",
+      "prioridad": 2,
+      "modelo": "gemini-3.1-flash-lite",
+      "activo": true
+    }
+  ],
+  "proveedores_busqueda": [
+    {
+      "id": "tavily_search",
+      "nombre": "Tavily Search API",
+      "tipo": "web",
+      "prioridad": 1,
+      "activo": true
+    },
+    {
+      "id": "gemini_search_grounding",
+      "nombre": "Gemini Google Search Grounding",
+      "tipo": "web",
+      "prioridad": 2,
+      "activo": true
+    },
+    {
+      "id": "biblioteca_minerd_search",
+      "nombre": "Buscador Curricular MINERD",
+      "tipo": "curricular_oficial",
+      "prioridad": 3,
       "activo": true
     }
   ]
