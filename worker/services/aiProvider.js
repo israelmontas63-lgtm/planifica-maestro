@@ -59,12 +59,57 @@ export function getGeminiModels(env, modeloPreferido = null) {
 }
 
 /**
- * Realiza fetch hacia la API de Gemini con hasta 3 intentos y espera creciente (exponencial)
- * ante errores transitorios de disponibilidad (503) o límites de tasa temporales (429).
+ * Nivel de razonamiento interno ("thinking") para modelos Gemini 3.x.
+ * Para respuestas JSON estructuradas, un nivel bajo reduce mucho la latencia
+ * hasta el primer token sin pérdida apreciable de calidad.
  */
-export async function fetchGeminiWithRetry(url, options, maxAttempts = 3) {
+export const GEMINI_THINKING_LEVEL = "low";
+
+/**
+ * Indica si el modelo admite thinkingConfig.thinkingLevel (familia Gemini 3.x).
+ */
+export function admiteThinkingLevel(model) {
+  return typeof model === "string" && /^gemini-3/i.test(model.trim());
+}
+
+/**
+ * Devuelve una copia de generationConfig con thinkingConfig limitado si el modelo lo admite.
+ * Si `conThinking` es false, devuelve la configuración original sin modificar.
+ */
+export function aplicarThinkingConfig(generationConfig = {}, model, conThinking = true) {
+  if (!conThinking || !admiteThinkingLevel(model)) return generationConfig;
+  return { ...generationConfig, thinkingConfig: { thinkingLevel: GEMINI_THINKING_LEVEL } };
+}
+
+/**
+ * Realiza fetch hacia Gemini con thinkingConfig limitado; si el modelo responde 400
+ * (parámetro no reconocido), reintenta una sola vez sin thinkingConfig.
+ * `construirBody(generationConfigExtra)` debe devolver el objeto body completo.
+ */
+export async function fetchGeminiConThinking(url, model, baseOptions, construirBody, generationConfig) {
+  const conThinking = admiteThinkingLevel(model);
+  let res = await fetchGeminiWithRetry(url, {
+    ...baseOptions,
+    body: JSON.stringify(construirBody(aplicarThinkingConfig(generationConfig, model, conThinking))),
+  });
+  if (conThinking && res && res.status === 400) {
+    console.warn(`[Gemini] Modelo ${model} rechazó thinkingConfig (400). Reintentando sin él.`);
+    res = await fetchGeminiWithRetry(url, {
+      ...baseOptions,
+      body: JSON.stringify(construirBody(generationConfig)),
+    });
+  }
+  return res;
+}
+
+/**
+ * Realiza fetch hacia la API de Gemini con hasta 2 intentos (por defecto) y espera creciente
+ * ante errores transitorios de disponibilidad (503) o límites de tasa temporales (429).
+ * Se mantiene corto porque la cadena de modelos de respaldo ya actúa como reintento.
+ */
+export async function fetchGeminiWithRetry(url, options, maxAttempts = 2) {
   let attempt = 0;
-  let delay = 1000;
+  let delay = 600;
 
   while (attempt < maxAttempts) {
     attempt++;

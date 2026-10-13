@@ -1,6 +1,6 @@
 import { LEVELS } from "./levels.js";
 import { obtenerContextoConBase } from "./contextoConBase.js";
-import { getAiProvider, getGeminiModels, fetchGeminiWithRetry } from "./services/aiProvider.js";
+import { getAiProvider, getGeminiModels, fetchGeminiWithRetry, fetchGeminiConThinking } from "./services/aiProvider.js";
 import { generateVoice } from "./services/voiceProvider.js";
 import { clasificarIntencion } from "./clasificadorIntencion.js";
 import { generarRespuestaCharlaLocal, SYSTEM_PROMPT_CONVERSACIONAL, limpiarSaludoInnecesario } from "./modoConversacional.js";
@@ -98,6 +98,35 @@ async function verificarIaApagada(env) {
       if (val === "true" || val === "1") return true;
     } catch (e) {}
   }
+  return false;
+}
+
+// Rendimiento: caché por instancia de si la base curricular oficial está cargada en Supabase.
+// Evita un viaje de red a Supabase en cada generación (el dato cambia muy rara vez).
+const BASE_OFICIAL_TTL_MS = 10 * 60 * 1000; // 10 minutos
+let cacheBaseOficial = { valor: null, expiraEn: 0 };
+
+async function verificarBaseOficialCargada(env) {
+  if (!env || !env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return false;
+  if (cacheBaseOficial.valor !== null && Date.now() < cacheBaseOficial.expiraEn) {
+    return cacheBaseOficial.valor;
+  }
+  // Nota: no se comparte la promesa entre peticiones (en Workers el I/O no puede cruzar contextos de petición).
+  try {
+    const checkBaseRes = await fetch(`${env.SUPABASE_URL}/rest/v1/curriculo_fragmentos?select=id&limit=1`, {
+      headers: {
+        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+    });
+    if (checkBaseRes.ok) {
+      const rows = await checkBaseRes.json();
+      const cargada = Array.isArray(rows) && rows.length > 0;
+      cacheBaseOficial = { valor: cargada, expiraEn: Date.now() + BASE_OFICIAL_TTL_MS };
+      return cargada;
+    }
+  } catch (e) {}
+  // Ante error no se cachea: se reintentará en la próxima petición
   return false;
 }
 
@@ -445,18 +474,60 @@ async function verificarTopesMultinivel({ deviceId, clientIp, env, isOwner }) {
     ? (parseInt(env.RATE_LIMIT_GLOBAL_DIARIO, 10) || 500)
     : 500;
 
-  let globalCount = 0;
-  if (env && env.RATE_LIMIT_KV) {
-    try {
-      const gKey = `rl_global_${fechaHoy}`;
-      const gVal = await env.RATE_LIMIT_KV.get(gKey);
-      if (gVal) globalCount = parseInt(gVal, 10);
-    } catch (e) {}
-  } else {
-    if (globalDailyCounter.date === fechaHoy) {
-      globalCount = globalDailyCounter.count;
+  const leerGlobalCount = async () => {
+    let globalCount = 0;
+    if (env && env.RATE_LIMIT_KV) {
+      try {
+        const gKey = `rl_global_${fechaHoy}`;
+        const gVal = await env.RATE_LIMIT_KV.get(gKey);
+        if (gVal) globalCount = parseInt(gVal, 10);
+      } catch (e) {}
+    } else {
+      if (globalDailyCounter.date === fechaHoy) {
+        globalCount = globalDailyCounter.count;
+      }
     }
-  }
+    return globalCount;
+  };
+
+  // 2. Tope de IP de la Red / Escuela (RATE_LIMIT_IP_DIARIO, configurable, por defecto 75)
+  const limiteIp = (env && env.RATE_LIMIT_IP_DIARIO)
+    ? (parseInt(env.RATE_LIMIT_IP_DIARIO, 10) || 75)
+    : 75;
+
+  const leerIpCount = async () => {
+    const ipParaHash = clientIp || "unknown";
+    const ipData = encoder.encode(`${ipParaHash}_pm_ip_${fechaHoy}`);
+    const ipHashBuf = await crypto.subtle.digest("SHA-256", ipData);
+    const ipHashHex = Array.from(new Uint8Array(ipHashBuf))
+      .map(b => b.toString(16).padStart(2, "0"))
+      .join("")
+      .substring(0, 32);
+
+    let ipCount = 0;
+    if (env && env.RATE_LIMIT_KV) {
+      try {
+        const ipKey = `rl_ip_${ipHashHex}`;
+        const ipVal = await env.RATE_LIMIT_KV.get(ipKey);
+        if (ipVal) ipCount = parseInt(ipVal, 10);
+      } catch (e) {}
+    } else {
+      const ipEntry = ipDailyRateLimit.get(ipHashHex);
+      if (ipEntry && now <= ipEntry.resetAt) {
+        ipCount = ipEntry.count;
+      }
+    }
+    return ipCount;
+  };
+
+  // Rendimiento: las tres lecturas (global, IP y dispositivo) se lanzan en paralelo
+  // y se evalúan después en el mismo orden de prioridad de siempre.
+  const [globalCount, ipCount, cuota] = await Promise.all([
+    leerGlobalCount(),
+    leerIpCount(),
+    // 3. Cuota por Maestro por Dispositivo (RATE_LIMIT_DISPOSITIVO_DIARIO, por defecto 25)
+    consultarCuota(env, deviceId, false, clientIp),
+  ]);
 
   if (globalCount >= limiteGlobal) {
     return {
@@ -466,33 +537,6 @@ async function verificarTopesMultinivel({ deviceId, clientIp, env, isOwner }) {
       limiteAlcanzado: true,
       agotado: true,
     };
-  }
-
-  // 2. Tope de IP de la Red / Escuela (RATE_LIMIT_IP_DIARIO, configurable, por defecto 75)
-  const limiteIp = (env && env.RATE_LIMIT_IP_DIARIO)
-    ? (parseInt(env.RATE_LIMIT_IP_DIARIO, 10) || 75)
-    : 75;
-
-  const ipParaHash = clientIp || "unknown";
-  const ipData = encoder.encode(`${ipParaHash}_pm_ip_${fechaHoy}`);
-  const ipHashBuf = await crypto.subtle.digest("SHA-256", ipData);
-  const ipHashHex = Array.from(new Uint8Array(ipHashBuf))
-    .map(b => b.toString(16).padStart(2, "0"))
-    .join("")
-    .substring(0, 32);
-
-  let ipCount = 0;
-  if (env && env.RATE_LIMIT_KV) {
-    try {
-      const ipKey = `rl_ip_${ipHashHex}`;
-      const ipVal = await env.RATE_LIMIT_KV.get(ipKey);
-      if (ipVal) ipCount = parseInt(ipVal, 10);
-    } catch (e) {}
-  } else {
-    const ipEntry = ipDailyRateLimit.get(ipHashHex);
-    if (ipEntry && now <= ipEntry.resetAt) {
-      ipCount = ipEntry.count;
-    }
   }
 
   if (ipCount >= limiteIp) {
@@ -505,8 +549,6 @@ async function verificarTopesMultinivel({ deviceId, clientIp, env, isOwner }) {
     };
   }
 
-  // 3. Cuota por Maestro por Dispositivo (RATE_LIMIT_DISPOSITIVO_DIARIO, por defecto 25)
-  const cuota = await consultarCuota(env, deviceId, false, clientIp);
   if (!cuota.permitido) {
     return {
       permitido: false,
