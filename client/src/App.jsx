@@ -37,6 +37,8 @@ const AyudaModal = lazy(() => import("./components/AyudaModal.jsx"));
 const RubricaModal = lazy(() => import("./components/RubricaModal.jsx"));
 const RegistroCalificacionesModal = lazy(() => import("./components/RegistroCalificacionesModal.jsx"));
 const AccessGate = lazy(() => import("./components/AccessGate.jsx"));
+const OjoVisorCamara = lazy(() => import("./components/OjoVisorCamara.jsx"));
+const EditorImagenModal = lazy(() => import("./components/EditorImagenModal.jsx"));
 import { verificarAccesoAutorizado } from "./components/AccessGate.jsx";
 
 export default function App() {
@@ -153,6 +155,10 @@ export default function App() {
 
   // Image states
   const [escaneandoFoto, setEscaneandoFoto] = useState(false);
+  const [ojoVisorOpen, setOjoVisorOpen] = useState(false);
+  const [editorImagenOpen, setEditorImagenOpen] = useState(false);
+  const [imagenParaEditor, setImagenParaEditor] = useState(null);
+  const [imagenIlustrativaPlan, setImagenIlustrativaPlan] = useState(null);
 
   // PWA Install prompt state
   const [installPrompt, setInstallPrompt] = useState(null);
@@ -817,7 +823,8 @@ export default function App() {
         plan: typeof planText === "string" ? planText : "",
         datos: datos || (typeof planText === "object" ? planText : null),
         perfil: p,
-        revision
+        revision,
+        imagenIlustrativa: imagenIlustrativaPlan
       });
     } catch (err) {
       setErrorGeneracion({
@@ -1787,7 +1794,7 @@ export default function App() {
         listening={listening}
         duracionTexto={tiempoTranscurrido}
         onDictadoClick={handleDictadoClick}
-        onAbrirCamara={() => fileInputHiddenRef.current?.click()}
+        onAbrirCamara={() => setOjoVisorOpen(true)}
         menuOpen={menuOpen}
         setMenuOpen={(open) => { setMenuOpen(open); if(open) { setTextoModalOpen(false); setSchemaOpen(false); setPerfilOpen(false); setCurriculumOpen(false); setBibliotecaOpen(false); setAuthModalOpen(false); setNotificacionesOpen(false); setConfiguracionOpen(false); setAyudaOpen(false); } }}
         onAbrirTexto={(prompt, titulo) => handleAbrirTexto(prompt, titulo)}
@@ -1978,6 +1985,57 @@ export default function App() {
         <Suspense fallback={null}>
           <AyudaModal
             onCerrar={() => setAyudaOpen(false)}
+          />
+        </Suspense>
+      )}
+
+      {ojoVisorOpen && (
+        <Suspense fallback={null}>
+          <OjoVisorCamara
+            isOpen={ojoVisorOpen}
+            onClose={() => setOjoVisorOpen(false)}
+            onFotoCapturada={(dataUrl, pregunta) => {
+              handleImageSelected(dataUrl, "image/jpeg");
+              if (pregunta) {
+                setTimeout(() => {
+                  enviarMensaje(pregunta, dataUrl.split(",")[1], "image/jpeg");
+                }, 300);
+              }
+            }}
+            onAbrirEditor={(dataUrl) => {
+              setImagenParaEditor(dataUrl);
+              setEditorImagenOpen(true);
+            }}
+            onAnalizarDirecto={(dataUrl, pregunta) => {
+              handleImageSelected(dataUrl, "image/jpeg");
+              if (pregunta) {
+                setTimeout(() => {
+                  enviarMensaje(pregunta, dataUrl.split(",")[1], "image/jpeg");
+                }, 300);
+              }
+            }}
+          />
+        </Suspense>
+      )}
+
+      {editorImagenOpen && (
+        <Suspense fallback={null}>
+          <EditorImagenModal
+            isOpen={editorImagenOpen}
+            onClose={() => setEditorImagenOpen(false)}
+            imagenInicial={imagenParaEditor}
+            onInsertarEnPlan={(dataUrl) => {
+              setImagenIlustrativaPlan(dataUrl);
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: "msg_img_" + Date.now(),
+                  role: "assistant",
+                  text: "🖼️ Imagen pedagógica adjuntada a la planificación. Se insertará como ilustración en el documento Word (.docx) al exportar.",
+                  imagenPrevia: dataUrl
+                }
+              ]);
+            }}
           />
         </Suspense>
       )}

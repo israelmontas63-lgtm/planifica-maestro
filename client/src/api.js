@@ -522,6 +522,38 @@ export async function escanearMaterial({ imageBase64, mediaType = "image/jpeg", 
 }
 
 /**
+ * POST /api/imagen/editar
+ * Edición de imagen escolar con motor IA/Local y política de dignidad.
+ */
+export async function editarImagenIA({
+  imagen,
+  operacionId,
+  instruccion,
+  parametros = {},
+  confirmadoPorUsuario = false,
+  signal
+}) {
+  const res = await request(
+    "/api/imagen/editar",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        imagen,
+        operacionId,
+        instruccion,
+        parametros,
+        confirmadoPorUsuario
+      }),
+      signal,
+      timeout: 30000,
+    },
+    1
+  );
+  return res.json();
+}
+
+
+/**
  * Exportar a Word (.docx) — Formato Oficial MINERD / CON BASE (A4 Horizontal, 17 filas)
  * 100% en el cliente sin consumir CPU del servidor.
  * Admite tanto llamada por objeto ({ titulo, plan, datos, perfil, revision })
