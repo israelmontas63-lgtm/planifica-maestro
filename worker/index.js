@@ -18,6 +18,8 @@ import { verificarYSanearCitas } from "./verificadorCitas.js";
 import { extraerJson, mensajeParaChat, validarCamposPlanificacion, repararJsonTruncado, extraerBloquesCompletados, planEsRecuperable } from "./parseadorJsonSeguro.js";
 import { evaluarPoliticaDignidad } from "./politicaDignidadImagen.js";
 import { obtenerOperacionPorId } from "./catalogoEdicionImagen.js";
+import { cicloToolCalling } from "../shared/ciclo.js";
+import { PROMPT_SISTEMA_V2_TEXTO } from "../shared/promptSistemaV2.js";
 
 
 /**
@@ -1685,7 +1687,10 @@ async function handleApiRequest(request, env, ctx) {
       if (areasFiltradas.length > 0) areasTexto = areasFiltradas.join(", ");
     }
 
-    const dynamicPrompt = `${SYSTEM_PROMPT}
+    const usaPromptV2 = Boolean(env && (env.PROMPT_SISTEMA_V2 === "true" || env.PROMPT_SISTEMA_V2 === true));
+    const basePrompt = usaPromptV2 ? PROMPT_SISTEMA_V2_TEXTO : SYSTEM_PROMPT;
+
+    const dynamicPrompt = `${basePrompt}
 ## ESQUEMA SELECCIONADO: ${esquema.label}
 - Ciclo relevante: ${ciclosTexto}
 - Área relevante: ${areasTexto}
@@ -2040,6 +2045,81 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
     }
 
     // Modo JSON Estándar (Fallback / Non-Streaming)
+    const usaHerramientasV2 = Boolean(env && (env.HERRAMIENTAS_V2 === "true" || env.HERRAMIENTAS_V2 === true));
+
+    if (usaHerramientasV2) {
+      try {
+        const modelHerramientas = models[0] || "gemini-3.1-flash-lite";
+        const cicloRes = await cicloToolCalling({
+          promptUsuario: textoParaProcesar,
+          llamadaModeloIA: async (payload) => {
+            const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelHerramientas}:generateContent`;
+            const gemRes = await fetchGeminiWithRetry(geminiUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "x-goog-api-key": env.GEMINI_API_KEY,
+              },
+              body: JSON.stringify({
+                contents: payload.contents,
+                tools: payload.tools,
+                systemInstruction: { parts: [{ text: dynamicPrompt }] },
+                generationConfig: {
+                  temperature: 0.0,
+                  maxOutputTokens: 8192,
+                },
+              }),
+              signal: request.signal,
+            });
+            if (!gemRes || !gemRes.ok) {
+              const errTxt = gemRes ? await gemRes.text() : "No response";
+              throw new Error(`Gemini call error: ${errTxt}`);
+            }
+            return await gemRes.json();
+          },
+          env,
+          maxIteraciones: 3,
+        });
+
+        if (cicloRes.tipo === "tool_calling_completado" || cicloRes.tipo === "directa") {
+          const rawText = cicloRes.texto || "";
+          let parsed = extraerJson(rawText);
+          if (!parsed) {
+            parsed = {
+              mensaje_chat: rawText,
+              plan_completado: false,
+              consultas_curriculo: cicloRes.consultas || [],
+            };
+          } else {
+            parsed.consultas_curriculo = cicloRes.consultas || [];
+          }
+
+          let cuotaActualizada = cheqCuota;
+          if (parsed.plan_completado) {
+            cuotaActualizada = await consumirCuota(env, resolvedDocenteId, isOwner, clientIp);
+          }
+
+          if (claveCache && esRespuestaCacheable(parsed)) {
+            guardarRespuestaEnCache(claveCache, parsed);
+          }
+
+          return new Response(
+            JSON.stringify({
+              ...parsed,
+              planId: "plan_" + Date.now(),
+              nivel,
+              periodo,
+              nivelLabel: esquema.label,
+              cuota: cuotaActualizada,
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      } catch (errCiclo) {
+        console.warn("[Herramientas V2] Falló cicloToolCalling, cayendo a flujo estándar:", errCiclo.message);
+      }
+    }
+
     let geminiData = null;
     let ultimoError = null;
     let ultimoStatus = 500;

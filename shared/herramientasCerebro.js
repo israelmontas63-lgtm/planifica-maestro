@@ -84,25 +84,29 @@ export const HERRAMIENTAS_CEREBRO = [
     }
   },
   {
-    name: "consultar_curriculo_minerd",
-    description: "Consulta las competencias fundamentales, específicas, contenidos y criterios de evaluación oficiales del Currículo Dominicano MINERD.",
+    name: "consultar_base_datos",
+    description: "Consulta fragmentos curriculares oficiales del MINERD en la base de datos institucional. Usar obligatoriamente ante dudas sobre competencias, contenidos o indicadores oficiales.",
     parameters: {
       type: "object",
       properties: {
-        area: {
+        nivel: {
           type: "string",
-          description: "Área curricular (Lengua Española, Matemática, Ciencias Sociales, Ciencias de la Naturaleza, etc.)."
+          description: "Nivel educativo (Inicial, Primario, Secundario)"
         },
         grado: {
           type: "string",
-          description: "Grado escolar (ej. '1ro Primaria', '4to Primaria', '2do Secundaria')."
+          description: "Grado escolar (ej. 1ro, 2do, 3ro, 4to, 5to, 6to)"
         },
-        tema: {
+        area: {
           type: "string",
-          description: "Tema o contenido curricular a articular."
+          description: "Área curricular oficial (ej. Matemática, Lengua Española)"
+        },
+        tema_o_concepto: {
+          type: "string",
+          description: "Tema, concepto o contenido curricular a articular"
         }
       },
-      required: ["area", "grado"]
+      required: ["nivel", "grado", "area", "tema_o_concepto"]
     }
   },
   {
@@ -217,13 +221,11 @@ export async function ejecutarHerramientaCerebro(nombre, args = {}, contexto = {
       };
     }
 
-    case "consultar_curriculo_minerd": {
+    case "consultar_base_datos": {
       return {
         ok: true,
-        area: args.area,
-        grado: args.grado,
-        tema: args.tema || "General",
-        fuente: "Diseño Curricular Oficial MINERD"
+        requiereConsultaDB: true,
+        args
       };
     }
 

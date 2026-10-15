@@ -1,11 +1,26 @@
-import { describe, it, expect } from "vitest";
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+
+const expect = (actual) => ({
+  toEqual: (exp) => assert.deepStrictEqual(actual, exp),
+  toBeGreaterThan: (n) => assert.ok(actual > n),
+  toBeGreaterThanOrEqual: (n) => assert.ok(actual >= n),
+  toBe: (exp) => assert.strictEqual(actual, exp),
+  toBeDefined: () => assert.ok(actual !== undefined),
+  not: {
+    toBeNull: () => assert.ok(actual !== null)
+  },
+  toBeNull: () => assert.strictEqual(actual, null),
+  toContain: (str) => assert.ok(typeof actual === "string" && actual.includes(str)),
+  toHaveProperty: (prop) => assert.ok(actual && prop in actual)
+});
 import {
   HERRAMIENTAS_CEREBRO,
   obtenerHerramientasCerebro,
   obtenerHerramientaPorNombre,
   ejecutarHerramientaCerebro
 } from "../shared/herramientasCerebro.js";
-import proveedoresConfig from "../server/ia/proveedores.json";
+import proveedoresConfig from "../server/ia/proveedores.json" with { type: "json" };
 
 describe("Herramientas del Cerebro y 7 Capacidades de IA", () => {
   it("proveedores.json registra ordenadamente las 7 capacidades de IA", () => {
