@@ -857,6 +857,34 @@ async function handleApiRequest(request, env, ctx) {
 
   // 1. GET /api/health
   if (path === "/api/health" && method === "GET") {
+    const ownerKey = request.headers.get("x-owner-key");
+    const isOwner = Boolean(
+      env.OWNER_MASTER_KEY &&
+      ownerKey &&
+      timingSafeEqualStr(ownerKey.trim(), env.OWNER_MASTER_KEY.trim())
+    );
+
+    // Estado público mínimo sin consultas pesadas de red a Supabase
+    if (!isOwner) {
+      return new Response(JSON.stringify({
+        status: "ok",
+        worker: "cloudflare-workers",
+        timestamp: new Date().toISOString(),
+        tablas_disponibles: [],
+        services: {
+          text_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
+          vision_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
+          ocr_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
+          voice_mode: "browser_speechSynthesis",
+          database: (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) ? "ok" : "en_memoria",
+          ia_apagada: (await verificarIaApagada(env)) ? "apagada" : "activa",
+        }
+      }, null, 2), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Detalle completo y auditoría de tablas en Supabase SOLO para el propietario
     let tablasDisponibles = [];
     if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
       const tablasToCheck = [
@@ -892,13 +920,6 @@ async function handleApiRequest(request, env, ctx) {
       );
     }
 
-    const ownerKey = request.headers.get("x-owner-key");
-    const isOwner = Boolean(
-      env.OWNER_MASTER_KEY &&
-      ownerKey &&
-      timingSafeEqualStr(ownerKey.trim(), env.OWNER_MASTER_KEY.trim())
-    );
-
     const services = {
       text_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
       vision_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
@@ -906,12 +927,9 @@ async function handleApiRequest(request, env, ctx) {
       voice_mode: "browser_speechSynthesis",
       database: (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) ? "ok" : "en_memoria",
       ia_apagada: (await verificarIaApagada(env)) ? "apagada" : "activa",
+      auth: env.APP_ACCESS_KEY ? "activa" : "abierta",
+      owner: env.OWNER_MASTER_KEY ? "configurada" : "sin_configurar"
     };
-
-    if (isOwner) {
-      services.auth = env.APP_ACCESS_KEY ? "activa" : "abierta";
-      services.owner = env.OWNER_MASTER_KEY ? "configurada" : "sin_configurar";
-    }
 
     const health = {
       status: "ok",
