@@ -13,7 +13,7 @@ import { extraerJson, mensajeParaChat, validarCamposPlanificacion } from "./util
  * - Exportación docx 100% en cliente sin consumir CPU del servidor
  */
 
-const BASE_URL = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+const BASE_URL = ((typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL) || (typeof process !== "undefined" && process.env?.VITE_API_URL) || "").replace(/\/$/, "");
 
 export class ApiError extends Error {
   constructor({ message, friendlyMessage, type, status, cuota, canRetry = true, raw }) {
@@ -95,32 +95,32 @@ async function request(endpoint, options = {}, retries = 2) {
       } catch (e) {}
 
       let type = "SERVER";
-      let friendlyMessage = data.error || "Ocurrió un error en el servidor.";
+      let friendlyMessage = data.mensaje_chat || data.mensaje || data.error || "Ocurrió un error en el servidor.";
       let canRetry = true;
 
       if (res.status === 401) {
         type = "AUTH";
-        friendlyMessage = data.error || "Clave institucional requerida. Introduce la clave de acceso para continuar.";
+        friendlyMessage = data.mensaje_chat || data.mensaje || data.error || "Clave institucional requerida. Introduce la clave de acceso para continuar.";
         canRetry = false;
       } else if (res.status === 403) {
         type = "AUTH";
-        friendlyMessage = "Acceso restringido: se requieren permisos de propietario.";
+        friendlyMessage = data.mensaje_chat || data.mensaje || data.error || "Acceso restringido: se requieren permisos de propietario.";
         canRetry = false;
       } else if (res.status === 404) {
         type = "CLIENT";
-        friendlyMessage = "El servicio o recurso solicitado no fue encontrado.";
+        friendlyMessage = data.mensaje_chat || data.mensaje || data.error || "El servicio o recurso solicitado no fue encontrado.";
         canRetry = false;
       } else if (res.status === 405) {
         type = "SERVER";
-        friendlyMessage = "El backend no está atendiendo este método en producción. Verifica el Worker de Cloudflare.";
+        friendlyMessage = data.mensaje_chat || data.mensaje || data.error || "El backend no está atendiendo este método en producción. Verifica el Worker de Cloudflare.";
         canRetry = false;
       } else if (res.status === 429 || data.limiteAlcanzado || data.agotado) {
         type = "QUOTA";
-        friendlyMessage = data.error || "Has alcanzado tu cuota diaria de la beta abierta (25 planes). Se reinicia a medianoche. Gracias por probar Planifica Maestro.";
+        friendlyMessage = data.mensaje_chat || data.mensaje || data.error || "Has alcanzado tu cuota diaria de la beta abierta (25 planes). Se reinicia a medianoche. Gracias por probar Planifica Maestro.";
         canRetry = false;
       } else if (res.status >= 500) {
         type = "SERVER";
-        friendlyMessage = data.error || "El servidor de IA no está disponible temporalmente. Inténtalo de nuevo.";
+        friendlyMessage = data.mensaje_chat || data.mensaje || data.error || "El servidor de IA no está disponible temporalmente. Inténtalo de nuevo.";
         canRetry = true;
       }
 
@@ -366,7 +366,13 @@ export async function generarPlanificacion({
     }
 
     if (finalData) {
-      if (finalData.ok === false || finalData.isError) return finalData;
+      if (finalData.ok === false || finalData.isError) {
+        if (!finalData.mensaje_chat && finalData.mensaje) {
+          const sug = finalData.sugerencia ? `\n\n💡 Sugerencia: ${finalData.sugerencia}` : "";
+          finalData.mensaje_chat = `${finalData.mensaje}${sug}`;
+        }
+        return finalData;
+      }
       if (validarCamposPlanificacion(finalData)) return finalData;
     }
     const parsedAccum = extraerJson(accumulatedText);
@@ -374,15 +380,26 @@ export async function generarPlanificacion({
       if (parsedAccum.ok === false || parsedAccum.isError) return parsedAccum;
       if (validarCamposPlanificacion(parsedAccum)) return parsedAccum;
     }
-    return finalData || {
+
+    // Fallback de error: mostrar causa devuelta por el worker si existe (T10)
+    const errBase = finalData || parsedAccum || {};
+    const causaWorker = errBase.mensaje_chat || errBase.mensaje || (accumulatedText && !accumulatedText.startsWith("{") ? accumulatedText.trim() : null);
+    const sugerenciaWorker = errBase.sugerencia || "Intenta solicitarla nuevamente con términos más específicos.";
+    const codigoWorker = errBase.codigo || errBase.codigoError || "IA_RESPUESTA_INVALIDA";
+
+    return {
       ok: false,
       isError: true,
-      codigo: "IA_RESPUESTA_INVALIDA",
-      mensaje: "El modelo de IA devolvió una respuesta incompleta o desordenada.",
-      sugerencia: "Intenta pedir la planificación nuevamente con términos más específicos.",
-      reintentable: true,
-      mensaje_chat: "Tuve dificultades para organizar los componentes de esta planificación.\n\n💡 Sugerencia: Intenta solicitarla nuevamente.",
-      plan_completado: false
+      codigo: codigoWorker,
+      codigoError: codigoWorker,
+      mensaje: errBase.mensaje || causaWorker || "El modelo de IA devolvió una respuesta incompleta o desordenada.",
+      sugerencia: sugerenciaWorker,
+      reintentable: errBase.reintentable !== false,
+      mensaje_chat: causaWorker
+        ? (causaWorker.includes("💡 Sugerencia") ? causaWorker : `${causaWorker}\n\n💡 Sugerencia: ${sugerenciaWorker}`)
+        : `Tuve dificultades para organizar los componentes de esta planificación.\n\n💡 Sugerencia: ${sugerenciaWorker}`,
+      plan_completado: false,
+      ...errBase
     };
   }
 
@@ -392,13 +409,18 @@ export async function generarPlanificacion({
     if (resJson.ok === false || resJson.isError) return resJson;
     if (validarCamposPlanificacion(resJson)) return resJson;
   }
+  const causaWorkerJson = resJson?.mensaje_chat || resJson?.mensaje;
+  const sugerenciaWorkerJson = resJson?.sugerencia || "Intenta de nuevo en unos momentos.";
   return {
     ok: false,
     isError: true,
-    codigo: resJson?.codigo || "ERROR_INTERNO",
+    codigo: resJson?.codigo || resJson?.codigoError || "ERROR_INTERNO",
+    codigoError: resJson?.codigoError || resJson?.codigo || "ERROR_INTERNO",
     mensaje: resJson?.mensaje || "Error al procesar la respuesta del servidor.",
-    sugerencia: resJson?.sugerencia || "Intenta de nuevo en unos momentos.",
-    mensaje_chat: (resJson && mensajeParaChat(resJson)) || resJson?.mensaje || "Tuve un problema técnico y no pude completar la solicitud.",
+    sugerencia: sugerenciaWorkerJson,
+    mensaje_chat: causaWorkerJson
+      ? (causaWorkerJson.includes("💡 Sugerencia") ? causaWorkerJson : `${causaWorkerJson}\n\n💡 Sugerencia: ${sugerenciaWorkerJson}`)
+      : "Tuve un problema técnico y no pude completar la solicitud.\n\n💡 Sugerencia: Intenta de nuevo.",
     plan_completado: Boolean(resJson?.plan_completado && resJson?.datos_planificacion),
     ...resJson
   };

@@ -71,5 +71,13 @@
 - **Frase Textual del Dueño:** `"T5. Nombre de docente: sanear contra inyecciones y caracteres extraños (longitud <= 50, sin saltos de línea ni caracteres de control); signos ¡! y ¿? correctos en español. Si no hay nombre, no inventar ninguno ni usar marcadores genéricos visibles."`
 - **Estado:** APLICADA
 
+### Autorización 010
+- **Fecha:** 2026-10-16
+- **Componente:** `client/src/api.js`
+- **Motivo:** Preservar causa y diagnóstico devuelto por el worker en el fallback de error sin sobreescribir con mensaje genérico según T10.
+- **Frase Textual del Dueño:** `"T10. Cliente: el fallback de error debe mostrar la causa devuelta por el worker (si la hay) y no sobreescribir siempre con 'Tuve dificultades para organizar los componentes...'."`
+- **Estado:** APLICADA
+
+
 
 

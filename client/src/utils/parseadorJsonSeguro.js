@@ -7,6 +7,8 @@ export {
   extraerJson,
   mensajeParaChat,
   validarCamposPlanificacion,
-  extraerJsonFlexible
+  repararJsonTruncado,
+  extraerBloquesCompletados,
+  planEsRecuperable
 } from "../../../shared/parseadorJsonSeguro.js";
 
