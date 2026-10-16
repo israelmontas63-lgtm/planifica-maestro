@@ -451,7 +451,9 @@ export async function clasificarIntencion({ texto = "", temaVision = null, env =
     try {
       const resIa = await fallbackIaFn({ texto: textoParaEvaluar, env, timeoutMs });
       if (resIa) return resIa;
-    } catch (e) {}
+    } catch (e) {
+      console.warn("[ClasificadorIntencion] Fallback IA no disponible o falló:", e?.message || e);
+    }
   }
 
   return resultadoReglas;

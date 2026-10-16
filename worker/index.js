@@ -102,7 +102,9 @@ async function verificarIaApagada(env) {
     try {
       const val = await env.PLANIFICA_KV.get("ia_apagada");
       if (val === "true" || val === "1") return true;
-    } catch (e) {}
+    } catch (e) {
+      console.warn("[IA Apagada] Error consultando KV:", e?.message || e);
+    }
   }
   return false;
 }
@@ -131,7 +133,9 @@ async function verificarBaseOficialCargada(env) {
       cacheBaseOficial = { valor: cargada, expiraEn: Date.now() + BASE_OFICIAL_TTL_MS };
       return cargada;
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn("[Base Oficial] Error comprobando fragmentos en Supabase:", e?.message || e);
+  }
   // Ante error no se cachea: se reintentará en la próxima petición
   return false;
 }
@@ -323,7 +327,9 @@ function extraerJsonValido(text) {
   }
   try {
     return JSON.parse(str);
-  } catch (e) {}
+  } catch (e) {
+    // Continuar con extracción heurística por subcadenas
+  }
 
   const startIdx = str.indexOf("{");
   if (startIdx === -1) return null;
@@ -347,7 +353,9 @@ function extraerJsonValido(text) {
         if (depth === 0) {
           try {
             return JSON.parse(str.substring(startIdx, i + 1));
-          } catch (err) {}
+          } catch (err) {
+            // Seguir evaluando balance de llaves
+          }
         }
       }
     }
@@ -357,7 +365,9 @@ function extraerJsonValido(text) {
   if (lastIdx > startIdx) {
     try {
       return JSON.parse(str.substring(startIdx, lastIdx + 1));
-    } catch (err) {}
+    } catch (err) {
+      // Bloque final no reducible a JSON válido
+    }
   }
   return null;
 }
@@ -526,7 +536,9 @@ async function verificarTopesMultinivel({ deviceId, clientIp, env, isOwner }) {
         const gKey = `rl_global_${fechaHoy}`;
         const gVal = await env.RATE_LIMIT_KV.get(gKey);
         if (gVal) globalCount = parseInt(gVal, 10);
-      } catch (e) {}
+      } catch (e) {
+        console.warn("[RateLimit Global] Fallo lectura KV:", e?.message || e);
+      }
     } else {
       if (globalDailyCounter.date === fechaHoy) {
         globalCount = globalDailyCounter.count;
@@ -555,7 +567,9 @@ async function verificarTopesMultinivel({ deviceId, clientIp, env, isOwner }) {
         const ipKey = `rl_ip_${ipHashHex}`;
         const ipVal = await env.RATE_LIMIT_KV.get(ipKey);
         if (ipVal) ipCount = parseInt(ipVal, 10);
-      } catch (e) {}
+      } catch (e) {
+        console.warn("[RateLimit IP] Fallo lectura KV:", e?.message || e);
+      }
     } else {
       const ipEntry = ipDailyRateLimit.get(ipHashHex);
       if (ipEntry && now <= ipEntry.resetAt) {
@@ -642,7 +656,9 @@ async function consumirCuota(env, docenteId, isOwner, clientIp = "127.0.0.1", pe
           return consultarCuota(env, docenteId, false, clientIp);
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn("[Cuota Supabase] Error actualizando cuota:", e?.message || e);
+    }
   }
 
   // BETA ABIERTA: Consumir en dispositivo, IP y global
@@ -661,7 +677,9 @@ async function consumirCuota(env, docenteId, isOwner, clientIp = "127.0.0.1", pe
       const gVal = await env.RATE_LIMIT_KV.get(gKey);
       const gCount = gVal ? parseInt(gVal, 10) : 0;
       await env.RATE_LIMIT_KV.put(gKey, (gCount + pesoEfectivo).toString(), { expirationTtl: ttlSeconds });
-    } catch (e) {}
+    } catch (e) {
+      console.warn("[RateLimit Global] Error guardando KV:", e?.message || e);
+    }
   } else {
     if (globalDailyCounter.date !== fechaHoy) {
       globalDailyCounter = { date: fechaHoy, count: 0 };
@@ -684,7 +702,9 @@ async function consumirCuota(env, docenteId, isOwner, clientIp = "127.0.0.1", pe
       const ipVal = await env.RATE_LIMIT_KV.get(ipKey);
       const ipCount = ipVal ? parseInt(ipVal, 10) : 0;
       await env.RATE_LIMIT_KV.put(ipKey, (ipCount + pesoEfectivo).toString(), { expirationTtl: ttlSeconds });
-    } catch (e) {}
+    } catch (e) {
+      console.warn("[RateLimit IP] Error guardando KV:", e?.message || e);
+    }
   } else {
     let ipEntry = ipDailyRateLimit.get(ipHashHex);
     if (!ipEntry || now > ipEntry.resetAt) {
@@ -712,7 +732,9 @@ async function consumirCuota(env, docenteId, isOwner, clientIp = "127.0.0.1", pe
       const devVal = await env.RATE_LIMIT_KV.get(devKey);
       const devCount = devVal ? parseInt(devVal, 10) : 0;
       await env.RATE_LIMIT_KV.put(devKey, (devCount + pesoEfectivo).toString(), { expirationTtl: ttlSeconds });
-    } catch (e) {}
+    } catch (e) {
+      console.warn("[RateLimit Dev] Error guardando KV:", e?.message || e);
+    }
   } else {
     let devEntry = deviceDailyRateLimit.get(devHashHex);
     if (!devEntry || now > devEntry.resetAt) {
@@ -863,7 +885,9 @@ async function handleApiRequest(request, env, ctx) {
             if (checkRes.ok) {
               tablasDisponibles.push(tabla);
             }
-          } catch (e) {}
+          } catch (e) {
+            console.warn(`[Health] Error comprobando tabla ${tabla}:`, e?.message || e);
+          }
         })
       );
     }
@@ -1361,7 +1385,9 @@ async function handleApiRequest(request, env, ctx) {
                 textoExtraido = d.candidates?.[0]?.content?.parts?.[0]?.text || "";
                 if (textoExtraido) break;
               }
-            } catch (err) {}
+            } catch (err) {
+              console.warn(`[OCR Gemini] Falló modelo ${m}:`, err?.message || err);
+            }
           }
           if (!textoExtraido) textoExtraido = "No se detectó texto legible en la imagen.";
           return responderWorker({
@@ -1539,7 +1565,9 @@ async function handleApiRequest(request, env, ctx) {
               textoGenerado = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
               if (textoGenerado) break;
             }
-          } catch (e) {}
+          } catch (e) {
+            console.warn(`[Conocimiento General] Falló modelo ${m}:`, e?.message || e);
+          }
         }
 
         if (textoGenerado) {
@@ -1555,7 +1583,9 @@ async function handleApiRequest(request, env, ctx) {
             estado: "conversando"
           });
         }
-      } catch (err) {}
+      } catch (err) {
+        console.warn("[Conocimiento General] Error en flujo general:", err?.message || err);
+      }
 
       const avisoHonesto = "La consulta de conocimiento general requiere conexión con el modelo de inteligencia artificial. En este momento el servicio externo no está disponible o no tiene cuota configurada. Puedes consultar contenidos directamente del currículo oficial o escribir tu consulta pedagógica.";
       return responderWorker({
@@ -1634,7 +1664,9 @@ async function handleApiRequest(request, env, ctx) {
           const rows = await checkBaseRes.json();
           baseOficialCargada = Array.isArray(rows) && rows.length > 0;
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn("[Base Oficial Prompt] Error consultando fragmentos:", e?.message || e);
+      }
     }
 
     const avisoSinVerificar = "Borrador: revísalo con el currículo antes de usarlo";
@@ -1900,7 +1932,9 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                           }
                         }
                       }
-                    } catch (e) {}
+                    } catch (e) {
+                      console.warn("[SSE Parser] Error procesando trozo SSE:", e?.message || e);
+                    }
                   }
                 }
               }
@@ -2300,7 +2334,9 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
               }
             }
           }
-        } catch (e) {}
+        } catch (e) {
+          console.warn("[Parseo No-Stream] Error en intento de parseo:", e?.message || e);
+        }
       }
 
       if (!esValido || !parsed) {

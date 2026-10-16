@@ -36,3 +36,24 @@
 - **Frase Textual del Dueño:** `"En shared/herramientasCerebro.js, eliminar el stub consultar_curriculo_minerd dejando consultar_base_datos como única herramienta"`
 - **Estado:** APLICADA
 
+### Autorización 005
+- **Fecha:** 2026-10-15
+- **Componente:** `worker/cacheRespuestas.js`
+- **Motivo:** Eliminación de bloques catch vacíos para evitar silenciar errores y trazabilidad diagnóstica según ORDEN DIRECTA.
+- **Frase Textual del Dueño:** `"Elimina todos los catch vacíos (grep -rn "catch *([a-zA-Z]*) *{ *}" worker/ shared/) y pega el grep antes y después."`
+- **Estado:** APLICADA
+
+### Autorización 006
+- **Fecha:** 2026-10-15
+- **Componente:** `shared/clasificadorIntencion.js`
+- **Motivo:** Eliminación de bloques catch vacíos para evitar silenciar errores y trazabilidad diagnóstica según ORDEN DIRECTA.
+- **Frase Textual del Dueño:** `"Elimina todos los catch vacíos (grep -rn "catch *([a-zA-Z]*) *{ *}" worker/ shared/) y pega el grep antes y después."`
+- **Estado:** APLICADA
+
+### Autorización 007
+- **Fecha:** 2026-10-15
+- **Componente:** `shared/parseadorJsonSeguro.js`
+- **Motivo:** Eliminación de bloques catch vacíos para evitar silenciar errores y trazabilidad diagnóstica según ORDEN DIRECTA.
+- **Frase Textual del Dueño:** `"Elimina todos los catch vacíos (grep -rn "catch *([a-zA-Z]*) *{ *}" worker/ shared/) y pega el grep antes y después."`
+- **Estado:** APLICADA
+

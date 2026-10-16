@@ -170,7 +170,9 @@ export function extraerBloquesCompletados(texto, bloquesEmitidos = new Set()) {
             contenido: parsedMsg
           });
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn("[ParseadorJsonSeguro] Intento de parseo de mensaje_chat no JSON:", e?.message || e);
+      }
     }
   }
 

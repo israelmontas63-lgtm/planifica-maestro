@@ -71,7 +71,9 @@ export async function obtenerRespuestaDeKv(clave, env) {
       guardarRespuestaEnCache(clave, val);
       return val;
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn("[CacheCurricular] Lectura fallida de KV:", e?.message || e);
+  }
   return null;
 }
 
@@ -106,7 +108,9 @@ export function guardarRespuestaEnCache(clave, datos, ttlMs = TTL_DEFAULT_MS, en
       if (ctx && typeof ctx.waitUntil === "function") {
         ctx.waitUntil(p);
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn("[CacheCurricular] Escritura fallida en KV:", e?.message || e);
+    }
   }
 }
 
