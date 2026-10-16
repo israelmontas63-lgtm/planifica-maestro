@@ -10,6 +10,7 @@
 import { evaluarPoliticaDignidad } from "./politicaDignidadImagen.js";
 import { obtenerOperacionPorId } from "./catalogoEdicionImagen.js";
 import { verificarToxicidadEspecie, vincularCurriculoMINERD } from "./adaptadorPlantas.js";
+import { consultarCurriculoMINERD, ErrorCurricular } from "./curriculoService.mjs";
 
 export const HERRAMIENTAS_CEREBRO = [
   {
@@ -222,11 +223,69 @@ export async function ejecutarHerramientaCerebro(nombre, args = {}, contexto = {
     }
 
     case "consultar_base_datos": {
-      return {
-        ok: true,
-        requiereConsultaDB: true,
-        args
-      };
+      const { nivel, grado, area, tema_o_concepto } = args || {};
+      if (!nivel || !grado || !area || !tema_o_concepto) {
+        return {
+          ok: false,
+          error: "Faltan parámetros obligatorios: nivel, grado, area y tema_o_concepto son requeridos.",
+          codigo: "PARAMETROS_INVALIDOS"
+        };
+      }
+
+      if (contexto && typeof contexto.ejecutor === "function") {
+        try {
+          const filas = await contexto.ejecutor(args, contexto.env);
+          if (!filas || filas.length === 0) {
+            return {
+              ok: true,
+              sinResultados: true,
+              filas: [],
+              aviso: "Sin coincidencias oficiales en la base de datos curricular para este tema."
+            };
+          }
+          return {
+            ok: true,
+            filas,
+            fuentes: [...new Set(filas.map((f) => f.fuente_documento).filter(Boolean))]
+          };
+        } catch (errEjec) {
+          return {
+            ok: false,
+            error: errEjec.message || "Error al ejecutar consulta simulada",
+            codigo: "ERROR_EJECUTOR"
+          };
+        }
+      }
+
+      try {
+        const timeoutMs = contexto?.timeoutMs || 8000;
+        const filas = await consultarCurriculoMINERD(args, contexto?.env || {}, {
+          signal: contexto?.signal,
+          timeoutMs
+        });
+
+        if (!filas || filas.length === 0) {
+          return {
+            ok: true,
+            sinResultados: true,
+            filas: [],
+            aviso: "Sin coincidencias oficiales en la base de datos curricular para este tema."
+          };
+        }
+
+        return {
+          ok: true,
+          filas,
+          fuentes: [...new Set(filas.map((f) => f.fuente_documento).filter(Boolean))]
+        };
+      } catch (err) {
+        const codigo = err instanceof ErrorCurricular ? err.codigo : "ERROR_BD";
+        return {
+          ok: false,
+          error: `[${codigo}] ${err.message || "No fue posible consultar la base curricular oficial."}`,
+          codigo
+        };
+      }
     }
 
     case "exportar_plan_word": {

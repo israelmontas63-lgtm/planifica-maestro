@@ -226,3 +226,36 @@ SET search_path = public AS $$
 $$;
 
 GRANT EXECUTE ON FUNCTION public.buscar_curriculo_secuencias(TEXT, SMALLINT, TEXT, TEXT, INT) TO anon, authenticated;
+
+-- 9. Alias retrocompatible buscar_curriculo para clientes existentes
+CREATE OR REPLACE FUNCTION public.buscar_curriculo(
+    p_nivel TEXT,
+    p_grado SMALLINT,
+    p_area TEXT,
+    p_consulta TEXT,
+    p_limite INT DEFAULT 5
+)
+RETURNS TABLE (
+    source_id TEXT,
+    tema TEXT,
+    grado_num SMALLINT,
+    area TEXT,
+    bloque_guia TEXT,
+    competencias_especificas TEXT,
+    contenidos_texto_original TEXT,
+    indicadores_logro JSONB,
+    fuente_documento TEXT,
+    version_curricular TEXT,
+    pagina TEXT,
+    estado_validacion TEXT,
+    coincide_tema BOOLEAN,
+    relevancia REAL
+)
+LANGUAGE sql STABLE
+SECURITY INVOKER
+SET search_path = public AS $$
+    SELECT * FROM public.buscar_curriculo_secuencias(p_nivel, p_grado, p_area, p_consulta, p_limite);
+$$;
+
+GRANT EXECUTE ON FUNCTION public.buscar_curriculo(TEXT, SMALLINT, TEXT, TEXT, INT) TO anon, authenticated;
+

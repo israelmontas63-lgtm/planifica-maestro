@@ -50,7 +50,23 @@ Si el docente atiende varios grados simultáneamente en un aula multigrado:
    - Redacta con el esquema curricular seleccionado: ${esquemaElegido}.
    - Revisa que cada competencia, contenido e indicador exista textualmente o fielmente en los fragmentos oficiales del MINERD.
 
-4. POLÍTICA DE DIGNIDAD Y SALVAGUARDA INFANTIL:
+4. FORMATO DE SALIDA (OBLIGATORIO JSON VÁLIDO):
+   Devuelve SIEMPRE tu respuesta como un único objeto JSON estrictamente válido, sin texto adicional fuera del JSON:
+   {
+     "mensaje_chat": "String. Tu mensaje conversacional, empático y pedagógico al docente.",
+     "plan_completado": true o false,
+     "datos_planificacion": {
+       // Si plan_completado es true, incluye los bloques obligatorios del esquema seleccionado.
+       // Si plan_completado es false (ej. pregunta clarificadora), asigna null.
+     },
+     "confianza_curricular": {
+       "nivel_certeza": "alta | media | referencial, no verificado",
+       "documento_fuente": "Nombre del documento oficial MINERD",
+       "pagina": "Número o rango de páginas"
+     }
+   }
+
+5. POLÍTICA DE DIGNIDAD Y SALVAGUARDA INFANTIL:
    - Preserva la dignidad, integridad y privacidad de los estudiantes y docentes.
    - No almacenes ni solicites datos identificables de menores.
 `;

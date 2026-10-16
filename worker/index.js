@@ -1741,6 +1741,60 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
 
     // Modo Streaming SSE
     if (stream) {
+      let promptParaStreaming = dynamicPrompt;
+      let fragmentosRecuperadosTexto = "";
+      let consultasAuditadasStreaming = [];
+
+      const usaHerramientasV2 = Boolean(env && (env.HERRAMIENTAS_V2 === "true" || env.HERRAMIENTAS_V2 === true));
+      if (usaHerramientasV2) {
+        try {
+          const modelHerramientas = models[0] || "gemini-3.1-flash-lite";
+          const cicloRes = await cicloToolCalling({
+            promptUsuario: textoParaProcesar,
+            llamadaModeloIA: async (payload) => {
+              const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelHerramientas}:generateContent`;
+              const gemRes = await fetchGeminiWithRetry(geminiUrl, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "x-goog-api-key": env.GEMINI_API_KEY,
+                },
+                body: JSON.stringify({
+                  contents: payload.contents,
+                  tools: payload.tools,
+                  systemInstruction: { parts: [{ text: basePrompt }] },
+                  generationConfig: {
+                    temperature: 0.0,
+                    maxOutputTokens: 2048,
+                  },
+                }),
+                signal: request.signal,
+              });
+              if (!gemRes || !gemRes.ok) {
+                const errTxt = gemRes ? await gemRes.text() : "No response";
+                throw new Error(`Gemini call error: ${errTxt}`);
+              }
+              return await gemRes.json();
+            },
+            env,
+            maxIteraciones: 3,
+          });
+
+          if (cicloRes && cicloRes.consultas && cicloRes.consultas.length > 0) {
+            consultasAuditadasStreaming = cicloRes.consultas;
+            const filasTodas = cicloRes.consultas.flatMap((c) => c.filas || []);
+            if (filasTodas.length > 0) {
+              fragmentosRecuperadosTexto = filasTodas
+                .map((f) => `[Fuente: ${f.fuente_documento || "MINERD"} | Pág: ${f.pagina || "N/A"}] ${f.tema || ""}: ${f.competencia_especifica || ""} - ${f.indicador_logro || f.contenidos_texto_original || ""}`)
+                .join("\n");
+              promptParaStreaming += `\n=== FRAGMENTOS CURRICULARES OFICIALES RECUPERADOS ===\n<DATO>\n${fragmentosRecuperadosTexto}\n</DATO>\n`;
+            }
+          }
+        } catch (errCicloStreaming) {
+          console.warn("[Herramientas V2 Streaming] Falló ciclo de herramientas, procediendo con degradación pedagógica:", errCicloStreaming.message);
+        }
+      }
+
       let geminiRes = null;
       let ultimoError = null;
       let ultimoStatus = 500;
@@ -1756,7 +1810,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
             },
             body: JSON.stringify({
               contents,
-              systemInstruction: { parts: [{ text: dynamicPrompt }] },
+              systemInstruction: { parts: [{ text: promptParaStreaming }] },
               generationConfig: {
                 temperature: 0.0,
                 responseMimeType: "application/json",
@@ -1916,7 +1970,9 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                       esValido = true;
                     }
                   }
-                } catch (eFocado) {}
+                } catch (eFocado) {
+                  console.error("[Worker Error] Reparación enfocada de actividades falló:", eFocado.message);
+                }
               }
             }
 
@@ -1955,20 +2011,61 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                     }
                   }
                 }
-              } catch (errRetry) {}
+              } catch (errRetry) {
+                console.error("[Worker Error] Reintento completo con JSON estricto falló:", errRetry.message);
+              }
             }
 
             if (!esValido || !parsedFinal) {
+              const camposFaltantes = [];
+              if (!parsedFinal) {
+                camposFaltantes.push("estructura JSON válida");
+              } else {
+                if (!mensajeParaChat(parsedFinal)) camposFaltantes.push("mensaje explicativo");
+                if (parsedFinal.plan_completado && (!parsedFinal.datos_planificacion || typeof parsedFinal.datos_planificacion !== "object")) {
+                  camposFaltantes.push("bloques de datos_planificacion");
+                }
+              }
+
+              const motivoDetalle = camposFaltantes.length > 0
+                ? `faltó: ${camposFaltantes.join(", ")}`
+                : "formato de respuesta no canónico";
+
+              console.error("[Worker Error] Validación de campos fallida para planificación:", {
+                esValido,
+                corteOcurrio,
+                camposFaltantes,
+                longitudTexto: (fullText || "").length,
+                muestraTexto: (fullText || "").slice(0, 300)
+              });
+
               parsedFinal = {
                 ok: false,
                 isError: true,
                 codigo: "IA_RESPUESTA_INVALIDA",
-                mensaje: "El modelo de IA devolvió una respuesta incompleta o desordenada.",
-                sugerencia: "Intenta pedir la planificación nuevamente con términos más específicos.",
+                mensaje: `El modelo de IA devolvió una estructura incompleta (${motivoDetalle}).`,
+                sugerencia: "Intenta pedir la planificación nuevamente indicando el área curricular, grado y un tema específico.",
                 reintentable: true,
-                mensaje_chat: "Tuve dificultades para organizar los componentes de esta planificación.\n\n💡 Sugerencia: Intenta solicitarla nuevamente.",
+                mensaje_chat: `Tuve dificultades para organizar los componentes de esta planificación (${motivoDetalle}).\n\n💡 Sugerencia: Intenta solicitarla nuevamente con términos más específicos.`,
                 plan_completado: false,
+                diagnostico_tecnico: {
+                  motivo: "VALIDACION_CAMPOS_FALLIDA",
+                  campos_faltantes: camposFaltantes,
+                  corte_ocurrio: corteOcurrio,
+                  timestamp: new Date().toISOString()
+                }
               };
+            }
+
+            if (consultasAuditadasStreaming && consultasAuditadasStreaming.length > 0) {
+              parsedFinal.consultas_curriculo = consultasAuditadasStreaming;
+              if (parsedFinal.plan_completado && !parsedFinal.confianza_curricular) {
+                parsedFinal.confianza_curricular = {
+                  nivel_certeza: "alta",
+                  documento_fuente: "Currículo Oficial MINERD / CON BASE",
+                  bloques_aproximados: []
+                };
+              }
             }
 
             let estadoActualizado = cheqCuota;

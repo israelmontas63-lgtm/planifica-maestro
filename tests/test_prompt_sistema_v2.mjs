@@ -26,4 +26,12 @@ describe('Prompt de Sistema V2 - Planifica Maestro', () => {
     const prompt = construirPromptSistemaV2();
     assert.match(prompt, /haz UNA SOLA pregunta concisa/);
   });
+
+  it('exige formato de salida JSON válido con mensaje_chat y datos_planificacion', () => {
+    const prompt = construirPromptSistemaV2();
+    assert.match(prompt, /FORMATO DE SALIDA \(OBLIGATORIO JSON VÁLIDO\)/);
+    assert.match(prompt, /"mensaje_chat"/);
+    assert.match(prompt, /"datos_planificacion"/);
+  });
 });
+

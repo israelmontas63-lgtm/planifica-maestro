@@ -78,7 +78,7 @@ export async function consultarCurriculoMINERD(args, env = {}, opciones = {}) {
   }
 
   try {
-    const res = await fetch(url, {
+    let res = await fetch(`${baseUrl}/rest/v1/rpc/buscar_curriculo_secuencias`, {
       method: 'POST',
       headers: {
         'apikey': anonKey,
@@ -95,6 +95,27 @@ export async function consultarCurriculoMINERD(args, env = {}, opciones = {}) {
       }),
       signal: controller.signal
     });
+
+    // Fallback a nombre histórico / alternativo si buscar_curriculo_secuencias no existe
+    if (!res.ok && res.status === 404) {
+      res = await fetch(`${baseUrl}/rest/v1/rpc/buscar_curriculo`, {
+        method: 'POST',
+        headers: {
+          'apikey': anonKey,
+          'Authorization': `Bearer ${anonKey}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          p_nivel: nivelCanonica,
+          p_grado: gradoNum,
+          p_area: areaCanonica,
+          p_consulta: temaLimpio,
+          p_limite: Math.min(Math.max(limite, 1), 5)
+        }),
+        signal: controller.signal
+      });
+    }
 
     clearTimeout(timer);
 

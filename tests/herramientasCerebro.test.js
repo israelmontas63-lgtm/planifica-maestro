@@ -118,4 +118,80 @@ describe("Herramientas del Cerebro y 7 Capacidades de IA", () => {
     expect(res.modoActivo).toBe("mirando_en_vivo");
     expect(res.zoom).toBe(2.2);
   });
+
+  describe("consultar_base_datos (Capa 2 - Herramientas)", () => {
+    it("valida parámetros obligatorios y rechaza incompletos", async () => {
+      const res = await ejecutarHerramientaCerebro("consultar_base_datos", {
+        nivel: "Primario",
+        grado: "2do"
+        // Faltan area y tema_o_concepto
+      });
+      expect(res.ok).toBe(false);
+      expect(res.codigo).toBe("PARAMETROS_INVALIDOS");
+      expect(res.error).toContain("Faltan parámetros obligatorios");
+    });
+
+    it("devuelve estructura de éxito con datos y fuentes oficiales", async () => {
+      const fragmentoPrueba = {
+        source_id: "sec_mat_2do",
+        tema: "Adición con reagrupación",
+        fuente_documento: "Guía Didáctica de Matemática MINERD 2023"
+      };
+      const res = await ejecutarHerramientaCerebro(
+        "consultar_base_datos",
+        {
+          nivel: "Primario",
+          grado: "2do",
+          area: "Matemática",
+          tema_o_concepto: "Adición"
+        },
+        {
+          ejecutor: async () => [fragmentoPrueba]
+        }
+      );
+      expect(res.ok).toBe(true);
+      expect(res.filas.length).toBe(1);
+      expect(res.fuentes[0]).toContain("MINERD");
+    });
+
+    it("devuelve 'sinResultados: true' explícito cuando la lista está vacía", async () => {
+      const res = await ejecutarHerramientaCerebro(
+        "consultar_base_datos",
+        {
+          nivel: "Primario",
+          grado: "5to",
+          area: "Ciencias Sociales",
+          tema_o_concepto: "Astrofísica cuántica"
+        },
+        {
+          ejecutor: async () => []
+        }
+      );
+      expect(res.ok).toBe(true);
+      expect(res.sinResultados).toBe(true);
+      expect(res.filas.length).toBe(0);
+      expect(res.aviso).toContain("Sin coincidencias oficiales");
+    });
+
+    it("captura errores de Supabase/red y devuelve objeto estructurado sin explotar", async () => {
+      const res = await ejecutarHerramientaCerebro(
+        "consultar_base_datos",
+        {
+          nivel: "Primario",
+          grado: "3ro",
+          area: "Lengua Española",
+          tema_o_concepto: "La Noticia"
+        },
+        {
+          ejecutor: async () => {
+            throw new Error("Conexión rechazada por base de datos");
+          }
+        }
+      );
+      expect(res.ok).toBe(false);
+      expect(res.codigo).toBe("ERROR_EJECUTOR");
+      expect(res.error).toContain("Conexión rechazada");
+    });
+  });
 });
+
