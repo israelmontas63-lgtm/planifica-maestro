@@ -12,16 +12,29 @@ const TTL_DEFAULT_MS = 24 * 60 * 60 * 1000; // 24 horas
 
 const cacheCurricular = new Map(); // hash -> { datos, expiraEn }
 
-export function obtenerClaveStringRawWorker({ grado = "", area = "", tema = "", nivel = "", periodo = "" }) {
+const VERSION_DEFAULT_HERRAMIENTAS = "2.0.0";
+const VERSION_DEFAULT_PROMPT = "2.0.0";
+
+export function obtenerClaveStringRawWorker({
+  grado = "",
+  area = "",
+  tema = "",
+  nivel = "",
+  periodo = "",
+  versionPrompt = VERSION_DEFAULT_PROMPT,
+  versionHerramientas = VERSION_DEFAULT_HERRAMIENTAS
+}) {
   if (!tema || typeof tema !== "string" || !tema.trim()) return null;
 
-  // Clave curricular pura sin PII ni identificadores docentes
+  // Clave curricular pura sin PII ni identificadores docentes, versionada por prompt y herramientas (T9)
   return [
     (grado || "").trim().toLowerCase(),
     (area || "").trim().toLowerCase(),
     (tema || "").trim().toLowerCase(),
     (nivel || "").trim().toLowerCase(),
-    (periodo || "").trim().toLowerCase()
+    (periodo || "").trim().toLowerCase(),
+    String(versionPrompt || VERSION_DEFAULT_PROMPT).trim(),
+    String(versionHerramientas || VERSION_DEFAULT_HERRAMIENTAS).trim()
   ].join("|");
 }
 
