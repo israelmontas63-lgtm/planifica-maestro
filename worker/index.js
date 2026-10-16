@@ -830,23 +830,31 @@ async function handleApiRequest(request, env, ctx) {
     "Referrer-Policy": "strict-origin-when-cross-origin",
   };
 
+  const CODIGOS_ERROR_CERRADOS = new Set([
+    "IA_RESPUESTA_INVALIDA",
+    "DATOS_INCOMPLETOS",
+    "IA_NO_DISPONIBLE",
+    "PROVEEDOR_IA_SATURADO",
+    "CUOTA_DIARIA_AGOTADA",
+    "ERROR_INTERNO"
+  ]);
+
   function generarErrorPlanificacion(codigo, mensaje, sugerencia, reintentable = true, status = 200, cuota = null) {
     const incidentId = "INC-" + generarCodigoSeguro(6);
+    const codigoFinal = CODIGOS_ERROR_CERRADOS.has(codigo) ? codigo : "ERROR_INTERNO";
     const mensajeLimpio = enmascararSecretos(mensaje, env);
     const sugerenciaLimpia = enmascararSecretos(sugerencia, env);
-    console.warn(`[PlanError ${incidentId}] ${codigo} - ${mensajeLimpio}`);
+    console.warn(`[PlanError ${incidentId}] ${codigoFinal} - ${mensajeLimpio}`);
     const payload = {
       ok: false,
       isError: true,
-      codigo,
-      codigoError: codigo,
+      codigo: codigoFinal,
+      codigoError: codigoFinal,
       mensaje: mensajeLimpio,
       sugerencia: sugerenciaLimpia,
       reintentable,
       incidentId,
-      mensaje_chat: `${mensajeLimpio}
-
-💡 Sugerencia: ${sugerenciaLimpia}`,
+      mensaje_chat: `${mensajeLimpio}\n\n💡 Sugerencia: ${sugerenciaLimpia}`,
       plan_completado: false
     };
     if (cuota) payload.cuota = cuota;
