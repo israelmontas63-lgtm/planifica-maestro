@@ -51,6 +51,12 @@ export const PATRONES_ACCION_APP = [
   "borrar chat", "reiniciar chat", "cerrar sesion"
 ];
 
+export const PATRONES_FALLO_ANTERIOR = [
+  "por que no puedes", "por que no pudiste", "por que fallo", "que paso", "que fallo",
+  "dime por que", "explicame por que", "por que motivo", "y eso", "como asi",
+  "por que razon", "por que no funciona", "por que da error", "por que paso eso"
+];
+
 export const PATRONES_CONSULTA_CURRICULAR = [
   "que indicadores", "cuales indicadores", "indicadores de logro", "indicador de logro",
   "que competencias", "cuales competencias", "competencias fundamentales", "competencias especificas",
@@ -201,7 +207,7 @@ export const OPCIONES_ACLARACION = [
 /**
  * Capa 1: Clasificación determinista basada en reglas lingüísticas normalizadas ($0)
  */
-export function clasificarPorReglas(texto) {
+export function clasificarPorReglas(texto, contexto = {}) {
   const norm = normalizarTexto(texto);
   if (!norm) {
     return {
@@ -246,6 +252,20 @@ export function clasificarPorReglas(texto) {
       mensaje_rechazo: "Profe, como colega pedagógico de Planifica Maestro mi labor se enfoca exclusivamente en el apoyo educativo y curricular. ¿En qué planificación o contenido escolar te puedo colaborar hoy?",
       esMixtoConSaludo: false,
       opciones: OPCIONES_ACLARACION
+    };
+  }
+
+  // 1.5. Consulta sobre fallo o error previo en la conversación (T1)
+  const tieneFalloAnterior = PATRONES_FALLO_ANTERIOR.some(p => norm === p || norm.startsWith(`${p} `) || contienePalabraOFrase(norm, p));
+  if (tieneFalloAnterior || (contexto?.ultimoError && (norm.startsWith("por que") || norm.startsWith("que paso") || norm.startsWith("como asi")))) {
+    return {
+      categoria: "fallo_anterior",
+      tipo: "fallo_anterior",
+      categoria_6: CATEGORIAS_6.B_PEDAGOGIA_GENERAL,
+      codigo_categoria: "B",
+      confianza: 0.95,
+      motivo: "Consulta sobre fallo o error previo en la conversación.",
+      esMixtoConSaludo: false
     };
   }
 
@@ -439,9 +459,9 @@ export function clasificarCategoria6(texto, perfil = null) {
 /**
  * Clasificador principal para Cloudflare Worker y Node.js
  */
-export async function clasificarIntencion({ texto = "", temaVision = null, env = {}, timeoutMs = 2500, fallbackIaFn = null }) {
+export async function clasificarIntencion({ texto = "", temaVision = null, contexto = {}, env = {}, timeoutMs = 2500, fallbackIaFn = null }) {
   const textoParaEvaluar = temaVision ? `${temaVision}. ${texto}` : texto;
-  const resultadoReglas = clasificarPorReglas(textoParaEvaluar);
+  const resultadoReglas = clasificarPorReglas(textoParaEvaluar, contexto);
 
   if (resultadoReglas.confianza >= 0.75) {
     return resultadoReglas;

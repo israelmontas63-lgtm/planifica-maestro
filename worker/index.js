@@ -2,7 +2,7 @@ import { LEVELS } from "./levels.js";
 import { obtenerContextoConBase } from "./contextoConBase.js";
 import { getAiProvider, getGeminiModels, fetchGeminiWithRetry, fetchGeminiConThinking } from "./services/aiProvider.js";
 import { generateVoice } from "./services/voiceProvider.js";
-import { clasificarIntencion } from "./clasificadorIntencion.js";
+import { clasificarIntencion, clasificarPorReglas } from "./clasificadorIntencion.js";
 import { generarRespuestaCharlaLocal, SYSTEM_PROMPT_CONVERSACIONAL, limpiarSaludoInnecesario } from "./modoConversacional.js";
 import { buscarEnGlosario } from "./glosarioDocente.js";
 import {
@@ -1134,24 +1134,37 @@ async function handleApiRequest(request, env, ctx) {
     const ultimoMsg = messages[messages.length - 1] || {};
           const textoConsulta = (ultimoMsg.text || ultimoMsg.content || body.tema || body.prompt || "").trim();
 
-      const esPreguntaPorQue = /^(?:¿?\s*(?:por\s*qu[eé]|c[oó]mo\s*as[ií]|qu[eé]\s*pas[oó]|y\s*eso|explica(?:me)?|por\s*qu[eé]\s*no\s*puedes))/i.test(textoConsulta);
-      const previoAssistant = messages[messages.length - 2] || {};
-      if (esPreguntaPorQue && previoAssistant.isError && previoAssistant.codigoError) {
-        let explicacion = "Hubo un problema t�cnico y no pude completar la solicitud.";
-        if (previoAssistant.codigoError === "IA_RESPUESTA_INVALIDA") explicacion = "El modelo de IA devolvi� los datos desordenados, y por seguridad prefer� no mostrarte una planificaci�n rota.";
-        if (previoAssistant.codigoError === "DATOS_INCOMPLETOS") explicacion = "Me faltaron datos clave como el grado, el �rea o el tema a planificar para poder cumplir con el curr�culo oficial.";
-        if (previoAssistant.codigoError === "IA_NO_DISPONIBLE") explicacion = "El servidor de inteligencia artificial est� saturado o apagado temporalmente debido a la alta demanda.";
-        if (previoAssistant.codigoError === "PROVEEDOR_IA_SATURADO") explicacion = "El servicio de inteligencia artificial estuvo temporalmente saturado por alta demanda. No tiene que ver con tu cuenta y suele resolverse en un minuto.";
-        if (previoAssistant.codigoError === "CUOTA_DIARIA_AGOTADA") explicacion = "Se agot� el l�mite de planes que puedes generar gratis por hoy. Esto ayuda a mantener el servidor funcionando.";
-        if (previoAssistant.codigoError === "ERROR_INTERNO") explicacion = "Mi configuraci�n interna (por ejemplo, las claves de conexi�n al servidor de IA) fall� inesperadamente.";
-        return generarErrorPlanificacion(
-           previoAssistant.codigoError,
-           explicacion,
-           previoAssistant.sugerencia || "Intenta nuevamente.",
-           previoAssistant.reintentable !== false,
-           200
-        );
-      }
+      const errorPrevio = messages.slice().reverse().find(m => m.isError && m.codigoError) || (messages[messages.length - 2]?.isError ? messages[messages.length - 2] : null);
+    const clasificacionPrevia = clasificarPorReglas(textoConsulta, { ultimoError: errorPrevio ? errorPrevio.codigoError : null });
+
+    if ((clasificacionPrevia.categoria === "fallo_anterior" || /^(?:¿?\s*(?:por\s*qu[eé]|c[oó]mo\s*as[ií]|qu[eé]\s*pas[oó]|y\s*eso|explica(?:me)?|por\s*qu[eé]\s*no\s*puedes))/i.test(textoConsulta)) && errorPrevio) {
+      const codigosPermitidos = new Set([
+        "IA_RESPUESTA_INVALIDA",
+        "DATOS_INCOMPLETOS",
+        "IA_NO_DISPONIBLE",
+        "PROVEEDOR_IA_SATURADO",
+        "CUOTA_DIARIA_AGOTADA",
+        "ERROR_INTERNO"
+      ]);
+      const codigoErr = codigosPermitidos.has(errorPrevio.codigoError)
+        ? errorPrevio.codigoError
+        : "ERROR_INTERNO";
+
+      let explicacion = "Hubo un problema técnico y no pude completar la solicitud.";
+      if (codigoErr === "IA_RESPUESTA_INVALIDA") explicacion = "El modelo de IA devolvió los datos desordenados, y por seguridad preferí no mostrarte una planificación rota.";
+      if (codigoErr === "DATOS_INCOMPLETOS") explicacion = "Me faltaron datos clave como el grado, el área o el tema a planificar para poder cumplir con el currículo oficial.";
+      if (codigoErr === "IA_NO_DISPONIBLE") explicacion = "El servidor de inteligencia artificial está saturado o apagado temporalmente debido a la alta demanda.";
+      if (codigoErr === "PROVEEDOR_IA_SATURADO") explicacion = "El servicio de inteligencia artificial estuvo temporalmente saturado por alta demanda. No tiene que ver con tu cuenta y suele resolverse en un minuto.";
+      if (codigoErr === "CUOTA_DIARIA_AGOTADA") explicacion = "Se agotó el límite de planes que puedes generar gratis por hoy. Esto ayuda a mantener el servidor funcionando.";
+      if (codigoErr === "ERROR_INTERNO") explicacion = "Mi configuración interna (por ejemplo, las claves de conexión al servidor de IA) falló inesperadamente.";
+      return generarErrorPlanificacion(
+        codigoErr,
+        explicacion,
+        errorPrevio.sugerencia || "Intenta nuevamente.",
+        errorPrevio.reintentable !== false,
+        200
+      );
+    }
     const imageBase64 = ultimoMsg.imageBase64 || body.imageBase64 || null;
     const mediaType = ultimoMsg.mediaType || body.mediaType || "image/jpeg";
 
