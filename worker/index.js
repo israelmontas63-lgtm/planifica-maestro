@@ -440,9 +440,10 @@ async function consultarCuota(env, docenteId, isOwner, clientIp = "127.0.0.1") {
   }
 
   // BETA ABIERTA: Cuota diaria por dispositivo (Hash SHA-256 de device_id + fecha_YYYY-MM-DD)
-  const limiteDispositivo = (env && env.RATE_LIMIT_DISPOSITIVO_DIARIO)
-    ? (parseInt(env.RATE_LIMIT_DISPOSITIVO_DIARIO, 10) || 25)
-    : 25;
+  const parsedLimDev = (env && env.RATE_LIMIT_DISPOSITIVO_DIARIO !== undefined)
+    ? parseInt(env.RATE_LIMIT_DISPOSITIVO_DIARIO, 10)
+    : NaN;
+  const limiteDispositivo = Number.isFinite(parsedLimDev) ? parsedLimDev : 25;
 
   const fechaHoy = new Date().toISOString().substring(0, 10);
   const now = Date.now();
@@ -1101,26 +1102,7 @@ async function handleApiRequest(request, env, ctx) {
     const rawDevId = request.headers.get("x-device-id") || request.headers.get("X-Device-Id") || (docenteId && docenteId !== "docente_default" ? docenteId : null) || request.headers.get("x-docente-id") || ("dev_anon_" + clientIp);
     const resolvedDocenteId = rawDevId;
 
-    // Verificar topes multinivel (dispositivo, IP de red y límite global) antes de procesar
-    const checkTopes = await verificarTopesMultinivel({
-      deviceId: resolvedDocenteId,
-      clientIp,
-      env,
-      isOwner,
-    });
-
-    if (!checkTopes.permitido) {
-      return new Response(
-        JSON.stringify({
-          error: checkTopes.error,
-          limiteAlcanzado: true,
-          agotado: true,
-          cuota: checkTopes.cuota || null,
-        }),
-        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-    const cheqCuota = checkTopes.cuota;
+    // T6: resolvedDocenteId listo para evaluación posterior tras intenciones locales
 
     const iaApagada = await verificarIaApagada(env);
 
@@ -1482,6 +1464,27 @@ async function handleApiRequest(request, env, ctx) {
         estado: "pensando"
       });
     }
+
+    // T6: Topes multinivel y cuota se aplican SOLO a acciones que usan IA o planificación
+    const checkTopes = await verificarTopesMultinivel({
+      deviceId: resolvedDocenteId,
+      clientIp,
+      env,
+      isOwner,
+    });
+
+    if (!checkTopes.permitido) {
+      return new Response(
+        JSON.stringify({
+          error: checkTopes.error,
+          limiteAlcanzado: true,
+          agotado: true,
+          cuota: checkTopes.cuota || null,
+        }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const cheqCuota = checkTopes.cuota;
 
     // 3. MODO AMBIGUO -> Pregunta con botones de aclaración (sin adivinar)
     if (clasificacion.categoria === "ambigua") {
