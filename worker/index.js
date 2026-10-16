@@ -20,6 +20,8 @@ import { evaluarPoliticaDignidad } from "./politicaDignidadImagen.js";
 import { obtenerOperacionPorId } from "./catalogoEdicionImagen.js";
 import { cicloToolCalling } from "../shared/ciclo.js";
 import { PROMPT_SISTEMA_V2_TEXTO } from "../shared/promptSistemaV2.js";
+import { consultarCurriculoMINERD } from "../shared/curriculoService.mjs";
+import { gradoANumero } from "../shared/catalogoCurricular.mjs";
 
 
 /**
@@ -1485,6 +1487,75 @@ async function handleApiRequest(request, env, ctx) {
       );
     }
     const cheqCuota = checkTopes.cuota;
+
+    // 2.5. MODO CONSULTA CURRICULAR -> Herramientas curriculares oficiales con fuentes (T2)
+    if (clasificacion.categoria === "consulta_curricular") {
+      let fragmentos = [];
+      let gradoDetectado = gradoANumero(textoParaProcesar) || 2;
+      let areaDetectada = /lengua|lectura|cuento|noticia/i.test(textoParaProcesar) ? "Lengua Española" : "Matemática";
+      let nivelDetectado = /secundar/i.test(textoParaProcesar) ? "Secundario" : "Primario";
+
+      if (env.SUPABASE_URL && (env.SUPABASE_ANON_KEY || env.SUPABASE_SERVICE_ROLE_KEY)) {
+        try {
+          fragmentos = await consultarCurriculoMINERD(
+            {
+              nivel: nivelDetectado,
+              grado: `${gradoDetectado}do Grado`,
+              area: areaDetectada,
+              tema_o_concepto: textoParaProcesar,
+              limite: 3
+            },
+            {
+              SUPABASE_URL: env.SUPABASE_URL,
+              SUPABASE_ANON_KEY: env.SUPABASE_ANON_KEY || env.SUPABASE_SERVICE_ROLE_KEY
+            },
+            { timeoutMs: 3000 }
+          );
+        } catch (e) {
+          console.warn("[Consulta Curricular] Error consultando RPC Supabase:", e?.message || e);
+        }
+      }
+
+      if (!fragmentos || fragmentos.length === 0) {
+        const glosarioMatch = buscarEnGlosario(textoParaProcesar);
+        if (glosarioMatch) {
+          fragmentos = [{
+            tema: glosarioMatch.termino,
+            competencia_especifica: glosarioMatch.definicion,
+            indicador_logro: glosarioMatch.ejemplo || glosarioMatch.definicion,
+            fuente_documento: "Adecuación Curricular MINERD (Nivel Primario)",
+            pagina: glosarioMatch.pagina || 1,
+            version_curricular: "2023"
+          }];
+        }
+      }
+
+      let mensajeRespuesta = "";
+      if (fragmentos && fragmentos.length > 0) {
+        const f = fragmentos[0];
+        const fuente = f.fuente_documento || f.fuente || "Diseño Curricular MINERD 2023";
+        const pag = f.pagina ? `, pág. ${f.pagina}` : "";
+        mensajeRespuesta = `📚 **Consulta Curricular Oficial (${f.area || areaDetectada} - ${f.grado_num || gradoDetectado}.° Grado):**\n\n` +
+          (f.competencia_especifica ? `- **Competencia Específica:** ${f.competencia_especifica}\n` : "") +
+          (f.indicador_logro ? `- **Indicador de Logro:** ${f.indicador_logro}\n` : "") +
+          (f.tema ? `- **Contenido/Concepto:** ${f.tema}\n` : "") +
+          `\n📖 **Fuente Oficial:** ${fuente}${pag}.`;
+      } else {
+        mensajeRespuesta = `📚 **Consulta Curricular MINERD:**\n\nNo encontré un registro específico en la base oficial para "${textoParaProcesar}". Te sugiero especificar el grado (1.° a 6.°) y el área (Lengua Española o Matemática) para una búsqueda curricular exacta.`;
+      }
+
+      return responderWorker({
+        data: {
+          mensaje_chat: mensajeRespuesta,
+          plan_completado: false,
+          modo: "consulta_curricular",
+          categoria: "consulta_curricular",
+          fragmentos: fragmentos || [],
+          datos_planificacion: null
+        },
+        estado: "curriculo"
+      });
+    }
 
     // 3. MODO AMBIGUO -> Pregunta con botones de aclaración (sin adivinar)
     if (clasificacion.categoria === "ambigua") {
