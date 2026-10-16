@@ -12,6 +12,7 @@ module.exports = {
   generarRespuestaCharlaLocal: shared.generarRespuestaCharlaLocal,
   SYSTEM_PROMPT_CONVERSACIONAL: shared.SYSTEM_PROMPT_CONVERSACIONAL,
   limpiarSaludoInnecesario: shared.limpiarSaludoInnecesario,
-  obtenerHoraSantoDomingo: shared.obtenerHoraSantoDomingo
+  obtenerHoraSantoDomingo: shared.obtenerHoraSantoDomingo,
+  sanearNombreDocente: shared.sanearNombreDocente
 };
 

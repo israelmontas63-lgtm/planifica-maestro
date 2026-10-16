@@ -57,6 +57,21 @@ export function obtenerHoraSantoDomingo() {
   }
 }
 
+export function sanearNombreDocente(nombre) {
+  if (!nombre || typeof nombre !== "string") return null;
+  // 1. Longitud <= 50 caracteres
+  let limpio = nombre.slice(0, 50);
+  // 2. Sin saltos de línea ni caracteres de control
+  limpio = limpio.replace(/[\x00-\x1F\x7F-\x9F\r\n\t]/g, "").trim();
+  // 3. Sanitizar caracteres extraños o scripts (solo letras, espacios, puntos, guiones)
+  limpio = limpio.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s.-]/g, "").trim();
+  // 4. Si no hay nombre real o es marcador genérico, retornar null
+  if (!limpio || /^(docente_?default|anonimo|anónimo|default|usuario|null|undefined)$/i.test(limpio)) {
+    return null;
+  }
+  return limpio;
+}
+
 export function generarRespuestaCharlaLocal({ texto = "", nombreDocente = null }) {
   const norm = texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
   const hora = obtenerHoraSantoDomingo();
@@ -76,14 +91,28 @@ export function generarRespuestaCharlaLocal({ texto = "", nombreDocente = null }
   }
 
   let respuesta = lista[idx % lista.length];
-  if (nombreDocente && typeof nombreDocente === "string" && nombreDocente.trim()) {
-    const sinPrefijo = nombreDocente.trim().replace(/^(profe|prof\.|profesor|profesora|maestro|maestra|colega)\s+/i, "");
-    const primerNombre = sinPrefijo.split(" ")[0] || "colega";
+  const nombreSaneado = sanearNombreDocente(nombreDocente);
+
+  if (nombreSaneado) {
+    const sinPrefijo = nombreSaneado.replace(/^(profe|prof\.|profesor|profesora|maestro|maestra|colega)\s+/i, "");
+    const primerNombre = sinPrefijo.split(/\s+/)[0];
     if (/Profe|colega/i.test(respuesta)) {
-      respuesta = respuesta.replace(/Profe|colega/i, `Profe ${primerNombre}`);
+      respuesta = respuesta.replace(/Profe|colega/i, primerNombre ? `Profe ${primerNombre}` : "Profe");
     } else {
       respuesta = `¡Hola, Profe ${primerNombre}! ` + respuesta.replace(/^¡/, "");
     }
+  } else {
+    // Si no hay nombre: no inventar ninguno ni usar marcadores genéricos visibles (remover 'colega', 'Profe', etc.)
+    respuesta = respuesta
+      .replace(/,\s*(?:colega|Profe)\b/gi, "")
+      .replace(/\b(?:colega|Profe)\s*,?\s*/gi, "")
+      .replace(/¡\s*,?\s*/g, "¡")
+      .trim();
+  }
+
+  // Asegurar signos ¡! y ¿? correctos en español
+  if (!respuesta.startsWith("¡")) {
+    respuesta = "¡" + respuesta;
   }
 
   return {

@@ -57,3 +57,19 @@
 - **Frase Textual del Dueño:** `"Elimina todos los catch vacíos (grep -rn "catch *([a-zA-Z]*) *{ *}" worker/ shared/) y pega el grep antes y después."`
 - **Estado:** APLICADA
 
+### Autorización 008
+- **Fecha:** 2026-10-16
+- **Componente:** `shared/modoConversacional.js`
+- **Motivo:** Saneamiento de nombre de docente contra inyecciones y caracteres extraños, puntuación española correcta (¡! y ¿?) y omisión de marcadores genéricos visibles cuando no hay nombre según T5.
+- **Frase Textual del Dueño:** `"T5. Nombre de docente: sanear contra inyecciones y caracteres extraños (longitud <= 50, sin saltos de línea ni caracteres de control); signos ¡! y ¿? correctos en español. Si no hay nombre, no inventar ninguno ni usar marcadores genéricos visibles."`
+- **Estado:** APLICADA
+
+### Autorización 009
+- **Fecha:** 2026-10-16
+- **Componente:** `server/ia/modoConversacional.js`
+- **Motivo:** Exportación de fachada de sanearNombreDocente según T5.
+- **Frase Textual del Dueño:** `"T5. Nombre de docente: sanear contra inyecciones y caracteres extraños (longitud <= 50, sin saltos de línea ni caracteres de control); signos ¡! y ¿? correctos en español. Si no hay nombre, no inventar ninguno ni usar marcadores genéricos visibles."`
+- **Estado:** APLICADA
+
+
+
