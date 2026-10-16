@@ -1604,11 +1604,12 @@ async function handleApiRequest(request, env, ctx) {
                 resumen: r.content ? r.content.slice(0, 200) : ""
               }));
             }
-            if (dataT.answer) {
+            if (dataT.answer || (fuentesCitas && fuentesCitas.length > 0)) {
+              const contenido = dataT.answer || `Encontré los siguientes resultados web para tu consulta:\n\n` + fuentesCitas.map(f => `**${f.titulo}**: ${f.resumen}`).join("\n\n");
               const fuentesStr = fuentesCitas.map(f => `\n- [${f.titulo}](${f.url})`).join("");
               return responderWorker({
                 data: {
-                  mensaje_chat: `${dataT.answer}\n\n**Fuentes verificadas en internet:**${fuentesStr}`,
+                  mensaje_chat: `${contenido}\n\n**Fuentes verificadas en internet:**${fuentesStr}`,
                   plan_completado: false,
                   modo: "busqueda_web",
                   categoria: "busqueda_web",
@@ -1620,9 +1621,16 @@ async function handleApiRequest(request, env, ctx) {
             }
           }
         } catch (eTav) {
-          console.warn("Worker Tavily search error:", eTav.message);
+          console.warn("Worker Tavily search error:", eTav?.message || eTav);
         }
       }
+
+      return generarErrorPlanificacion(
+        "IA_NO_DISPONIBLE",
+        "El servicio de búsqueda web externa no está disponible en este momento.",
+        "Puedes realizar una consulta curricular directamente o formular una pregunta pedagógica sobre el currículo oficial.",
+        false
+      );
     }
 
     // 4. MODO CONOCIMIENTO GENERAL -> Conversacional directo con modelo sin buscar en currículo oficial
