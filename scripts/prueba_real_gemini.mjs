@@ -14,12 +14,50 @@ async function ejecutarPrueba() {
   console.log('🤖 PRUEBA DE CICLO CURRICULAR: GEMINI + FUNCTION CALLING (MINERD)');
   console.log('=================================================================\n');
 
+  const args = process.argv.slice(2);
+  const esSimulacionForzada = args.includes('--simulacion') || args.includes('--mock');
+
   const apiKey = process.env.GEMINI_API_KEY;
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+
+  if (!esSimulacionForzada) {
+    const faltantes = [];
+    if (!apiKey || apiKey.trim().length === 0) faltantes.push('GEMINI_API_KEY');
+    if (!supabaseUrl || supabaseUrl.trim().length === 0) faltantes.push('SUPABASE_URL');
+
+    if (faltantes.length > 0) {
+      console.error('\n=================================================================');
+      console.error('❌ ERROR: FALTAN CREDENCIALES REQUERIDAS PARA LA EJECUCIÓN REAL');
+      console.error('=================================================================');
+      console.error('Las siguientes variables de entorno no están configuradas:');
+      faltantes.forEach(f => console.error(`  - ${f}: [FALTA]`));
+      console.error('\nPara ejecutar la prueba en vivo contra Gemini y Supabase, defínelas en tu terminal.');
+      console.error('Si deseas ejecutar una prueba offline con datos simulados, usa el flag:');
+      console.error('  node scripts/prueba_real_gemini.mjs --simulacion\n');
+      process.exit(1);
+    }
+  }
+
+  if (esSimulacionForzada) {
+    console.log('\n*****************************************************************');
+    console.log('*                                                               *');
+    console.log('*                     S I M U L A C I Ó N                       *');
+    console.log('*                                                               *');
+    console.log('*        EJECUTANDO CON DATOS DE PRUEBA DETERMINISTAS           *');
+    console.log('*               (Sin llamadas de red externas)                  *');
+    console.log('*                                                               *');
+    console.log('*****************************************************************\n');
+  } else {
+    console.log('=================================================================');
+    console.log('🌐 EJECUCIÓN EN VIVO: GEMINI + SUPABASE MINERD REAL');
+    console.log('=================================================================\n');
+  }
+
   const promptDocente = 'Hola colega, necesito planificar una clase de Matemática para 2do Grado de Primaria sobre adición con reagrupación.';
 
   console.log(`📝 Consulta del docente:\n   "${promptDocente}"\n`);
 
-  // Mock de datos curriculares oficiales para el ejecutor
   const fragmentosOficiales = [
     {
       id: 'f87a8b41-e37d-5a9a-b85f-8d99c424a180',
@@ -37,53 +75,68 @@ async function ejecutarPrueba() {
     }
   ];
 
-  if (apiKey && apiKey.trim().length > 10) {
-    console.log('🔑 GEMINI_API_KEY detectada en el entorno. Intentando conexión real con Gemini...');
+  if (!esSimulacionForzada) {
     const modelo = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+    console.log(`🔑 Ejecutando llamada real con Gemini (${modelo}) y Supabase RPC...`);
+    const resultado = await cicloToolCalling({
+      promptUsuario: promptDocente,
+      llamadaModeloIA: async (payload) => {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`;
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey
+          },
+          body: JSON.stringify({
+            contents: payload.contents,
+            tools: payload.tools,
+            systemInstruction: { parts: [{ text: PROMPT_SISTEMA_V2_TEXTO }] },
+            generationConfig: { temperature: 0.1, maxOutputTokens: 2048 }
+          })
+        });
 
-    try {
-      const resultado = await cicloToolCalling({
-        promptUsuario: promptDocente,
-        llamadaModeloIA: async (payload) => {
-          const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey}`;
-          const res = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: payload.contents,
-              tools: payload.tools,
-              systemInstruction: { parts: [{ text: PROMPT_SISTEMA_V2_TEXTO }] },
-              generationConfig: { temperature: 0.1, maxOutputTokens: 2048 }
-            })
-          });
+        if (!res.ok) {
+          const errBody = await res.text();
+          throw new Error(`Error HTTP ${res.status}: ${errBody}`);
+        }
+        return await res.json();
+      },
+      ejecutorSupabase: async (args) => {
+        console.log('\n🔍 [Supabase Ejecutor Real] Consulta recibida:', JSON.stringify(args, null, 2));
+        const res = await fetch(`${supabaseUrl.replace(/\/+$/, '')}/rest/v1/rpc/buscar_curriculo_secuencias`, {
+          method: 'POST',
+          headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            p_nivel: args.nivel || 'Primario',
+            p_grado: typeof args.grado === 'number' ? args.grado : 2,
+            p_area: args.area || 'Matemática',
+            p_consulta: args.tema_o_concepto || '',
+            p_limite: 5
+          })
+        });
+        if (!res.ok) {
+          const errTxt = await res.text();
+          throw new Error(`Error RPC Supabase ${res.status}: ${errTxt}`);
+        }
+        return await res.json();
+      },
+      maxIteraciones: 3
+    });
 
-          if (!res.ok) {
-            const errBody = await res.text();
-            throw new Error(`Error HTTP ${res.status}: ${errBody}`);
-          }
-          return await res.json();
-        },
-        ejecutorSupabase: async (args) => {
-          console.log('\n🔍 [Supabase Ejecutor] Consulta recibida desde Gemini:', JSON.stringify(args, null, 2));
-          return fragmentosOficiales;
-        },
-        maxIteraciones: 3
-      });
-
-      console.log('\n✅ Ciclo en vivo completado exitosamente con Gemini:');
-      console.log(`   Tipo de respuesta: ${resultado.tipo}`);
-      console.log(`   Iteraciones realizadas: ${resultado.iteraciones}`);
-      console.log(`   Herramientas auditadas: ${resultado.consultas.length}`);
-      console.log('\n📄 Texto devuelto por el modelo:\n');
-      console.log(resultado.texto);
-      return;
-    } catch (errReal) {
-      console.warn(`\n⚠️ Falló la llamada en vivo a Gemini (${errReal.message}).`);
-      console.log('   Pasando a simulación determinista para validar el ciclo...\n');
-    }
-  } else {
-    console.log('ℹ️ No se detectó GEMINI_API_KEY en variables de entorno.');
-    console.log('   Ejecutando simulación determinista del ciclo de Tool Calling...\n');
+    console.log('\n=================================================================');
+    console.log('✅ CICLO EN VIVO COMPLETADO EXITOSAMENTE');
+    console.log('=================================================================');
+    console.log(`Tipo de respuesta: ${resultado.tipo}`);
+    console.log(`Iteraciones realizadas: ${resultado.iteraciones}`);
+    console.log(`Herramientas auditadas: ${resultado.consultas.length}`);
+    console.log('\n📄 Texto devuelto por el modelo:\n');
+    console.log(resultado.texto);
+    return;
   }
 
   // Simulación determinista del ciclo de Gemini Function Calling

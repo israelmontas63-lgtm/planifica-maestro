@@ -29,3 +29,6 @@ server/curriculo/fuentes/*.pdf
 server/curriculo/fuentes/*.part
 
 
+
+# Contexto y notas internas
+contexto_cerebro.md

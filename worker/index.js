@@ -812,7 +812,9 @@ async function handleApiRequest(request, env, ctx) {
     console.warn(`[PlanError ${incidentId}] ${codigo} - ${mensajeLimpio}`);
     const payload = {
       ok: false,
+      isError: true,
       codigo,
+      codigoError: codigo,
       mensaje: mensajeLimpio,
       sugerencia: sugerenciaLimpia,
       reintentable,
@@ -1090,13 +1092,14 @@ async function handleApiRequest(request, env, ctx) {
     const ultimoMsg = messages[messages.length - 1] || {};
           const textoConsulta = (ultimoMsg.text || ultimoMsg.content || body.tema || body.prompt || "").trim();
 
-      const esPreguntaPorQue = /^(?:�?por qu[e�]\??|y eso\??|c[o�]mo as[i�]\??|dime por qu[e�]|explica|por qu[e�] motivo)$/i.test(textoConsulta);
+      const esPreguntaPorQue = /^(?:¿?\s*(?:por\s*qu[eé]|c[oó]mo\s*as[ií]|qu[eé]\s*pas[oó]|y\s*eso|explica(?:me)?|por\s*qu[eé]\s*no\s*puedes))/i.test(textoConsulta);
       const previoAssistant = messages[messages.length - 2] || {};
       if (esPreguntaPorQue && previoAssistant.isError && previoAssistant.codigoError) {
         let explicacion = "Hubo un problema t�cnico y no pude completar la solicitud.";
         if (previoAssistant.codigoError === "IA_RESPUESTA_INVALIDA") explicacion = "El modelo de IA devolvi� los datos desordenados, y por seguridad prefer� no mostrarte una planificaci�n rota.";
         if (previoAssistant.codigoError === "DATOS_INCOMPLETOS") explicacion = "Me faltaron datos clave como el grado, el �rea o el tema a planificar para poder cumplir con el curr�culo oficial.";
         if (previoAssistant.codigoError === "IA_NO_DISPONIBLE") explicacion = "El servidor de inteligencia artificial est� saturado o apagado temporalmente debido a la alta demanda.";
+        if (previoAssistant.codigoError === "PROVEEDOR_IA_SATURADO") explicacion = "El servicio de inteligencia artificial estuvo temporalmente saturado por alta demanda. No tiene que ver con tu cuenta y suele resolverse en un minuto.";
         if (previoAssistant.codigoError === "CUOTA_DIARIA_AGOTADA") explicacion = "Se agot� el l�mite de planes que puedes generar gratis por hoy. Esto ayuda a mantener el servidor funcionando.";
         if (previoAssistant.codigoError === "ERROR_INTERNO") explicacion = "Mi configuraci�n interna (por ejemplo, las claves de conexi�n al servidor de IA) fall� inesperadamente.";
         return generarErrorPlanificacion(
@@ -1740,7 +1743,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
     const models = getGeminiModels(env, modeloHeader || modeloBody);
 
     // Modo Streaming SSE
-    if (stream) {
+    if (isStream) {
       let promptParaStreaming = dynamicPrompt;
       let fragmentosRecuperadosTexto = "";
       let consultasAuditadasStreaming = [];
@@ -1838,7 +1841,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
         const incidentId = "INC-" + generarCodigoSeguro(6);
         console.error(`[AI Error ${incidentId}] Modelos agotados. Código: ${ultimoStatus} - ${ultimoError}`);
         const codigo = (ultimoStatus === 429)
-          ? "CUOTA_DIARIA_AGOTADA"
+          ? "PROVEEDOR_IA_SATURADO"
           : (ultimoStatus === 503 || ultimoStatus === 502 || ultimoStatus === 504)
           ? "IA_NO_DISPONIBLE"
           : "ERROR_INTERNO";
@@ -2302,8 +2305,15 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
 
       if (!esValido || !parsed) {
         parsed = {
-          mensaje_chat: "No pude armar la planificación, ¿intentamos otra vez?",
+          ok: false,
+          isError: true,
+          codigo: "IA_RESPUESTA_INVALIDA",
+          codigoError: "IA_RESPUESTA_INVALIDA",
+          mensaje: "La respuesta generada por el modelo de IA no tiene la estructura requerida.",
+          mensaje_chat: "No pude armar la planificación con el formato oficial requerido. ¿Intentamos otra vez con términos más específicos?",
+          sugerencia: "Intenta solicitarla nuevamente indicando el grado, área y tema específico.",
           plan_completado: false,
+          reintentable: true
         };
       }
 
@@ -2354,15 +2364,23 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
     }
 
     console.error(`[AI Error] Modelos agotados. Código: ${ultimoStatus}`);
+    const codigoNoStream = (ultimoStatus === 429)
+      ? "PROVEEDOR_IA_SATURADO"
+      : (ultimoStatus === 503 || ultimoStatus === 502 || ultimoStatus === 504)
+      ? "IA_NO_DISPONIBLE"
+      : "ERROR_INTERNO";
     const mensajeMaestro = (ultimoStatus === 503 || ultimoStatus === 429 || ultimoStatus === 502 || ultimoStatus === 504)
       ? "La IA está ocupada, intenta de nuevo en un minuto."
       : (ultimoStatus === 401 || ultimoStatus === 403)
       ? "Hay un problema de configuración en el servicio de generación. Por favor, contacta a soporte."
       : "La IA está ocupada, intenta de nuevo en un minuto.";
 
-    return new Response(
-      JSON.stringify({ error: mensajeMaestro }),
-      { status: (ultimoStatus === 401 || ultimoStatus === 403) ? 500 : 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    return generarErrorPlanificacion(
+      codigoNoStream,
+      mensajeMaestro,
+      "Espera un minuto y pulsa 'Reintentar'.",
+      true,
+      (ultimoStatus === 401 || ultimoStatus === 403) ? 500 : 503
     );
   }
 
