@@ -10,6 +10,7 @@
     "deploy": "node scripts/deploy.js",
     "indexar-curriculo": "node scripts/extraer_textos.js && node scripts/estructurar_curriculo.js && node scripts/indexar_curriculo.js",
     "guardia": "node scripts/guardia.js",
+    "guardia:sellar": "node scripts/guardia.js --sellar",
     "escanear-secretos": "node scripts/escanear_secretos.js",
     "test": "node scripts/guardia.js && node scripts/escanear_secretos.js && node scripts/run_tests.js",
     "test:client": "npm test --prefix client",
