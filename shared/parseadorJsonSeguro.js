@@ -246,7 +246,12 @@ export function extraerBloquesCompletados(texto, bloquesEmitidos = new Set()) {
           try {
             const saneado = rawCandidate.replace(/(?<=:\s*"[^"]*)\r?\n(?=[^"]*")/g, "\\n");
             valCompletado = JSON.parse(saneado);
-          } catch {}
+          } catch (e) {
+            // Candidato intermedio aún no es JSON balanceado; continuar escaneo incremental
+            if (typeof process !== "undefined" && process?.env?.DEBUG_PARSER) {
+              console.warn("[ParseadorJsonSeguro] Candidato intermedio no parseable:", e?.message || e);
+            }
+          }
         }
       }
     } else if (charInicio === '"') {
@@ -261,7 +266,12 @@ export function extraerBloquesCompletados(texto, bloquesEmitidos = new Set()) {
         posFinVal = finStrVal;
         try {
           valCompletado = JSON.parse(texto.slice(i, finStrVal + 1));
-        } catch {}
+        } catch (e) {
+          // Cadena intermedia no parseable como JSON literal; continuar escaneo
+          if (typeof process !== "undefined" && process?.env?.DEBUG_PARSER) {
+            console.warn("[ParseadorJsonSeguro] Cadena intermedia no parseable:", e?.message || e);
+          }
+        }
       }
     }
 

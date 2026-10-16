@@ -53,7 +53,12 @@ function getAuthHeaders(customHeaders = {}) {
 
     const docenteId = obtenerDocenteId() || devId;
     if (docenteId) headers["x-docente-id"] = docenteId;
-  } catch (e) {}
+  } catch (e) {
+    // Almacenamiento no accesible (SSR, iframe restringido o cuota excedida); continuar sin cabeceras opcionales
+    if (typeof process !== "undefined" && process?.env?.DEBUG) {
+      console.warn("[api:getAuthHeaders] Error leyendo almacenamiento local:", e?.message || e);
+    }
+  }
   return headers;
 }
 
@@ -92,7 +97,12 @@ async function request(endpoint, options = {}, retries = 2) {
       let data = {};
       try {
         data = await res.json();
-      } catch (e) {}
+      } catch (e) {
+        // Respuesta del servidor no es JSON (ej. 502 Bad Gateway en HTML plano); registrar si DEBUG
+        if (typeof process !== "undefined" && process?.env?.DEBUG) {
+          console.warn("[api:request] Respuesta de error no es JSON:", e?.message || e);
+        }
+      }
 
       let type = "SERVER";
       let friendlyMessage = data.mensaje_chat || data.mensaje || data.error || "Ocurrió un error en el servidor.";
@@ -246,7 +256,12 @@ export async function obtenerEsquemasCurriculares() {
     if (data.esquemas) {
       try {
         localStorage.setItem("pm_esquemas_cache", JSON.stringify(data.esquemas));
-      } catch (e) {}
+      } catch (e) {
+        // Almacenamiento local lleno o bloqueado; continuar en memoria
+        if (typeof process !== "undefined" && process?.env?.DEBUG) {
+          console.warn("[api:obtenerEsquemas] No se pudo guardar caché local:", e?.message || e);
+        }
+      }
       return data.esquemas;
     }
   } catch (err) {
@@ -255,7 +270,12 @@ export async function obtenerEsquemasCurriculares() {
   try {
     const cached = localStorage.getItem("pm_esquemas_cache");
     if (cached) return JSON.parse(cached);
-  } catch (e) {}
+  } catch (e) {
+    // Caché corrupta o almacenamiento no accesible; retornar null
+    if (typeof process !== "undefined" && process?.env?.DEBUG) {
+      console.warn("[api:obtenerEsquemas] No se pudo leer caché local:", e?.message || e);
+    }
+  }
   return null;
 }
 
@@ -289,7 +309,12 @@ export async function generarPlanificacion({
   let modeloPreferido = "gemini-3.1-flash-lite";
   try {
     modeloPreferido = localStorage.getItem("pm_modelo_ia") || "gemini-3.1-flash-lite";
-  } catch (e) {}
+  } catch (e) {
+    // Almacenamiento local no accesible; usar modelo predeterminado
+    if (typeof process !== "undefined" && process?.env?.DEBUG) {
+      console.warn("[api:generarPlanificacion] Error leyendo pm_modelo_ia:", e?.message || e);
+    }
+  }
 
   const payload = {
     messages,
@@ -357,7 +382,12 @@ export async function generarPlanificacion({
               if (parsed.final) {
                 finalData = parsed.final;
               }
-            } catch (e) {}
+            } catch (e) {
+              // Fragmento SSE no es un JSON completo o evento especial (ej. [DONE]); registrar si DEBUG
+              if (typeof process !== "undefined" && process?.env?.DEBUG) {
+                console.warn("[api:SSE] Evento SSE no parseable:", jsonStr, e?.message || e);
+              }
+            }
           }
         }
       }
