@@ -1653,8 +1653,25 @@ async function handleApiRequest(request, env, ctx) {
         });
       }
 
-      // Llamar al modelo de IA con prompt conversacional
+      // Llamar al modelo de IA con prompt conversacional y ventana configurable de turnos (T4)
       try {
+        const maxTurnos = parseInt(env.TURNOS_CONVERSACION_MAX || "6", 10);
+        const turnosRecientes = messages.slice(-maxTurnos);
+        const geminiContents = [];
+        for (const m of turnosRecientes) {
+          const role = (m.role === "assistant" || m.role === "model") ? "model" : "user";
+          const text = (m.text || m.content || "").trim();
+          if (text) {
+            geminiContents.push({ role, parts: [{ text }] });
+          }
+        }
+        while (geminiContents.length > 0 && geminiContents[0].role !== "user") {
+          geminiContents.shift();
+        }
+        if (geminiContents.length === 0) {
+          geminiContents.push({ role: "user", parts: [{ text: textoConsulta }] });
+        }
+
         const models = getGeminiModels(env);
         let textoGenerado = "";
         for (const model of models) {
@@ -1667,7 +1684,7 @@ async function handleApiRequest(request, env, ctx) {
                 "x-goog-api-key": env.GEMINI_API_KEY,
               },
               body: JSON.stringify({
-                contents: [{ role: "user", parts: [{ text: textoConsulta }] }],
+                contents: geminiContents,
                 systemInstruction: { parts: [{ text: SYSTEM_PROMPT_CONVERSACIONAL }] },
                 generationConfig: { temperature: 0.3 }
               }),
@@ -1679,12 +1696,14 @@ async function handleApiRequest(request, env, ctx) {
               if (textoGenerado) break;
             }
           } catch (e) {
-            console.warn(`[Conocimiento General] Falló modelo ${m}:`, e?.message || e);
+            console.warn(`[Conocimiento General] Falló modelo ${model}:`, e?.message || e);
           }
         }
 
         if (textoGenerado) {
-          const finalChat = textoGenerado.includes("currículo oficial") ? textoGenerado : `${textoGenerado}${aviso}`;
+          const pideOficial = /curr[ií]culo|oficial|minerd|malla/i.test(textoConsulta);
+          const avisoCorto = pideOficial ? "\n\n*(Orientación pedagógica general. Para competencias oficiales exactas, consulta por grado y área).*" : "";
+          const finalChat = `${textoGenerado.trim()}${avisoCorto}`;
           return responderWorker({
             data: {
               mensaje_chat: finalChat,
