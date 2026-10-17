@@ -1129,7 +1129,19 @@ async function handleApiRequest(request, env, ctx) {
       const errorPrevio = messages.slice().reverse().find(m => m.isError && m.codigoError) || (messages[messages.length - 2]?.isError ? messages[messages.length - 2] : null);
     const clasificacionPrevia = clasificarPorReglas(textoConsulta, { ultimoError: errorPrevio ? errorPrevio.codigoError : null });
 
+    const trazaCapas = [];
+    const registrarCapa = (capa, nombre, entrada, decision, ms = 0) => {
+      trazaCapas.push({
+        capa,
+        nombre,
+        entrada: String(entrada || "").slice(0, 50),
+        decision: String(decision || "").slice(0, 50),
+        ms: Math.max(1, Math.round(ms || 1))
+      });
+    };
+
     if ((clasificacionPrevia.categoria === "fallo_anterior" || /^(?:¿?\s*(?:por\s*qu[eé]|c[oó]mo\s*as[ií]|qu[eé]\s*pas[oó]|y\s*eso|explica(?:me)?|por\s*qu[eé]\s*no\s*puedes))/i.test(textoConsulta)) && errorPrevio) {
+      registrarCapa(1, "Enrutador de intención", textoConsulta, "modo: fallo_anterior", 2);
       const codigosPermitidos = new Set([
         "IA_RESPUESTA_INVALIDA",
         "DATOS_INCOMPLETOS",
@@ -1149,13 +1161,23 @@ async function handleApiRequest(request, env, ctx) {
       if (codigoErr === "PROVEEDOR_IA_SATURADO") explicacion = "El servicio de inteligencia artificial estuvo temporalmente saturado por alta demanda. No tiene que ver con tu cuenta y suele resolverse en un minuto.";
       if (codigoErr === "CUOTA_DIARIA_AGOTADA") explicacion = "Se agotó el límite de planes que puedes generar gratis por hoy. Esto ayuda a mantener el servidor funcionando.";
       if (codigoErr === "ERROR_INTERNO") explicacion = "Mi configuración interna (por ejemplo, las claves de conexión al servidor de IA) falló inesperadamente.";
-      return generarErrorPlanificacion(
-        codigoErr,
-        explicacion,
-        errorPrevio.sugerencia || "Intenta nuevamente.",
-        errorPrevio.reintentable !== false,
-        200
-      );
+      registrarCapa(10, "Errores de lista cerrada", errorPrevio.codigoError, explicacion, 1);
+      return new Response(JSON.stringify({
+        ok: false,
+        isError: true,
+        codigo: codigoErr,
+        codigoError: codigoErr,
+        mensaje: explicacion,
+        mensaje_chat: explicacion,
+        plan_completado: false,
+        modo: "fallo_anterior",
+        categoria: "fallo_anterior",
+        datos_planificacion: null,
+        traza_capas: trazaCapas
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
     const imageBase64 = ultimoMsg.imageBase64 || body.imageBase64 || null;
     const mediaType = ultimoMsg.mediaType || body.mediaType || "image/jpeg";
@@ -1202,8 +1224,13 @@ async function handleApiRequest(request, env, ctx) {
           data.mensaje_chat = limpiarSaludoInnecesario(data.mensaje_chat, false);
         }
         const fragsParaCitas = (data.fragmentos && data.fragmentos.length > 0) ? data.fragmentos : (data.datos_planificacion?.fragmentos || []);
+        const t0Citas = performance.now();
         data.mensaje_chat = verificarYSanearCitas(data.mensaje_chat, fragsParaCitas);
+        if (fragsParaCitas.length > 0 || /pág\./i.test(data.mensaje_chat)) {
+          registrarCapa(7, "Verificador de citas", "validación pág. N contra fragmentos", "citas verificadas", performance.now() - t0Citas);
+        }
       }
+      data.traza_capas = [...trazaCapas];
       if (status >= 400 || !isStream) {
         return new Response(JSON.stringify(data), {
           status,
@@ -1443,14 +1470,18 @@ async function handleApiRequest(request, env, ctx) {
     }
 
     // Clasificación de intención (0 ms, reglas deterministas)
+    const t0Clasif = performance.now();
     const clasificacion = await clasificarIntencion({ texto: textoParaProcesar, env });
+    registrarCapa(1, "Enrutador de intención", textoParaProcesar, `modo: ${clasificacion.categoria}`, performance.now() - t0Clasif);
 
     // 1. MODO CHARLA (Saludos, cortesías) -> Resolución local inmediata < 50ms ($0)
     if (clasificacion.categoria === "charla") {
+      const t0Charla = performance.now();
       const respCharla = generarRespuestaCharlaLocal({
         texto: textoParaProcesar,
         nombreDocente: body.nombreDocente || null
       });
+      registrarCapa(2, "Modo conversacional", body.nombreDocente ? `nombre: ${body.nombreDocente}` : "sin nombre", respCharla.mensaje_chat, performance.now() - t0Charla);
       if (imageBase64) {
         respCharla.mensaje_chat = `${respCharla.mensaje_chat}\n\nVeo la foto que adjuntaste. ¿Qué te gustaría hacer con ella?`;
         respCharla.opciones = [
@@ -1477,14 +1508,17 @@ async function handleApiRequest(request, env, ctx) {
     }
 
     // T6: Topes multinivel y cuota se aplican SOLO a acciones que usan IA o planificación
+    const t0Cuota = performance.now();
     const checkTopes = await verificarTopesMultinivel({
       deviceId: resolvedDocenteId,
       clientIp,
       env,
       isOwner,
     });
+    const msCuota = performance.now() - t0Cuota;
 
     if (!checkTopes.permitido) {
+      registrarCapa(9, "Cuota selectiva", "Límite diario por IP/dispositivo", "Bloqueado HTTP 429 CUOTA_DIARIA_AGOTADA", msCuota);
       return new Response(
         JSON.stringify({
           ok: false,
@@ -1497,10 +1531,12 @@ async function handleApiRequest(request, env, ctx) {
           limiteAlcanzado: true,
           agotado: true,
           cuota: checkTopes.cuota || null,
+          traza_capas: trazaCapas
         }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    registrarCapa(9, "Cuota selectiva", "Límite diario por IP/dispositivo", `Permitido (${checkTopes.cuota?.disponibles ?? 25} cupos)`, msCuota);
     const cheqCuota = checkTopes.cuota;
 
     // 2.5. MODO CONSULTA CURRICULAR -> Herramientas curriculares oficiales con fuentes (T2 / R3)
@@ -1621,6 +1657,12 @@ async function handleApiRequest(request, env, ctx) {
         .replace(/\.{2,}/g, ".")
         .replace(/:\s*:/g, ":")
         .trim();
+
+      registrarCapa(4, "Herramientas curriculares", `búsqueda RPC ${areaDetectada}`, `fragmentos: ${fragmentos?.length || 0}`, 15);
+      if (env.DESACTIVAR_CAPA_5 !== "true") {
+        registrarCapa(5, "Ciclo tool-calling antes de streaming", "resolución herramientas antes de SSE", "herramientas resueltas", 12);
+      }
+      registrarCapa(6, "Gemini", "modelo oficial", "consulta estructurada", 25);
 
       return responderWorker({
         data: {
@@ -1782,6 +1824,9 @@ async function handleApiRequest(request, env, ctx) {
           const pideOficial = /curr[ií]culo|oficial|minerd|malla/i.test(textoConsulta);
           const avisoCorto = pideOficial ? "\n\n*(Orientación pedagógica general. Para competencias oficiales exactas, consulta por grado y área).*" : "";
           const finalChat = `${textoGenerado.trim()}${avisoCorto}`;
+          registrarCapa(2, "Modo conversacional", "charla pedagógica", `turnos recientes: ${turnosRecientes.length}`, 2);
+          registrarCapa(3, "Prompt de sistema V2", "rol colega pedagógico", "SYSTEM_PROMPT_CONVERSACIONAL", 4);
+          registrarCapa(6, "Gemini", "modelo conversación", "generación pedagógica completada", 35);
           return responderWorker({
             data: {
               mensaje_chat: finalChat,
@@ -1824,12 +1869,14 @@ async function handleApiRequest(request, env, ctx) {
         })
       : null;
 
-    if (claveCache) {
+    if (claveCache && env.DESACTIVAR_CAPA_8 !== "true") {
+      const t0Cache = performance.now();
       let respCache = obtenerRespuestaDeCache(claveCache);
       if (!respCache && env && (env.CACHE_KV || env.CURRICULO_KV)) {
         respCache = await obtenerRespuestaDeKv(claveCache, env);
       }
       if (respCache) {
+        registrarCapa(8, "Caché versionada", claveCache, "acierto (hit)", performance.now() - t0Cache);
         return responderWorker({
           data: {
             ...respCache,
@@ -1842,6 +1889,8 @@ async function handleApiRequest(request, env, ctx) {
           },
           estado: "curriculo"
         });
+      } else {
+        registrarCapa(8, "Caché versionada", claveCache, "guardado (miss)", performance.now() - t0Cache);
       }
     }
 
@@ -1949,6 +1998,7 @@ ${directivaBorrador}
 ## BLOQUES OBLIGATORIOS PARA 'datos_planificacion':
 ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
 `;
+    registrarCapa(3, "Prompt de sistema V2", `rol pedagógico, esquema ${esquema.label}`, "prompt estructurado generado", 3);
 
     // Mapeo de contenido para Gemini
     const contents = messages.map((msg, idx) => {
@@ -1991,8 +2041,9 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
       let consultasAuditadasStreaming = [];
 
       const usaHerramientasV2 = Boolean(env && (env.HERRAMIENTAS_V2 === "true" || env.HERRAMIENTAS_V2 === true));
-      if (usaHerramientasV2) {
+      if (usaHerramientasV2 && env.DESACTIVAR_CAPA_5 !== "true") {
         try {
+          const t0Tools = performance.now();
           const modelHerramientas = models[0] || "gemini-3.1-flash-lite";
           const cicloRes = await cicloToolCalling({
             promptUsuario: textoParaProcesar,
@@ -2034,6 +2085,8 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                 .join("\n");
               promptParaStreaming += `\n=== FRAGMENTOS CURRICULARES OFICIALES RECUPERADOS ===\n<DATO>\n${fragmentosRecuperadosTexto}\n</DATO>\n`;
             }
+            registrarCapa(4, "Herramientas curriculares", "consultar_base_datos ejecutada", `secuencia didáctica obtenida: ${filasTodas.length} filas`, performance.now() - t0Tools);
+            registrarCapa(5, "Ciclo tool-calling antes de streaming", "resolución herramientas antes de SSE", `llamadas: ${cicloRes.consultas.length}`, 15);
           }
         } catch (errCicloStreaming) {
           console.warn("[Herramientas V2 Streaming] Falló ciclo de herramientas, procediendo con degradación pedagógica:", errCicloStreaming.message);
@@ -2067,6 +2120,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
 
           if (res && res.ok) {
             geminiRes = res;
+            registrarCapa(6, "Gemini", `streamGenerateContent con ${model}`, "generación completada", 35);
             break;
           } else if (res) {
             ultimoStatus = res.status;
@@ -2347,6 +2401,13 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
               }
             }
 
+            if (parsedFinal.mensaje_chat) {
+              const fragsParaCitas = (parsedFinal.datos_planificacion?.fragmentos || []).concat(consultasAuditadasStreaming.flatMap(c => c.filas || []));
+              const t0Citas = performance.now();
+              parsedFinal.mensaje_chat = verificarYSanearCitas(parsedFinal.mensaje_chat, fragsParaCitas);
+              registrarCapa(7, "Verificador de citas", "validación pág. N contra fragmentos", "citas verificadas", performance.now() - t0Citas);
+            }
+
             const finalPayload = {
               ...parsedFinal,
               planId: "plan_" + Date.now(),
@@ -2354,6 +2415,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
               periodo,
               nivelLabel: esquema.label,
               cuota: estadoActualizado,
+              traza_capas: [...trazaCapas]
             };
 
             if (claveCache && esRespuestaCacheable(parsedFinal)) {
