@@ -2104,8 +2104,11 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
       const reader = geminiRes.body.getReader();
       const decoder = new TextDecoder();
       const encoder = new TextEncoder();
+      const runWaitUntil = (ctx && typeof ctx.waitUntil === "function")
+        ? ctx.waitUntil.bind(ctx)
+        : (promise => { promise.catch?.(e => console.warn("[Worker Streaming Async Error]:", e?.message || e)); });
 
-      ctx.waitUntil(
+      runWaitUntil(
         (async () => {
           let fullText = "";
           let corteOcurrio = null;

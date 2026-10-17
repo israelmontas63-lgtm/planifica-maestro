@@ -83,7 +83,15 @@
 - **Componente:** `scripts/guardia.js`, `PROTEGIDO.hashes.json`, `shared/parseadorJsonSeguro.js`, `client/src/api.js`, `worker/index.js`, `client/vite.config.js`, `client/src/utils/parseadorJsonSeguro.js`, `shared/modoConversacional.js`, `scripts/prueba_real_gemini.mjs`
 - **Motivo:** Reparación integral de auditoría del 16/10/2026 (guardia por hash y ruta completa, eliminación de catch vacíos, formateador de consulta curricular sin duplicados ni coma-punto, cliente api.js y pruebas de aceptación canónicas) y cierre de pendientes R0-bis.
 - **Frase Textual del Dueño:** `"Autorizo modificar scripts/guardia.js, PROTEGIDO.hashes.json, shared/parseadorJsonSeguro.js, client/src/api.js y el formateador de consulta curricular para reparar los fallos de la auditoría del 16/10/2026."` y `"Autorizo revisar y, si hace falta, corregir client/vite.config.js, client/src/utils/parseadorJsonSeguro.js, shared/modoConversacional.js y scripts/prueba_real_gemini.mjs, y registrar su cobertura en la guardia, para cerrar los pendientes de la auditoría del 16/10/2026."`
-- **Estado:** EN PROCESO
+- **Estado:** APLICADA
+
+### Autorización 012
+- **Fecha:** 2026-10-16
+- **Componentes:** `scripts/verificar_supabase.mjs`, `scripts/verificar_cerebro.mjs`, `wrangler.toml`, `docs/RUNBOOK_SUPABASE.md`, `docs/RUNBOOK_DESPLIEGUE.md`, `supabase/migrations/20261016_buscar_curriculo_secuencias.sql`, `tests/test_f3_tool_calling_stream.mjs`, `worker/index.js`
+- **Motivo:** Conexión y verificación de las 11 capas del cerebro, scripts de verificación de Supabase y cerebro, configuración de entorno staging en wrangler.toml sin desplegar ni tocar producción.
+- **Frase Textual del Dueño:** `"Autorizo crear scripts de verificación, la configuración de staging en wrangler.toml y los ajustes mínimos de código necesarios para conectar las capas del cerebro, sin desplegar ni tocar producción."`
+- **Estado:** APLICADA
+
 
 
 

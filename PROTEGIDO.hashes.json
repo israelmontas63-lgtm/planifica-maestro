@@ -1,10 +1,10 @@
 {
   "version": "2.0.0",
-  "fecha_generacion": "2026-10-17T00:37:38.366Z",
-  "commit": "c336c1e",
+  "fecha_generacion": "2026-10-17T00:53:59.266Z",
+  "commit": "ff0422b",
   "algoritmo": "sha256",
   "total_archivos": 56,
-  "firma": "c597bf9aaa55e741177f935c154627249cdbcd36c4ff3092c7336e2b0cfc7e91",
+  "firma": "d41aa6809d93174e2c5fe673d95e24eea461ad7292811588c86e21a4d09d65d2",
   "hashes": {
     "client/src/App.jsx": "96e63828261f8b03812552a3fa5ed624f27fa876a4e5788d1acae9e4718d050f",
     "client/src/api.js": "5dcfebb64a8451931c105508a19543ef38dcda662e869d6d427c55070af3f75f",
@@ -51,7 +51,7 @@
     "worker/correctorTexto.js": "fdc3c6e574b3f478761323c001006f8b799bd19dfe576c599922f2c5a653a625",
     "worker/editorImagenLocalPuro.js": "813662548218ababca50d0ada3dc42f6576209cb0d4e7767c5f399065e72a298",
     "worker/glosarioDocente.js": "0f905a0e056dfd19e30611b8b6243fe7b443994a4762ad1bbda8d429ac892d34",
-    "worker/index.js": "ec6d6e5be2075d68af768cea00a1b4cad1eaaffb1d9ddf9ac903f4c70d8c8f90",
+    "worker/index.js": "dfd2665547a71df25d34172d862656d1e85d74a73d9f88a1953c3f621c83cafb",
     "worker/levels.js": "6b07da11d3a0c17a10446209c56855e9537aa8b1945c0eeaa255ab0b53759cff",
     "worker/modoConversacional.js": "34198e46599c196c12c1fe4fe2af3b0359baf0fd163cced44bc20ea301d41dda",
     "worker/ojoDigital.js": "94bb2f29e3fe0938513d5c4b64b12b8223611f38461e128080ce70552a61ec68",
@@ -61,6 +61,6 @@
     "worker/services/curriculoService.js": "3a3647c1d91bdeef07685f84507bece4de9b06748af0ac92eb070e1ffcc2c7bd",
     "worker/services/voiceProvider.js": "362fadb6c4b99aecc26b60ddb8133a0ea76bbbab4c1f7d5044600bdf37697635",
     "worker/verificadorCitas.js": "43859b856d7f823915373c300b90c00e1c419c9234f1f17b5e03fcef33e53904",
-    "wrangler.toml": "ce03bfe2662841e6bfa77582a172edd6754c62a0167683c27f34614d45a8171d"
+    "wrangler.toml": "851a3f6c26f00454cc1f07c4ce333447750ae27b36c654256bac58f08a2bef7e"
   }
 }

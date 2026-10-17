@@ -23,3 +23,33 @@ directory = "./client/dist"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
 run_worker_first = true
+
+# -----------------------------------------------------------------------------
+# ENTORNO STAGING (Aislado de producción para pruebas previas de despliegue)
+# -----------------------------------------------------------------------------
+[env.staging]
+name = "planifica-maestro-staging"
+main = "worker/index.js"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+[env.staging.vars]
+ENTORNO = "staging"
+ACCESO_ABIERTO = "true"
+HERRAMIENTAS_V2 = "true"
+STREAMING_PROGRESIVO = "true"
+RATE_LIMIT_DISPOSITIVO_DIARIO = "50"
+RATE_LIMIT_IP_DIARIO = "150"
+RATE_LIMIT_GLOBAL_DIARIO = "1000"
+GEMINI_MODEL = "gemini-3.1-flash-lite"
+GEMINI_VISION_MODELS = "gemini-3.1-flash-lite,gemini-3.5-flash-lite,gemini-flash-latest"
+AI_PROVIDER = "gemini"
+IA_APAGADA = "false"
+RATE_LIMIT_ANONIMO_DIARIO = "50"
+
+[env.staging.assets]
+directory = "./client/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = true
+
