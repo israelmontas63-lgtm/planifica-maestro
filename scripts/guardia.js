@@ -223,7 +223,7 @@ export function verificarGuardia({ cwd = process.cwd(), verbose = true } = {}) {
   return true;
 }
 
-export function sellarGuardia(cwd = process.cwd()) {
+export function sellarGuardia(cwd = process.cwd(), { confirmar = false, verbose = true } = {}) {
   const rutaHashes = path.resolve(cwd, 'PROTEGIDO.hashes.json');
   if (!fs.existsSync(rutaHashes)) {
     throw new Error('No se encontró PROTEGIDO.hashes.json para sellar.');
@@ -255,12 +255,61 @@ export function sellarGuardia(cwd = process.cwd()) {
     const rutaNorm = normalizarRuta(rel);
     const rutaAbs = path.resolve(cwd, rutaNorm);
     if (!fs.existsSync(rutaAbs)) {
-      console.warn(`⚠️ [Sellar] Archivo protegido no encontrado en disco, conservando hash previo: ${rutaNorm}`);
+      if (verbose) console.warn(`⚠️ [Sellar] Archivo protegido no encontrado en disco, conservando hash previo: ${rutaNorm}`);
       nuevosHashes[rutaNorm] = hashes[rel];
       continue;
     }
     const cont = fs.readFileSync(rutaAbs);
     nuevosHashes[rutaNorm] = crypto.createHash('sha256').update(cont).digest('hex');
+  }
+
+  // Calcular diff de hashes
+  const diff = {
+    modificados: [],
+    nuevos: [],
+    eliminados: []
+  };
+
+  for (const [k, nuevoHash] of Object.entries(nuevosHashes)) {
+    const viejoHash = hashes[k];
+    if (!viejoHash) {
+      diff.nuevos.push({ archivo: k, hashNuevo: nuevoHash });
+    } else if (viejoHash !== nuevoHash) {
+      diff.modificados.push({ archivo: k, hashViejo: viejoHash, hashNuevo: nuevoHash });
+    }
+  }
+
+  for (const k of Object.keys(hashes)) {
+    if (!nuevosHashes[k]) {
+      diff.eliminados.push({ archivo: k, hashViejo: hashes[k] });
+    }
+  }
+
+  if (verbose) {
+    console.log('🔍 [Guardia:Sellar] Inspección previa de cambios en PROTEGIDO.hashes.json:');
+    const totalCambios = diff.modificados.length + diff.nuevos.length + diff.eliminados.length;
+    if (totalCambios === 0) {
+      console.log('   (Sin cambios detectados en los hashes de archivos protegidos)');
+    } else {
+      for (const m of diff.modificados) {
+        console.log(`   ~ [MODIFICADO] ${m.archivo}: ${m.hashViejo.substring(0, 12)}... -> ${m.hashNuevo.substring(0, 12)}...`);
+      }
+      for (const n of diff.nuevos) {
+        console.log(`   + [NUEVO]      ${n.archivo}: ${n.hashNuevo.substring(0, 12)}...`);
+      }
+      for (const el of diff.eliminados) {
+        console.log(`   - [ELIMINADO]  ${el.archivo}`);
+      }
+    }
+  }
+
+  if (!confirmar) {
+    if (verbose) {
+      console.warn('\n⚠️ [Guardia:Sellar] Modo de inspección/vista previa. PROTEGIDO.hashes.json NO fue modificado.');
+      console.warn('   Para confirmar y escribir el nuevo sello criptográfico, ejecute:');
+      console.warn('   npm run guardia:sellar -- --confirmar\n');
+    }
+    return { diff, aplicado: false };
   }
 
   const jsonCadena = JSON.stringify(nuevosHashes);
@@ -277,18 +326,22 @@ export function sellarGuardia(cwd = process.cwd()) {
   };
 
   fs.writeFileSync(rutaHashes, JSON.stringify(nuevoContenido, null, 2) + '\n', 'utf8');
-  console.log(`✅ [Guardia:Sellar] PROTEGIDO.hashes.json actualizado y sellado exitosamente.`);
-  console.log(`   Archivos sellados: ${nuevoContenido.total_archivos}`);
-  console.log(`   Commit base:       ${commit}`);
-  console.log(`   Firma del sello:   ${firma.substring(0, 16)}...`);
-  return nuevoContenido;
+  if (verbose) {
+    console.log(`✅ [Guardia:Sellar] PROTEGIDO.hashes.json actualizado y sellado exitosamente.`);
+    console.log(`   Archivos sellados: ${nuevoContenido.total_archivos}`);
+    console.log(`   Commit base:       ${commit}`);
+    console.log(`   Firma del sello:   ${firma.substring(0, 16)}...\n`);
+  }
+  return { diff, aplicado: true, nuevoContenido };
 }
 
 if (process.argv[1] && process.argv[1].endsWith('guardia.js')) {
   if (process.argv.includes('--sellar')) {
-    sellarGuardia();
+    const confirmar = process.argv.includes('--confirmar');
+    sellarGuardia(process.cwd(), { confirmar });
   } else {
     const ok = verificarGuardia();
     if (!ok) process.exit(1);
   }
 }
+
