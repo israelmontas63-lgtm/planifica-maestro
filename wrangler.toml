@@ -36,8 +36,15 @@ compatibility_flags = ["nodejs_compat"]
 [env.staging.vars]
 ENTORNO = "staging"
 ACCESO_ABIERTO = "true"
+PROMPT_SISTEMA_V2 = "true"
 HERRAMIENTAS_V2 = "true"
 STREAMING_PROGRESIVO = "true"
+# Secretos requeridos en staging (configurar con npx wrangler secret put <NAME> --env staging):
+# 1. GEMINI_API_KEY (API key de Google Gemini)
+# 2. SUPABASE_URL (URL del proyecto Supabase)
+# 3. SUPABASE_SERVICE_ROLE_KEY (El Worker usa rol de servicio para consultar la RPC oficial sin RLS restrictivo)
+# 4. APP_ACCESS_KEY (Clave institucional requerida en headers para endpoints protegidos)
+# 5. TAVILY_API_KEY (Opcional, para búsqueda web externa)
 RATE_LIMIT_DISPOSITIVO_DIARIO = "50"
 RATE_LIMIT_IP_DIARIO = "150"
 RATE_LIMIT_GLOBAL_DIARIO = "1000"

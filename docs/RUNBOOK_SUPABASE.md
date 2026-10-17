@@ -1,30 +1,32 @@
-﻿# RUNBOOK: Verificación y Conexión de Supabase (Currículo MINERD)
+# RUNBOOK: Verificación y Conexión de Supabase (Currículo MINERD)
 
 Este documento detalla el procedimiento para conectar y verificar la base de datos de Supabase con el esquema curricular oficial de Planifica Maestro.
 
 ---
 
-## 1. Aplicación de la Migración SQL
+## 1. Aplicación de las Migraciones SQL
 
-Si la tabla `public.curriculo_secuencias` o la RPC `public.buscar_curriculo_secuencias` no existen en tu proyecto de Supabase:
+Supabase requiere la aplicación de las migraciones en el siguiente orden estricto (ambas son 100% idempotentes):
 
-1. Abre el panel de control de tu proyecto en [Supabase Dashboard](https://supabase.com/dashboard).
-2. Dirígete a la sección **SQL Editor**.
-3. Abre o copia el contenido del archivo:
-   `supabase/migrations/20261016_buscar_curriculo_secuencias.sql`
-4. Pega el script en el editor y haz clic en **Run**.
-5. El script creará la tabla, la RPC `buscar_curriculo_secuencias` e insertará registros canónicos iniciales para **2do de Primaria (Lengua Española y Matemática)**.
+1. **Migración Base (Esquema, FTS, RLS, Triggers):**
+   - Archivo: `supabase/migrations/20261014140000_curriculo_secuencias.sql`
+   - Acción: Abre el **SQL Editor** en Supabase Dashboard, pega el contenido y pulsa **Run**.
+2. **Migración RPC y Datos Semilla Canónicos:**
+   - Archivo: `supabase/migrations/20261016_buscar_curriculo_secuencias.sql`
+   - Acción: Pega el script en el SQL Editor y pulsa **Run**. Instala la RPC `buscar_curriculo_secuencias` y los registros oficiales de 2do de Primaria (Lengua Española y Matemática).
 
 ---
 
 ## 2. Ejecución del Script de Verificación
 
 El script `scripts/verificar_supabase.mjs` prueba la conexión HTTPS, la existencia de la función RPC y la presencia de registros reales sin exponer claves ni secretos en la salida.
+> [!NOTE]
+> Para el Worker de producción y staging se utiliza **`SUPABASE_SERVICE_ROLE_KEY`**. Para la verificación local o diagnóstica puedes utilizar indistintamente `SUPABASE_SERVICE_ROLE_KEY` o `SUPABASE_ANON_KEY`.
 
 ### En Windows (PowerShell):
 ```powershell
 $env:SUPABASE_URL = "https://tu-proyecto.supabase.co"
-$env:SUPABASE_ANON_KEY = "tu-anon-key-aqui"
+$env:SUPABASE_SERVICE_ROLE_KEY = "tu-service-role-key-aqui"
 node scripts/verificar_supabase.mjs
 ```
 

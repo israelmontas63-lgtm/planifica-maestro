@@ -1,4 +1,4 @@
-﻿# RUNBOOK: Procedimiento de Despliegue (Staging y Producción)
+# RUNBOOK: Procedimiento de Despliegue (Staging y Producción)
 
 Este documento describe la política y el protocolo estricto de despliegue para **Planifica Maestro**.
 
@@ -12,23 +12,52 @@ Este documento describe la política y el protocolo estricto de despliegue para 
 
 ## 1. Configuración de Secretos en Staging
 
-Antes del primer despliegue a Staging, configura las credenciales requeridas en Cloudflare Workers:
+Antes del primer despliegue a Staging, configura las credenciales requeridas en Cloudflare Workers.
+> [!IMPORTANT]
+> El Worker opera del lado servidor y requiere **`SUPABASE_SERVICE_ROLE_KEY`** (no la `anon key`) para ejecutar la función RPC curricular `buscar_curriculo_secuencias` y consultar `curriculo_secuencias` sin bloqueos de RLS. Asimismo, requiere **`APP_ACCESS_KEY`** para autorizar las solicitudes institucionales vía cabeceras HTTP.
 
 ```bash
-# Clave del servidor de IA (Google Gemini)
+# 1. Clave del proveedor de IA (Google Gemini)
 npx wrangler secret put GEMINI_API_KEY --env staging
 
-# Claves de conexión con Supabase (Currículo MINERD)
+# 2. Conexión con Supabase (Currículo MINERD)
 npx wrangler secret put SUPABASE_URL --env staging
-npx wrangler secret put SUPABASE_ANON_KEY --env staging
+npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY --env staging
 
-# Clave de acceso institucional / de prueba
+# 3. Clave de acceso institucional / API
 npx wrangler secret put APP_ACCESS_KEY --env staging
+
+# 4. (Opcional) Proveedor de búsqueda web externa
+npx wrangler secret put TAVILY_API_KEY --env staging
 ```
 
 ---
 
-## 2. Compilación y Despliegue a Staging
+## 2. Orden de Encendido de Banderas de Funcionalidad (Feature Flags)
+
+Para garantizar un encendido progresivo y seguro sin degradaciones en el servicio:
+1. **Fase 1 - Base Curricular y Prompt:** `PROMPT_SISTEMA_V2 = "true"` (establece el tono pedagógico dominicano y los 11 esquemas oficiales; seguro sin dependencias de base de datos).
+2. **Fase 2 - Herramientas Curriculares (Tool-Calling):** `HERRAMIENTAS_V2 = "true"` (activa el ciclo de `consultar_base_datos` previo al streaming; requiere Supabase verificado con `node scripts/verificar_supabase.mjs`).
+3. **Fase 3 - Streaming Progresivo:** `STREAMING_PROGRESIVO = "true"` (activa SSE chunk a chunk con contratos blindados y sanitización de citas).
+4. **Fase 4 - Visión Multimodal:** `OJO_DIGITAL = "true"` (activa captura y procesamiento de imágenes con rotación de modelos `GEMINI_VISION_MODELS`).
+
+---
+
+## 3. Comparación y Orden de Migraciones SQL
+
+Supabase cuenta con dos archivos de migración en `supabase/migrations/`:
+- **`20261014140000_curriculo_secuencias.sql`**: Migración base que define la estructura canónica completa (`public.curriculo_secuencias`), extensiones (`unaccent`, `es_sin_tildes`), índices de búsqueda de texto completo (FTS), triggers de auditoría y políticas de seguridad RLS.
+- **`20261016_buscar_curriculo_secuencias.sql`**: Actualización canónica que asegura la función RPC `buscar_curriculo_secuencias` e inserta los datos semilla oficiales para 2.° Grado de Primaria (Lengua Española y Matemática).
+
+**Orden de aplicación:**
+1. Aplicar primero `20261014140000_curriculo_secuencias.sql`.
+2. Aplicar después `20261016_buscar_curriculo_secuencias.sql`.
+
+Ambas migraciones son **100% idempotentes** (`CREATE TABLE IF NOT EXISTS`, `CREATE EXTENSION IF NOT EXISTS`, `CREATE OR REPLACE FUNCTION`, `ON CONFLICT DO NOTHING`), por lo que pueden reejecutarse sin riesgo de error ni corrupción de datos.
+
+---
+
+## 4. Compilación y Despliegue a Staging
 
 El entorno de staging está definido en `wrangler.toml` bajo `[env.staging]` como `planifica-maestro-staging`.
 
@@ -50,7 +79,7 @@ El entorno de staging está definido en `wrangler.toml` bajo `[env.staging]` com
 
 ---
 
-## 3. Protocolo de Validación en Staging
+## 5. Protocolo de Validación en Staging
 
 Una vez desplegado en Staging:
 1. Probar salud del endpoint:
@@ -66,7 +95,7 @@ Una vez desplegado en Staging:
 
 ---
 
-## 4. Despliegue a Producción (Solo con Aprobación del Dueño)
+## 6. Despliegue a Producción (Solo con Aprobación del Dueño)
 
 Cuando el Dueño emita la orden de despliegue:
 
