@@ -1487,7 +1487,13 @@ async function handleApiRequest(request, env, ctx) {
     if (!checkTopes.permitido) {
       return new Response(
         JSON.stringify({
+          ok: false,
+          isError: true,
+          codigo: "CUOTA_DIARIA_AGOTADA",
+          codigoError: "CUOTA_DIARIA_AGOTADA",
           error: checkTopes.error,
+          mensaje: checkTopes.error,
+          mensaje_chat: checkTopes.error,
           limiteAlcanzado: true,
           agotado: true,
           cuota: checkTopes.cuota || null,
