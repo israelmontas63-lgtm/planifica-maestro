@@ -6,21 +6,21 @@
  */
 
 const SALUDOS_MANANA = [
-  "¡Buen día, colega! ¿Qué tema o grado tenemos previsto organizar hoy?",
+  "¡Buenos días, colega! ¿Qué tema o grado tenemos previsto organizar hoy?",
   "¡Muy buenos días! Espero que tu jornada escolar marche excelente. ¿Qué vamos a planificar?",
-  "¡Saludos, Profe! Listo para apoyarte con tus clases. ¿Con qué grado empezamos hoy?"
+  "¡Buenos días, Profe! Listo para apoyarte con tus clases. ¿Con qué grado empezamos hoy?"
 ];
 
 const SALUDOS_TARDE = [
   "¡Buenas tardes, Profe! ¿Qué clase o actividad didáctica tenemos pendiente para hoy?",
   "¡Buenas tardes, colega! Con gusto te apoyo. ¿En qué área o tema vamos a trabajar?",
-  "¡Saludos en esta tarde! Listo para estructurar tus actividades pedagógicas. ¿Qué necesitas?"
+  "¡Muy buenas tardes! Listo para estructurar tus actividades pedagógicas. ¿Qué necesitas?"
 ];
 
 const SALUDOS_NOCHE = [
   "¡Buenas noches, colega! ¿Dejamos lista la planificación de mañana o revisamos algún tema?",
   "¡Buenas noches, Profe! Un buen momento para adelantar el trabajo del aula. ¿Qué grado preparamos?",
-  "¡Saludos en esta noche! Aquí estoy para hacerte la labor más ligera. ¿En qué te colaboro?"
+  "¡Muy buenas noches! Aquí estoy para hacerte la labor más ligera. ¿En qué te colaboro?"
 ];
 
 const AGRADECIMIENTOS = [
@@ -43,18 +43,28 @@ const DESPEDIDAS = [
 
 let indiceRotacion = 0;
 
-export function obtenerHoraSantoDomingo() {
+export function obtenerHoraSantoDomingo(fecha = new Date()) {
   try {
-    const parts = new Intl.DateTimeFormat("es-DO", {
+    const formatter = new Intl.DateTimeFormat("en-US", {
       timeZone: "America/Santo_Domingo",
       hour: "numeric",
-      hour12: false
-    }).formatToParts(new Date());
-    const h = parts.find(p => p.type === "hour")?.value;
-    return parseInt(h, 10) || 12;
+      hourCycle: "h23"
+    });
+    const parts = formatter.formatToParts(fecha);
+    const h = parseInt(parts.find(p => p.type === "hour")?.value, 10);
+    return isNaN(h) ? 12 : h;
   } catch (e) {
-    return new Date().getHours();
+    const utcHours = fecha.getUTCHours();
+    const localHour = (utcHours - 4 + 24) % 24;
+    return localHour;
   }
+}
+
+export function obtenerFranjaSaludo(fecha = new Date()) {
+  const hora = obtenerHoraSantoDomingo(fecha);
+  if (hora >= 5 && hora < 12) return "manana";
+  if (hora >= 12 && hora < 19) return "tarde";
+  return "noche";
 }
 
 export function sanearNombreDocente(nombre) {
@@ -72,9 +82,10 @@ export function sanearNombreDocente(nombre) {
   return limpio;
 }
 
-export function generarRespuestaCharlaLocal({ texto = "", nombreDocente = null }) {
+export function generarRespuestaCharlaLocal({ texto = "", nombreDocente = null, reloj = null, fecha = null }) {
   const norm = texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-  const hora = obtenerHoraSantoDomingo();
+  const fechaActual = fecha || (typeof reloj === "function" ? reloj() : new Date());
+  const franja = obtenerFranjaSaludo(fechaActual);
   const idx = indiceRotacion++;
 
   let lista = SALUDOS_MANANA;
@@ -85,8 +96,8 @@ export function generarRespuestaCharlaLocal({ texto = "", nombreDocente = null }
   } else if (norm.includes("adios") || norm.includes("chao") || norm.includes("hasta manana") || norm.includes("hasta luego")) {
     lista = DESPEDIDAS;
   } else {
-    if (hora >= 5 && hora < 12) lista = SALUDOS_MANANA;
-    else if (hora >= 12 && hora < 19) lista = SALUDOS_TARDE;
+    if (franja === "manana") lista = SALUDOS_MANANA;
+    else if (franja === "tarde") lista = SALUDOS_TARDE;
     else lista = SALUDOS_NOCHE;
   }
 
