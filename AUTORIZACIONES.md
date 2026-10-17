@@ -92,6 +92,14 @@
 - **Frase Textual del Dueño:** `"Autorizo crear scripts de verificación, la configuración de staging en wrangler.toml y los ajustes mínimos de código necesarios para conectar las capas del cerebro, sin desplegar ni tocar producción."`
 - **Estado:** APLICADA
 
+### Autorización 013
+- **Fecha:** 2026-10-17
+- **Componentes:** `package.json`, `scripts/guardia.js`, `shared/modoConversacional.js`, `worker/index.js`, `scripts/verificar_cerebro.mjs`, `wrangler.toml`, `docs/RUNBOOK_SUPABASE.md`, `docs/RUNBOOK_DESPLIEGUE.md`, `scripts/verificar_supabase.mjs`
+- **Motivo:** Cierre de hallazgos de la revisión del 17/10/2026 (restauración y garantía del pipeline de npm test, eliminación de autosellado en guardia.js con diff previo y confirmación explícita, cálculo de saludo por franja horaria Santo Domingo con reloj inyectable, traza real acumulada de las 11 capas en verificar_cerebro.mjs con aserciones y pruebas de mutación, corrección de runbooks y homologación de migraciones).
+- **Frase Textual del Dueño:** `"Autorizo corregir package.json, scripts/guardia.js, el cálculo de la hora del saludo, scripts/verificar_cerebro.mjs, wrangler.toml y los runbooks, para cerrar los hallazgos de la revisión del 17/10/2026."`
+- **Estado:** APLICADA
+
+
 
 
 
