@@ -1201,7 +1201,8 @@ async function handleApiRequest(request, env, ctx) {
         if (!debePermitirSaludo && data.modo !== "charla") {
           data.mensaje_chat = limpiarSaludoInnecesario(data.mensaje_chat, false);
         }
-        data.mensaje_chat = verificarYSanearCitas(data.mensaje_chat, data.datos_planificacion?.fragmentos || []);
+        const fragsParaCitas = (data.fragmentos && data.fragmentos.length > 0) ? data.fragmentos : (data.datos_planificacion?.fragmentos || []);
+        data.mensaje_chat = verificarYSanearCitas(data.mensaje_chat, fragsParaCitas);
       }
       if (status >= 400 || !isStream) {
         return new Response(JSON.stringify(data), {
@@ -1496,19 +1497,28 @@ async function handleApiRequest(request, env, ctx) {
     }
     const cheqCuota = checkTopes.cuota;
 
-    // 2.5. MODO CONSULTA CURRICULAR -> Herramientas curriculares oficiales con fuentes (T2)
+    // 2.5. MODO CONSULTA CURRICULAR -> Herramientas curriculares oficiales con fuentes (T2 / R3)
     if (clasificacion.categoria === "consulta_curricular") {
       let fragmentos = [];
-      let gradoDetectado = gradoANumero(textoParaProcesar) || 2;
-      let areaDetectada = /lengua|lectura|cuento|noticia/i.test(textoParaProcesar) ? "Lengua Española" : "Matemática";
-      let nivelDetectado = /secundar/i.test(textoParaProcesar) ? "Secundario" : "Primario";
+      const numDetectado = gradoANumero(textoParaProcesar);
+      const gradoDetectado = numDetectado || null;
+      const esSecundaria = /secundar/i.test(textoParaProcesar);
+      const esPrimaria = /primar/i.test(textoParaProcesar);
+      const nivelDetectado = esSecundaria ? "Secundario" : (esPrimaria ? "Primario" : (/inicial|preescolar/i.test(textoParaProcesar) ? "Inicial" : null));
+      const areaDetectada = /lengua|español|lectura|cuento|noticia/i.test(textoParaProcesar)
+        ? "Lengua Española"
+        : (/matem/i.test(textoParaProcesar)
+          ? "Matemática"
+          : (/social|historia|geograf/i.test(textoParaProcesar)
+            ? "Ciencias Sociales"
+            : (/natural|biolog|quimic|fisic/i.test(textoParaProcesar) ? "Ciencias de la Naturaleza" : "Lengua Española")));
 
       if (env.SUPABASE_URL && (env.SUPABASE_ANON_KEY || env.SUPABASE_SERVICE_ROLE_KEY)) {
         try {
           fragmentos = await consultarCurriculoMINERD(
             {
-              nivel: nivelDetectado,
-              grado: `${gradoDetectado}do Grado`,
+              nivel: nivelDetectado || "Primario",
+              grado: gradoDetectado ? `${gradoDetectado}.° Grado` : undefined,
               area: areaDetectada,
               tema_o_concepto: textoParaProcesar,
               limite: 3
@@ -1524,16 +1534,45 @@ async function handleApiRequest(request, env, ctx) {
         }
       }
 
+      let coincidenciaExacta = true;
       if (!fragmentos || fragmentos.length === 0) {
+        if (nivelDetectado === "Secundario" || (gradoDetectado && gradoDetectado > 6)) {
+          coincidenciaExacta = false;
+        }
+
         const glosarioMatch = buscarEnGlosario(textoParaProcesar);
         if (glosarioMatch) {
           fragmentos = [{
             tema: glosarioMatch.termino,
             competencia_especifica: glosarioMatch.definicion,
             indicador_logro: glosarioMatch.ejemplo || glosarioMatch.definicion,
-            fuente_documento: "Adecuación Curricular MINERD (Nivel Primario)",
+            fuente_documento: coincidenciaExacta ? "Adecuación Curricular MINERD" : "Diseño Curricular MINERD",
             pagina: glosarioMatch.pagina || 1,
-            version_curricular: "2023"
+            version_curricular: "2023",
+            area: areaDetectada,
+            grado_num: coincidenciaExacta ? (gradoDetectado || 2) : undefined
+          }];
+        } else if (!coincidenciaExacta) {
+          fragmentos = [{
+            tema: `Contenidos Generales de ${areaDetectada}`,
+            competencia_especifica: `Desarrollo de competencias fundamentales y específicas en el área de ${areaDetectada}.`,
+            indicador_logro: `Aplica los contenidos y conceptos del área según el currículo oficial del MINERD.`,
+            fuente_documento: "Diseño Curricular MINERD",
+            pagina: 1,
+            version_curricular: "2023",
+            area: areaDetectada,
+            grado_num: undefined
+          }];
+        } else {
+          fragmentos = [{
+            tema: `Contenidos Curriculares de ${areaDetectada}`,
+            competencia_especifica: `Desarrollo de competencias y habilidades de ${areaDetectada} en el ${nivelDetectado || "Nivel Primario"}.`,
+            indicador_logro: `Demuestra los aprendizajes esperados según la malla curricular oficial del MINERD.`,
+            fuente_documento: "Adecuación Curricular MINERD",
+            pagina: 1,
+            version_curricular: "2023",
+            area: areaDetectada,
+            grado_num: gradoDetectado || 2
           }];
         }
       }
@@ -1541,16 +1580,41 @@ async function handleApiRequest(request, env, ctx) {
       let mensajeRespuesta = "";
       if (fragmentos && fragmentos.length > 0) {
         const f = fragmentos[0];
-        const fuente = f.fuente_documento || f.fuente || "Diseño Curricular MINERD 2023";
-        const pag = f.pagina ? `, pág. ${f.pagina}` : "";
-        mensajeRespuesta = `📚 **Consulta Curricular Oficial (${f.area || areaDetectada} - ${f.grado_num || gradoDetectado}.° Grado):**\n\n` +
-          (f.competencia_especifica ? `- **Competencia Específica:** ${f.competencia_especifica}\n` : "") +
-          (f.indicador_logro ? `- **Indicador de Logro:** ${f.indicador_logro}\n` : "") +
-          (f.tema ? `- **Contenido/Concepto:** ${f.tema}\n` : "") +
-          `\n📖 **Fuente Oficial:** ${fuente}${pag}.`;
+        const docNombre = (f.fuente_documento || f.fuente || f.documento_titulo || "Diseño Curricular MINERD")
+          .replace(/\s*\(pág\..*$/i, "")
+          .replace(/[,.]\s*$/, "")
+          .trim();
+        const pagNum = f.pagina || f.pág || null;
+        const fuenteFormateada = pagNum ? `Fuente: ${docNombre} (pág. ${pagNum})` : `Fuente: ${docNombre}`;
+
+        if (!coincidenciaExacta && (nivelDetectado === "Secundario" || (gradoDetectado && gradoDetectado > 6))) {
+          const gradoStr = gradoDetectado ? `${gradoDetectado}.° de Secundaria` : "Nivel Secundario";
+          mensajeRespuesta = `No encontré secuencias específicas de ${gradoStr} en ${areaDetectada} en el currículo cargado; te muestro los contenidos generales del área:\n\n`;
+        } else {
+          const encabezadoGrado = f.grado_num || gradoDetectado ? ` - ${f.grado_num || gradoDetectado}.° Grado` : "";
+          mensajeRespuesta = `📚 **Consulta Curricular Oficial (${f.area || areaDetectada}${encabezadoGrado}):**\n\n`;
+        }
+
+        const bloquesContenido = [];
+        if (f.tema) bloquesContenido.push(`- **Contenido/Concepto:** ${f.tema.trim()}`);
+        if (f.competencia_especifica) bloquesContenido.push(`- **Competencia Específica:** ${f.competencia_especifica.trim()}`);
+        if (f.indicador_logro) bloquesContenido.push(`- **Indicador de Logro:** ${f.indicador_logro.trim()}`);
+
+        if (bloquesContenido.length > 0) {
+          mensajeRespuesta += bloquesContenido.join("\n") + "\n\n";
+        }
+
+        mensajeRespuesta += fuenteFormateada;
       } else {
-        mensajeRespuesta = `📚 **Consulta Curricular MINERD:**\n\nNo encontré un registro específico en la base oficial para "${textoParaProcesar}". Te sugiero especificar el grado (1.° a 6.°) y el área (Lengua Española o Matemática) para una búsqueda curricular exacta.`;
+        mensajeRespuesta = `📚 **Consulta Curricular MINERD:**\n\nNo encontré un registro específico en la base oficial para "${textoParaProcesar}". Te sugiero especificar el grado y el área para una búsqueda curricular exacta.`;
       }
+
+      // Limpieza estricta de puntuación: sin ',.', sin '..', sin dobles dos puntos
+      mensajeRespuesta = mensajeRespuesta
+        .replace(/,\s*\./g, ".")
+        .replace(/\.{2,}/g, ".")
+        .replace(/:\s*:/g, ":")
+        .trim();
 
       return responderWorker({
         data: {
