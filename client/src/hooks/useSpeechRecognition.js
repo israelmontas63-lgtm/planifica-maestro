@@ -356,7 +356,7 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
       const isStandalone = typeof window !== "undefined" && (window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone);
       let msg = "Tu navegador no soporta dictado por voz. Usa Chrome o Edge, o escribe el tema directamente.";
       if (isIOS && isStandalone) {
-        msg = "Apple iOS restringe el dictado por voz en PWAs instaladas en la pantalla de inicio. Abre la app en Safari para usar el micr�fono o escribe tu consulta directamente.";
+        msg = "Apple iOS restringe el dictado por voz en PWAs instaladas en la pantalla de inicio. Abre la app en Safari para usar el micrófono o escribe tu consulta directamente.";
       }
       setError(msg);
       onErrorCallback?.(msg, "service-not-allowed");

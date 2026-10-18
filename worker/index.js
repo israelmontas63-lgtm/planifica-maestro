@@ -123,7 +123,7 @@ async function verificarBaseOficialCargada(env) {
   }
   // Nota: no se comparte la promesa entre peticiones (en Workers el I/O no puede cruzar contextos de petición).
   try {
-    const checkBaseRes = await fetch(`${env.SUPABASE_URL}/rest/v1/curriculo_fragmentos?select=id&limit=1`, {
+    const checkBaseRes = await fetch(`${env.SUPABASE_URL}/rest/v1/curriculo_secuencias?select=id&limit=1`, {
       headers: {
         apikey: env.SUPABASE_SERVICE_ROLE_KEY,
         Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
@@ -899,7 +899,7 @@ async function handleApiRequest(request, env, ctx) {
     let tablasDisponibles = [];
     if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
       const tablasToCheck = [
-        "curriculo_fragmentos",
+        "curriculo_secuencias",
         "calendario_escolar_oficial",
         "planes_guardados",
         "perfil_docente",
@@ -1129,19 +1129,38 @@ async function handleApiRequest(request, env, ctx) {
       const errorPrevio = messages.slice().reverse().find(m => m.isError && m.codigoError) || (messages[messages.length - 2]?.isError ? messages[messages.length - 2] : null);
     const clasificacionPrevia = clasificarPorReglas(textoConsulta, { ultimoError: errorPrevio ? errorPrevio.codigoError : null });
 
+    const esModoPrueba = Boolean(env && (env.MODO_PRUEBA === "true" || env.MODO_PRUEBA === true));
+    const habilitarTraza = Boolean(env && env.HABILITAR_TRAZA_CAPAS === "true");
     const trazaCapas = [];
-    const registrarCapa = (capa, nombre, entrada, decision, ms = 0) => {
+    const registrarCapa = (capa, nombre, entrada, decision, ms = 0, exito = true) => {
+      if (!habilitarTraza) return;
       trazaCapas.push({
         capa,
         nombre,
-        entrada: String(entrada || "").slice(0, 50),
-        decision: String(decision || "").slice(0, 50),
-        ms: Math.max(1, Math.round(ms || 1))
+        entrada: typeof entrada === "string" ? entrada.slice(0, 80) : String(entrada || ""),
+        decision: typeof decision === "string" ? decision.slice(0, 80) : String(decision || ""),
+        exito: Boolean(exito),
+        ms: Math.max(1, Math.round(ms || 1)),
+        latencia_ms: Math.max(1, Math.round(ms || 1))
       });
     };
 
+    if (esModoPrueba && env.DESACTIVAR_CAPA_1 === "true") {
+      return new Response(JSON.stringify({ error: "Capa 1 desactivada por mutación", ok: false }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
     if ((clasificacionPrevia.categoria === "fallo_anterior" || /^(?:¿?\s*(?:por\s*qu[eé]|c[oó]mo\s*as[ií]|qu[eé]\s*pas[oó]|y\s*eso|explica(?:me)?|por\s*qu[eé]\s*no\s*puedes))/i.test(textoConsulta)) && errorPrevio) {
-      registrarCapa(1, "Enrutador de intención", textoConsulta, "modo: fallo_anterior", 2);
+      if (esModoPrueba && env.DESACTIVAR_CAPA_10 === "true") {
+        return new Response(JSON.stringify({ error: "Capa 10 desactivada por mutación", ok: false }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+      const t0Fallo = performance.now();
+      registrarCapa(1, "Enrutador de intención", `longitud_caracteres: ${textoConsulta.length}`, "modo: fallo_anterior", performance.now() - t0Fallo);
       const codigosPermitidos = new Set([
         "IA_RESPUESTA_INVALIDA",
         "DATOS_INCOMPLETOS",
@@ -1161,7 +1180,7 @@ async function handleApiRequest(request, env, ctx) {
       if (codigoErr === "PROVEEDOR_IA_SATURADO") explicacion = "El servicio de inteligencia artificial estuvo temporalmente saturado por alta demanda. No tiene que ver con tu cuenta y suele resolverse en un minuto.";
       if (codigoErr === "CUOTA_DIARIA_AGOTADA") explicacion = "Se agotó el límite de planes que puedes generar gratis por hoy. Esto ayuda a mantener el servidor funcionando.";
       if (codigoErr === "ERROR_INTERNO") explicacion = "Mi configuración interna (por ejemplo, las claves de conexión al servidor de IA) falló inesperadamente.";
-      registrarCapa(10, "Errores de lista cerrada", errorPrevio.codigoError, explicacion, 1);
+      registrarCapa(10, "Errores de lista cerrada", `codigo_error: ${codigoErr}`, "explicacion_emitida", performance.now() - t0Fallo);
       return new Response(JSON.stringify({
         ok: false,
         isError: true,
@@ -1173,7 +1192,7 @@ async function handleApiRequest(request, env, ctx) {
         modo: "fallo_anterior",
         categoria: "fallo_anterior",
         datos_planificacion: null,
-        traza_capas: trazaCapas
+        ...(habilitarTraza ? { traza_capas: trazaCapas } : {})
       }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -1227,10 +1246,12 @@ async function handleApiRequest(request, env, ctx) {
         const t0Citas = performance.now();
         data.mensaje_chat = verificarYSanearCitas(data.mensaje_chat, fragsParaCitas);
         if (fragsParaCitas.length > 0 || /pág\./i.test(data.mensaje_chat)) {
-          registrarCapa(7, "Verificador de citas", "validación pág. N contra fragmentos", "citas verificadas", performance.now() - t0Citas);
+          registrarCapa(7, "Verificador de citas", "fragmentos_curriculares", "citas_verificadas", performance.now() - t0Citas);
         }
       }
-      data.traza_capas = [...trazaCapas];
+      if (habilitarTraza) {
+        data.traza_capas = [...trazaCapas];
+      }
       if (status >= 400 || !isStream) {
         return new Response(JSON.stringify(data), {
           status,
@@ -1472,16 +1493,41 @@ async function handleApiRequest(request, env, ctx) {
     // Clasificación de intención (0 ms, reglas deterministas)
     const t0Clasif = performance.now();
     const clasificacion = await clasificarIntencion({ texto: textoParaProcesar, env });
-    registrarCapa(1, "Enrutador de intención", textoParaProcesar, `modo: ${clasificacion.categoria}`, performance.now() - t0Clasif);
+    registrarCapa(1, "Enrutador de intención", `longitud_caracteres: ${textoParaProcesar.length}`, `modo: ${clasificacion.categoria}`, performance.now() - t0Clasif);
 
     // 1. MODO CHARLA (Saludos, cortesías) -> Resolución local inmediata < 50ms ($0)
     if (clasificacion.categoria === "charla") {
+      if (esModoPrueba && env.DESACTIVAR_CAPA_2 === "true") {
+        return new Response(JSON.stringify({ error: "Capa 2 desactivada por mutación", ok: false }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
       const t0Charla = performance.now();
       const respCharla = generarRespuestaCharlaLocal({
         texto: textoParaProcesar,
         nombreDocente: body.nombreDocente || null
       });
-      registrarCapa(2, "Modo conversacional", body.nombreDocente ? `nombre: ${body.nombreDocente}` : "sin nombre", respCharla.mensaje_chat, performance.now() - t0Charla);
+      registrarCapa(2, "Modo conversacional", body.nombreDocente ? "docente_personalizado: true" : "docente_anonimo: true", "saludo_local_generado", performance.now() - t0Charla);
+
+      // Capa 9 (Cuota selectiva): evalúa estado de cuota en saludo sin bloquear la conversación
+      if (esModoPrueba && env.DESACTIVAR_CAPA_9 === "true") {
+        // Omite Capa 9 bajo prueba de mutación
+      } else {
+        const t0CuotaSaludo = performance.now();
+        const checkTopesSaludo = await verificarTopesMultinivel({
+          deviceId: resolvedDocenteId,
+          clientIp,
+          env,
+          isOwner,
+        });
+        const msCuotaSaludo = performance.now() - t0CuotaSaludo;
+        const descCuota = checkTopesSaludo.permitido
+          ? `Permitido (${checkTopesSaludo.cuota?.disponibles ?? 25} cupos)`
+          : "Cuota agotada (no bloqueante en saludo)";
+        registrarCapa(9, "Cuota selectiva", "limite_diario_evaluado", descCuota, msCuotaSaludo);
+      }
+
       if (imageBase64) {
         respCharla.mensaje_chat = `${respCharla.mensaje_chat}\n\nVeo la foto que adjuntaste. ¿Qué te gustaría hacer con ella?`;
         respCharla.opciones = [
@@ -1508,35 +1554,40 @@ async function handleApiRequest(request, env, ctx) {
     }
 
     // T6: Topes multinivel y cuota se aplican SOLO a acciones que usan IA o planificación
-    const t0Cuota = performance.now();
-    const checkTopes = await verificarTopesMultinivel({
-      deviceId: resolvedDocenteId,
-      clientIp,
-      env,
-      isOwner,
-    });
-    const msCuota = performance.now() - t0Cuota;
+    let checkTopes = { permitido: true, cuota: { disponibles: 25 } };
+    if (esModoPrueba && env.DESACTIVAR_CAPA_9 === "true") {
+      // Omite control de cuota bajo prueba de mutación
+    } else {
+      const t0Cuota = performance.now();
+      checkTopes = await verificarTopesMultinivel({
+        deviceId: resolvedDocenteId,
+        clientIp,
+        env,
+        isOwner,
+      });
+      const msCuota = performance.now() - t0Cuota;
 
-    if (!checkTopes.permitido) {
-      registrarCapa(9, "Cuota selectiva", "Límite diario por IP/dispositivo", "Bloqueado HTTP 429 CUOTA_DIARIA_AGOTADA", msCuota);
-      return new Response(
-        JSON.stringify({
-          ok: false,
-          isError: true,
-          codigo: "CUOTA_DIARIA_AGOTADA",
-          codigoError: "CUOTA_DIARIA_AGOTADA",
-          error: checkTopes.error,
-          mensaje: checkTopes.error,
-          mensaje_chat: checkTopes.error,
-          limiteAlcanzado: true,
-          agotado: true,
-          cuota: checkTopes.cuota || null,
-          traza_capas: trazaCapas
-        }),
-        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      if (!checkTopes.permitido) {
+        registrarCapa(9, "Cuota selectiva", "limite_diario_evaluado", "bloqueado_cuota_agotada", msCuota, false);
+        return new Response(
+          JSON.stringify({
+            ok: false,
+            isError: true,
+            codigo: "CUOTA_DIARIA_AGOTADA",
+            codigoError: "CUOTA_DIARIA_AGOTADA",
+            error: checkTopes.error,
+            mensaje: checkTopes.error,
+            mensaje_chat: checkTopes.error,
+            limiteAlcanzado: true,
+            agotado: true,
+            cuota: checkTopes.cuota || null,
+            ...(habilitarTraza ? { traza_capas: trazaCapas } : {})
+          }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      registrarCapa(9, "Cuota selectiva", "limite_diario_evaluado", `permitido_cupos_${checkTopes.cuota?.disponibles ?? 25}`, msCuota);
     }
-    registrarCapa(9, "Cuota selectiva", "Límite diario por IP/dispositivo", `Permitido (${checkTopes.cuota?.disponibles ?? 25} cupos)`, msCuota);
     const cheqCuota = checkTopes.cuota;
 
     // 2.5. MODO CONSULTA CURRICULAR -> Herramientas curriculares oficiales con fuentes (T2 / R3)
@@ -1555,7 +1606,8 @@ async function handleApiRequest(request, env, ctx) {
             ? "Ciencias Sociales"
             : (/natural|biolog|quimic|fisic/i.test(textoParaProcesar) ? "Ciencias de la Naturaleza" : "Lengua Española")));
 
-      if (env.SUPABASE_URL && (env.SUPABASE_ANON_KEY || env.SUPABASE_SERVICE_ROLE_KEY)) {
+      const t0Tools = performance.now();
+      if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
         try {
           fragmentos = await consultarCurriculoMINERD(
             {
@@ -1567,7 +1619,7 @@ async function handleApiRequest(request, env, ctx) {
             },
             {
               SUPABASE_URL: env.SUPABASE_URL,
-              SUPABASE_ANON_KEY: env.SUPABASE_ANON_KEY || env.SUPABASE_SERVICE_ROLE_KEY
+              SUPABASE_ANON_KEY: env.SUPABASE_ANON_KEY
             },
             { timeoutMs: 3000 }
           );
@@ -1575,67 +1627,30 @@ async function handleApiRequest(request, env, ctx) {
           console.warn("[Consulta Curricular] Error consultando RPC Supabase:", e?.message || e);
         }
       }
+      const msTools = performance.now() - t0Tools;
 
-      let coincidenciaExacta = true;
-      if (!fragmentos || fragmentos.length === 0) {
-        if (nivelDetectado === "Secundario" || (gradoDetectado && gradoDetectado > 6)) {
-          coincidenciaExacta = false;
-        }
+      // A2: Separar filas coincidentes (coincide_tema === true)
+      const filasRetornadas = Array.isArray(fragmentos) ? fragmentos : [];
+      const coincidentes = filasRetornadas.filter(f => f && (f.coincide_tema === true || f.coincide_tema === "true"));
 
-        const glosarioMatch = buscarEnGlosario(textoParaProcesar);
-        if (glosarioMatch) {
-          fragmentos = [{
-            tema: glosarioMatch.termino,
-            competencia_especifica: glosarioMatch.definicion,
-            indicador_logro: glosarioMatch.ejemplo || glosarioMatch.definicion,
-            fuente_documento: coincidenciaExacta ? "Adecuación Curricular MINERD" : "Diseño Curricular MINERD",
-            pagina: glosarioMatch.pagina || 1,
-            version_curricular: "2023",
-            area: areaDetectada,
-            grado_num: coincidenciaExacta ? (gradoDetectado || 2) : undefined
-          }];
-        } else if (!coincidenciaExacta) {
-          fragmentos = [{
-            tema: `Contenidos Generales de ${areaDetectada}`,
-            competencia_especifica: `Desarrollo de competencias fundamentales y específicas en el área de ${areaDetectada}.`,
-            indicador_logro: `Aplica los contenidos y conceptos del área según el currículo oficial del MINERD.`,
-            fuente_documento: "Diseño Curricular MINERD",
-            pagina: 1,
-            version_curricular: "2023",
-            area: areaDetectada,
-            grado_num: undefined
-          }];
-        } else {
-          fragmentos = [{
-            tema: `Contenidos Curriculares de ${areaDetectada}`,
-            competencia_especifica: `Desarrollo de competencias y habilidades de ${areaDetectada} en el ${nivelDetectado || "Nivel Primario"}.`,
-            indicador_logro: `Demuestra los aprendizajes esperados según la malla curricular oficial del MINERD.`,
-            fuente_documento: "Adecuación Curricular MINERD",
-            pagina: 1,
-            version_curricular: "2023",
-            area: areaDetectada,
-            grado_num: gradoDetectado || 2
-          }];
-        }
-      }
-
+      let fragmentosFinales = [];
       let mensajeRespuesta = "";
-      if (fragmentos && fragmentos.length > 0) {
-        const f = fragmentos[0];
+
+      if (coincidentes.length > 0) {
+        fragmentosFinales = coincidentes;
+        const f = coincidentes[0];
         const docNombre = (f.fuente_documento || f.fuente || f.documento_titulo || "Diseño Curricular MINERD")
           .replace(/\s*\(pág\..*$/i, "")
           .replace(/[,.]\s*$/, "")
           .trim();
         const pagNum = f.pagina || f.pág || null;
-        const fuenteFormateada = pagNum ? `Fuente: ${docNombre} (pág. ${pagNum})` : `Fuente: ${docNombre}`;
-
-        if (!coincidenciaExacta && (nivelDetectado === "Secundario" || (gradoDetectado && gradoDetectado > 6))) {
-          const gradoStr = gradoDetectado ? `${gradoDetectado}.° de Secundaria` : "Nivel Secundario";
-          mensajeRespuesta = `No encontré secuencias específicas de ${gradoStr} en ${areaDetectada} en el currículo cargado; te muestro los contenidos generales del área:\n\n`;
-        } else {
-          const encabezadoGrado = f.grado_num || gradoDetectado ? ` - ${f.grado_num || gradoDetectado}.° Grado` : "";
-          mensajeRespuesta = `📚 **Consulta Curricular Oficial (${f.area || areaDetectada}${encabezadoGrado}):**\n\n`;
+        let fuenteFormateada = pagNum ? `Fuente: ${docNombre} (pág. ${pagNum})` : `Fuente: ${docNombre}`;
+        if (f.estado_validacion && f.estado_validacion !== "validado") {
+          fuenteFormateada += " (pendiente de validación)";
         }
+
+        const encabezadoGrado = f.grado_num || gradoDetectado ? ` - ${f.grado_num || gradoDetectado}.° Grado` : "";
+        mensajeRespuesta = `📚 **Consulta Curricular Oficial (${f.area || areaDetectada}${encabezadoGrado}):**\n\n`;
 
         const bloquesContenido = [];
         if (f.tema) bloquesContenido.push(`- **Contenido/Concepto:** ${f.tema.trim()}`);
@@ -1648,7 +1663,32 @@ async function handleApiRequest(request, env, ctx) {
 
         mensajeRespuesta += fuenteFormateada;
       } else {
-        mensajeRespuesta = `📚 **Consulta Curricular MINERD:**\n\nNo encontré un registro específico en la base oficial para "${textoParaProcesar}". Te sugiero especificar el grado y el área para una búsqueda curricular exacta.`;
+        // No hay coincidentes (0 filas, o ninguna con coincide_tema true)
+        const glosarioMatch = buscarEnGlosario(textoParaProcesar);
+        if (glosarioMatch) {
+          fragmentosFinales = [];
+          mensajeRespuesta = `📖 **Glosario de Planifica Maestro (referencia local, no es cita del currículo oficial):**\n\n- **Término:** ${glosarioMatch.termino}\n- **Definición:** ${glosarioMatch.definicion}`;
+          if (glosarioMatch.ejemplo) {
+            mensajeRespuesta += `\n- **Ejemplo:** ${glosarioMatch.ejemplo}`;
+          }
+        } else {
+          fragmentosFinales = [];
+          const temaBuscado = textoParaProcesar || "tema solicitado";
+          const gradoStr = gradoDetectado ? `${gradoDetectado}.° grado` : "grado especificado";
+          const areaStr = areaDetectada || "área especificada";
+
+          if (nivelDetectado === "Secundario" || (gradoDetectado && gradoDetectado > 6)) {
+            const gradoSecStr = gradoDetectado ? `${gradoDetectado}.° de Secundaria` : "Nivel Secundario";
+            mensajeRespuesta = `No encontré secuencias específicas de ${gradoSecStr} en ${areaStr} en el currículo cargado. No te voy a mostrar contenido de otro tema como si lo fuera.`;
+          } else {
+            mensajeRespuesta = `No encontré en la base curricular cargada una secuencia verificada para «${temaBuscado}» (${gradoStr}, ${areaStr}). No te voy a mostrar contenido de otro tema como si lo fuera.`;
+          }
+
+          const temasDisponibles = Array.from(new Set(filasRetornadas.map(r => r.tema).filter(Boolean))).slice(0, 5);
+          if (temasDisponibles.length > 0) {
+            mensajeRespuesta += `\n\nTemas disponibles en la base para ese grado y área: ${temasDisponibles.join(", ")}.`;
+          }
+        }
       }
 
       // Limpieza estricta de puntuación: sin ',.', sin '..', sin dobles dos puntos
@@ -1658,11 +1698,12 @@ async function handleApiRequest(request, env, ctx) {
         .replace(/:\s*:/g, ":")
         .trim();
 
-      registrarCapa(4, "Herramientas curriculares", `búsqueda RPC ${areaDetectada}`, `fragmentos: ${fragmentos?.length || 0}`, 15);
-      if (env.DESACTIVAR_CAPA_5 !== "true") {
-        registrarCapa(5, "Ciclo tool-calling antes de streaming", "resolución herramientas antes de SSE", "herramientas resueltas", 12);
+      const t0CicloTools = performance.now();
+      registrarCapa(4, "Herramientas curriculares", `rpc_${areaDetectada || "general"}`, `fragmentos: ${fragmentosFinales?.length || 0}`, msTools);
+      if (!(esModoPrueba && env.DESACTIVAR_CAPA_5 === "true")) {
+        registrarCapa(5, "Ciclo tool-calling antes de streaming", "resolucion_herramientas", "herramientas_resueltas", performance.now() - t0CicloTools);
       }
-      registrarCapa(6, "Gemini", "modelo oficial", "consulta estructurada", 25);
+      registrarCapa(6, "Gemini", "modelo_oficial", "consulta_estructurada", performance.now() - t0CicloTools);
 
       return responderWorker({
         data: {
@@ -1670,7 +1711,7 @@ async function handleApiRequest(request, env, ctx) {
           plan_completado: false,
           modo: "consulta_curricular",
           categoria: "consulta_curricular",
-          fragmentos: fragmentos || [],
+          fragmentos: fragmentosFinales,
           datos_planificacion: null
         },
         estado: "curriculo"
@@ -1745,19 +1786,32 @@ async function handleApiRequest(request, env, ctx) {
         }
       }
 
-      return generarErrorPlanificacion(
-        "IA_NO_DISPONIBLE",
-        "El servicio de búsqueda web externa no está disponible en este momento.",
-        "Puedes realizar una consulta curricular directamente o formular una pregunta pedagógica sobre el currículo oficial.",
-        false
-      );
+      const t0TavilyErr = performance.now();
+      registrarCapa(10, "Errores de lista cerrada", "sin_clave_tavily", "IA_NO_DISPONIBLE", performance.now() - t0TavilyErr, false);
+      return responderWorker({
+        data: {
+          ok: false,
+          isError: true,
+          codigo: "IA_NO_DISPONIBLE",
+          codigoError: "IA_NO_DISPONIBLE",
+          mensaje: "El servicio de búsqueda web externa no está disponible en este momento.",
+          sugerencia: "Puedes realizar una consulta curricular directamente o formular una pregunta pedagógica sobre el currículo oficial.",
+          mensaje_chat: "El servicio de búsqueda web externa no está disponible en este momento.\n\n💡 Sugerencia: Puedes realizar una consulta curricular directamente o formular una pregunta pedagógica sobre el currículo oficial.",
+          plan_completado: false,
+          modo: "busqueda_web",
+          categoria: "busqueda_web",
+          datos_planificacion: null
+        },
+        status: 200,
+        estado: "error"
+      });
     }
 
     // 4. MODO CONOCIMIENTO GENERAL -> Conversacional directo con modelo sin buscar en currículo oficial
     if (clasificacion.categoria === "conocimiento_general") {
       const aviso = "\n\n*(Nota: Esta es una explicación pedagógica general, no una cita textual del currículo oficial MINERD. Si deseas llevar este concepto a una actividad de clase o situación de aprendizaje, dime el grado y lo armamos.)*";
 
-      if (iaApagada) return generarErrorPlanificacion("IA_NO_DISPONIBLE", "El servicio de inteligencia artificial est� en mantenimiento breve.", "Puedes seguir consultando el curr�culo oficial y las secuencias did�cticas disponibles.", false);
+      if (iaApagada) return generarErrorPlanificacion("IA_NO_DISPONIBLE", "El servicio de inteligencia artificial está en mantenimiento breve.", "Puedes seguir consultando el currículo oficial y las secuencias didácticas disponibles.", false);
 
       if (!env.GEMINI_API_KEY) {
         const avisoHonesto = "La consulta de conocimiento general requiere conexión con el modelo de inteligencia artificial. En este momento el servicio externo no está disponible o no tiene cuota configurada. Puedes consultar contenidos directamente del currículo oficial o escribir tu consulta pedagógica.";
@@ -1775,6 +1829,7 @@ async function handleApiRequest(request, env, ctx) {
 
       // Llamar al modelo de IA con prompt conversacional y ventana configurable de turnos (T4)
       try {
+        const t0Conversacion = performance.now();
         const maxTurnos = parseInt(env.TURNOS_CONVERSACION_MAX || "6", 10);
         const turnosRecientes = messages.slice(-maxTurnos);
         const geminiContents = [];
@@ -1792,11 +1847,17 @@ async function handleApiRequest(request, env, ctx) {
           geminiContents.push({ role: "user", parts: [{ text: textoConsulta }] });
         }
 
+        const t0PromptConv = performance.now();
         const models = getGeminiModels(env);
+        const msPromptConv = performance.now() - t0PromptConv;
+
+        const geminiBase = env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com";
         let textoGenerado = "";
+        let msGeminiConv = 0;
         for (const model of models) {
           try {
-            const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+            const geminiUrl = `${geminiBase}/v1beta/models/${model}:generateContent`;
+            const t0GeminiFetch = performance.now();
             const res = await fetchGeminiWithRetry(geminiUrl, {
               method: "POST",
               headers: {
@@ -1810,6 +1871,7 @@ async function handleApiRequest(request, env, ctx) {
               }),
               signal: request.signal,
             });
+            msGeminiConv = performance.now() - t0GeminiFetch;
             if (res && res.ok) {
               const data = await res.json();
               textoGenerado = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -1821,12 +1883,26 @@ async function handleApiRequest(request, env, ctx) {
         }
 
         if (textoGenerado) {
+          if (esModoPrueba && env.DESACTIVAR_CAPA_2 === "true") {
+            return new Response(JSON.stringify({ error: "Capa 2 desactivada por mutación", ok: false }), {
+              status: 500,
+              headers: { ...corsHeaders, "Content-Type": "application/json" }
+            });
+          }
           const pideOficial = /curr[ií]culo|oficial|minerd|malla/i.test(textoConsulta);
           const avisoCorto = pideOficial ? "\n\n*(Orientación pedagógica general. Para competencias oficiales exactas, consulta por grado y área).*" : "";
           const finalChat = `${textoGenerado.trim()}${avisoCorto}`;
-          registrarCapa(2, "Modo conversacional", "charla pedagógica", `turnos recientes: ${turnosRecientes.length}`, 2);
-          registrarCapa(3, "Prompt de sistema V2", "rol colega pedagógico", "SYSTEM_PROMPT_CONVERSACIONAL", 4);
-          registrarCapa(6, "Gemini", "modelo conversación", "generación pedagógica completada", 35);
+          registrarCapa(2, "Modo conversacional", "charla pedagógica", `turnos recientes: ${turnosRecientes.length}`, performance.now() - t0Conversacion);
+          if (esModoPrueba && env.DESACTIVAR_CAPA_3 === "true") {
+            // Omite Capa 3 bajo prueba de mutación
+          } else {
+            registrarCapa(3, "Prompt de sistema V2", "rol colega pedagógico", "SYSTEM_PROMPT_CONVERSACIONAL", msPromptConv);
+          }
+          if (esModoPrueba && env.DESACTIVAR_CAPA_6 === "true") {
+            // Omite Capa 6 bajo prueba de mutación
+          } else {
+            registrarCapa(6, "Gemini", "modelo conversación", "generación pedagógica completada", msGeminiConv);
+          }
           return responderWorker({
             data: {
               mensaje_chat: finalChat,
@@ -1869,7 +1945,7 @@ async function handleApiRequest(request, env, ctx) {
         })
       : null;
 
-    if (claveCache && env.DESACTIVAR_CAPA_8 !== "true") {
+    if (claveCache && !(esModoPrueba && env.DESACTIVAR_CAPA_8 === "true")) {
       const t0Cache = performance.now();
       let respCache = obtenerRespuestaDeCache(claveCache);
       if (!respCache && env && (env.CACHE_KV || env.CURRICULO_KV)) {
@@ -1913,7 +1989,7 @@ async function handleApiRequest(request, env, ctx) {
     let baseOficialCargada = false;
     if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
       try {
-        const checkBaseRes = await fetch(`${env.SUPABASE_URL}/rest/v1/curriculo_fragmentos?select=id&limit=1`, {
+        const checkBaseRes = await fetch(`${env.SUPABASE_URL}/rest/v1/curriculo_secuencias?select=id&limit=1`, {
           headers: {
             apikey: env.SUPABASE_SERVICE_ROLE_KEY,
             Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
@@ -1981,7 +2057,8 @@ async function handleApiRequest(request, env, ctx) {
       if (areasFiltradas.length > 0) areasTexto = areasFiltradas.join(", ");
     }
 
-    const usaPromptV2 = Boolean(env && (env.PROMPT_SISTEMA_V2 === "true" || env.PROMPT_SISTEMA_V2 === true));
+    const t0PromptV2 = performance.now();
+    const usaPromptV2 = Boolean(env && (env.PROMPT_SISTEMA_V2 === "true" || env.PROMPT_SISTEMA_V2 === true)) && !(esModoPrueba && env.DESACTIVAR_CAPA_3 === "true");
     const basePrompt = usaPromptV2 ? PROMPT_SISTEMA_V2_TEXTO : SYSTEM_PROMPT;
 
     const dynamicPrompt = `${basePrompt}
@@ -1998,7 +2075,11 @@ ${directivaBorrador}
 ## BLOQUES OBLIGATORIOS PARA 'datos_planificacion':
 ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
 `;
-    registrarCapa(3, "Prompt de sistema V2", `rol pedagógico, esquema ${esquema.label}`, "prompt estructurado generado", 3);
+    if (esModoPrueba && env.DESACTIVAR_CAPA_3 === "true") {
+      // Omite Capa 3 bajo prueba de mutación
+    } else {
+      registrarCapa(3, "Prompt de sistema V2", `rol pedagógico, esquema ${esquema.label}`, "prompt estructurado generado", performance.now() - t0PromptV2);
+    }
 
     // Mapeo de contenido para Gemini
     const contents = messages.map((msg, idx) => {
@@ -2024,7 +2105,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
       };
     });
 
-    if (iaApagada) return generarErrorPlanificacion("IA_NO_DISPONIBLE", "El servicio de inteligencia artificial est� en mantenimiento breve.", "Puedes seguir consultando el curr�culo oficial y las secuencias did�cticas disponibles.", false);
+    if (iaApagada) return generarErrorPlanificacion("IA_NO_DISPONIBLE", "El servicio de inteligencia artificial está en mantenimiento breve.", "Puedes seguir consultando el currículo oficial y las secuencias didácticas disponibles.", false);
 
     if (!env.GEMINI_API_KEY) {
         return generarErrorPlanificacion("ERROR_INTERNO", "Tuve un problema interno y no sé la causa exacta; te dejo un código para soporte.", "Falta GEMINI_API_KEY en la configuración del servidor.", false);
@@ -2036,19 +2117,29 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
 
     // Modo Streaming SSE
     if (isStream) {
+      if (esModoPrueba && env.DESACTIVAR_CAPA_6 === "true") {
+        return new Response(JSON.stringify({ error: "Capa 6 desactivada por mutación", ok: false }), {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
       let promptParaStreaming = dynamicPrompt;
       let fragmentosRecuperadosTexto = "";
       let consultasAuditadasStreaming = [];
 
       const usaHerramientasV2 = Boolean(env && (env.HERRAMIENTAS_V2 === "true" || env.HERRAMIENTAS_V2 === true));
-      if (usaHerramientasV2 && env.DESACTIVAR_CAPA_5 !== "true") {
+      // Bloque gobernado por los interruptores de mutación 4 (Herramientas curriculares) y 5 (Ciclo tool-calling SSE)
+      const desactivarCapa4 = Boolean(esModoPrueba && env.DESACTIVAR_CAPA_4 === "true");
+      const desactivarCapa5 = Boolean(esModoPrueba && env.DESACTIVAR_CAPA_5 === "true");
+      if (usaHerramientasV2 && !desactivarCapa5 && !desactivarCapa4) {
         try {
+          const geminiBase = env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com";
           const t0Tools = performance.now();
           const modelHerramientas = models[0] || "gemini-3.1-flash-lite";
           const cicloRes = await cicloToolCalling({
             promptUsuario: textoParaProcesar,
             llamadaModeloIA: async (payload) => {
-              const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelHerramientas}:generateContent`;
+              const geminiUrl = `${geminiBase}/v1beta/models/${modelHerramientas}:generateContent`;
               const gemRes = await fetchGeminiWithRetry(geminiUrl, {
                 method: "POST",
                 headers: {
@@ -2076,6 +2167,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
             maxIteraciones: 3,
           });
 
+          const msCicloTotal = performance.now() - t0Tools;
           if (cicloRes && cicloRes.consultas && cicloRes.consultas.length > 0) {
             consultasAuditadasStreaming = cicloRes.consultas;
             const filasTodas = cicloRes.consultas.flatMap((c) => c.filas || []);
@@ -2085,8 +2177,8 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                 .join("\n");
               promptParaStreaming += `\n=== FRAGMENTOS CURRICULARES OFICIALES RECUPERADOS ===\n<DATO>\n${fragmentosRecuperadosTexto}\n</DATO>\n`;
             }
-            registrarCapa(4, "Herramientas curriculares", "consultar_base_datos ejecutada", `secuencia didáctica obtenida: ${filasTodas.length} filas`, performance.now() - t0Tools);
-            registrarCapa(5, "Ciclo tool-calling antes de streaming", "resolución herramientas antes de SSE", `llamadas: ${cicloRes.consultas.length}`, 15);
+            registrarCapa(4, "Herramientas curriculares", "consultar_base_datos ejecutada", `secuencia didáctica obtenida: ${filasTodas.length} filas`, msCicloTotal);
+            registrarCapa(5, "Ciclo tool-calling antes de streaming", "resolución herramientas antes de SSE", `llamadas: ${cicloRes.consultas.length}`, msCicloTotal);
           }
         } catch (errCicloStreaming) {
           console.warn("[Herramientas V2 Streaming] Falló ciclo de herramientas, procediendo con degradación pedagógica:", errCicloStreaming.message);
@@ -2096,10 +2188,12 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
       let geminiRes = null;
       let ultimoError = null;
       let ultimoStatus = 500;
+      const geminiBase = env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com";
 
       for (const model of models) {
-        const geminiStreamUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`;
+        const geminiStreamUrl = `${geminiBase}/v1beta/models/${model}:streamGenerateContent?alt=sse`;
         try {
+          const t0StreamFetch = performance.now();
           const res = await fetchGeminiWithRetry(geminiStreamUrl, {
             method: "POST",
             headers: {
@@ -2120,7 +2214,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
 
           if (res && res.ok) {
             geminiRes = res;
-            registrarCapa(6, "Gemini", `streamGenerateContent con ${model}`, "generación completada", 35);
+            registrarCapa(6, "Gemini", `streamGenerateContent con ${model}`, "generación completada", performance.now() - t0StreamFetch);
             break;
           } else if (res) {
             ultimoStatus = res.status;
@@ -2402,10 +2496,14 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
             }
 
             if (parsedFinal.mensaje_chat) {
-              const fragsParaCitas = (parsedFinal.datos_planificacion?.fragmentos || []).concat(consultasAuditadasStreaming.flatMap(c => c.filas || []));
-              const t0Citas = performance.now();
-              parsedFinal.mensaje_chat = verificarYSanearCitas(parsedFinal.mensaje_chat, fragsParaCitas);
-              registrarCapa(7, "Verificador de citas", "validación pág. N contra fragmentos", "citas verificadas", performance.now() - t0Citas);
+              if (esModoPrueba && env.DESACTIVAR_CAPA_7 === "true") {
+                // Omite Capa 7 bajo prueba de mutación
+              } else {
+                const fragsParaCitas = (parsedFinal.datos_planificacion?.fragmentos || []).concat(consultasAuditadasStreaming.flatMap(c => c.filas || []));
+                const t0Citas = performance.now();
+                parsedFinal.mensaje_chat = verificarYSanearCitas(parsedFinal.mensaje_chat, fragsParaCitas);
+                registrarCapa(7, "Verificador de citas", "validación pág. N contra fragmentos", "citas verificadas", performance.now() - t0Citas);
+              }
             }
 
             const finalPayload = {
@@ -2415,7 +2513,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
               periodo,
               nivelLabel: esquema.label,
               cuota: estadoActualizado,
-              traza_capas: [...trazaCapas]
+              ...(habilitarTraza ? { traza_capas: [...trazaCapas] } : {})
             };
 
             if (claveCache && esRespuestaCacheable(parsedFinal)) {

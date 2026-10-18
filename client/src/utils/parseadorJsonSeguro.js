@@ -5,6 +5,8 @@
 
 export {
   extraerJson,
+  extraerJson as extraerJsonFlexible,
+  objetoDesde,
   mensajeParaChat,
   validarCamposPlanificacion,
   repararJsonTruncado,

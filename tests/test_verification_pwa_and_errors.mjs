@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert";
 
-test("1. C骴igos de error y estructura amigable", () => {
+test("1. C贸digos de error y estructura amigable", () => {
   const codigos = [
     "CUOTA_DIARIA_AGOTADA",
     "IA_NO_DISPONIBLE",
@@ -15,7 +15,7 @@ test("1. C骴igos de error y estructura amigable", () => {
   }
 });
 
-test("2. Protecci髇 de bucles de recarga en PWA", () => {
+test("2. Protecci贸n de bucles de recarga en PWA", () => {
   const store = new Map();
   function safeReloadMock(now) {
     const hasLast = store.has("pm_sw_last_reload");
@@ -29,7 +29,7 @@ test("2. Protecci髇 de bucles de recarga en PWA", () => {
   assert.strictEqual(safeReloadMock(10000), true); // Pasan 9s y permite
 });
 
-test("3. Comparaci髇 de versiones en PWA", () => {
+test("3. Comparaci贸n de versiones en PWA", () => {
   const currentBuild = "2026.10.10-1845-d27cfe7";
   const remoteVersion = { commit: "b13ad19" };
   const remoteVersionOld = { commit: "d27cfe7" };
@@ -42,7 +42,7 @@ test("3. Comparaci髇 de versiones en PWA", () => {
 });
 
 
-test("4. Proteccion contra bucle con marca de version objetivo en sessionStorage", () => {
+test("4. Protecci贸n contra bucle con marca de version objetivo en sessionStorage", () => {
   const store = new Map();
   function safeReloadVersion(targetVer) {
     if (targetVer) {

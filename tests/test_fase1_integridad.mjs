@@ -66,7 +66,7 @@ for (const key of planesGeneralesKeys) {
     reportar(`Acción '${key}' sin base oficial`, false, `esperaba 'listo_sin_verificar', obtuvo '${estadoSinBase}'`);
   }
   // Con base oficial cargada
-  const estadoConBase = obtenerEstadoAccion(key, { user: null, tablasDisponibles: ["curriculo_fragmentos"] });
+  const estadoConBase = obtenerEstadoAccion(key, { user: null, tablasDisponibles: ["curriculo_secuencias"] });
   if (estadoConBase !== "listo") {
     todosListoSinVerificar = false;
     reportar(`Acción '${key}' con base oficial`, false, `esperaba 'listo', obtuvo '${estadoConBase}'`);

@@ -1,4 +1,4 @@
-﻿import test from "node:test";
+import test from "node:test";
 import assert from "node:assert/strict";
 import { verificarSupabase } from "../scripts/verificar_supabase.mjs";
 
@@ -11,6 +11,11 @@ test("F1 - Contrato de RPC buscar_curriculo_secuencias y verificación mockeada"
       // Ping
       if (urlStr.endsWith("/rest/v1/")) {
         return new Response(JSON.stringify({ swagger: "2.0" }), { status: 200 });
+      }
+      if (urlStr.includes("/curriculo_secuencias")) {
+        return new Response(JSON.stringify([
+          { id: "mock-1", nivel: "Primario", area: "Lengua Española" }
+        ]), { status: 200, headers: { "Content-Type": "application/json", "Content-Range": "0-0/1" } });
       }
       // RPC
       if (urlStr.includes("/rpc/buscar_curriculo_secuencias")) {
@@ -50,3 +55,4 @@ test("F1 - Contrato de RPC buscar_curriculo_secuencias y verificación mockeada"
     globalThis.fetch = originalFetch;
   }
 });
+

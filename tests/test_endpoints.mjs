@@ -4,17 +4,17 @@
  * Por defecto: https://planifica-maestro.israelmontas65.workers.dev
  */
 
-const BASE_URL = (process.argv[2] || "https://planifica-maestro.israelmontas65.workers.dev").replace(/\/$/, "");
+const API_URL = (process.env.VITE_API_URL || process.argv[2] || "https://planifica-maestro.israelmontas65.workers.dev").replace(/\/$/, "");
 
 console.log(`\n======================================================`);
-console.log(`EJECUTANDO PRUEBAS DE ENDPOINTS EN: ${BASE_URL}`);
+console.log(`EJECUTANDO PRUEBAS DE ENDPOINTS EN: ${API_URL}`);
 console.log(`======================================================\n`);
 
 let passed = 0;
 let failed = 0;
 
 async function testEndpoint({ name, method, path, body, headers = {}, expectedStatuses = [200], validateJson }) {
-  const url = `${BASE_URL}${path}`;
+  const url = `${API_URL}${path}`;
   process.stdout.write(`[TEST] ${method} ${path} (${name})... `);
 
   try {

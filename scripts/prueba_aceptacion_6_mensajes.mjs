@@ -1,4 +1,4 @@
-﻿/**
+/**
  * scripts/prueba_aceptacion_6_mensajes.mjs
  * 
  * Prueba de Aceptación Canónica de los 6 Mensajes con aserciones estrictas (R4):
@@ -115,13 +115,12 @@ async function ejecutarPrueba() {
     assert.match(data1.mensaje_chat, /Profe\s+Laura/i, "Mensaje 1 debe incluir el nombre saneado 'Profe Laura'");
     assert.ok(data1.mensaje_chat.includes("¡"), "Mensaje 1 debe incluir signo de apertura '¡'");
 
-    // Verificación de zona horaria America/Santo_Domingo
     const horaSD = Number(new Intl.DateTimeFormat("en-US", {
       timeZone: "America/Santo_Domingo",
       hour: "numeric",
       hour12: false
     }).format(new Date()));
-    const saludoEsperado = horaSD < 12 ? /días/i : (horaSD < 19 ? /tardes/i : /noches/i);
+    const saludoEsperado = (horaSD >= 5 && horaSD < 12) ? /días/i : (horaSD >= 12 && horaSD < 19 ? /tardes/i : /noches/i);
     assert.match(data1.mensaje_chat, saludoEsperado, `El saludo debe coincidir con la hora de Santo Domingo (${horaSD}h)`);
     console.log(`[PASS] Mensaje 1 validado: "${data1.mensaje_chat}"\n`);
 

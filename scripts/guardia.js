@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 
 /**
  * scripts/guardia.js
@@ -10,7 +10,7 @@ import { execSync } from 'node:child_process';
  * - Validación por ruta relativa normalizada completa (SIN coincidencia por nombre base).
  * - Soporte para hashes autorizados explícitos en AUTORIZACIONES.md.
  * - Auto-vigilancia de scripts/guardia.js, PROTEGIDO.hashes.json y AUTORIZACIONES.md contra git HEAD.
- * - Comando sellar (node scripts/guardia.js --sellar) para actualizar hashes protegidos con firma y fecha.
+ * - Comando sellar (node scripts/guardia.js --sellar) para actualizar hashes protegidos con resumen y fecha.
  */
 
 export function normalizarRuta(p) {
@@ -31,20 +31,18 @@ export function cargarAutorizaciones(cwd = process.cwd()) {
   let currentHashes = new Map(); // ruta -> hash
 
   function flush() {
-    if (currentComponentes.length > 0) {
-      for (const comp of currentComponentes) {
-        const norm = normalizarRuta(comp);
-        if (!norm) continue;
-        if (!autorizados.has(norm)) {
-          autorizados.set(norm, { hashes: new Set(), autorizaciones: [] });
-        }
-        const entry = autorizados.get(norm);
-        if (currentAuthId && !entry.autorizaciones.includes(currentAuthId)) {
-          entry.autorizaciones.push(currentAuthId);
-        }
-        if (currentHashes.has(norm)) {
-          entry.hashes.add(currentHashes.get(norm));
-        }
+    const todos = new Set([...currentComponentes.map(normalizarRuta), ...currentHashes.keys()]);
+    for (const norm of todos) {
+      if (!norm) continue;
+      if (!autorizados.has(norm)) {
+        autorizados.set(norm, { hashes: new Set(), autorizaciones: [] });
+      }
+      const entry = autorizados.get(norm);
+      if (currentAuthId && !entry.autorizaciones.includes(currentAuthId)) {
+        entry.autorizaciones.push(currentAuthId);
+      }
+      if (currentHashes.has(norm)) {
+        entry.hashes.add(currentHashes.get(norm));
       }
     }
     currentComponentes = [];
@@ -59,7 +57,7 @@ export function cargarAutorizaciones(cwd = process.cwd()) {
       continue;
     }
 
-    const matchComp = l.match(/\*\*Componentes?:\*\*\s*(.+)$/i);
+    const matchComp = l.match(/\*\*Componentes?(?:\s+y\s+Hashes)?:\*\*\s*(.+)$/i);
     if (matchComp) {
       const raw = matchComp[1].replace(/`/g, '');
       const items = raw.split(/,|\by\b|\be\b/).map(s => s.trim()).filter(Boolean);
@@ -90,6 +88,20 @@ export function verificarAutoVigilancia(cwd = process.cwd(), autorizados = null)
   const fallos = [];
 
   try {
+    execSync('git rev-parse --is-inside-work-tree', { cwd, stdio: ['pipe', 'pipe', 'pipe'] });
+  } catch (e) {
+    fallos.push(`[Guardia] FALLA CERRADA: '${cwd}' no es un repositorio Git válido o Git no está disponible.`);
+    return fallos;
+  }
+
+  try {
+    execSync('git rev-parse --verify HEAD', { cwd, stdio: ['pipe', 'pipe', 'pipe'] });
+  } catch (e) {
+    // Si el repositorio no tiene commits aún (HEAD no resuelto)
+    return fallos;
+  }
+
+  try {
     const out = execSync('git diff --name-only HEAD -- scripts/guardia.js PROTEGIDO.hashes.json AUTORIZACIONES.md', {
       cwd,
       encoding: 'utf8',
@@ -107,11 +119,31 @@ export function verificarAutoVigilancia(cwd = process.cwd(), autorizados = null)
               stdio: ['pipe', 'pipe', 'pipe']
             });
             const lineasEliminadas = diffAuth.split('\n').filter(l => l.startsWith('-') && !l.startsWith('---'));
-            const tocoHistorico = lineasEliminadas.some(l => /Autorización\s+00[1-9]|Autorización\s+010/i.test(l));
+            const tocoHistorico = lineasEliminadas.some(l => /Autorización\s+00[1-9]|Autorización\s+01[0-3]/i.test(l));
             if (tocoHistorico) {
-              fallos.push(`AUTORIZACIONES.md fue alterado en autorizaciones históricas protegidas.`);
+              fallos.push(`AUTORIZACIONES.md fue alterado en autorizaciones históricas protegidas (001 a 013).`);
+            }
+          } catch (e) {
+            fallos.push(`[Guardia] Error al inspeccionar historial de AUTORIZACIONES.md con git: ${e.message}`);
+          }
+          continue;
+        }
+
+        if (mod === 'PROTEGIDO.hashes.json') {
+          try {
+            const headShort = execSync('git rev-parse --short HEAD', { cwd, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+            const configDisk = JSON.parse(fs.readFileSync(path.resolve(cwd, 'PROTEGIDO.hashes.json'), 'utf8'));
+            if (configDisk && configDisk.commit && (configDisk.commit === headShort || headShort.startsWith(configDisk.commit))) {
+              // El sello acaba de ser generado para HEAD pero aún no se commitea
+              continue;
             }
           } catch (e) {}
+          fallos.push(`PROTEGIDO.hashes.json fue alterado respecto a git HEAD. El sellado es acto exclusivo del Dueño.`);
+          continue;
+        }
+
+        if (mod === 'scripts/guardia.js') {
+          fallos.push(`scripts/guardia.js fue modificado respecto a git HEAD. Requiere revisión y sellado exclusivo por el Dueño.`);
           continue;
         }
 
@@ -120,7 +152,9 @@ export function verificarAutoVigilancia(cwd = process.cwd(), autorizados = null)
         }
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    fallos.push(`[Guardia] Error al ejecutar git diff de auto-vigilancia: ${e.message}`);
+  }
 
   return fallos;
 }
@@ -140,11 +174,55 @@ export function verificarGuardia({ cwd = process.cwd(), verbose = true } = {}) {
     return false;
   }
 
+  let anclaCommit = process.env.GUARDIA_COMMIT_SELLADO ? process.env.GUARDIA_COMMIT_SELLADO.trim() : null;
+  if (anclaCommit) {
+    if (config.commit && anclaCommit !== config.commit && !anclaCommit.startsWith(config.commit) && !config.commit.startsWith(anclaCommit)) {
+      if (verbose) {
+        console.error(`🚨 [Guardia] DESALINEACIÓN DE ANCLA: GUARDIA_COMMIT_SELLADO (${anclaCommit}) no coincide con el commit de PROTEGIDO.hashes.json (${config.commit}).`);
+      }
+      return false;
+    }
+  } else {
+    if (!config.commit) {
+      if (verbose) {
+        console.warn('⚠️ [Guardia] SIN ANCLA: Ni GUARDIA_COMMIT_SELLADO ni config.commit están definidos.');
+      }
+      return false;
+    }
+    anclaCommit = config.commit.trim();
+    try {
+      execFileSync('git', ['cat-file', '-e', `${anclaCommit}^{commit}`], { cwd, stdio: ['pipe', 'pipe', 'pipe'] });
+    } catch (e) {
+      if (verbose) console.error(`❌ [Guardia] ERROR FATAL: El commit ancla [${anclaCommit}] no existe en la base de objetos de git.`);
+      return false;
+    }
+    try {
+      execFileSync('git', ['merge-base', '--is-ancestor', anclaCommit, 'HEAD'], { cwd, stdio: ['pipe', 'pipe', 'pipe'] });
+    } catch (e) {
+      if (verbose) console.error(`❌ [Guardia] ERROR FATAL: El commit ancla [${anclaCommit}] no es ancestro de HEAD.`);
+      return false;
+    }
+  }
+
+  // Validación del resumen criptográfico del archivo de hashes
+  const resumenEsperado = config.resumen || config.firma;
+  if (resumenEsperado) {
+    const jsonCadena = JSON.stringify(config.hashes);
+    const resumenCalculado = crypto.createHash('sha256').update(jsonCadena).digest('hex');
+    if (resumenCalculado !== resumenEsperado) {
+      if (verbose) {
+        console.error(`🚨 [Guardia] VIOLACIÓN: El resumen criptográfico de PROTEGIDO.hashes.json no coincide.`);
+        console.error(`   Esperado: ${resumenEsperado}`);
+        console.error(`   Calculado: ${resumenCalculado}`);
+      }
+      return false;
+    }
+  }
+
   const autorizados = cargarAutorizaciones(cwd);
   const hashes = config.hashes || {};
   let fallos = 0;
   let correctos = 0;
-  let autorizadosModificados = 0;
 
   const autoFallos = verificarAutoVigilancia(cwd, autorizados);
   if (autoFallos.length > 0) {
@@ -161,11 +239,6 @@ export function verificarGuardia({ cwd = process.cwd(), verbose = true } = {}) {
     const rutaAbs = path.resolve(cwd, rutaNorm);
 
     if (!fs.existsSync(rutaAbs)) {
-      if (autorizados.has(rutaNorm)) {
-        if (verbose) console.warn(`⚠️ [Guardia] Archivo ausente pero autorizado en AUTORIZACIONES.md: ${rutaNorm}`);
-        autorizadosModificados++;
-        continue;
-      }
       if (verbose) console.error(`❌ [Guardia] VIOLACIÓN: Archivo protegido eliminado o no encontrado: ${rutaNorm}`);
       fallos++;
       continue;
@@ -177,50 +250,79 @@ export function verificarGuardia({ cwd = process.cwd(), verbose = true } = {}) {
     if (hashActual === hashEsperado) {
       correctos++;
     } else {
-      if (autorizados.has(rutaNorm)) {
-        const authInfo = autorizados.get(rutaNorm);
-        if (authInfo.hashes && authInfo.hashes.size > 0) {
-          if (authInfo.hashes.has(hashActual)) {
-            if (verbose) console.log(`ℹ️ [Guardia] Archivo modificado bajo autorización formal con hash verificado: ${rutaNorm}`);
-            autorizadosModificados++;
-          } else {
-            if (verbose) {
-              console.error(`🚨 [Guardia] VIOLACIÓN CRÍTICA DE HASH AUTORIZADO:`);
-              console.error(`   Archivo: ${rutaNorm}`);
-              console.error(`   Hash Actual:     ${hashActual}`);
-              console.error(`   Hash Autorizado: ${[...authInfo.hashes].join(', ')}`);
-              console.error(`   Motivo: El hash del archivo no coincide con el SHA-256 registrado en AUTORIZACIONES.md.`);
-            }
-            fallos++;
-          }
-        } else {
-          if (verbose) console.log(`ℹ️ [Guardia] Archivo modificado bajo autorización formal: ${rutaNorm}`);
-          autorizadosModificados++;
-        }
-      } else {
-        if (verbose) {
-          console.error(`🚨 [Guardia] VIOLACIÓN CRÍTICA DE INTEGRIDAD:`);
-          console.error(`   Archivo: ${rutaNorm}`);
-          console.error(`   Hash Esperado: ${hashEsperado.substring(0, 16)}...`);
-          console.error(`   Hash Actual:   ${hashActual.substring(0, 16)}...`);
-          console.error(`   Motivo de Bloqueo: Ruta no registrada en AUTORIZACIONES.md.`);
-        }
-        fallos++;
+      // P2: PROTEGIDO.hashes.json es la única fuente de verdad.
+      // Toda discrepancia es violación. AUTORIZACIONES.md es solo bitácora.
+      if (verbose) {
+        console.error(`🚨 [Guardia] VIOLACIÓN CRÍTICA DE INTEGRIDAD:`);
+        console.error(`   Archivo:      ${rutaNorm}`);
+        console.error(`   Hash Sellado: ${hashEsperado}`);
+        console.error(`   Hash Actual:  ${hashActual}`);
+        console.error(`   Motivo:       PROTEGIDO.hashes.json es la única fuente de verdad.`);
       }
+      fallos++;
     }
   }
 
   if (fallos > 0) {
     if (verbose) {
       console.error(`\n❌ [Guardia] BLOQUEO: Se detectaron ${fallos} violaciones.`);
-      console.error(`   Regla Única: Lo que ya funciona no se toca ni se altera.`);
-      console.error(`   Para autorizar un cambio, debe registrarse formalmente en AUTORIZACIONES.md.\n`);
+      console.error(`   Regla P2: PROTEGIDO.hashes.json es la única fuente de verdad.`);
+      console.error(`   El sellado es acto exclusivo del Dueño.\n`);
     }
     return false;
   }
 
-  if (verbose) console.log(`✅ [Guardia] Integridad verificada al 100%: ${correctos} intactos, ${autorizadosModificados} autorizados, 0 violaciones.\n`);
+  if (verbose) console.log(`✅ [Guardia] Integridad verificada al 100%: ${correctos} intactos, ancla [${anclaCommit}] confirmada, 0 violaciones.\n`);
   return true;
+}
+
+export function mostrarDiffGuardia({ cwd = process.cwd() } = {}) {
+  const rutaHashes = path.resolve(cwd, 'PROTEGIDO.hashes.json');
+  if (!fs.existsSync(rutaHashes)) {
+    console.error('❌ [Guardia:Diff] No se encontró PROTEGIDO.hashes.json.');
+    return false;
+  }
+  const config = JSON.parse(fs.readFileSync(rutaHashes, 'utf8'));
+  const hashes = config.hashes || {};
+  const autorizados = cargarAutorizaciones(cwd);
+
+  const anclaCommit = process.env.GUARDIA_COMMIT_SELLADO ? process.env.GUARDIA_COMMIT_SELLADO.trim() : null;
+  console.log(`\n🔍 [Guardia:Diff] Inspección comparativa contra PROTEGIDO.hashes.json [Ancla: ${anclaCommit || 'SIN ANCLA'}]:`);
+  let totalModificados = 0;
+
+  for (const [archivoRel, hashEsperado] of Object.entries(hashes)) {
+    const rutaNorm = normalizarRuta(archivoRel);
+    const rutaAbs = path.resolve(cwd, rutaNorm);
+
+    if (!fs.existsSync(rutaAbs)) {
+      console.log(`   - [ELIMINADO / AUSENTE] ${rutaNorm}`);
+      totalModificados++;
+      continue;
+    }
+
+    const cont = fs.readFileSync(rutaAbs);
+    const hashActual = crypto.createHash('sha256').update(cont).digest('hex');
+
+    if (hashActual !== hashEsperado) {
+      totalModificados++;
+      const authInfo = autorizados.get(rutaNorm);
+      const bitacora = authInfo ? ` (Bitácora: Autorización ${authInfo.autorizaciones.join(', ') || 'Registrada'})` : ' (No registrado en bitácora)';
+      console.log(`   ! [MODIFICADO RESPECTO A SELLO] ${rutaNorm}${bitacora}`);
+      console.log(`     Sellado:     ${hashEsperado}`);
+      console.log(`     Actual:      ${hashActual}`);
+    }
+  }
+
+  const autoFallos = verificarAutoVigilancia(cwd, autorizados);
+  if (autoFallos.length > 0) {
+    console.log(`\n🚨 [Guardia:Diff] Alertas de Auto-Vigilancia (scripts/guardia.js, PROTEGIDO.hashes.json, AUTORIZACIONES.md):`);
+    for (const f of autoFallos) {
+      console.log(`   ! ${f}`);
+    }
+  }
+
+  console.log(`\n📊 [Guardia:Diff] Resumen: ${totalModificados} archivos protegidos modificados respecto al sello oficial.\n`);
+  return totalModificados === 0 && autoFallos.length === 0;
 }
 
 export function sellarGuardia(cwd = process.cwd(), { confirmar = false, verbose = true } = {}) {
@@ -232,10 +334,27 @@ export function sellarGuardia(cwd = process.cwd(), { confirmar = false, verbose 
   const config = JSON.parse(fs.readFileSync(rutaHashes, 'utf8'));
   const hashes = config.hashes || {};
 
+  let statusTree = '';
+  try {
+    statusTree = execSync('git status --porcelain', { cwd, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+  } catch (e) {
+    throw new Error(`[Guardia:Sellar] Error comprobando estado del repositorio git: ${e.message}`);
+  }
+
+  if (statusTree && confirmar) {
+    throw new Error(`[Guardia:Sellar] Árbol de trabajo sucio. El sellado requiere un working tree limpio (git status limpio).\nArchivos pendientes:\n${statusTree}`);
+  }
+
   const adicionales = [
     'client/vite.config.js',
     'client/src/utils/parseadorJsonSeguro.js',
-    'scripts/prueba_real_gemini.mjs'
+    'scripts/prueba_real_gemini.mjs',
+    'shared/ciclo.js',
+    'shared/curriculoService.mjs',
+    'shared/herramientas.mjs',
+    'shared/promptSistemaV2.js',
+    'shared/catalogoCurricular.mjs',
+    'scripts/guardia.js'
   ];
   for (const ad of adicionales) {
     if (fs.existsSync(path.resolve(cwd, ad)) && !hashes[ad]) {
@@ -245,8 +364,10 @@ export function sellarGuardia(cwd = process.cwd(), { confirmar = false, verbose 
 
   let commit = 'HEAD';
   try {
-    commit = execSync('git rev-parse --short HEAD', { cwd, encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }).trim();
-  } catch (e) {}
+    commit = execSync('git rev-parse --short HEAD', { cwd, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+  } catch (e) {
+    throw new Error(`[Guardia:Sellar] Error al obtener commit actual desde git: ${e.message}`);
+  }
 
   const nuevosHashes = {};
   const ordenados = Object.keys(hashes).sort();
@@ -292,13 +413,13 @@ export function sellarGuardia(cwd = process.cwd(), { confirmar = false, verbose 
       console.log('   (Sin cambios detectados en los hashes de archivos protegidos)');
     } else {
       for (const m of diff.modificados) {
-        console.log(`   ~ [MODIFICADO] ${m.archivo}: ${m.hashViejo.substring(0, 12)}... -> ${m.hashNuevo.substring(0, 12)}...`);
+        console.log(`   ~ [MODIFICADO] ${m.archivo}: ${m.hashViejo} -> ${m.hashNuevo}`);
       }
       for (const n of diff.nuevos) {
-        console.log(`   + [NUEVO]      ${n.archivo}: ${n.hashNuevo.substring(0, 12)}...`);
+        console.log(`   + [NUEVO]      ${n.archivo}: ${n.hashNuevo}`);
       }
       for (const el of diff.eliminados) {
-        console.log(`   - [ELIMINADO]  ${el.archivo}`);
+        console.log(`   - [ELIMINADO]  ${el.archivo} (${el.hashViejo})`);
       }
     }
   }
@@ -306,6 +427,7 @@ export function sellarGuardia(cwd = process.cwd(), { confirmar = false, verbose 
   if (!confirmar) {
     if (verbose) {
       console.warn('\n⚠️ [Guardia:Sellar] Modo de inspección/vista previa. PROTEGIDO.hashes.json NO fue modificado.');
+      console.warn('   El sellado es acto exclusivo del Dueño.');
       console.warn('   Para confirmar y escribir el nuevo sello criptográfico, ejecute:');
       console.warn('   npm run guardia:sellar -- --confirmar\n');
     }
@@ -313,7 +435,7 @@ export function sellarGuardia(cwd = process.cwd(), { confirmar = false, verbose 
   }
 
   const jsonCadena = JSON.stringify(nuevosHashes);
-  const firma = crypto.createHash('sha256').update(jsonCadena).digest('hex');
+  const resumen = crypto.createHash('sha256').update(jsonCadena).digest('hex');
 
   const nuevoContenido = {
     version: "2.0.0",
@@ -321,7 +443,7 @@ export function sellarGuardia(cwd = process.cwd(), { confirmar = false, verbose 
     commit,
     algoritmo: "sha256",
     total_archivos: Object.keys(nuevosHashes).length,
-    firma,
+    resumen,
     hashes: nuevosHashes
   };
 
@@ -330,13 +452,16 @@ export function sellarGuardia(cwd = process.cwd(), { confirmar = false, verbose 
     console.log(`✅ [Guardia:Sellar] PROTEGIDO.hashes.json actualizado y sellado exitosamente.`);
     console.log(`   Archivos sellados: ${nuevoContenido.total_archivos}`);
     console.log(`   Commit base:       ${commit}`);
-    console.log(`   Firma del sello:   ${firma.substring(0, 16)}...\n`);
+    console.log(`   Resumen del sello: ${resumen}\n`);
   }
   return { diff, aplicado: true, nuevoContenido };
 }
 
 if (process.argv[1] && process.argv[1].endsWith('guardia.js')) {
-  if (process.argv.includes('--sellar')) {
+  if (process.argv.includes('--diff')) {
+    const ok = mostrarDiffGuardia();
+    if (!ok) process.exit(1);
+  } else if (process.argv.includes('--sellar')) {
     const confirmar = process.argv.includes('--confirmar');
     sellarGuardia(process.cwd(), { confirmar });
   } else {

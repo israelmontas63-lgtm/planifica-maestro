@@ -48,7 +48,16 @@ test("C2 - (2) Guardia sin banderas nunca modifica archivos (compara hashes ante
   const hashHashesAntes = hashArchivo(rutaHashes);
   const hashAuthAntes = hashArchivo(rutaAuth);
 
-  const ok = verificarGuardia({ cwd: process.cwd(), verbose: false });
+  const prevAncla = process.env.GUARDIA_COMMIT_SELLADO;
+  let ok = false;
+  try {
+    const config = JSON.parse(fs.readFileSync(rutaHashes, "utf8"));
+    process.env.GUARDIA_COMMIT_SELLADO = config.commit || "ff0422b";
+    ok = verificarGuardia({ cwd: process.cwd(), verbose: false });
+  } finally {
+    if (prevAncla !== undefined) process.env.GUARDIA_COMMIT_SELLADO = prevAncla;
+    else delete process.env.GUARDIA_COMMIT_SELLADO;
+  }
   assert.equal(ok, true, "La guardia debe pasar en el entorno actual");
 
   const hashHashesDespues = hashArchivo(rutaHashes);
