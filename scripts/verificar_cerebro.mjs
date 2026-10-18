@@ -144,7 +144,9 @@ async function ejecutarVerificacion() {
               competencias_especificas: "Resuelve problemas de adición en situaciones cotidianas.",
               indicadores_logro: ["Aplica la suma para resolver problemas sencillos."],
               fuente_documento: "Adecuación Curricular Nivel Primario (MINERD)",
-              pagina: "112"
+              pagina: "112",
+              coincide_tema: true,
+              estado_validacion: "validado"
             }
           ]), { status: 200, headers: { "Content-Type": "application/json" } });
         }
@@ -157,7 +159,9 @@ async function ejecutarVerificacion() {
             competencias_especificas: "Comprende noticias sencillas que escucha.",
             indicadores_logro: ["Identifica el hecho ocurrido en la noticia."],
             fuente_documento: "Adecuación Curricular Nivel Primario (MINERD)",
-            pagina: "75"
+            pagina: "75",
+            coincide_tema: true,
+            estado_validacion: "validado"
           }
         ]), { status: 200, headers: { "Content-Type": "application/json" } });
       }
