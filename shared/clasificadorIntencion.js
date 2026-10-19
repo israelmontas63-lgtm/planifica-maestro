@@ -38,7 +38,8 @@ export const PATRONES_CHARLA = [
   "hola", "buen dia", "buenos dias", "buenas tardes", "buenas noches", "saludos",
   "que tal", "como estas", "como esta", "como te va", "que lo que", "klk", "dimelo",
   "gracias", "muchas gracias", "mil gracias", "adios", "chao", "hasta luego",
-  "hasta manana", "hasta pronto", "cuidate", "saludos cordiales", "muy amable"
+  "hasta manana", "hasta pronto", "cuidate", "saludos cordiales", "muy amable",
+  "no me gusto el resultado", "no me gusto", "no me agrado", "no me convence"
 ];
 
 export const PATRONES_ACCION_APP = [
@@ -69,8 +70,9 @@ export const PATRONES_CONSULTA_CURRICULAR = [
 
 export const PATRONES_PLANIFICACION = [
   "planificacion", "planificar", "planifica", "plan de clase", "plan diario", "plan semanal",
-  "plan mensual", "plan anual", "plan de manana", "secuencia didactica", "unidad de aprendizaje",
-  "situacion de aprendizaje", "actividad de inicio", "actividad de desarrollo", "actividad de cierre",
+  "plan mensual", "plan anual", "plan de manana", "secuencia didactica", "secuencia didactica de",
+  "dame una secuencia", "hazme una secuencia",
+  "unidad de aprendizaje", "situacion de aprendizaje", "actividad de inicio", "actividad de desarrollo", "actividad de cierre",
   "momentos de la clase", "hazme un plan", "crea un plan", "disena un plan", "preparame una clase",
   "elabora una clase", "estructura una clase", "rubrica de evaluacion", "instrumento de evaluacion",
   "para 1er grado", "para 2do grado", "para 3er grado", "para 4to grado", "para 5to grado", "para 6to grado",
@@ -105,7 +107,8 @@ export const PATRONES_CONOCIMIENTO_GENERAL = [
   "dime que", "dime que es", "que planta", "que flor", "que animal", "que arbol",
   "que objeto", "que es esto", "que es esta", "que dice aqui", "leeme esto", "explica esta",
   "identifica", "como se llama", "cuentame sobre",
-  "cuantos ", "cuantas ", "cuanto ", "cuanta ", "donde queda ", "donde esta ", "capital de "
+  "cuantos ", "cuantas ", "cuanto ", "cuanta ", "donde queda ", "donde esta ", "capital de ",
+  "si todos", "si todas", "que sigue", "razonamiento", "logica"
 ];
 
 export const PATRONES_NO_EDUCATIVOS = [
@@ -195,7 +198,9 @@ export const PATRONES_PEDAGOGIA_GENERAL = [
   "estrategias ludicas", "lectura compartida", "estrategias de lectura", "estrategias pedagogicas",
   "atencion a la diversidad", "ritmos de aprendizaje", "estilos de aprendizaje", "diversidad en el aula",
   "retroalimentacion", "retroalimentacion formativa", "retroalimentacion constructiva", "evaluacion formativa",
-  "cierre de la clase", "cierre de clase"
+  "cierre de la clase", "cierre de clase",
+  "pensamiento critico", "destrezas mentales", "habilidades cognitivas", "resolucion de problemas",
+  "taxonomia de bloom", "bloom", "rubrica para", "rubrica", "actividades para desarrollar"
 ];
 
 export const OPCIONES_ACLARACION = [
@@ -290,8 +295,12 @@ export function clasificarPorReglas(texto, contexto = {}) {
   const tieneTemaCurricular = PATRONES_TEMAS_CURRICULARES.some(p => contienePalabraOFrase(norm, p));
   const tieneConocimientoGeneral = PATRONES_CONOCIMIENTO_GENERAL.some(p => contienePalabraOFrase(norm, p));
 
-  // 3.1 Categoría D: Normativa o Actualidad MINERD
-  const tieneNormativaActualidad = PATRONES_NORMATIVA_ACTUALIDAD.some(p => contienePalabraOFrase(norm, p));
+  // 3.1 Categoría D: Normativa o Actualidad MINERD (evitar que 'resolución de problemas' vaya a normativa)
+  const esResolucionProblemas = norm.includes("resolucion de problemas");
+  const tieneNormativaActualidad = PATRONES_NORMATIVA_ACTUALIDAD.some(p => {
+    if (p === "resolucion" && esResolucionProblemas) return false;
+    return contienePalabraOFrase(norm, p);
+  });
   if (tieneNormativaActualidad && !tienePlanificacion) {
     return {
       categoria: "consulta_curricular",
@@ -310,7 +319,7 @@ export function clasificarPorReglas(texto, contexto = {}) {
   const tieneGradoEspecifico = norm.includes("grado") || norm.includes("ciclo") || norm.includes("primaria") || norm.includes("secundaria") || norm.includes("1ro") || norm.includes("2do") || norm.includes("3ro") || norm.includes("4to") || norm.includes("5to") || norm.includes("6to");
   if (tienePedagogiaGeneral && !tieneGradoEspecifico && !tienePlanificacion) {
     return {
-      categoria: "consulta_curricular",
+      categoria: "conocimiento_general",
       tipo: "curricular",
       categoria_6: CATEGORIAS_6.B_PEDAGOGIA_GENERAL,
       codigo_categoria: "B",

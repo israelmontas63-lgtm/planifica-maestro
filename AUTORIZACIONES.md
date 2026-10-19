@@ -99,6 +99,14 @@
 - **Frase Textual del Dueño:** `"Autorizo corregir package.json, scripts/guardia.js, el cálculo de la hora del saludo, scripts/verificar_cerebro.mjs, wrangler.toml y los runbooks, para cerrar los hallazgos de la revisión del 17/10/2026."`
 - **Estado:** APLICADA
 
+### Autorización 014
+- **Fecha:** 2026-10-19
+- **Componentes:** `scripts/deploy.js`, `shared/clasificadorIntencion.js`, `shared/herramientas.mjs`, `shared/modoConversacional.js`, `shared/promptSistemaV2.js`, `worker/index.js`, `tests/test_e1_cerebro_experto.mjs`
+- **Motivo:** Implementación del Cerebro Pedagógico Experto (E1): Bloque de criterio experto MINERD, Bloom y competencias en prompts V2 y conversacional; clasificación de 20 casos pedagógicos + 6 controles; filtro estricto de secuencias por `coincide_tema` en streaming y citas; traza directa de capas 5 y 6; manejo de quejas sin saludo horario; ruta ambigua para cambios de actividades solicitando planificación; consulta sin grado solicitando 1.° a 6.° sin consultar RPC; flag `--keep-vars` en script de deploy.
+- **Frase Textual del Dueño:** `"proede"`
+- **Estado:** APLICADA
+
+
 
 
 

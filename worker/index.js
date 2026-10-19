@@ -23,6 +23,9 @@ import { PROMPT_SISTEMA_V2_TEXTO } from "../shared/promptSistemaV2.js";
 import { consultarCurriculoMINERD } from "../shared/curriculoService.mjs";
 import { gradoANumero } from "../shared/catalogoCurricular.mjs";
 
+export function esCoincidente(f) {
+  return Boolean(f && (f.coincide_tema === true || f.coincide_tema === "true"));
+}
 
 /**
  * Planifica Maestro - Cloudflare Worker Backend
@@ -1607,12 +1610,54 @@ async function handleApiRequest(request, env, ctx) {
             : (/natural|biolog|quimic|fisic/i.test(textoParaProcesar) ? "Ciencias de la Naturaleza" : "Lengua Española")));
 
       const t0Tools = performance.now();
+      if (gradoDetectado === null) {
+        const glosarioMatch = buscarEnGlosario(textoParaProcesar);
+        if (glosarioMatch) {
+          const mensajeGlosario = `📖 **Glosario de Planifica Maestro (referencia local, no es cita del currículo oficial):**\n\n- **Término:** ${glosarioMatch.termino}\n- **Definición:** ${glosarioMatch.definicion}${glosarioMatch.ejemplo ? `\n- **Ejemplo:** ${glosarioMatch.ejemplo}` : ""}`;
+          registrarCapa(4, "Herramientas curriculares", "glosario_local", "no consultada: falta grado", 0);
+          if (!(esModoPrueba && env.DESACTIVAR_CAPA_5 === "true")) {
+            registrarCapa(5, "Ciclo tool-calling", "ruta_directa", "no aplica en esta ruta", 0);
+          }
+          registrarCapa(6, "Gemini", "ruta_directa", "no aplica en esta ruta", 0);
+          return responderWorker({
+            data: {
+              mensaje_chat: mensajeGlosario,
+              plan_completado: false,
+              modo: "consulta_curricular",
+              categoria: "consulta_curricular",
+              fragmentos: [],
+              datos_planificacion: null
+            },
+            estado: "curriculo"
+          });
+        }
+
+        const mensajePedirGrado = "¿Para qué grado, de 1.° a 6.°, deseas consultar el currículo oficial?";
+        registrarCapa(4, "Herramientas curriculares", "sin_grado", "no consultada: falta grado", 0);
+        if (!(esModoPrueba && env.DESACTIVAR_CAPA_5 === "true")) {
+          registrarCapa(5, "Ciclo tool-calling", "ruta_directa", "no aplica en esta ruta", 0);
+        }
+        registrarCapa(6, "Gemini", "ruta_directa", "no aplica en esta ruta", 0);
+        return responderWorker({
+          data: {
+            mensaje_chat: mensajePedirGrado,
+            plan_completado: false,
+            requiereAclaracion: true,
+            modo: "consulta_curricular",
+            categoria: "consulta_curricular",
+            fragmentos: [],
+            datos_planificacion: null
+          },
+          estado: "pensando"
+        });
+      }
+
       if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
         try {
           fragmentos = await consultarCurriculoMINERD(
             {
               nivel: nivelDetectado || "Primario",
-              grado: gradoDetectado ? `${gradoDetectado}.° Grado` : undefined,
+              grado: `${gradoDetectado}.° Grado`,
               area: areaDetectada,
               tema_o_concepto: textoParaProcesar,
               limite: 3
@@ -1631,7 +1676,10 @@ async function handleApiRequest(request, env, ctx) {
 
       // A2: Separar filas coincidentes (coincide_tema === true)
       const filasRetornadas = Array.isArray(fragmentos) ? fragmentos : [];
-      const coincidentes = filasRetornadas.filter(f => f && (f.coincide_tema === true || f.coincide_tema === "true"));
+      if (filasRetornadas.length > 0 && filasRetornadas.every(f => f.coincide_tema === undefined)) {
+        console.error("[ALERTA] La RPC no devolvió coincide_tema: todas las filas se tratan como sin coincidencia");
+      }
+      const coincidentes = filasRetornadas.filter(esCoincidente);
 
       let fragmentosFinales = [];
       let mensajeRespuesta = "";
@@ -1701,9 +1749,9 @@ async function handleApiRequest(request, env, ctx) {
       const t0CicloTools = performance.now();
       registrarCapa(4, "Herramientas curriculares", `rpc_${areaDetectada || "general"}`, `fragmentos: ${fragmentosFinales?.length || 0}`, msTools);
       if (!(esModoPrueba && env.DESACTIVAR_CAPA_5 === "true")) {
-        registrarCapa(5, "Ciclo tool-calling antes de streaming", "resolucion_herramientas", "herramientas_resueltas", performance.now() - t0CicloTools);
+        registrarCapa(5, "Ciclo tool-calling", "ruta_directa", "no aplica en esta ruta", performance.now() - t0CicloTools);
       }
-      registrarCapa(6, "Gemini", "modelo_oficial", "consulta_estructurada", performance.now() - t0CicloTools);
+      registrarCapa(6, "Gemini", "ruta_directa", "no aplica en esta ruta", performance.now() - t0CicloTools);
 
       return responderWorker({
         data: {
@@ -1720,20 +1768,39 @@ async function handleApiRequest(request, env, ctx) {
 
     // 3. MODO AMBIGUO -> Pregunta con botones de aclaración (sin adivinar)
     if (clasificacion.categoria === "ambigua") {
+      const normAmbigua = (textoParaProcesar || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim();
+      const esEdicionActividad = /^(cambia|cambiar|modifica|modificar|ajusta|ajustar|quita|quitar|agrega|agregar)\b.*\bactividad/.test(normAmbigua);
+
+      const mensajeAmbigua = esEdicionActividad
+        ? "¿A cuál planificación te refieres para realizar el cambio en la actividad? Indícame el grado, área y tema, o puedes abrir la planificación correspondiente desde tu biblioteca."
+        : "No identifiqué con claridad el tema escolar en tu consulta. ¿Deseas: 1) Planificar una clase del currículo oficial del MINERD, 2) Consultar información general, o 3) Ajustar el tema pedagógico?";
+
+      const opcionesAmbigua = esEdicionActividad
+        ? [
+            "Abrir desde mi biblioteca",
+            "Indicar grado, área y tema",
+            "Planificar una nueva clase"
+          ]
+        : (clasificacion.opciones || [
+            "Planificar una clase oficial MINERD",
+            "Consultar información general",
+            "Ajustar tema pedagógico"
+          ]);
+
       return responderWorker({
         data: {
-          mensaje_chat: "No identifiqué con claridad el tema escolar en tu consulta. ¿Deseas: 1) Planificar una clase del currículo oficial del MINERD, 2) Consultar información general, o 3) Ajustar el tema pedagógico?",
+          mensaje_chat: mensajeAmbigua,
           plan_completado: false,
           requiereAclaracion: true,
           modo: "ambigua",
           categoria: "ambigua",
           tipoClasificado: "ambigua",
           confianza: clasificacion.confianza,
-          opciones: clasificacion.opciones || [
-            "Planificar una clase oficial MINERD",
-            "Consultar información general",
-            "Ajustar tema pedagógico"
-          ],
+          opciones: opcionesAmbigua,
           motivo: clasificacion.motivo
         },
         estado: "pensando"
@@ -2171,13 +2238,19 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
           if (cicloRes && cicloRes.consultas && cicloRes.consultas.length > 0) {
             consultasAuditadasStreaming = cicloRes.consultas;
             const filasTodas = cicloRes.consultas.flatMap((c) => c.filas || []);
-            if (filasTodas.length > 0) {
-              fragmentosRecuperadosTexto = filasTodas
+            if (filasTodas.length > 0 && filasTodas.every(f => f.coincide_tema === undefined)) {
+              console.error("[ALERTA] La RPC no devolvió coincide_tema: todas las filas se tratan como sin coincidencia");
+            }
+            const filasCoincidentes = filasTodas.filter(esCoincidente);
+            if (filasCoincidentes.length > 0) {
+              fragmentosRecuperadosTexto = filasCoincidentes
                 .map((f) => `[Fuente: ${f.fuente_documento || "MINERD"} | Pág: ${f.pagina || "N/A"}] ${f.tema || ""}: ${f.competencia_especifica || ""} - ${f.indicador_logro || f.contenidos_texto_original || ""}`)
                 .join("\n");
               promptParaStreaming += `\n=== FRAGMENTOS CURRICULARES OFICIALES RECUPERADOS ===\n<DATO>\n${fragmentosRecuperadosTexto}\n</DATO>\n`;
+            } else {
+              promptParaStreaming += `\n=== AVISO CURRICULAR ===\nNo se encontraron fragmentos curriculares con coincidencia exacta para este tema en la base oficial. Comunica con transparencia pedagógica que no hay coincidencia exacta oficial, no inventes contenido curricular y NO cites páginas ni documentos oficiales para este tema.\n`;
             }
-            registrarCapa(4, "Herramientas curriculares", "consultar_base_datos ejecutada", `secuencia didáctica obtenida: ${filasTodas.length} filas`, msCicloTotal);
+            registrarCapa(4, "Herramientas curriculares", "consultar_base_datos ejecutada", `secuencia didáctica obtenida: ${filasCoincidentes.length} filas`, msCicloTotal);
             registrarCapa(5, "Ciclo tool-calling antes de streaming", "resolución herramientas antes de SSE", `llamadas: ${cicloRes.consultas.length}`, msCicloTotal);
           }
         } catch (errCicloStreaming) {
@@ -2499,7 +2572,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
               if (esModoPrueba && env.DESACTIVAR_CAPA_7 === "true") {
                 // Omite Capa 7 bajo prueba de mutación
               } else {
-                const fragsParaCitas = (parsedFinal.datos_planificacion?.fragmentos || []).concat(consultasAuditadasStreaming.flatMap(c => c.filas || []));
+                const fragsParaCitas = (parsedFinal.datos_planificacion?.fragmentos || []).concat(consultasAuditadasStreaming.flatMap(c => c.filas || []).filter(esCoincidente));
                 const t0Citas = performance.now();
                 parsedFinal.mensaje_chat = verificarYSanearCitas(parsedFinal.mensaje_chat, fragsParaCitas);
                 registrarCapa(7, "Verificador de citas", "validación pág. N contra fragmentos", "citas verificadas", performance.now() - t0Citas);

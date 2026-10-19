@@ -25,7 +25,8 @@ export function validarArgs(args) {
 }
 
 export function formatearRespuestaCurricular(filas = []) {
-  const recortadas = (filas ?? []).slice(0, MAX_FILAS);
+  const filtradas = (filas ?? []).filter(f => f?.coincide_tema !== false && f?.coincide_tema !== "false");
+  const recortadas = filtradas.slice(0, MAX_FILAS);
   if (recortadas.length === 0) {
     return {
       resultado: [],

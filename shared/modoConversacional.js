@@ -5,6 +5,8 @@
  * Compartido entre Cloudflare Worker y Node.js.
  */
 
+import { BLOQUE_CRITERIO_EXPERTO } from "./promptSistemaV2.js";
+
 const SALUDOS_MANANA = [
   "¡Buenos días, colega! ¿Qué tema o grado tenemos previsto organizar hoy?",
   "¡Muy buenos días! Espero que tu jornada escolar marche excelente. ¿Qué vamos a planificar?",
@@ -84,6 +86,32 @@ export function sanearNombreDocente(nombre) {
 
 export function generarRespuestaCharlaLocal({ texto = "", nombreDocente = null, reloj = null, fecha = null }) {
   const norm = texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
+  // C4: Manejo de quejas o disconformidad docente sin saludo temporal
+  if (norm.includes("no me gusto") || norm.includes("no me agrado") || norm.includes("no me convence")) {
+    const nombreSaneado = sanearNombreDocente(nombreDocente);
+    let prefijoDocente = "";
+    if (nombreSaneado) {
+      const sinPrefijo = nombreSaneado.replace(/^(profe|prof\.|profesor|profesora|maestro|maestra|colega)\s+/i, "");
+      const primerNombre = sinPrefijo.split(/\s+/)[0];
+      prefijoDocente = `Profe ${primerNombre}, `;
+    }
+    const mensajeQueja = `${prefijoDocente}lamento que la propuesta no haya cumplido con lo que esperabas. ¿Qué aspecto específico no te convenció (el tema, el nivel o grado, la extensión o las actividades planteadas)? Dime cómo prefieres enfocarlo y con gusto lo ajustamos juntos.`;
+    return {
+      mensaje_chat: mensajeQueja,
+      plan_completado: false,
+      modo: "charla",
+      categoria: "charla",
+      datos_planificacion: null,
+      opciones: [
+        "Ajustar nivel o grado",
+        "Modificar las actividades",
+        "Cambiar el enfoque del tema",
+        "Planificar una nueva clase"
+      ]
+    };
+  }
+
   const fechaActual = fecha || (typeof reloj === "function" ? reloj() : new Date());
   const franja = obtenerFranjaSaludo(fechaActual);
   const idx = indiceRotacion++;
@@ -152,6 +180,8 @@ export function limpiarSaludoInnecesario(texto, debePermitirSaludo = false) {
 export const SYSTEM_PROMPT_CONVERSACIONAL = `
 Eres Planifica Maestro en Modo Diálogo, colega pedagógico de apoyo para docentes de República Dominicana.
 Tu personalidad es cercana, profesional, respetuosa ("Profe") y concisa.
+
+${BLOQUE_CRITERIO_EXPERTO}
 
 REGLAS OBLIGATORIAS DE CONDUCTA Y RAZONAMIENTO:
 1. Responde primero: En preguntas factuales o directas, la primera oración entrega de inmediato la respuesta central (quién, cuántos, qué es). Saluda únicamente al inicio de la conversación o cuando el docente salude.

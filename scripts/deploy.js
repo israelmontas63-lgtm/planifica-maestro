@@ -50,7 +50,7 @@ fs.writeFileSync(versionJsonPath, JSON.stringify(versionInfo, null, 2));
 console.log(`📌 [AutoDeploy] dist/version.json generado para commit: ${commitHash}`);
 
 console.log("🚀 [AutoDeploy] Desplegando y activando en Cloudflare Workers al 100%...");
-execSync(`npx wrangler deploy --message "deploy ${commitHash}"`, {
+execSync(`npx wrangler deploy --keep-vars --message "deploy ${commitHash}"`, {
   stdio: "inherit",
   env: { ...process.env, CLOUDFLARE_API_TOKEN: token },
 });
