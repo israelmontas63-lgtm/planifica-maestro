@@ -106,10 +106,9 @@
 - **Frase Textual del Dueño:** `"proede"`
 - **Estado:** APLICADA
 
-
-
-
-
-
-
-
+### Autorización 015
+- **Fecha:** 2026-10-20
+- **Componentes:** `shared/clasificadorIntencion.js`, `shared/modoConversacional.js`, `tests/test_apoyo_docente_015.mjs`, `DESPLIEGUE.md`
+- **Motivo:** El desahogo docente y el pedido de actividad para dos grados caen en "ambigua" (confianza 0.45) y devuelven el mensaje genérico de worker/index.js línea 1780.
+- **Frase Textual del Dueño:** `"Autorizo la Autorización 015: cambios en shared/clasificadorIntencion.js, shared/modoConversacional.js, tests/test_apoyo_docente_015.mjs y DESPLIEGUE.md."`
+- **Estado:** APLICADA

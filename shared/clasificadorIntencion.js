@@ -42,6 +42,14 @@ export const PATRONES_CHARLA = [
   "no me gusto el resultado", "no me gusto", "no me agrado", "no me convence"
 ];
 
+// Autorización 015: desahogo o carga laboral docente
+export const PATRONES_APOYO_DOCENTE = [
+  "estoy agotado", "estoy agotada", "estoy cansado", "estoy cansada",
+  "estoy estresado", "estoy estresada", "estoy abrumado", "estoy abrumada",
+  "no me da tiempo", "no me alcanza el tiempo", "no doy abasto",
+  "grados en un aula", "grados en una aula"
+];
+
 export const PATRONES_ACCION_APP = [
   "abre mi biblioteca", "abrir biblioteca", "abrir mi biblioteca", "ver biblioteca",
   "mis planificaciones", "ver planificaciones", "ver mis planes", "mostrar planes",
@@ -72,6 +80,9 @@ export const PATRONES_PLANIFICACION = [
   "planificacion", "planificar", "planifica", "plan de clase", "plan diario", "plan semanal",
   "plan mensual", "plan anual", "plan de manana", "secuencia didactica", "secuencia didactica de",
   "dame una secuencia", "hazme una secuencia",
+  "hazme una actividad", "dame una actividad",
+  "actividad de lectura", "actividades de lectura",
+  "primero y segundo", "primero segundo y tercero", "1ro y 2do", "1ro 2do y 3ro",
   "unidad de aprendizaje", "situacion de aprendizaje", "actividad de inicio", "actividad de desarrollo", "actividad de cierre",
   "momentos de la clase", "hazme un plan", "crea un plan", "disena un plan", "preparame una clase",
   "elabora una clase", "estructura una clase", "rubrica de evaluacion", "instrumento de evaluacion",
@@ -294,6 +305,18 @@ export function clasificarPorReglas(texto, contexto = {}) {
   const tieneConsultaCurricular = PATRONES_CONSULTA_CURRICULAR.some(p => contienePalabraOFrase(norm, p));
   const tieneTemaCurricular = PATRONES_TEMAS_CURRICULARES.some(p => contienePalabraOFrase(norm, p));
   const tieneConocimientoGeneral = PATRONES_CONOCIMIENTO_GENERAL.some(p => contienePalabraOFrase(norm, p));
+
+  // 3.0 Autorización 015: desahogo docente -> charla empática (nunca "ambigua")
+  const tieneApoyoDocente = PATRONES_APOYO_DOCENTE.some(p => contienePalabraOFrase(norm, p));
+  if (tieneApoyoDocente && !tienePlanificacion && !tieneConsultaCurricular) {
+    return {
+      categoria: "charla", tipo: "charla",
+      categoria_6: CATEGORIAS_6.B_PEDAGOGIA_GENERAL, codigo_categoria: "B",
+      confianza: 0.93,
+      motivo: "Desahogo o carga laboral docente: respuesta empática sin saludo horario.",
+      esMixtoConSaludo: false
+    };
+  }
 
   // 3.1 Categoría D: Normativa o Actualidad MINERD (evitar que 'resolución de problemas' vaya a normativa)
   const esResolucionProblemas = norm.includes("resolucion de problemas");

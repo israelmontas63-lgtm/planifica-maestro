@@ -112,6 +112,21 @@ export function generarRespuestaCharlaLocal({ texto = "", nombreDocente = null, 
     };
   }
 
+  // Autorización 015: desahogo o carga laboral docente
+  if (/(estoy (agotad|cansad|estresad|abrumad)[oa]|no me da tiempo|no me alcanza el tiempo|no doy abasto|grados en una? aula)/.test(norm)) {
+    const nombreApoyo = sanearNombreDocente(nombreDocente);
+    let prefijoApoyo = "";
+    if (nombreApoyo) {
+      const sinPrefijoApoyo = nombreApoyo.replace(/^(profe|prof\.|profesor|profesora|maestro|maestra|colega)\s+/i, "");
+      prefijoApoyo = `Profe ${sinPrefijoApoyo.split(/\s+/)[0]}, `;
+    }
+    return {
+      mensaje_chat: `${prefijoApoyo}te entiendo: atender varios grados en una misma aula cansa y el tiempo casi nunca alcanza. Vamos paso a paso para quitarte carga: dime qué grados y qué área tienes hoy, y armamos una planificación que los articule con una actividad común y tareas diferenciadas por grado.`,
+      plan_completado: false, modo: "charla", categoria: "charla", datos_planificacion: null,
+      opciones: ["Planificar para varios grados a la vez", "Una actividad común para todos los grados", "Ver mis planificaciones"]
+    };
+  }
+
   const fechaActual = fecha || (typeof reloj === "function" ? reloj() : new Date());
   const franja = obtenerFranjaSaludo(fechaActual);
   const idx = indiceRotacion++;
