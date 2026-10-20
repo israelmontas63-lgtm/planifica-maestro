@@ -112,3 +112,10 @@
 - **Motivo:** El desahogo docente y el pedido de actividad para dos grados caen en "ambigua" (confianza 0.45) y devuelven el mensaje genérico de worker/index.js línea 1780.
 - **Frase Textual del Dueño:** `"Autorizo la Autorización 015: cambios en shared/clasificadorIntencion.js, shared/modoConversacional.js, tests/test_apoyo_docente_015.mjs y DESPLIEGUE.md."`
 - **Estado:** APLICADA
+
+### Autorización 016
+- **Fecha:** 2026-10-20
+- **Componentes:** `shared/curriculoService.mjs`, `worker/index.js`, `tests/test_limpieza_consulta_016.mjs`, `scripts/prueba_aceptacion_6_mensajes.mjs`, `scripts/prueba_real_gemini.mjs`
+- **Motivo:** Corrección de caso b2 mediante limpieza de consulta curricular previa a RPC (eliminación de interrogativas, términos de sistema, áreas, grados y palabras vacías para evitar falsos positivos con OR de FTS en PostgreSQL), condicionamiento estricto del aviso de borrador a la inyección efectiva de fragmentos verificados, homologación de script de aceptación de 6 mensajes y parametrización del modelo Gemini con fallback a gemini-3.1-flash-lite.
+- **Frase Textual del Dueño:** `"Autorizo la Autorización 016: cambios en shared/curriculoService.mjs, worker/index.js, tests/test_limpieza_consulta_016.mjs, scripts/prueba_aceptacion_6_mensajes.mjs y scripts/prueba_real_gemini.mjs."`
+- **Estado:** APLICADA

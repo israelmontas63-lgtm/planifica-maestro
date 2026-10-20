@@ -76,7 +76,7 @@ async function ejecutarPrueba() {
   ];
 
   if (!esSimulacionForzada) {
-    const modelo = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+    const modelo = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
     console.log(`🔑 Ejecutando llamada real con Gemini (${modelo}) y Supabase RPC...`);
     const resultado = await cicloToolCalling({
       promptUsuario: promptDocente,

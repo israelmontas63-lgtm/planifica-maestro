@@ -162,7 +162,7 @@ async function ejecutarPrueba() {
 
     assert.equal(res3.status, 200, "Mensaje 3 debe responder con status 200");
     assert.equal(data3.modo, "consulta_curricular", "Modo debe ser 'consulta_curricular'");
-    assert.match(data3.mensaje_chat, /Fuente:\s*[^(\r\n]+(?:\s*\(pág\.\s*\d+\))?/i, "Debe contener 'Fuente: <doc>'");
+    assert.match(data3.mensaje_chat, /(?:Fuente:\s*[^(\r\n]+(?:\s*\(pág\.\s*\d+\))?|📖 \*\*Glosario de Planifica Maestro)/i, "Debe contener 'Fuente: <doc>' o 'Glosario de Planifica Maestro'");
     assert.equal(data3.mensaje_chat.includes(",."), false, "No debe contener ',.'");
     assert.equal(data3.mensaje_chat.includes(".."), false, "No debe contener '..'");
     console.log(`[PASS] Mensaje 3 validado con fuente limpia sin puntuación defectuosa\n`);

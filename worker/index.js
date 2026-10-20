@@ -20,7 +20,7 @@ import { evaluarPoliticaDignidad } from "./politicaDignidadImagen.js";
 import { obtenerOperacionPorId } from "./catalogoEdicionImagen.js";
 import { cicloToolCalling } from "../shared/ciclo.js";
 import { PROMPT_SISTEMA_V2_TEXTO } from "../shared/promptSistemaV2.js";
-import { consultarCurriculoMINERD } from "../shared/curriculoService.mjs";
+import { consultarCurriculoMINERD, limpiarConsultaCurricular } from "../shared/curriculoService.mjs";
 import { gradoANumero } from "../shared/catalogoCurricular.mjs";
 
 export function esCoincidente(f) {
@@ -1652,6 +1652,28 @@ async function handleApiRequest(request, env, ctx) {
         });
       }
 
+      const consultaLimpia = limpiarConsultaCurricular(textoParaProcesar, { grado: gradoDetectado, area: areaDetectada });
+      if (!consultaLimpia) {
+        const mensajePedirTema = `¿Qué tema o contenido específico deseas consultar para ${gradoDetectado}.° grado en ${areaDetectada}?`;
+        registrarCapa(4, "Herramientas curriculares", "sin_tema", "no consultada: falta tema específico", 0);
+        if (!(esModoPrueba && env.DESACTIVAR_CAPA_5 === "true")) {
+          registrarCapa(5, "Ciclo tool-calling", "ruta_directa", "no aplica en esta ruta", 0);
+        }
+        registrarCapa(6, "Gemini", "ruta_directa", "no aplica en esta ruta", 0);
+        return responderWorker({
+          data: {
+            mensaje_chat: mensajePedirTema,
+            plan_completado: false,
+            requiereAclaracion: true,
+            modo: "consulta_curricular",
+            categoria: "consulta_curricular",
+            fragmentos: [],
+            datos_planificacion: null
+          },
+          estado: "pensando"
+        });
+      }
+
       if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
         try {
           fragmentos = await consultarCurriculoMINERD(
@@ -1659,7 +1681,7 @@ async function handleApiRequest(request, env, ctx) {
               nivel: nivelDetectado || "Primario",
               grado: `${gradoDetectado}.° Grado`,
               area: areaDetectada,
-              tema_o_concepto: textoParaProcesar,
+              tema_o_concepto: consultaLimpia,
               limite: 3
             },
             {
@@ -2052,30 +2074,12 @@ async function handleApiRequest(request, env, ctx) {
       fechaPlanificacion = `${y}-${m}-${d}`;
     }
 
-    // Comprobar si la base oficial está cargada en Supabase
-    let baseOficialCargada = false;
-    if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
-      try {
-        const checkBaseRes = await fetch(`${env.SUPABASE_URL}/rest/v1/curriculo_secuencias?select=id&limit=1`, {
-          headers: {
-            apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-            Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
-          },
-        });
-        if (checkBaseRes.ok) {
-          const rows = await checkBaseRes.json();
-          baseOficialCargada = Array.isArray(rows) && rows.length > 0;
-        }
-      } catch (e) {
-        console.warn("[Base Oficial Prompt] Error consultando fragmentos:", e?.message || e);
-      }
-    }
+    // Seguimiento de fragmentos curriculares verificados inyectados en este plan
+    let huboFragmentosInyectados = false;
 
     const avisoSinVerificar = "Borrador: revísalo con el currículo antes de usarlo";
-    let directivaBorrador = "";
-    if (!baseOficialCargada) {
-      directivaBorrador = `
-## ALERTA OBLIGATORIA (BASE OFICIAL NO CARGADA)
+    let directivaBorrador = `
+## ALERTA OBLIGATORIA (PLANIFICACIÓN REFERENCIAL / BORRADOR)
 1. Debes iniciar OBLIGATORIAMENTE tu campo 'mensaje_chat' con la advertencia:
 "[AVISO] ${avisoSinVerificar}"
 2. En 'confianza_curricular', establece obligatoriamente:
@@ -2084,7 +2088,6 @@ async function handleApiRequest(request, env, ctx) {
    - "nota_revision": "Planificación referencial no contrastada con la base curricular oficial. El docente debe validar los indicadores y competencias con su registro de grado."
 3. En 'datos_planificacion', cualquier competencia, indicador o contenido que no esté textualmente respaldado por el currículo oficial debe marcarse con [REFERENCIAL / SUGERENCIA].
 `;
-    }
 
     // Inyección de CON BASE si aplica (Muestra referencial local no verificada)
     let groundingConBase = "";
@@ -2243,6 +2246,10 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
             }
             const filasCoincidentes = filasTodas.filter(esCoincidente);
             if (filasCoincidentes.length > 0) {
+              const filasVerificadas = filasCoincidentes.filter(f => f.estado_validacion === "validado");
+              if (filasVerificadas.length > 0) {
+                huboFragmentosInyectados = true;
+              }
               fragmentosRecuperadosTexto = filasCoincidentes
                 .map((f) => `[Fuente: ${f.fuente_documento || "MINERD"} | Pág: ${f.pagina || "N/A"}] ${f.tema || ""}: ${f.competencia_especifica || ""} - ${f.indicador_logro || f.contenidos_texto_original || ""}`)
                 .join("\n");
@@ -2544,7 +2551,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
               estadoActualizado = await consumirCuota(env, resolvedDocenteId, isOwner, clientIp);
             }
 
-            if (!baseOficialCargada && parsedFinal.plan_completado) {
+            if (!huboFragmentosInyectados && parsedFinal.plan_completado) {
               if (parsedFinal.mensaje_chat && !parsedFinal.mensaje_chat.includes(avisoSinVerificar)) {
                 parsedFinal.mensaje_chat = `⚠️ ${avisoSinVerificar}\n\n${parsedFinal.mensaje_chat}`;
               }
@@ -2804,7 +2811,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
         cuotaActualizada = await consumirCuota(env, resolvedDocenteId, isOwner, clientIp);
       }
 
-      if (!baseOficialCargada && parsed.plan_completado) {
+      if (!huboFragmentosInyectados && parsed.plan_completado) {
         if (parsed.mensaje_chat && !parsed.mensaje_chat.includes(avisoSinVerificar)) {
           parsed.mensaje_chat = `⚠️ ${avisoSinVerificar}\n\n${parsed.mensaje_chat}`;
         }
