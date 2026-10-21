@@ -5,7 +5,16 @@
  */
 
 export const NIVELES = ['Inicial', 'Primario', 'Secundario'];
-export const AREAS = ['Matemática', 'Lengua Española'];
+export const AREAS = [
+  'Lengua Española',
+  'Matemática',
+  'Ciencias Sociales',
+  'Ciencias de la Naturaleza',
+  'Educación Artística',
+  'Educación Física',
+  'Formación Integral Humana y Religiosa',
+  'Lenguas Extranjeras - Inglés'
+];
 export const GRADOS = ['1ro', '2do', '3ro', '4to', '5to', '6to'];
 
 export function normalizarTexto(txt) {
@@ -56,6 +65,42 @@ export function gradoANumero(grado) {
 }
 
 /**
+ * Detecta menciones explícitas de múltiples grados en contextos multigrado
+ * con expresiones regulares acotadas (evita '5 estudiantes' o '3 días').
+ */
+export function gradosMultiples(texto) {
+  if (!texto || typeof texto !== 'string') return [];
+  const t = normalizarTexto(texto);
+  const encontrados = new Set();
+
+  if (/\bprimer(?:o|a|er)?\b/.test(t)) encontrados.add(1);
+  if (/\bsegund(?:o|a)?\b/.test(t)) encontrados.add(2);
+  if (/\btercer(?:o|a)?\b/.test(t)) encontrados.add(3);
+  if (/\bcuart(?:o|a)?\b/.test(t)) encontrados.add(4);
+  if (/\bquint(?:o|a)?\b/.test(t)) encontrados.add(5);
+  if (/\bsext(?:o|a)?\b/.test(t)) encontrados.add(6);
+
+  if (/\b1\s*(?:ro|er|\.[°ºo]|\b\.[°ºo]?|[°º])\b|1\.[°ºo]/i.test(t)) encontrados.add(1);
+  if (/\b2\s*(?:do|\.[°ºo]|\b\.[°ºo]?|[°º])\b|2\.[°ºo]/i.test(t)) encontrados.add(2);
+  if (/\b3\s*(?:ro|er|\.[°ºo]|\b\.[°ºo]?|[°º])\b|3\.[°ºo]/i.test(t)) encontrados.add(3);
+  if (/\b4\s*(?:to|\.[°ºo]|\b\.[°ºo]?|[°º])\b|4\.[°ºo]/i.test(t)) encontrados.add(4);
+  if (/\b5\s*(?:to|\.[°ºo]|\b\.[°ºo]?|[°º])\b|5\.[°ºo]/i.test(t)) encontrados.add(5);
+  if (/\b6\s*(?:to|\.[°ºo]|\b\.[°ºo]?|[°º])\b|6\.[°ºo]/i.test(t)) encontrados.add(6);
+
+  const multiMatch = t.match(/\b(?:multigrado|grados?)\s+([0-9\s,ye]+)\b/);
+  if (multiMatch) {
+    const numPart = multiMatch[1];
+    for (let g = 1; g <= 6; g++) {
+      if (new RegExp('\\b' + g + '\\b').test(numPart)) {
+        encontrados.add(g);
+      }
+    }
+  }
+
+  return Array.from(encontrados).sort((a, b) => a - b);
+}
+
+/**
  * Determina el ciclo oficial según el grado numérico en Primaria.
  */
 export function cicloDeGrado(gradoNum) {
@@ -78,7 +123,9 @@ export function normalizarNivel(nivel) {
 }
 
 /**
- * Normaliza el área contra el catálogo AREAS ['Matemática', 'Lengua Española'].
+ * Normaliza el área contra el catálogo AREAS (8 áreas oficiales).
+ * Evalúa con prioridad: Educación Física, Artística, Inglés, Formación Humana,
+ * Ciencias Sociales, Ciencias de la Naturaleza (sin 'fisic' suelto), Matemática y Lengua Española.
  * Si es desconocida o fuera de catálogo, lanza Error.
  */
 export function normalizarArea(area) {
@@ -87,10 +134,36 @@ export function normalizarArea(area) {
   }
   const a = normalizarTexto(area);
 
+  // 1. Educación Física primero
+  if (a.includes('educacion fisica') || a.includes('deporte') || a.includes('motriz')) {
+    return 'Educación Física';
+  }
+  // 2. Educación Artística
+  if (a.includes('artistica') || a.includes('artes') || a.includes('teatro') || a.includes('musica') || a.includes('danza')) {
+    return 'Educación Artística';
+  }
+  // 3. Lenguas Extranjeras - Inglés
+  if (a.includes('ingles') || a.includes('extranjera')) {
+    return 'Lenguas Extranjeras - Inglés';
+  }
+  // 4. Formación Integral Humana y Religiosa
+  if (a.includes('formacion') || a.includes('religios') || a.includes('humana') || a.includes('fihr')) {
+    return 'Formación Integral Humana y Religiosa';
+  }
+  // 5. Ciencias Sociales
+  if (a.includes('social') || a.includes('historia') || a.includes('geograf') || a.includes('ciudadan')) {
+    return 'Ciencias Sociales';
+  }
+  // 6. Ciencias de la Naturaleza (SIN la raíz suelta 'fisic')
+  if (/natural|biolog|quimic|ciencias fisicas|seres vivos|ecosistema/.test(a)) {
+    return 'Ciencias de la Naturaleza';
+  }
+  // 7. Matemática (igual que hoy)
   if (a.includes('matemat') || a.includes('calculo') || a.includes('aritmetica') || a.includes('geometria')) {
     return 'Matemática';
   }
-  if (a.includes('lengua') || a.includes('espanol') || a.includes('lectura') || a.includes('escritura')) {
+  // 8. Lengua Española (igual que hoy)
+  if (a.includes('lengua') || a.includes('espanol') || a.includes('lectura') || a.includes('escritura') || a.includes('cuento') || a.includes('noticia')) {
     return 'Lengua Española';
   }
 

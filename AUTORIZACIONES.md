@@ -119,3 +119,11 @@
 - **Motivo:** Corrección de caso b2 mediante limpieza de consulta curricular previa a RPC (eliminación de interrogativas, términos de sistema, áreas, grados y palabras vacías para evitar falsos positivos con OR de FTS en PostgreSQL), condicionamiento estricto del aviso de borrador a la inyección efectiva de fragmentos verificados, homologación de script de aceptación de 6 mensajes y parametrización del modelo Gemini con fallback a gemini-3.1-flash-lite.
 - **Frase Textual del Dueño:** `"Autorizo la Autorización 016: cambios en shared/curriculoService.mjs, worker/index.js, tests/test_limpieza_consulta_016.mjs, scripts/prueba_aceptacion_6_mensajes.mjs y scripts/prueba_real_gemini.mjs."`
 - **Estado:** APLICADA
+
+### Autorización 017
+- **Fecha:** 2026-10-21
+- **Componentes:** `shared/catalogoCurricular.mjs`, `shared/catalogoCurricular.test.mjs`, `worker/index.js`, `scripts/curriculo/extraer_por_columnas.mjs`, `scripts/curriculo/salida/nuevas_secuencias_v2.json`, `tests/test_filtro_plantilla_curriculo_017.mjs`
+- **Motivo:** Extractor calibrado por columnas, 78 secuencias curriculares oficiales v2 en Supabase sin texto inventado, soporte de 8 áreas y aulas multigrado en catalogoCurricular.mjs, integración en worker/index.js con filtrado estricto de plantillas sintéticas en pantalla y streaming SSE con tope de 1500 caracteres.
+- **Frase Textual del Dueño:** `"procede"`
+- **Estado:** APLICADA
+

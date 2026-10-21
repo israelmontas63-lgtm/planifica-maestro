@@ -21,7 +21,7 @@ import { obtenerOperacionPorId } from "./catalogoEdicionImagen.js";
 import { cicloToolCalling } from "../shared/ciclo.js";
 import { PROMPT_SISTEMA_V2_TEXTO } from "../shared/promptSistemaV2.js";
 import { consultarCurriculoMINERD, limpiarConsultaCurricular } from "../shared/curriculoService.mjs";
-import { gradoANumero } from "../shared/catalogoCurricular.mjs";
+import { gradoANumero, normalizarArea, gradosMultiples } from "../shared/catalogoCurricular.mjs";
 
 export function esCoincidente(f) {
   return Boolean(f && (f.coincide_tema === true || f.coincide_tema === "true"));
@@ -1596,18 +1596,22 @@ async function handleApiRequest(request, env, ctx) {
     // 2.5. MODO CONSULTA CURRICULAR -> Herramientas curriculares oficiales con fuentes (T2 / R3)
     if (clasificacion.categoria === "consulta_curricular") {
       let fragmentos = [];
+      const multiGrados = gradosMultiples(textoParaProcesar);
+      const esMultigrado = multiGrados.length > 1;
       const numDetectado = gradoANumero(textoParaProcesar);
-      const gradoDetectado = numDetectado || null;
+      const gradoDetectado = esMultigrado ? multiGrados[0] : (numDetectado || null);
       const esSecundaria = /secundar/i.test(textoParaProcesar);
       const esPrimaria = /primar/i.test(textoParaProcesar);
       const nivelDetectado = esSecundaria ? "Secundario" : (esPrimaria ? "Primario" : (/inicial|preescolar/i.test(textoParaProcesar) ? "Inicial" : null));
-      const areaDetectada = /lengua|español|lectura|cuento|noticia/i.test(textoParaProcesar)
-        ? "Lengua Española"
-        : (/matem/i.test(textoParaProcesar)
-          ? "Matemática"
-          : (/social|historia|geograf/i.test(textoParaProcesar)
-            ? "Ciencias Sociales"
-            : (/natural|biolog|quimic|fisic/i.test(textoParaProcesar) ? "Ciencias de la Naturaleza" : "Lengua Española")));
+      let areaDetectada = "Lengua Española";
+      try {
+        areaDetectada = normalizarArea(textoParaProcesar);
+      } catch (e) {
+        if (/matem/i.test(textoParaProcesar)) areaDetectada = "Matemática";
+        else if (/social|historia|geograf/i.test(textoParaProcesar)) areaDetectada = "Ciencias Sociales";
+        else if (/natural|biolog|quimic|ciencias fisicas|seres vivos|ecosistema/i.test(textoParaProcesar)) areaDetectada = "Ciencias de la Naturaleza";
+        else areaDetectada = "Lengua Española";
+      }
 
       const t0Tools = performance.now();
       if (gradoDetectado === null) {
@@ -1676,20 +1680,46 @@ async function handleApiRequest(request, env, ctx) {
 
       if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
         try {
-          fragmentos = await consultarCurriculoMINERD(
-            {
-              nivel: nivelDetectado || "Primario",
-              grado: `${gradoDetectado}.° Grado`,
-              area: areaDetectada,
-              tema_o_concepto: consultaLimpia,
-              limite: 3
-            },
-            {
-              SUPABASE_URL: env.SUPABASE_URL,
-              SUPABASE_ANON_KEY: env.SUPABASE_ANON_KEY
-            },
-            { timeoutMs: 3000 }
-          );
+          if (esMultigrado) {
+            for (const g of multiGrados) {
+              const consultaLimpiaG = limpiarConsultaCurricular(textoParaProcesar, { grado: g, area: areaDetectada });
+              if (consultaLimpiaG) {
+                const fragsG = await consultarCurriculoMINERD(
+                  {
+                    nivel: nivelDetectado || "Primario",
+                    grado: `${g}.° Grado`,
+                    area: areaDetectada,
+                    tema_o_concepto: consultaLimpiaG,
+                    limite: 15
+                  },
+                  {
+                    SUPABASE_URL: env.SUPABASE_URL,
+                    SUPABASE_ANON_KEY: env.SUPABASE_ANON_KEY
+                  },
+                  { timeoutMs: 3000 }
+                );
+                if (Array.isArray(fragsG)) {
+                  fragsG.forEach(item => { item.grado_num = g; });
+                  fragmentos.push(...fragsG);
+                }
+              }
+            }
+          } else {
+            fragmentos = await consultarCurriculoMINERD(
+              {
+                nivel: nivelDetectado || "Primario",
+                grado: `${gradoDetectado}.° Grado`,
+                area: areaDetectada,
+                tema_o_concepto: consultaLimpia,
+                limite: 20
+              },
+              {
+                SUPABASE_URL: env.SUPABASE_URL,
+                SUPABASE_ANON_KEY: env.SUPABASE_ANON_KEY
+              },
+              { timeoutMs: 3000 }
+            );
+          }
         } catch (e) {
           console.warn("[Consulta Curricular] Error consultando RPC Supabase:", e?.message || e);
         }
@@ -1708,30 +1738,65 @@ async function handleApiRequest(request, env, ctx) {
 
       if (coincidentes.length > 0) {
         fragmentosFinales = coincidentes;
-        const f = coincidentes[0];
-        const docNombre = (f.fuente_documento || f.fuente || f.documento_titulo || "Diseño Curricular MINERD")
-          .replace(/\s*\(pág\..*$/i, "")
-          .replace(/[,.]\s*$/, "")
-          .trim();
-        const pagNum = f.pagina || f.pág || null;
-        let fuenteFormateada = pagNum ? `Fuente: ${docNombre} (pág. ${pagNum})` : `Fuente: ${docNombre}`;
-        if (f.estado_validacion && f.estado_validacion !== "validado") {
-          fuenteFormateada += " (pendiente de validación)";
+        const encabezadoGrado = esMultigrado
+          ? ` - Grados ${multiGrados.join("° y ")}°`
+          : (coincidentes[0].grado_num || gradoDetectado ? ` - ${coincidentes[0].grado_num || gradoDetectado}.° Grado` : "");
+        mensajeRespuesta = `📚 **Consulta Curricular Oficial (${coincidentes[0].area || areaDetectada}${encabezadoGrado}):**\n\n`;
+
+        for (const f of coincidentes) {
+          const docNombre = (f.fuente_documento || f.fuente || f.documento_titulo || "Diseño Curricular MINERD")
+            .replace(/\s*\(pág\..*$/i, "")
+            .replace(/[,.]\s*$/, "")
+            .trim();
+          const pagNum = f.pagina || f.pág || null;
+          let fuenteFormateada = pagNum ? `Fuente: ${docNombre} (pág. ${pagNum})` : `Fuente: ${docNombre}`;
+          if (f.estado_validacion && f.estado_validacion !== "validado") {
+            fuenteFormateada += " (pendiente de validación)";
+          }
+
+          const bloquesContenido = [];
+          if (esMultigrado && f.grado_num) {
+            bloquesContenido.push(`**[${f.grado_num}.° Grado]**`);
+          }
+          if (f.tema) bloquesContenido.push(`- **Contenido/Concepto:** ${f.tema.trim()}`);
+
+          const compRaw = (f.competencias_especificas || f.competencia_especifica || "").trim();
+          const esCompPlantilla = compRaw.includes("Desarrolla el pensamiento crítico, resolución de problemas");
+          if (compRaw && !esCompPlantilla) {
+            bloquesContenido.push(`- **Competencia Específica:** ${compRaw}`);
+          }
+
+          const contRaw = (f.contenidos_texto_original || "").trim();
+          const esContPlantilla = contRaw.includes("Contenidos conceptuales, procedimentales y actitudinales de");
+          if (contRaw && !esContPlantilla) {
+            bloquesContenido.push(`- **Contenidos:** ${contRaw}`);
+          }
+
+          const indRaw = f.indicadores_logro || f.indicador_logro || null;
+          if (indRaw) {
+            if (Array.isArray(indRaw)) {
+              const indLimpia = indRaw.map(s => String(s).trim()).filter(Boolean);
+              if (indLimpia.length > 0) {
+                if (indLimpia.length <= 8) {
+                  bloquesContenido.push(`- **Indicadores de Logro:**\n  * ` + indLimpia.join("\n  * "));
+                } else {
+                  const primeros8 = indLimpia.slice(0, 8);
+                  const restoCount = indLimpia.length - 8;
+                  bloquesContenido.push(`- **Indicadores de Logro:**\n  * ` + primeros8.join("\n  * ") + `\n  * ... y ${restoCount} más${pagNum ? ` (pág. ${pagNum})` : ""}`);
+                }
+              }
+            } else if (typeof indRaw === "string" && indRaw.trim()) {
+              bloquesContenido.push(`- **Indicador de Logro:** ${indRaw.trim()}`);
+            }
+          }
+
+          if (bloquesContenido.length > 0) {
+            mensajeRespuesta += bloquesContenido.join("\n") + "\n\n";
+          }
+          mensajeRespuesta += fuenteFormateada;
+          if (!esMultigrado) break; // Para grado único muestra el primer coincidente
+          mensajeRespuesta += "\n\n";
         }
-
-        const encabezadoGrado = f.grado_num || gradoDetectado ? ` - ${f.grado_num || gradoDetectado}.° Grado` : "";
-        mensajeRespuesta = `📚 **Consulta Curricular Oficial (${f.area || areaDetectada}${encabezadoGrado}):**\n\n`;
-
-        const bloquesContenido = [];
-        if (f.tema) bloquesContenido.push(`- **Contenido/Concepto:** ${f.tema.trim()}`);
-        if (f.competencia_especifica) bloquesContenido.push(`- **Competencia Específica:** ${f.competencia_especifica.trim()}`);
-        if (f.indicador_logro) bloquesContenido.push(`- **Indicador de Logro:** ${f.indicador_logro.trim()}`);
-
-        if (bloquesContenido.length > 0) {
-          mensajeRespuesta += bloquesContenido.join("\n") + "\n\n";
-        }
-
-        mensajeRespuesta += fuenteFormateada;
       } else {
         // No hay coincidentes (0 filas, o ninguna con coincide_tema true)
         const glosarioMatch = buscarEnGlosario(textoParaProcesar);
@@ -1754,9 +1819,15 @@ async function handleApiRequest(request, env, ctx) {
             mensajeRespuesta = `No encontré en la base curricular cargada una secuencia verificada para «${temaBuscado}» (${gradoStr}, ${areaStr}). No te voy a mostrar contenido de otro tema como si lo fuera.`;
           }
 
-          const temasDisponibles = Array.from(new Set(filasRetornadas.map(r => r.tema).filter(Boolean))).slice(0, 5);
-          if (temasDisponibles.length > 0) {
-            mensajeRespuesta += `\n\nTemas disponibles en la base para ese grado y área: ${temasDisponibles.join(", ")}.`;
+          const temasUnicos = Array.from(new Set(filasRetornadas.map(r => r.tema).filter(Boolean)));
+          if (temasUnicos.length > 0) {
+            let temasStr = "";
+            if (temasUnicos.length > 10) {
+              temasStr = `${temasUnicos.slice(0, 10).join(", ")}, y ${temasUnicos.length - 10} más.`;
+            } else {
+              temasStr = `${temasUnicos.join(", ")}.`;
+            }
+            mensajeRespuesta += `\n\nTemas disponibles en la base para ese grado y área: ${temasStr}`;
           }
         }
       }
@@ -2251,7 +2322,49 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                 huboFragmentosInyectados = true;
               }
               fragmentosRecuperadosTexto = filasCoincidentes
-                .map((f) => `[Fuente: ${f.fuente_documento || "MINERD"} | Pág: ${f.pagina || "N/A"}] ${f.tema || ""}: ${f.competencia_especifica || ""} - ${f.indicador_logro || f.contenidos_texto_original || ""}`)
+                .map((f) => {
+                  const docNombre = (f.fuente_documento || f.fuente || f.documento_titulo || "MINERD")
+                    .replace(/\s*\(pág\..*$/i, "")
+                    .replace(/[,.]\s*$/, "")
+                    .trim();
+                  const pag = f.pagina || f.pág || "N/A";
+                  const compRaw = (f.competencias_especificas || f.competencia_especifica || "").trim();
+                  const esCompPlantilla = compRaw.includes("Desarrolla el pensamiento crítico, resolución de problemas");
+                  const comp = (!esCompPlantilla && compRaw) ? compRaw : "";
+
+                  const contRaw = (f.contenidos_texto_original || "").trim();
+                  const esContPlantilla = contRaw.includes("Contenidos conceptuales, procedimentales y actitudinales de");
+                  const cont = (!esContPlantilla && contRaw) ? contRaw : "";
+
+                  const indRaw = f.indicadores_logro || f.indicador_logro || null;
+                  let indTexto = "";
+                  if (indRaw) {
+                    if (Array.isArray(indRaw)) {
+                      const indLimpia = indRaw.map(s => String(s).trim()).filter(Boolean);
+                      if (indLimpia.length > 0) {
+                        if (indLimpia.length <= 8) {
+                          indTexto = indLimpia.join("; ");
+                        } else {
+                          indTexto = indLimpia.slice(0, 8).join("; ") + ` ... y ${indLimpia.length - 8} más`;
+                        }
+                      }
+                    } else if (typeof indRaw === "string" && indRaw.trim()) {
+                      indTexto = indRaw.trim();
+                    }
+                  }
+
+                  const partes = [];
+                  if (f.tema) partes.push(`Tema: ${f.tema.trim()}`);
+                  if (comp) partes.push(`Competencia: ${comp}`);
+                  if (cont) partes.push(`Contenidos: ${cont}`);
+                  if (indTexto) partes.push(`Indicadores: ${indTexto}`);
+
+                  let frag = `[Fuente: ${docNombre} | Pág: ${pag}] ${partes.join(" | ")}`;
+                  if (frag.length > 1500) {
+                    frag = frag.slice(0, 1497) + "...";
+                  }
+                  return frag;
+                })
                 .join("\n");
               promptParaStreaming += `\n=== FRAGMENTOS CURRICULARES OFICIALES RECUPERADOS ===\n<DATO>\n${fragmentosRecuperadosTexto}\n</DATO>\n`;
             } else {

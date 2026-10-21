@@ -13,7 +13,16 @@ import {
 describe('shared/catalogoCurricular.mjs', () => {
   it('expone constantes inmutables canónicas', () => {
     assert.deepEqual(NIVELES, ['Inicial', 'Primario', 'Secundario']);
-    assert.deepEqual(AREAS, ['Matemática', 'Lengua Española']);
+    assert.deepEqual(AREAS, [
+      'Lengua Española',
+      'Matemática',
+      'Ciencias Sociales',
+      'Ciencias de la Naturaleza',
+      'Educación Artística',
+      'Educación Física',
+      'Formación Integral Humana y Religiosa',
+      'Lenguas Extranjeras - Inglés'
+    ]);
     assert.deepEqual(GRADOS, ['1ro', '2do', '3ro', '4to', '5to', '6to']);
   });
 
@@ -63,7 +72,14 @@ describe('shared/catalogoCurricular.mjs', () => {
     assert.equal(normalizarArea('lengua espanola'), 'Lengua Española');
     assert.equal(normalizarArea('Lengua Española'), 'Lengua Española');
 
-    assert.throws(() => normalizarArea('Ciencias Sociales'), /Área curricular no reconocida/);
-    assert.throws(() => normalizarArea('Química'), /Área curricular no reconocida/);
+    assert.equal(normalizarArea('Ciencias Sociales'), 'Ciencias Sociales');
+    assert.equal(normalizarArea('Química'), 'Ciencias de la Naturaleza');
+    assert.equal(normalizarArea('Educación Física'), 'Educación Física');
+    assert.equal(normalizarArea('Educación Artística'), 'Educación Artística');
+    assert.equal(normalizarArea('Inglés'), 'Lenguas Extranjeras - Inglés');
+    assert.equal(normalizarArea('Formación Integral Humana y Religiosa'), 'Formación Integral Humana y Religiosa');
+
+    assert.throws(() => normalizarArea('Astronomía Cuántica'), /Área curricular no reconocida/);
+    assert.throws(() => normalizarArea('Contabilidad'), /Área curricular no reconocida/);
   });
 });
