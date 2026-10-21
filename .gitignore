@@ -27,6 +27,8 @@ pwa_descarga.zip
 # Descargas pesadas de documentos curriculares oficiales (el manifiesto.json sí se versiona)
 server/curriculo/fuentes/*.pdf
 server/curriculo/fuentes/*.part
+fuentes_curriculo/
+
 
 
 

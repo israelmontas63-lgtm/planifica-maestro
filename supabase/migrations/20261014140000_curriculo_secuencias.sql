@@ -118,12 +118,11 @@ CREATE INDEX IF NOT EXISTS idx_curriculo_secuencias_filtros
 CREATE INDEX IF NOT EXISTS idx_curriculo_secuencias_source_id 
     ON public.curriculo_secuencias (source_id);
 
--- 6. Trigger actualizado_en con WHEN (OLD.* IS DISTINCT FROM NEW.*)
+-- 6. Trigger actualizado_en (sin WHEN por incompatibilidad de PostgreSQL con columnas generadas en triggers de fila completa, error 42P17)
 DROP TRIGGER IF EXISTS set_actualizado_en_curriculo_secuencias ON public.curriculo_secuencias;
 CREATE TRIGGER set_actualizado_en_curriculo_secuencias
     BEFORE UPDATE ON public.curriculo_secuencias
     FOR EACH ROW
-    WHEN (OLD.* IS DISTINCT FROM NEW.*)
     EXECUTE FUNCTION public.trg_actualizado_en_curriculo_secuencias();
 
 -- 7. RLS y Permisos
