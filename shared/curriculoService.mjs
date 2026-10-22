@@ -196,7 +196,7 @@ export async function consultarCurriculoMINERD(args, env = {}, opciones = {}) {
         p_grado: gradoNum,
         p_area: areaCanonica,
         p_consulta: temaLimpio,
-        p_limite: Math.min(Math.max(limite, 1), 5)
+        p_limite: Math.min(Math.max(limite, 1), 25)
       }),
       signal: controller.signal
     });

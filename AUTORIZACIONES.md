@@ -127,3 +127,10 @@
 - **Frase Textual del Dueño:** `"procede"`
 - **Estado:** APLICADA
 
+### Autorización 019
+- **Fecha:** 2026-10-21
+- **Componentes:** `shared/curriculoService.mjs`, `tests/test_b2_b4_forense.mjs`, `PROTEGIDO.hashes.json`
+- **Motivo:** Verificación forense y corrección en rama: propagación de límite en RPC (p_limite hasta 25 para listar todos los temas curriculares sin truncar a 5) y suite de pruebas unitarias forenses B2-B4.
+- **Frase Textual del Dueño:** `"AUTORIZACIÓN 019 (DEL DUEÑO, LIMITADA): (1) commits y push a feat/curriculo-real, sin force; (2) PATCH sobre filas del informe SOLO para restaurar tema, pagina, estado_validacion, version_curricular y huella al estado de backup_pre_018_secuencias_completas.json"`
+- **Estado:** APLICADA
+
