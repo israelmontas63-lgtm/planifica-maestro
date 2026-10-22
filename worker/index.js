@@ -1556,6 +1556,29 @@ async function handleApiRequest(request, env, ctx) {
       });
     }
 
+    // 2.2. MODO FALLO ANTERIOR / ALCANCE (sin errorPrevio en historial)
+    if (clasificacion.categoria === "fallo_anterior") {
+      let explicacion = "Actualmente Planifica Maestro está enfocado y calibrado exclusivamente para el Nivel Primario (1.° a 6.° grado) según el currículo oficial del MINERD. El currículo del Nivel Secundario aún no está cargado en la base, por lo que no puedo generar planificaciones oficiales para secundaria.";
+      if (!/secundar/i.test(textoParaProcesar)) {
+        explicacion = "Si ocurrió un error previo o tienes dudas sobre las capacidades del sistema, con gusto te oriento: Planifica Maestro cubre el Nivel Primario (1.° a 6.° grado) con el currículo oficial del MINERD.";
+      }
+      return responderWorker({
+        data: {
+          mensaje_chat: explicacion,
+          plan_completado: false,
+          modo: "fallo_anterior",
+          categoria: "fallo_anterior",
+          opciones: [
+            "Consultar currículo de Primaria",
+            "Planificar para Primaria (1.° a 6.°)",
+            "Hacer una consulta pedagógica"
+          ],
+          datos_planificacion: null
+        },
+        estado: "conversando"
+      });
+    }
+
     // T6: Topes multinivel y cuota se aplican SOLO a acciones que usan IA o planificación
     let checkTopes = { permitido: true, cuota: { disponibles: 25 } };
     if (esModoPrueba && env.DESACTIVAR_CAPA_9 === "true") {
