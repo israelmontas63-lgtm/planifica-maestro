@@ -1658,7 +1658,36 @@ async function handleApiRequest(request, env, ctx) {
 
       const consultaLimpia = limpiarConsultaCurricular(textoParaProcesar, { grado: gradoDetectado, area: areaDetectada });
       if (!consultaLimpia) {
-        const mensajePedirTema = `¿Qué tema o contenido específico deseas consultar para ${gradoDetectado}.° grado en ${areaDetectada}?`;
+        let mensajePedirTema = `¿Qué tema o contenido específico deseas consultar para ${gradoDetectado}.° grado en ${areaDetectada}?`;
+        if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
+          try {
+            const urlTemas = `${env.SUPABASE_URL.replace(/\/+$/, '')}/rest/v1/curriculo_secuencias?select=tema&grado_num=eq.${gradoDetectado}&area=eq.${encodeURIComponent(areaDetectada)}&order=tema`;
+            const resTemas = await fetch(urlTemas, {
+              headers: {
+                'apikey': env.SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${env.SUPABASE_ANON_KEY}`,
+                'Accept': 'application/json'
+              }
+            });
+            if (resTemas.ok) {
+              const dataTemas = await resTemas.json();
+              if (Array.isArray(dataTemas) && dataTemas.length > 0) {
+                const temasUnicos = Array.from(new Set(dataTemas.map(d => d.tema).filter(Boolean)));
+                if (temasUnicos.length > 0) {
+                  let temasStr = "";
+                  if (temasUnicos.length > 10) {
+                    temasStr = `${temasUnicos.slice(0, 10).join(", ")}, y ${temasUnicos.length - 10} más.`;
+                  } else {
+                    temasStr = `${temasUnicos.join(", ")}.`;
+                  }
+                  mensajePedirTema += `\n\nTemas disponibles en la base para ese grado y área: ${temasStr}`;
+                }
+              }
+            }
+          } catch (e) {
+            console.warn("[Consulta Curricular] Fallo listando temas disponibles:", e?.message || e);
+          }
+        }
         registrarCapa(4, "Herramientas curriculares", "sin_tema", "no consultada: falta tema específico", 0);
         if (!(esModoPrueba && env.DESACTIVAR_CAPA_5 === "true")) {
           registrarCapa(5, "Ciclo tool-calling", "ruta_directa", "no aplica en esta ruta", 0);
@@ -1819,7 +1848,27 @@ async function handleApiRequest(request, env, ctx) {
             mensajeRespuesta = `No encontré en la base curricular cargada una secuencia verificada para «${temaBuscado}» (${gradoStr}, ${areaStr}). No te voy a mostrar contenido de otro tema como si lo fuera.`;
           }
 
-          const temasUnicos = Array.from(new Set(filasRetornadas.map(r => r.tema).filter(Boolean)));
+          let temasUnicos = Array.from(new Set(filasRetornadas.map(r => r.tema).filter(Boolean)));
+          if (temasUnicos.length === 0 && env.SUPABASE_URL && env.SUPABASE_ANON_KEY && gradoDetectado && areaDetectada) {
+            try {
+              const urlTemas = `${env.SUPABASE_URL.replace(/\/+$/, '')}/rest/v1/curriculo_secuencias?select=tema&grado_num=eq.${gradoDetectado}&area=eq.${encodeURIComponent(areaDetectada)}&order=tema`;
+              const resTemas = await fetch(urlTemas, {
+                headers: {
+                  'apikey': env.SUPABASE_ANON_KEY,
+                  'Authorization': `Bearer ${env.SUPABASE_ANON_KEY}`,
+                  'Accept': 'application/json'
+                }
+              });
+              if (resTemas.ok) {
+                const dataTemas = await resTemas.json();
+                if (Array.isArray(dataTemas)) {
+                  temasUnicos = Array.from(new Set(dataTemas.map(d => d.tema).filter(Boolean)));
+                }
+              }
+            } catch (e) {
+              console.warn("[Consulta Curricular] Fallo en fallback REST de temas:", e?.message || e);
+            }
+          }
           if (temasUnicos.length > 0) {
             let temasStr = "";
             if (temasUnicos.length > 10) {

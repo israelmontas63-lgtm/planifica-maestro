@@ -222,4 +222,24 @@ describe("Clasificador de Intención Previo a Búsqueda (Capa 1 y Capa 2)", () =
     const resAsync = await clasificarWorker({ texto: "buenos días colega" });
     assert.strictEqual(resAsync.categoria, "charla");
   });
+
+  it("14. Autorización 020: 'currículo de...' clasifica como consulta_curricular y preserva saludos", () => {
+    const consultas = [
+      "currículo de 6.º de Matemática sobre potencias",
+      "currículo de 4.º de Inglés",
+      "currículo de Educación Física de 4.º",
+      "currículo de 6.º de Educación Física"
+    ];
+    for (const c of consultas) {
+      const res = clasificarPorReglas(c);
+      assert.strictEqual(res.categoria, "consulta_curricular", `Esperaba consulta_curricular para: '${c}', obtuvo: '${res.categoria}'`);
+      assert.strictEqual(res.tipo, "curricular");
+    }
+
+    const saludos = ["hola", "buenos días", "gracias"];
+    for (const s of saludos) {
+      const res = clasificarPorReglas(s);
+      assert.strictEqual(res.categoria, "charla", `Esperaba charla para: '${s}', obtuvo: '${res.categoria}'`);
+    }
+  });
 });

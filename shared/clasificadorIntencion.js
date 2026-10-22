@@ -73,7 +73,9 @@ export const PATRONES_CONSULTA_CURRICULAR = [
   "diseno curricular", "cuales son los contenidos", "que contenidos tiene",
   "contenidos conceptuales", "contenidos procedimentales", "contenidos actitudinales",
   "malla curricular", "matriz curricular", "registro de grado", "ordenanza de evaluacion",
-  "criterios de evaluacion oficial"
+  "criterios de evaluacion oficial",
+  "curriculo de", "curriculo del", "curriculo sobre", "curriculo oficial", "el curriculo de",
+  "el curriculo del", "consultar curriculo", "consulta curricular", "curriculo en", "curriculo para"
 ];
 
 export const PATRONES_PLANIFICACION = [
