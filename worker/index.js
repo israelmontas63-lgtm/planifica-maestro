@@ -22,6 +22,8 @@ import { cicloToolCalling } from "../shared/ciclo.js";
 import { PROMPT_SISTEMA_V2_TEXTO } from "../shared/promptSistemaV2.js";
 import { consultarCurriculoMINERD, limpiarConsultaCurricular } from "../shared/curriculoService.mjs";
 import { gradoANumero, normalizarArea, gradosMultiples } from "../shared/catalogoCurricular.mjs";
+import { procesarConsultaMatematica } from "../shared/matematica.mjs";
+import { capacidadesManifest, generarRespuestaQuePuedesHacer } from "../shared/capacidades.mjs";
 
 export function esCoincidente(f) {
   return Boolean(f && (f.coincide_tema === true || f.coincide_tema === "true"));
@@ -1558,9 +1560,12 @@ async function handleApiRequest(request, env, ctx) {
 
     // 2.2. MODO FALLO ANTERIOR / ALCANCE (sin errorPrevio en historial)
     if (clasificacion.categoria === "fallo_anterior") {
-      let explicacion = "Actualmente Planifica Maestro está enfocado y calibrado exclusivamente para el Nivel Primario (1.° a 6.° grado) según el currículo oficial del MINERD. El currículo del Nivel Secundario aún no está cargado en la base, por lo que no puedo generar planificaciones oficiales para secundaria.";
-      if (!/secundar/i.test(textoParaProcesar)) {
-        explicacion = "Si ocurrió un error previo o tienes dudas sobre las capacidades del sistema, con gusto te oriento: Planifica Maestro cubre el Nivel Primario (1.° a 6.° grado) con el currículo oficial del MINERD.";
+      const mencionaNivelNoPrimario = /(?:secundaria|secundario|bachillerato|liceo|nivel\s+medio|inicial|preescolar|universidad|universitario)/i.test(textoParaProcesar);
+      let explicacion;
+      if (mencionaNivelNoPrimario) {
+        explicacion = "Actualmente Planifica Maestro está enfocado y calibrado exclusivamente para el Nivel Primario (1.° a 6.° grado) según el currículo oficial del MINERD. El currículo del Nivel Secundario e Inicial aún no está cargado en la base, por lo que no puedo generar planificaciones oficiales para esos niveles.";
+      } else {
+        explicacion = "No tengo registrado un error previo en nuestra conversación. ¿Qué intentabas realizar o en qué te puedo colaborar? Puedo ayudarte a planificar clases para Primaria (1.° a 6.°), consultar el currículo oficial del MINERD o resolver dudas pedagógicas.";
       }
       return responderWorker({
         data: {
@@ -1573,6 +1578,40 @@ async function handleApiRequest(request, env, ctx) {
             "Planificar para Primaria (1.° a 6.°)",
             "Hacer una consulta pedagógica"
           ],
+          datos_planificacion: null
+        },
+        estado: "conversando"
+      });
+    }
+
+    // 2.2.1. MODO TUTOR DE MATEMÁTICA (C19)
+    if (clasificacion.categoria === "matematica") {
+      const resMat = procesarConsultaMatematica(textoParaProcesar);
+      if (resMat && resMat.respuesta) {
+        return responderWorker({
+          data: {
+            mensaje_chat: resMat.respuesta,
+            plan_completado: false,
+            modo: "matematica",
+            categoria: "matematica",
+            resultado_exacto: resMat.resultado,
+            tipo_matematica: resMat.tipo,
+            datos_planificacion: null
+          },
+          estado: "conversando"
+        });
+      }
+    }
+
+    // 2.2.2. CONSULTA DEL MANIFIESTO DE CAPACIDADES (C17)
+    if (/(?:qu[eé]\s+puedes\s+hacer|cu[aá]les\s+son\s+tus\s+capacidades|qu[eé]\s+sabes\s+hacer)/i.test(textoParaProcesar)) {
+      return responderWorker({
+        data: {
+          mensaje_chat: generarRespuestaQuePuedesHacer(),
+          plan_completado: false,
+          modo: "manifiesto_capacidades",
+          categoria: "charla",
+          capacidades: capacidadesManifest,
           datos_planificacion: null
         },
         estado: "conversando"
@@ -1681,29 +1720,59 @@ async function handleApiRequest(request, env, ctx) {
 
       const consultaLimpia = limpiarConsultaCurricular(textoParaProcesar, { grado: gradoDetectado, area: areaDetectada });
       if (!consultaLimpia) {
-        let mensajePedirTema = `¿Qué tema o contenido específico deseas consultar para ${gradoDetectado}.° grado en ${areaDetectada}?`;
+        let mensajePedirTema = esMultigrado
+          ? `¿Qué tema o contenido específico deseas consultar para ${multiGrados.map(g => `${g}.°`).join(" y ")} grado en ${areaDetectada}?`
+          : `¿Qué tema o contenido específico deseas consultar para ${gradoDetectado}.° grado en ${areaDetectada}?`;
+
         if (env.SUPABASE_URL && env.SUPABASE_ANON_KEY) {
           try {
-            const urlTemas = `${env.SUPABASE_URL.replace(/\/+$/, '')}/rest/v1/curriculo_secuencias?select=tema&grado_num=eq.${gradoDetectado}&area=eq.${encodeURIComponent(areaDetectada)}&order=tema`;
-            const resTemas = await fetch(urlTemas, {
-              headers: {
-                'apikey': env.SUPABASE_ANON_KEY,
-                'Authorization': `Bearer ${env.SUPABASE_ANON_KEY}`,
-                'Accept': 'application/json'
-              }
-            });
-            if (resTemas.ok) {
-              const dataTemas = await resTemas.json();
-              if (Array.isArray(dataTemas) && dataTemas.length > 0) {
-                const temasUnicos = Array.from(new Set(dataTemas.map(d => d.tema).filter(Boolean)));
-                if (temasUnicos.length > 0) {
-                  let temasStr = "";
-                  if (temasUnicos.length > 10) {
-                    temasStr = `${temasUnicos.slice(0, 10).join(", ")}, y ${temasUnicos.length - 10} más.`;
-                  } else {
-                    temasStr = `${temasUnicos.join(", ")}.`;
+            if (esMultigrado) {
+              const temasPorGrado = [];
+              for (const g of multiGrados) {
+                const urlTemas = `${env.SUPABASE_URL.replace(/\/+$/, '')}/rest/v1/curriculo_secuencias?select=tema&grado_num=eq.${g}&area=eq.${encodeURIComponent(areaDetectada)}&order=tema`;
+                const resTemas = await fetch(urlTemas, {
+                  headers: {
+                    'apikey': env.SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${env.SUPABASE_ANON_KEY}`,
+                    'Accept': 'application/json'
                   }
-                  mensajePedirTema += `\n\nTemas disponibles en la base para ese grado y área: ${temasStr}`;
+                });
+                if (resTemas.ok) {
+                  const dataTemas = await resTemas.json();
+                  if (Array.isArray(dataTemas) && dataTemas.length > 0) {
+                    const u = Array.from(new Set(dataTemas.map(d => d.tema).filter(Boolean)));
+                    if (u.length > 0) {
+                      const str = u.length > 10 ? `${u.slice(0, 10).join(", ")}, y ${u.length - 10} más.` : `${u.join(", ")}.`;
+                      temasPorGrado.push(`- **${g}.° Grado:** ${str}`);
+                    }
+                  }
+                }
+              }
+              if (temasPorGrado.length > 0) {
+                mensajePedirTema += `\n\nTemas disponibles en la base:\n${temasPorGrado.join("\n")}`;
+              }
+            } else {
+              const urlTemas = `${env.SUPABASE_URL.replace(/\/+$/, '')}/rest/v1/curriculo_secuencias?select=tema&grado_num=eq.${gradoDetectado}&area=eq.${encodeURIComponent(areaDetectada)}&order=tema`;
+              const resTemas = await fetch(urlTemas, {
+                headers: {
+                  'apikey': env.SUPABASE_ANON_KEY,
+                  'Authorization': `Bearer ${env.SUPABASE_ANON_KEY}`,
+                  'Accept': 'application/json'
+                }
+              });
+              if (resTemas.ok) {
+                const dataTemas = await resTemas.json();
+                if (Array.isArray(dataTemas) && dataTemas.length > 0) {
+                  const temasUnicos = Array.from(new Set(dataTemas.map(d => d.tema).filter(Boolean)));
+                  if (temasUnicos.length > 0) {
+                    let temasStr = "";
+                    if (temasUnicos.length > 10) {
+                      temasStr = `${temasUnicos.slice(0, 10).join(", ")}, y ${temasUnicos.length - 10} más.`;
+                    } else {
+                      temasStr = `${temasUnicos.join(", ")}.`;
+                    }
+                    mensajePedirTema += `\n\nTemas disponibles en la base para ese grado y área: ${temasStr}`;
+                  }
                 }
               }
             }

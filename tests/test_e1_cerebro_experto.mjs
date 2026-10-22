@@ -30,7 +30,7 @@ test("E1.1 - Clasificación de las 20 frases del cerebro pedagógico y 6 control
     { frase: "explícame la taxonomía de Bloom", categoria: "conocimiento_general" },
     { frase: "hazme una rúbrica para ensayo", categoria: "conocimiento_general" },
     { frase: "si todos los gatos son animales y Tom es gato, ¿qué sigue?", categoria: "conocimiento_general" },
-    { frase: "cuánto es 3/4 + 1/2", categoria: "conocimiento_general" },
+    { frase: "cuánto es 3/4 + 1/2", categoria: "matematica" },
     { frase: "gracias", categoria: "charla" },
     { frase: "no me gustó el resultado", categoria: "charla" },
     { frase: "cambia la actividad 2", categoria: "ambigua" },

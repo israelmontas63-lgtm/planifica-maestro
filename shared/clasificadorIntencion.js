@@ -75,7 +75,8 @@ export const PATRONES_CONSULTA_CURRICULAR = [
   "malla curricular", "matriz curricular", "registro de grado", "ordenanza de evaluacion",
   "criterios de evaluacion oficial",
   "curriculo de", "curriculo del", "curriculo sobre", "curriculo oficial", "el curriculo de",
-  "el curriculo del", "consultar curriculo", "consulta curricular", "curriculo en", "curriculo para"
+  "el curriculo del", "consultar curriculo", "consulta curricular", "curriculo en", "curriculo para",
+  "primero y segundo de", "1ro y 2do de"
 ];
 
 export const PATRONES_PLANIFICACION = [
@@ -84,7 +85,6 @@ export const PATRONES_PLANIFICACION = [
   "dame una secuencia", "hazme una secuencia",
   "hazme una actividad", "dame una actividad",
   "actividad de lectura", "actividades de lectura",
-  "primero y segundo", "primero segundo y tercero", "1ro y 2do", "1ro 2do y 3ro",
   "unidad de aprendizaje", "situacion de aprendizaje", "actividad de inicio", "actividad de desarrollo", "actividad de cierre",
   "momentos de la clase", "hazme un plan", "crea un plan", "disena un plan", "preparame una clase",
   "elabora una clase", "estructura una clase", "rubrica de evaluacion", "instrumento de evaluacion",
@@ -221,6 +221,36 @@ export const OPCIONES_ACLARACION = [
   "Consultar el currículo oficial",
   "Hacer una pregunta general"
 ];
+
+export function esOperacionMatematica(texto, norm) {
+  if (!texto || typeof texto !== 'string') return false;
+  // Negativas inmediatas
+  if (/^\s*\d+\s+estudiantes\s*$/i.test(texto.trim())) return false;
+  if (/^\s*grados?\s*\d+\s*$/i.test(texto.trim())) return false;
+  
+  // Comandos de tutor
+  if (norm.includes('guiame paso a paso') || norm.includes('paso a paso con')) return true;
+  if (norm.includes('ejercicios parecidos') || norm.includes('ejercicios similares')) return true;
+  if (norm.includes('en letras') || norm.includes('en cifras') || norm.includes('a palabras') || norm.includes('a cifras')) return true;
+  if (/\b(?:area|perimetro|volumen)\s+de\b/i.test(norm)) return true;
+  
+  // Operaciones aritméticas explícitas
+  if (/^(?:cuanto\s+es|resuelve|calcula|halla|obten|dime)\b/i.test(norm)) {
+    if (/[0-9]/.test(norm) || /\b(?:suma|resta|multiplica|divide|raiz|potencia|fraccion)\b/i.test(norm)) return true;
+  }
+  if (/\b(?:suma|resta|multiplica|divide)\s+[0-9]/i.test(norm)) return true;
+  if (/\b\d+\s*(?:[+\-*×÷/]|−)\s*\d+\b/.test(texto)) return true;
+  if (/\b\d+\s*elevado\s+a\b/i.test(norm)) return true;
+  if (/\b\d+\s*%\s*de\s+\d+/i.test(texto) || /\b\d+\s*por\s*ciento\s+de\s+\d+/i.test(norm)) return true;
+  if (/\b\d+\/\d+\s*(?:[+\-*×÷/]|−)\s*\d+\/\d+\b/.test(texto)) return true;
+  if (/\b\d+\s*\+\s*\d+\s*=\s*\d+/i.test(texto)) return true;
+  if (/\b\d+\s*(?:÷|\/)\s*0\b/.test(texto)) return true;
+  if (/[0-9]+[,.][0-9]+\s*\+\s*[0-9]+[,.][0-9]+/.test(texto)) return true;
+  if (/[0-9]{5,}\s*(?:×|\*)\s*[0-9]{5,}/.test(texto)) return true;
+  if (/\b(?:problema|reparte|distribuye)\b.*\b\d+\b/i.test(norm) && /\b(?:cuantos|cuantas|mesas|lapices|manzanas)\b/i.test(norm)) return true;
+
+  return false;
+}
 
 /**
  * Capa 1: Clasificación determinista basada en reglas lingüísticas normalizadas ($0)
@@ -420,6 +450,19 @@ export function clasificarPorReglas(texto, contexto = {}) {
       codigo_categoria: "A",
       confianza: 0.92,
       motivo: "Consulta directa sobre contenidos, normativas o indicadores de la malla curricular MINERD.",
+      esMixtoConSaludo: false
+    };
+  }
+
+  // 6.5 Tutor de Aritmética y Matemática (C19)
+  if (esOperacionMatematica(texto, norm) && !tienePlanificacion) {
+    return {
+      categoria: "matematica",
+      tipo: "matematica",
+      categoria_6: CATEGORIAS_6.B_PEDAGOGIA_GENERAL,
+      codigo_categoria: "B",
+      confianza: 0.95,
+      motivo: "Consulta u operación aritmética/matemática para tutor pedagógico.",
       esMixtoConSaludo: false
     };
   }
