@@ -1,10 +1,10 @@
 {
   "version": "2.0.0",
-  "fecha_generacion": "2026-10-22T03:13:28.829Z",
-  "commit": "e73f5c4",
+  "fecha_generacion": "2026-10-22T03:32:20.728Z",
+  "commit": "611d73f",
   "algoritmo": "sha256",
   "total_archivos": 62,
-  "resumen": "354a62f2dd8282b54503a3c1e12dd7fdfad4f0fbf88624c5ffa9dd29624dec14",
+  "resumen": "4f6168f94fe087e53f1d5fc9de89d06817f0877331cc0b58faf69c5595c27d12",
   "hashes": {
     "client/src/App.jsx": "96e63828261f8b03812552a3fa5ed624f27fa876a4e5788d1acae9e4718d050f",
     "client/src/api.js": "5dcfebb64a8451931c105508a19543ef38dcda662e869d6d427c55070af3f75f",
@@ -57,7 +57,7 @@
     "worker/correctorTexto.js": "fdc3c6e574b3f478761323c001006f8b799bd19dfe576c599922f2c5a653a625",
     "worker/editorImagenLocalPuro.js": "813662548218ababca50d0ada3dc42f6576209cb0d4e7767c5f399065e72a298",
     "worker/glosarioDocente.js": "0f905a0e056dfd19e30611b8b6243fe7b443994a4762ad1bbda8d429ac892d34",
-    "worker/index.js": "e7c78c5e792aa65df3ce1a4f51f11226343f1574bcded92ac6b56e7c690d2d82",
+    "worker/index.js": "91ef620fc1dbf9807348dba2c04e434d56ab6f7cfe898881cc2eb4f9cbbccf1d",
     "worker/levels.js": "6b07da11d3a0c17a10446209c56855e9537aa8b1945c0eeaa255ab0b53759cff",
     "worker/modoConversacional.js": "34198e46599c196c12c1fe4fe2af3b0359baf0fd163cced44bc20ea301d41dda",
     "worker/ojoDigital.js": "94bb2f29e3fe0938513d5c4b64b12b8223611f38461e128080ce70552a61ec68",
