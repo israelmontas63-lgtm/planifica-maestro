@@ -1675,6 +1675,21 @@ async function handleApiRequest(request, env, ctx) {
         else areaDetectada = "Lengua Española";
       }
 
+      if (nivelDetectado === "Secundario" || (gradoDetectado && gradoDetectado > 6)) {
+        const gradoSecStr = gradoDetectado ? `${gradoDetectado}.° de Secundaria` : "Nivel Secundario";
+        return responderWorker({
+          data: {
+            mensaje_chat: `Actualmente Planifica Maestro está enfocado exclusivamente en el Nivel Primario (1.° a 6.° grado) según el currículo oficial del MINERD. El currículo de ${gradoSecStr} en ${areaDetectada} aún no está cargado en la base, por lo que no puedo mostrar secuencias ni generar planificaciones para este nivel.`,
+            plan_completado: false,
+            modo: "consulta_curricular",
+            categoria: "consulta_curricular",
+            fragmentos: [],
+            datos_planificacion: null
+          },
+          estado: "pensando"
+        });
+      }
+
       const t0Tools = performance.now();
       if (gradoDetectado === null) {
         const glosarioMatch = buscarEnGlosario(textoParaProcesar);
