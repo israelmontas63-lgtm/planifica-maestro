@@ -97,7 +97,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        cacheId: "planifica-maestro-v2",
+        cacheId: "planifica-maestro-v3",
         skipWaiting: true,
         clientsClaim: true,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,woff,webmanifest}"],
@@ -109,7 +109,7 @@ export default defineConfig({
             urlPattern: ({ request }) => request.mode === "navigate",
             handler: "NetworkFirst",
             options: {
-              cacheName: "html-cache-v2",
+              cacheName: "html-cache-v3",
               networkTimeoutSeconds: 3,
               cacheableResponse: {
                 statuses: [0, 200],
@@ -130,14 +130,14 @@ export default defineConfig({
             urlPattern: /\.(?:js|css)$/i,
             handler: "StaleWhileRevalidate",
             options: {
-              cacheName: "static-resources-v2",
+              cacheName: "static-resources-v3",
             },
           },
           {
             urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|woff2?|ico)$/i,
             handler: "CacheFirst",
             options: {
-              cacheName: "static-assets-v2",
+              cacheName: "static-assets-v3",
               expiration: {
                 maxEntries: 60,
                 maxAgeSeconds: 30 * 24 * 60 * 60,

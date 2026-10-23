@@ -134,3 +134,11 @@
 - **Frase Textual del Dueño:** `"AUTORIZACIÓN 019 (DEL DUEÑO, LIMITADA): (1) commits y push a feat/curriculo-real, sin force; (2) PATCH sobre filas del informe SOLO para restaurar tema, pagina, estado_validacion, version_curricular y huella al estado de backup_pre_018_secuencias_completas.json"`
 - **Estado:** APLICADA
 
+### Autorización 025
+- **Fecha:** 2026-10-22
+- **Componentes:** `client/vite.config.js`, `tests/test_t12_sw_cache_version.mjs`, `PROTEGIDO.hashes.json`
+- **Motivo:** Actualización de PWA incrementando la versión de caché de Workbox a v3 para forzar la invalidación limpia de assets en navegadores cliente.
+- **Frase Textual del Dueño:** `"actuliza la pwa" - "Incrementar la versión de caché de Workbox (v3) y recompilar antes de desplegar"`
+- **Estado:** APLICADA
+
+
