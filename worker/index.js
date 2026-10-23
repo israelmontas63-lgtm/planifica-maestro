@@ -23,10 +23,14 @@ import { PROMPT_SISTEMA_V2_TEXTO } from "../shared/promptSistemaV2.js";
 import { consultarCurriculoMINERD, limpiarConsultaCurricular } from "../shared/curriculoService.mjs";
 import { gradoANumero, normalizarArea, gradosMultiples } from "../shared/catalogoCurricular.mjs";
 import { procesarConsultaMatematica } from "../shared/matematica.mjs";
+import { respuestaEspecialMatematica } from "../shared/metodosMatematicos.mjs";
+import { coincideConTema, listarTemasUnicos, formatearListaTemas, consultarTemasREST } from "../shared/coincidenciaTema.mjs";
 import { capacidadesManifest, generarRespuestaQuePuedesHacer } from "../shared/capacidades.mjs";
 
-export function esCoincidente(f) {
-  return Boolean(f && (f.coincide_tema === true || f.coincide_tema === "true"));
+export function esCoincidente(f, consulta = "") {
+  if (!f || (f.coincide_tema !== true && f.coincide_tema !== "true")) return false;
+  if (!consulta) return true;
+  return coincideConTema(consulta, f.tema);
 }
 
 /**
@@ -1586,6 +1590,21 @@ async function handleApiRequest(request, env, ctx) {
 
     // 2.2.1. MODO TUTOR DE MATEMÁTICA (C19)
     if (clasificacion.categoria === "matematica") {
+      const especial = respuestaEspecialMatematica(textoParaProcesar);
+      if (especial) {
+        return responderWorker({
+          data: {
+            mensaje_chat: especial.mensaje,
+            plan_completado: false,
+            modo: "matematica",
+            categoria: "matematica",
+            resultado_exacto: especial.resultado,
+            tipo_matematica: especial.tipo,
+            datos_planificacion: null
+          },
+          estado: "conversando"
+        });
+      }
       const resMat = procesarConsultaMatematica(textoParaProcesar);
       if (resMat && resMat.respuesta) {
         return responderWorker({
@@ -1867,7 +1886,7 @@ async function handleApiRequest(request, env, ctx) {
       if (filasRetornadas.length > 0 && filasRetornadas.every(f => f.coincide_tema === undefined)) {
         console.error("[ALERTA] La RPC no devolvió coincide_tema: todas las filas se tratan como sin coincidencia");
       }
-      const coincidentes = filasRetornadas.filter(esCoincidente);
+      const coincidentes = filasRetornadas.filter(f => esCoincidente(f, consultaLimpia));
 
       let fragmentosFinales = [];
       let mensajeRespuesta = "";
@@ -1955,35 +1974,16 @@ async function handleApiRequest(request, env, ctx) {
             mensajeRespuesta = `No encontré en la base curricular cargada una secuencia verificada para «${temaBuscado}» (${gradoStr}, ${areaStr}). No te voy a mostrar contenido de otro tema como si lo fuera.`;
           }
 
-          let temasUnicos = Array.from(new Set(filasRetornadas.map(r => r.tema).filter(Boolean)));
-          if (temasUnicos.length === 0 && env.SUPABASE_URL && env.SUPABASE_ANON_KEY && gradoDetectado && areaDetectada) {
-            try {
-              const urlTemas = `${env.SUPABASE_URL.replace(/\/+$/, '')}/rest/v1/curriculo_secuencias?select=tema&grado_num=eq.${gradoDetectado}&area=eq.${encodeURIComponent(areaDetectada)}&order=tema`;
-              const resTemas = await fetch(urlTemas, {
-                headers: {
-                  'apikey': env.SUPABASE_ANON_KEY,
-                  'Authorization': `Bearer ${env.SUPABASE_ANON_KEY}`,
-                  'Accept': 'application/json'
-                }
-              });
-              if (resTemas.ok) {
-                const dataTemas = await resTemas.json();
-                if (Array.isArray(dataTemas)) {
-                  temasUnicos = Array.from(new Set(dataTemas.map(d => d.tema).filter(Boolean)));
-                }
-              }
-            } catch (e) {
-              console.warn("[Consulta Curricular] Fallo en fallback REST de temas:", e?.message || e);
-            }
-          }
+          const areaCanonica = normalizarArea(areaDetectada) || areaDetectada;
+          const filasTema = await consultarTemasREST({
+            url: env.SUPABASE_URL,
+            clave: env.SUPABASE_ANON_KEY,
+            grado: gradoDetectado,
+            area: areaCanonica
+          });
+          const temasUnicos = listarTemasUnicos(filasTema.length ? filasTema : filasRetornadas);
           if (temasUnicos.length > 0) {
-            let temasStr = "";
-            if (temasUnicos.length > 10) {
-              temasStr = `${temasUnicos.slice(0, 10).join(", ")}, y ${temasUnicos.length - 10} más.`;
-            } else {
-              temasStr = `${temasUnicos.join(", ")}.`;
-            }
-            mensajeRespuesta += `\n\nTemas disponibles en la base para ese grado y área: ${temasStr}`;
+            mensajeRespuesta += `\n\nTemas disponibles en la base para ese grado y área: ${formatearListaTemas(temasUnicos, 10)}`;
           }
         }
       }

@@ -1,3 +1,6 @@
+import { esConsultaMatematicaPura } from "./intencionMatematica.mjs";
+import { procesarConsultaMatematica } from "./matematica.mjs";
+import { respuestaEspecialMatematica } from "./metodosMatematicos.mjs";
 /**
  * shared/clasificadorIntencion.js
  * 
@@ -454,17 +457,13 @@ export function clasificarPorReglas(texto, contexto = {}) {
     };
   }
 
-  // 6.5 Tutor de Aritmética y Matemática (C19)
-  if (esOperacionMatematica(texto, norm) && !tienePlanificacion) {
-    return {
-      categoria: "matematica",
-      tipo: "matematica",
-      categoria_6: CATEGORIAS_6.B_PEDAGOGIA_GENERAL,
-      codigo_categoria: "B",
-      confianza: 0.95,
-      motivo: "Consulta u operación aritmética/matemática para tutor pedagógico.",
-      esMixtoConSaludo: false
-    };
+  // 1.0. CATEGORÍA MATEMÁTICA (C19). La decisión vive en shared/intencionMatematica.mjs y solo se acepta
+  // si el tutor realmente puede resolver el texto (si no, la consulta sigue su camino normal).
+  const esConversionLetras = /(?:en letras|en cifras|a palabras|a cifras)/i.test(texto);
+  if (esConsultaMatematicaPura(texto) || (esConversionLetras && !tienePlanificacion)) {
+    let resolvible = false;
+    try { resolvible = Boolean(respuestaEspecialMatematica(texto) || procesarConsultaMatematica(texto)?.respuesta); } catch { resolvible = false; }
+    if (resolvible) return { categoria: "matematica", confianza: 0.98, entidades: {} };
   }
 
   // 7. Planificación Curricular (Categoría A)

@@ -1,3 +1,12 @@
+import { numeroALetras as numeroALetrasNuevo } from './numeroLetras.mjs';
+import {
+  pasosSumaDescomposicion,
+  pasosRestaConteo,
+  pasosMultiplicacionPosicional,
+  pasosMultiplicacionAreas,
+  pasosDivisionLarga,
+  pasosDivisionRestasSucesivas
+} from './metodosMatematicos.mjs';
 /**
  * shared/matematica.mjs
  * Motor matemático determinista y tutor pedagógico para Nivel Primario (1.° a 6.° grado).
@@ -215,6 +224,8 @@ const DECENAS_PALABRAS = ['', 'diez', 'veinte', 'treinta', 'cuarenta', 'cincuent
 const CENTENAS_PALABRAS = ['', 'cien', 'doscientos', 'trescientos', 'cuatrocientos', 'quinientos', 'seiscientos', 'setecientos', 'ochocientos', 'novecientos'];
 
 export function numeroALetras(n) {
+  const nuevo = numeroALetrasNuevo(n);
+  if (nuevo !== null) return nuevo;
   let num = typeof n === 'bigint' ? n : BigInt(n);
   if (num === 0n) return 'cero';
   if (num < 0n) return `menos ${numeroALetras(-num)}`;
@@ -390,10 +401,7 @@ export function resolverSuma(aStr, bStr, opciones = {}) {
     otrosMetodos: [
       {
         nombre: 'Descomposición por valor posicional',
-        pasos: [
-          `Descomponemos ambos sumandos por su valor posicional.`,
-          `Sumamos los bloques correspondientes para obtener ${resFmt}.`
-        ]
+        pasos: pasosSumaDescomposicion(a, b)
       },
       {
         nombre: 'Cálculo mental por compensación',
@@ -432,7 +440,7 @@ export function resolverResta(aStr, bStr, opciones = {}) {
     otrosMetodos: [
       {
         nombre: 'Conteo ascendente (hacia arriba)',
-        pasos: [
+        pasos: (a >= b && pasosRestaConteo(a, b)) ? pasosRestaConteo(a, b) : [
           `Comenzamos en ${bFmt} y contamos lo que falta para llegar a ${aFmt}.`,
           `Suma total de saltos = ${resFmt}.`
         ]
@@ -452,33 +460,18 @@ export function resolverMultiplicacion(aStr, bStr, opciones = {}) {
   const bFmt = formatearMiles(b.toString());
   const resFmt = formatearMiles(prod.toString());
 
-  const sB = b.toString();
-  const parciales = [];
-  for (let i = sB.length - 1; i >= 0; i--) {
-    const digito = BigInt(sB[i]);
-    const parcial = a * digito;
-    parciales.push(`${aFmt} × ${digito} = ${formatearMiles(parcial.toString())}`);
-  }
-
   return {
     operacion: 'multiplicacion',
     resultadoExacto: resFmt,
     lecturaPalabras: `${resFmt} (${numeroALetras(prod)})`,
     metodoPrincipal: {
       nombre: 'Algoritmo estándar de multiplicación (productos parciales)',
-      pasos: [
-        `Multiplicamos el primer factor ${aFmt} por cada dígito del segundo factor ${bFmt}:`,
-        ...parciales,
-        `Sumamos los productos parciales alineados: ${resFmt}.`
-      ]
+      pasos: pasosMultiplicacionPosicional(a, b)
     },
     otrosMetodos: [
       {
         nombre: 'Descomposición por valor posicional (modelo de áreas)',
-        pasos: [
-          `Descomponemos ambos factores en centenas, decenas y unidades.`,
-          `Multiplicamos cada bloque y sumamos las áreas resultantes: ${resFmt}.`
-        ]
+        pasos: pasosMultiplicacionAreas(a, b) || ['Con números grandes conviene el método posicional.']
       },
       {
         nombre: 'Multiplicación por celosía (rejilla)',
@@ -524,21 +517,13 @@ export function resolverDivision(aStr, bStr, opciones = {}) {
     lecturaPalabras: `${cocFmt}${residuo === 0n ? '' : ` con residuo ${resFmt}`}`,
     metodoPrincipal: {
       nombre: 'Algoritmo de la división larga con restas sucesivas',
-      pasos: [
-        `Dividimos ${aFmt} entre ${bFmt}:`,
-        `Determinamos cuántas veces cabe ${bFmt} en las cifras iniciales del dividendo.`,
-        `Cociente obtenido: ${cocFmt}.`,
-        `Residuo final: ${resFmt}.`
-      ]
+      pasos: pasosDivisionLarga(a, b)
     },
     otrosMetodos: [
-      {
+      ...(pasosDivisionRestasSucesivas(a, b) ? [{
         nombre: 'Reparto equitativo / restas sucesivas',
-        pasos: [
-          `Restamos sucesivamente grupos de ${bFmt} del total ${aFmt}.`,
-          `Pudimos restar ${bFmt} un total de ${cocFmt} veces, sobrando ${resFmt}.`
-        ]
-      }
+        pasos: pasosDivisionRestasSucesivas(a, b)
+      }] : [])
     ],
     prueba: `Comprobación: (${cocFmt} × ${bFmt}) + ${resFmt} = ${aFmt}`
   };
