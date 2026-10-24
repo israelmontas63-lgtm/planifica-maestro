@@ -145,5 +145,5 @@
 - **Fecha:** 2026-10-24
 - **Componentes:** `shared/clasificadorIntencion.js`, `shared/matematica.mjs`, `worker/index.js`, `worker/verificadorCitas.js`, `server/curriculum/verificadorCitas.js`, `PROTEGIDO.hashes.json`
 - **Motivo:** Corrección de anomalías residuales de Cierre 025: soporte de rangos de páginas en verificador de citas (`extraerPaginasDeFragmentos`), rechazo de seguridad determinista ante peticiones de claves de API/tokens (`B24`, `B24b`), rechazo de invención de ordenanzas oficiales (`B25`), respuesta en inglés para consultas en inglés (`B11`) y soporte de operadores verbales ('más', 'menos', 'por', 'entre') en tutor matemático.
-- **Frase Textual del Dueño:** `"precede"`
-- **Estado:** APLICADA
+- **Frase Textual del Dueño:** `"Hazlo paso a paso. Número uno, registrar la autorización formal, sellar la guardia. Número dos, hacer git push origin. Número tres, funcional. Número cuatro, desplegar los artefactos a producción. Una vez que vayas a hacerlo todo, vuelve y verifica que no haya ningún fallo y que lo que tú dices es real, no fallo, no parche, 100% veraz y real."`
+- **Estado:** EN PROCESO
