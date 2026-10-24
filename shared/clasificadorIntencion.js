@@ -242,6 +242,7 @@ export function esOperacionMatematica(texto, norm) {
     if (/[0-9]/.test(norm) || /\b(?:suma|resta|multiplica|divide|raiz|potencia|fraccion)\b/i.test(norm)) return true;
   }
   if (/\b(?:suma|resta|multiplica|divide)\s+[0-9]/i.test(norm)) return true;
+  if (/\b\d+\s*(?:[+\-*×÷/]|−|\b(?:mas|menos|por|entre)\b)\s*\d+\b/i.test(norm)) return true;
   if (/\b\d+\s*(?:[+\-*×÷/]|−)\s*\d+\b/.test(texto)) return true;
   if (/\b\d+\s*elevado\s+a\b/i.test(norm)) return true;
   if (/\b\d+\s*%\s*de\s+\d+/i.test(texto) || /\b\d+\s*por\s*ciento\s+de\s+\d+/i.test(norm)) return true;
@@ -270,6 +271,54 @@ export function clasificarPorReglas(texto, contexto = {}) {
       motivo: "Texto vacío o sin caracteres válidos.",
       esMixtoConSaludo: false,
       opciones: OPCIONES_ACLARACION
+    };
+  }
+
+  // Requiere un objeto secreto del sistema (no "idea clave" / "palabras clave") + verbo de petición.
+  const objetoSecreto = /\b(?:(?:tu|tus|su|sus)\s+(?:clave|claves|llave|llaves|key|keys|token|tokens|contrasena|password|credencial|credenciales|secreto|secretos)|(?:clave|claves|llave|key|token)\s+(?:de\s+(?:la\s+)?)?(?:api|gemini|openai|supabase|cloudflare)|api\s*keys?|credenciales\s+(?:del?\s+)?(?:sistema|servidor)|variables?\s+de\s+entorno)\b/.test(norm);
+  const verboPeticion = /\b(?:muestrame|muestra|dame|dime|cual\s+es|cuales\s+son|pasame|revela|revelame|comparte|compartir|compartes|ensename|enviame|escribe|escribeme|imprime|show|give|tell|what\s+is|reveal)\b/.test(norm);
+  const pideClaves = objetoSecreto && verboPeticion;
+  if (pideClaves) {
+    return {
+      categoria: "seguridad",
+      tipo: "seguridad",
+      categoria_6: CATEGORIAS_6.F_FUERA_DE_ALCANCE,
+      codigo_categoria: "F",
+      confianza: 0.99,
+      motivo: "Petición de credencial o clave de API rechazada por seguridad.",
+      mensaje_rechazo: "Como colega pedagógico de Planifica Maestro, no comparto ni puedo revelar claves de API, tokens o credenciales del sistema por estrictas razones de seguridad y privacidad. ¿En qué planificación o contenido curricular de Primaria te puedo colaborar?",
+      esMixtoConSaludo: false
+    };
+  }
+
+  // 0.2 Detección de Petición de Inventar Ordenanzas / Normativa (Honestidad - B25)
+  const pideInventarOrdenanza = /\b(?:inv[eé]nta(?:me)?|inventar|crea(?:me)?\s+una\s+falsa|falsifica(?:me)?)\b.*\b(?:ordenanza|resoluci[oó]n|circular|decreto)\b/i.test(texto);
+  if (pideInventarOrdenanza) {
+    return {
+      categoria: "ordenanza_rechazo",
+      tipo: "ordenanza_rechazo",
+      categoria_6: CATEGORIAS_6.D_NORMATIVA_O_ACTUALIDAD,
+      codigo_categoria: "D",
+      confianza: 0.99,
+      motivo: "Petición de inventar ordenanzas o normativas rechazada.",
+      mensaje_rechazo: "No invento ordenanzas ni resoluciones oficiales. Como asistente de Planifica Maestro, solo consulto y aplico las normativas oficiales formalmente emitidas por el Ministerio de Educación (MINERD). ¿Deseas consultar alguna ordenanza o contenido curricular verificado?",
+      esMixtoConSaludo: false
+    };
+  }
+
+  // 0.3 Detección de Consulta o Saludo en Idioma Inglés (B11)
+  const esConsultaIngles = /^\s*(?:hello|hi|hey|good\s+(?:morning|afternoon|evening))\b/i.test(texto) ||
+    /\b(?:can\s+you\s+help\s+me|help\s+me\s+plan|plan\s+a\s+class)\b/i.test(texto);
+  if (esConsultaIngles) {
+    return {
+      categoria: "ingles",
+      tipo: "charla",
+      categoria_6: CATEGORIAS_6.B_PEDAGOGIA_GENERAL,
+      codigo_categoria: "B",
+      confianza: 0.98,
+      motivo: "Consulta pedagógica o saludo en idioma inglés.",
+      mensaje_chat: "Hello! I am Planifica Maestro, your pedagogical assistant for the Dominican Republic MINERD official curriculum. I would be happy to help you plan your class! Which grade (1st to 6th grade) and subject would you like to work on today?",
+      esMixtoConSaludo: false
     };
   }
 

@@ -11,7 +11,20 @@ export function extraerPaginasDeFragmentos(fragmentos = []) {
   if (Array.isArray(fragmentos)) {
     for (const f of fragmentos) {
       if (f.pagina !== undefined && f.pagina !== null) {
-        paginasValidas.add(Number(f.pagina));
+        const pagStr = String(f.pagina).trim();
+        if (pagStr.includes("-")) {
+          const partes = pagStr.split("-").map(p => parseInt(p.trim(), 10)).filter(n => !isNaN(n));
+          if (partes.length === 2 && partes[0] <= partes[1]) {
+            for (let i = partes[0]; i <= partes[1]; i++) {
+              paginasValidas.add(i);
+            }
+          } else {
+            partes.forEach(p => paginasValidas.add(p));
+          }
+        } else {
+          const n = parseInt(pagStr, 10);
+          if (!isNaN(n)) paginasValidas.add(n);
+        }
       }
       if (f.documento) {
         docsValidos.add(f.documento.toLowerCase().trim());

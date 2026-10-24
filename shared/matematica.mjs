@@ -810,7 +810,7 @@ export function procesarConsultaMatematica(texto) {
   }
 
   // Suma
-  const mSuma = t.match(/(?:cu[aá]nto\s+es\s+|suma\s+)?([0-9\.,]+)\s*[\+]\s*([0-9\.,]+)/i);
+  const mSuma = t.match(/(?:cu[aá]nto\s+es\s+|suma\s+)?([0-9\.,]+)\s*(?:[\+]|\bm[aá]s\b)\s*([0-9\.,]+)/i);
   if (mSuma) {
     const res = resolverSuma(mSuma[1], mSuma[2]);
     return {
@@ -827,7 +827,7 @@ export function procesarConsultaMatematica(texto) {
   }
 
   // Resta
-  const mResta = t.match(/(?:cu[aá]nto\s+es\s+|resta\s+)?([0-9\.,]+)\s*[\-−]\s*([0-9\.,]+)/i);
+  const mResta = t.match(/(?:cu[aá]nto\s+es\s+|resta\s+)?([0-9\.,]+)\s*(?:[\-−]|\bmenos\b)\s*([0-9\.,]+)/i);
   if (mResta) {
     const res = resolverResta(mResta[1], mResta[2]);
     return {
@@ -844,7 +844,7 @@ export function procesarConsultaMatematica(texto) {
   }
 
   // Multiplicación
-  const mMult = t.match(/(?:cu[aá]nto\s+es\s+|multiplica\s+)?([0-9\.,]+)\s*[\*×x]\s*([0-9\.,]+)/i);
+  const mMult = t.match(/(?:cu[aá]nto\s+es\s+|multiplica\s+)?([0-9\.,]+)\s*(?:[\*×x]|\bpor\b)\s*([0-9\.,]+)/i);
   if (mMult) {
     const res = resolverMultiplicacion(mMult[1], mMult[2]);
     return {
@@ -861,7 +861,7 @@ export function procesarConsultaMatematica(texto) {
   }
 
   // División
-  const mDiv = t.match(/(?:cu[aá]nto\s+es\s+|divide\s+)?([0-9\.,]+)\s*[\/÷:]\s*([0-9\.,]+)/i);
+  const mDiv = t.match(/(?:cu[aá]nto\s+es\s+|divide\s+)?([0-9\.,]+)\s*(?:[\/÷:]|\b(?:entre|dividido\s+entre)\b)\s*([0-9\.,]+)/i);
   if (mDiv) {
     const res = resolverDivision(mDiv[1], mDiv[2]);
     if (res.error) {

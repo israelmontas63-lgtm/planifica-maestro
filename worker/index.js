@@ -1548,6 +1548,46 @@ async function handleApiRequest(request, env, ctx) {
       return responderWorker({ data: respCharla, estado: "charla" });
     }
 
+    // 2.0. MODO RECHAZO DETERMINISTA DE SEGURIDAD / CLAVES / ORDENANZAS / INGLÉS
+    if (clasificacion.categoria === "seguridad") {
+      return responderWorker({
+        data: {
+          mensaje_chat: clasificacion.mensaje_rechazo || "Como asistente pedagógico del MINERD, no comparto claves de API ni credenciales internas por motivos de seguridad.",
+          plan_completado: false,
+          modo: "seguridad",
+          categoria: "seguridad",
+          datos_planificacion: null
+        },
+        estado: "conversando"
+      });
+    }
+
+    if (clasificacion.categoria === "ordenanza_rechazo") {
+      return responderWorker({
+        data: {
+          mensaje_chat: clasificacion.mensaje_rechazo || "No invento ordenanzas ni normativas oficiales. Solo consulto y aplico las normativas oficiales vigentes del MINERD.",
+          plan_completado: false,
+          modo: "ordenanza_rechazo",
+          categoria: "ordenanza_rechazo",
+          datos_planificacion: null
+        },
+        estado: "conversando"
+      });
+    }
+
+    if (clasificacion.categoria === "ingles") {
+      return responderWorker({
+        data: {
+          mensaje_chat: clasificacion.mensaje_chat || "Hello! I can help you plan your class according to the MINERD official curriculum. What grade and subject would you like to plan for?",
+          plan_completado: false,
+          modo: "charla",
+          categoria: "charla",
+          datos_planificacion: null
+        },
+        estado: "conversando"
+      });
+    }
+
     // 2. MODO ACCION DE APP -> Respuesta local inmediata
     if (clasificacion.categoria === "accion_app") {
       return responderWorker({

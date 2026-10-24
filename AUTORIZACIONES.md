@@ -141,4 +141,9 @@
 - **Frase Textual del Dueño:** `"actuliza la pwa" - "Incrementar la versión de caché de Workbox (v3) y recompilar antes de desplegar"`
 - **Estado:** APLICADA
 
-
+### Autorización 026
+- **Fecha:** 2026-10-24
+- **Componentes:** `shared/clasificadorIntencion.js`, `shared/matematica.mjs`, `worker/index.js`, `worker/verificadorCitas.js`, `server/curriculum/verificadorCitas.js`, `PROTEGIDO.hashes.json`
+- **Motivo:** Corrección de anomalías residuales de Cierre 025: soporte de rangos de páginas en verificador de citas (`extraerPaginasDeFragmentos`), rechazo de seguridad determinista ante peticiones de claves de API/tokens (`B24`, `B24b`), rechazo de invención de ordenanzas oficiales (`B25`), respuesta en inglés para consultas en inglés (`B11`) y soporte de operadores verbales ('más', 'menos', 'por', 'entre') en tutor matemático.
+- **Frase Textual del Dueño:** `"precede"`
+- **Estado:** APLICADA
