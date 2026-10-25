@@ -41,8 +41,27 @@ class ErrorBoundary extends React.Component {
 
   render() {
     if (this.state.hasError) {
-      const mensajeError = this.state.error?.message || String(this.state.error || 'Error desconocido');
-      const stackError = this.state.error?.stack || '';
+      const err = this.state.error;
+      const mensajeError = err?.message || String(err || 'Error desconocido');
+      const stackError = err?.stack || '';
+
+      let codigoError = 'ERR_RUNTIME';
+      let tituloDiagnostico = 'Incidencia en la aplicación';
+      let descripcionCausa = 'Ocurrió un error inesperado al renderizar este componente.';
+
+      if (mensajeError.includes('Failed to fetch') || mensajeError.includes('dynamically imported module') || mensajeError.includes('preloadError')) {
+        codigoError = 'ERR_VERSION_DESFASADA';
+        tituloDiagnostico = 'Actualización disponible en la nube';
+        descripcionCausa = 'El navegador intentó cargar un componente de una versión previa guardada en caché.';
+      } else if (mensajeError.includes('NetworkError') || mensajeError.includes('Failed to fetch')) {
+        codigoError = 'ERR_CONEXION_RED';
+        tituloDiagnostico = 'Problema de conexión con el servidor';
+        descripcionCausa = 'No se pudo contactar al servidor. Comprueba tu señal de datos o wifi.';
+      } else if (err?.name) {
+        codigoError = err.name;
+        tituloDiagnostico = `Incidencia: ${err.name}`;
+        descripcionCausa = mensajeError.length > 120 ? `${mensajeError.substring(0, 120)}...` : mensajeError;
+      }
 
       return (
         <div style={{
@@ -79,12 +98,49 @@ class ErrorBoundary extends React.Component {
               ⚠️
             </div>
 
-            <h2 style={{ fontSize: '17px', fontWeight: '700', color: '#0f172a', margin: '0 0 6px 0' }}>
-              Algo no cargó correctamente
+            <h2 style={{ fontSize: '17px', fontWeight: '700', color: '#0f172a', margin: '0 0 4px 0' }}>
+              {tituloDiagnostico}
             </h2>
-            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 18px 0', lineHeight: '1.45' }}>
-              Suele ocurrir si tu teléfono tiene guardada una versión anterior de la app en memoria caché.
+            <div style={{
+              display: 'inline-block',
+              fontSize: '11px',
+              fontFamily: 'monospace',
+              padding: '2px 8px',
+              background: '#f1f5f9',
+              color: '#475569',
+              borderRadius: '6px',
+              marginBottom: '10px'
+            }}>
+              Código: {codigoError}
+            </div>
+            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px 0', lineHeight: '1.45' }}>
+              {descripcionCausa}
             </p>
+
+            <button
+              type='button'
+              onClick={() => this.setState({ hasError: false, error: null, errorInfo: null })}
+              style={{
+                width: '100%',
+                padding: '11px 16px',
+                background: '#0284c7',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '10px',
+                fontWeight: '600',
+                fontSize: '13px',
+                cursor: 'pointer',
+                marginBottom: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                boxShadow: '0 2px 4px rgba(2, 132, 199, 0.2)'
+              }}
+            >
+              <span>↩️</span>
+              <span>Reintentar componente (sin perder datos)</span>
+            </button>
 
             <button
               type='button'

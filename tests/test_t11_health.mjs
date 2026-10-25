@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tests/test_t11_health.mjs
  * Validación T11: /api/health protegido o en estado mínimo; detalle y chequeo de tablas solo con x-owner-key.
  */
@@ -46,12 +46,27 @@ test("T11: /api/health público es mínimo y no consulta tablas de Supabase", as
       headers: { "x-owner-key": "owner-super-secreta-test" }
     });
     const resOwner = await worker.fetch(reqOwner, envTest, { waitUntil: () => {} });
-    assert.strictEqual(resOwner.status, 200);
     const dataOwner = await resOwner.json();
-
     assert.strictEqual(dataOwner.services.auth, "activa");
     assert.strictEqual(dataOwner.services.owner, "configurada");
     assert.ok(llamadasSupabase >= 11, `Dueño debe auditar las tablas en Supabase (llamadas: ${llamadasSupabase})`);
+
+    // 3. Petición con readiness=1 consulta filas de currículo
+    const reqReady = new Request("http://localhost/api/health?readiness=1", { method: "GET" });
+    const resReady = await worker.fetch(reqReady, envTest, { waitUntil: () => {} });
+    assert.strictEqual(resReady.status, 200);
+    const dataReady = await resReady.json();
+    assert.strictEqual(dataReady.status, "ok");
+    assert.strictEqual(dataReady.readiness, "listo");
+
+    // 4. Petición sin variables de Supabase debe devolver 503 (no listo / en memoria)
+    const envSinDb = { ...envTest, SUPABASE_URL: undefined, SUPABASE_SERVICE_ROLE_KEY: undefined };
+    const reqSinDb = new Request("http://localhost/api/health", { method: "GET" });
+    const resSinDb = await worker.fetch(reqSinDb, envSinDb, { waitUntil: () => {} });
+    assert.strictEqual(resSinDb.status, 503);
+    const dataSinDb = await resSinDb.json();
+    assert.strictEqual(dataSinDb.status, "no_listo");
+    assert.strictEqual(dataSinDb.services.database, "en_memoria");
   } finally {
     globalThis.fetch = originalFetch;
   }

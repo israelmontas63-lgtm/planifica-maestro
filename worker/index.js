@@ -884,7 +884,82 @@ async function handleApiRequest(request, env, ctx) {
       timingSafeEqualStr(ownerKey.trim(), env.OWNER_MASTER_KEY.trim())
     );
 
-    // Estado público mínimo sin consultas pesadas de red a Supabase
+    const dbConfigurada = Boolean(env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY);
+    const dbEstado = dbConfigurada ? "ok" : "en_memoria";
+    const esReadinessCheck = url.searchParams.get("readiness") === "1" || url.searchParams.get("ready") === "1";
+
+    // Si la base de datos está en memoria (sin credenciales Supabase), no estamos listos para producción
+    if (!dbConfigurada) {
+      return new Response(JSON.stringify({
+        status: "no_listo",
+        worker: "cloudflare-workers",
+        timestamp: new Date().toISOString(),
+        error: "Base de datos en memoria (SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY no configurados)",
+        tablas_disponibles: [],
+        services: {
+          text_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
+          vision_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
+          ocr_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
+          voice_mode: "browser_speechSynthesis",
+          database: "en_memoria",
+          ia_apagada: (await verificarIaApagada(env)) ? "apagada" : "activa",
+        }
+      }, null, 2), {
+        status: 503,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Consulta de readiness pública (solicitada explícitamente con ?readiness=1)
+    if (esReadinessCheck && !isOwner) {
+      let curriculoFilas = 0;
+      try {
+        const countRes = await fetch(`${env.SUPABASE_URL}/rest/v1/curriculo_secuencias?select=id`, {
+          method: "GET",
+          headers: {
+            apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+            Prefer: "count=exact",
+            Range: "0-0",
+          },
+        });
+        if (countRes.ok) {
+          const rangeHeader = countRes.headers.get("content-range");
+          if (rangeHeader) {
+            const match = rangeHeader.match(/\/(\d+)$/);
+            if (match) curriculoFilas = parseInt(match[1], 10);
+          } else {
+            curriculoFilas = 1;
+          }
+        }
+      } catch (e) {
+        console.warn("[Health] Error en conteo de curriculo para readiness:", e?.message || e);
+      }
+
+      const listo = curriculoFilas > 0;
+      const statusCode = listo ? 200 : 503;
+      return new Response(JSON.stringify({
+        status: listo ? "ok" : "no_listo",
+        worker: "cloudflare-workers",
+        readiness: listo ? "listo" : "sin_curriculo",
+        timestamp: new Date().toISOString(),
+        curriculo_filas: curriculoFilas,
+        tablas_disponibles: listo ? ["curriculo_secuencias"] : [],
+        services: {
+          text_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
+          vision_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
+          ocr_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
+          voice_mode: "browser_speechSynthesis",
+          database: dbEstado,
+          ia_apagada: (await verificarIaApagada(env)) ? "apagada" : "activa",
+        }
+      }, null, 2), {
+        status: statusCode,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Estado público mínimo sin consultas pesadas de red a Supabase (cumple T11)
     if (!isOwner) {
       return new Response(JSON.stringify({
         status: "ok",
@@ -896,7 +971,7 @@ async function handleApiRequest(request, env, ctx) {
           vision_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
           ocr_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
           voice_mode: "browser_speechSynthesis",
-          database: (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) ? "ok" : "en_memoria",
+          database: dbEstado,
           ia_apagada: (await verificarIaApagada(env)) ? "apagada" : "activa",
         }
       }, null, 2), {
@@ -906,7 +981,8 @@ async function handleApiRequest(request, env, ctx) {
 
     // Detalle completo y auditoría de tablas en Supabase SOLO para el propietario
     let tablasDisponibles = [];
-    if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
+    let curriculoFilas = 0;
+    if (dbConfigurada) {
       const tablasToCheck = [
         "curriculo_secuencias",
         "calendario_escolar_oficial",
@@ -928,10 +1004,19 @@ async function handleApiRequest(request, env, ctx) {
               headers: {
                 apikey: env.SUPABASE_SERVICE_ROLE_KEY,
                 Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+                Prefer: "count=exact",
+                Range: "0-0",
               },
             });
             if (checkRes.ok) {
               tablasDisponibles.push(tabla);
+              if (tabla === "curriculo_secuencias") {
+                const rangeHeader = checkRes.headers.get("content-range");
+                if (rangeHeader) {
+                  const match = rangeHeader.match(/\/(\d+)$/);
+                  if (match) curriculoFilas = parseInt(match[1], 10);
+                }
+              }
             }
           } catch (e) {
             console.warn(`[Health] Error comprobando tabla ${tabla}:`, e?.message || e);
@@ -945,20 +1030,23 @@ async function handleApiRequest(request, env, ctx) {
       vision_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
       ocr_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
       voice_mode: "browser_speechSynthesis",
-      database: (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) ? "ok" : "en_memoria",
+      database: dbEstado,
       ia_apagada: (await verificarIaApagada(env)) ? "apagada" : "activa",
       auth: env.APP_ACCESS_KEY ? "activa" : "abierta",
       owner: env.OWNER_MASTER_KEY ? "configurada" : "sin_configurar"
     };
 
+    const isDegraded = tablasDisponibles.length === 0;
     const health = {
-      status: "ok",
+      status: isDegraded ? "degraded" : "ok",
       worker: "cloudflare-workers",
       timestamp: new Date().toISOString(),
       tablas_disponibles: tablasDisponibles,
+      curriculo_filas: curriculoFilas,
       services,
     };
     return new Response(JSON.stringify(health, null, 2), {
+      status: isDegraded ? 503 : 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

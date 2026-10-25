@@ -12,6 +12,8 @@ test("GUARDIA DE SEGURIDAD API - requerirAcceso (Fail-Closed, 401, Sanitización
     APP_ACCESS_KEY: validAppKey,
     OWNER_MASTER_KEY: validOwnerKey,
     GEMINI_API_KEY: "fake_gemini",
+    SUPABASE_URL: "https://ejemplo-minerd.supabase.co",
+    SUPABASE_SERVICE_ROLE_KEY: "fake_service_role",
   };
 
   const protectedRoutes = [
@@ -119,15 +121,31 @@ test("GUARDIA DE SEGURIDAD API - requerirAcceso (Fail-Closed, 401, Sanitización
     assert.ok(dataHealthPub.services.text_ai, "/api/health debe contener services.text_ai");
 
     // 5b. Petición de propietario con x-owner-key válida
-    const reqHealthOwner = new Request("http://localhost/api/health", {
-      method: "GET",
-      headers: { "x-owner-key": validOwnerKey },
-    });
-    const resHealthOwner = await worker.fetch(reqHealthOwner, defaultEnv);
-    assert.equal(resHealthOwner.status, 200);
-    const dataHealthOwner = await resHealthOwner.json();
-    assert.equal(dataHealthOwner.services.auth, "activa", "/api/health con x-owner-key debe exponer services.auth");
-    assert.equal(dataHealthOwner.services.owner, "configurada", "/api/health con x-owner-key debe exponer services.owner");
+    const origFetch = globalThis.fetch;
+    globalThis.fetch = async (url, opts) => {
+      const urlStr = String(url);
+      if (urlStr.includes("supabase.co") || urlStr.includes("/rest/v1/")) {
+        return new Response(JSON.stringify([{ id: "mock" }]), {
+          status: 200,
+          headers: { "Content-Type": "application/json", "content-range": "0-0/78" }
+        });
+      }
+      return origFetch(url, opts);
+    };
+
+    try {
+      const reqHealthOwner = new Request("http://localhost/api/health", {
+        method: "GET",
+        headers: { "x-owner-key": validOwnerKey },
+      });
+      const resHealthOwner = await worker.fetch(reqHealthOwner, defaultEnv);
+      assert.equal(resHealthOwner.status, 200);
+      const dataHealthOwner = await resHealthOwner.json();
+      assert.equal(dataHealthOwner.services.auth, "activa", "/api/health con x-owner-key debe exponer services.auth");
+      assert.equal(dataHealthOwner.services.owner, "configurada", "/api/health con x-owner-key debe exponer services.owner");
+    } finally {
+      globalThis.fetch = origFetch;
+    }
   });
 
   await t.test("6. Rutas públicas permanecen accesibles sin x-app-key", async () => {

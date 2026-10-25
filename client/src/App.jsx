@@ -1091,6 +1091,52 @@ export default function App() {
           </div>
         )}
 
+        {/* Banner de Actualización PWA Disponible */}
+        {updatePending && (
+          <div
+            className="no-print"
+            style={{
+              background: "#0d9488",
+              color: "#ffffff",
+              padding: "10px 14px",
+              borderRadius: "10px",
+              fontSize: "13px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "10px",
+              margin: "8px 4px",
+              boxShadow: "0 4px 12px rgba(13, 148, 136, 0.25)",
+              animation: "fadeIn 0.3s ease"
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontSize: "18px" }}>✨</span>
+              <span>
+                <strong>¡Nueva versión disponible!</strong> Hay mejoras curriculares listas.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={aplicarActualizacionPWA}
+              style={{
+                background: "#ffffff",
+                color: "#0f766e",
+                border: "none",
+                borderRadius: "8px",
+                padding: "6px 14px",
+                fontSize: "12px",
+                fontWeight: "700",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+              }}
+            >
+              🔄 Actualizar ahora
+            </button>
+          </div>
+        )}
+
         {/* FASE A: Saludo vivo contextual con tipografía serifa y efecto máquina de escribir */}
         {messages.length === 0 && !cargando && !listening && (
           <HomeGreeting 

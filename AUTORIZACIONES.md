@@ -145,5 +145,16 @@
 - **Fecha:** 2026-10-24
 - **Componentes:** `shared/clasificadorIntencion.js`, `shared/matematica.mjs`, `worker/index.js`, `worker/verificadorCitas.js`, `server/curriculum/verificadorCitas.js`, `PROTEGIDO.hashes.json`
 - **Motivo:** Corrección de anomalías residuales de Cierre 025: soporte de rangos de páginas en verificador de citas (`extraerPaginasDeFragmentos`), rechazo de seguridad determinista ante peticiones de claves de API/tokens (`B24`, `B24b`), rechazo de invención de ordenanzas oficiales (`B25`), respuesta en inglés para consultas en inglés (`B11`) y soporte de operadores verbales ('más', 'menos', 'por', 'entre') en tutor matemático.
-- **Frase Textual del Dueño:** `"Hazlo paso a paso. Número uno, registrar la autorización formal, sellar la guardia. Número dos, hacer git push origin. Número tres, funcional. Número cuatro, desplegar los artefactos a producción. Una vez que vayas a hacerlo todo, vuelve y verifica que no haya ningún fallo y que lo que tú dices es real, no fallo, no parche, 100% veraz y real."`
+- **Estado:** APLICADA
+
+### Autorización 027
+- **Fecha:** 2026-10-24
+- **Componentes:** `scripts/deploy.js`, `worker/index.js`, `tests/test_t11_health.mjs`, `client/src/components/ErrorBoundary.jsx`, `client/vite.config.js`, `client/src/App.jsx`, `client/public/version.json`, `PROTEGIDO.hashes.json`
+- **Motivo:** Implementación de las 8 mejoras prioritarias:
+  1. `/version.json` verídico con commit hash, fecha, `cache_version: "planifica-maestro-v3"`, `build_id` y cabeceras estrictas no-cache.
+  2. `/api/health` separando 'vivo' de 'listo': HTTP 503 cuando la base de datos está en memoria o en degradación, soporte de `?readiness=1` reportando `curriculo_filas` (156 secuencias en Supabase) preservando compatibilidad con `test_t11_health.mjs`.
+  3. Diagnóstico claro en `ErrorBoundary.jsx` con código de error, tipología de fallo y botón no destructivo de reintento de componente sin perder datos.
+  4. PWA manifest calibrado a `lang: "es-DO"` y renderizado de banner visible de actualización en `App.jsx`.
+- **Frase Textual del Dueño:** `"Mejoras, por prioridad: Que /version.json y /api/health digan la verdad... Separar “vivo” de “listo”... Pasar el SQL pendiente... Service worker con estrategia clara..."` (Aprobación formal del Implementation Plan).
 - **Estado:** EN PROCESO
+

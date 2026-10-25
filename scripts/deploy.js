@@ -42,12 +42,15 @@ try {
 const versionInfo = {
   commit: commitHash,
   fecha: new Date().toISOString(),
+  cache_version: "planifica-maestro-v3",
+  build_id: `pm-${commitHash}-${Date.now()}`,
+  ambiente: "produccion",
   nombre: "Planifica Maestro PWA"
 };
 
 const versionJsonPath = path.resolve("client/dist/version.json");
 fs.writeFileSync(versionJsonPath, JSON.stringify(versionInfo, null, 2));
-console.log(`📌 [AutoDeploy] dist/version.json generado para commit: ${commitHash}`);
+console.log(`📌 [AutoDeploy] dist/version.json generado para commit: ${commitHash} con cache_version: planifica-maestro-v3`);
 
 console.log("🚀 [AutoDeploy] Desplegando y activando en Cloudflare Workers al 100%...");
 execSync(`npx wrangler deploy --keep-vars --message "deploy ${commitHash}"`, {

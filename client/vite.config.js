@@ -57,7 +57,7 @@ export default defineConfig({
         name: "Planifica Maestro",
         short_name: "PlanificaMaestro",
         description: "Planificación docente con IA: dictado, foto y texto, alineada al currículo oficial MINERD y programa CON BASE.",
-        lang: "es",
+        lang: "es-DO",
         id: "/",
         start_url: "/",
         scope: "/",
