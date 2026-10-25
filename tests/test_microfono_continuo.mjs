@@ -304,4 +304,25 @@ test("MICRÓFONO SIN CORTE AUTOMÁTICO (CAMBIO C)", async (t) => {
     assert.ok(hookCode.includes("siguiente >= 300"), "Debe verificar tope de 300 segundos (5 minutos)");
     assert.ok(appCode.includes("El dictado se detuvo automáticamente tras 5 minutos continuos por seguridad"), "App.jsx debe notificar el tope de 5 minutos");
   });
+
+  await t.test("8. Modo continuo estricto con bandera isRecordingRef y no-speech como pausa natural", () => {
+    assert.ok(hookCode.includes("recognition.continuous = true"), "Debe tener continuous en true");
+    assert.ok(hookCode.includes("recognition.interimResults = true"), "Debe tener interimResults en true");
+    assert.ok(hookCode.includes("isRecordingRef"), "Debe gestionar la bandera isRecordingRef");
+    assert.ok(hookCode.includes("event.resultIndex"), "Debe iterar desde event.resultIndex para evitar duplicar palabras");
+    assert.ok(hookCode.includes("unirSinDuplicar"), "Debe usar función para desduplicar palabras en Android");
+    assert.ok(hookCode.includes("Pausa detectada ('no-speech')"), "no-speech debe ser tratado como pausa natural sin detener la grabación");
+  });
+
+  await t.test("9. Mensajes claros y amigables en español para not-allowed, no-speech y network", () => {
+    assert.ok(hookCode.includes("Permiso de micrófono denegado. Por favor, habilita el acceso"), "Mensaje de not-allowed debe ser amigable");
+    assert.ok(hookCode.includes("No se detectó voz en el micrófono"), "Mensaje de no-speech debe ser claro");
+    assert.ok(hookCode.includes("Falla de red en el servicio de voz del navegador"), "Mensaje de network debe ser claro");
+  });
+
+  await t.test("10. El dictado NUNCA se envía automáticamente al parar: queda en el cuadro de texto editable", () => {
+    assert.ok(appCode.includes("handleAbrirTexto(textoNormalizado, \"Revisa tu planificación antes de enviar\")"), "Al parar el dictado debe abrir el cuadro de texto editable");
+    assert.ok(!appCode.includes("else {\n      fuePorVozRef.current = true;\n      setEntendidoVoz({\n        tipo: \"directo\",\n        texto: textoNormalizado,\n        analisis,\n        bajaConfianza: false,\n        enviado: true\n      });\n      const textToSend = textoNormalizado;\n      enviarMensaje(textToSend);\n    }"), "No debe existir bloque que envíe automáticamente al terminar el dictado");
+    assert.ok(appCode.includes("forzarEnvio: true"), "El envío solo se dispara cuando el docente pulsa explícitamente Enviar");
+  });
 });

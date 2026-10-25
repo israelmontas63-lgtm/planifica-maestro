@@ -678,7 +678,7 @@ export default function App() {
     }
   }
 
-  const handleFinDictado = useCallback((res) => {
+  const handleFinDictado = useCallback((res, { forzarEnvio = false } = {}) => {
     const rawText = (typeof res === "string" ? res : res?.text || transcript).trim();
     if (!rawText) return;
 
@@ -696,24 +696,7 @@ export default function App() {
       ultimoTiempoDictadoRef.current = `${analisis.minutosNum} minutos`;
     }
 
-    if (confirmarVozAntes) {
-      // Switch encendido: mostrar tarjeta editable previa con botones Generar y Corregir
-      setEntendidoVoz({
-        tipo: "confirmacion_previa",
-        texto: textoNormalizado,
-        analisis,
-        bajaConfianza: Boolean(res?.isLowConfidence),
-        enviado: false
-      });
-    } else if (res?.isLowConfidence) {
-      setEntendidoVoz({
-        tipo: "baja_confianza",
-        texto: textoNormalizado,
-        analisis,
-        bajaConfianza: true,
-        enviado: false
-      });
-    } else {
+    if (forzarEnvio) {
       fuePorVozRef.current = true;
       setEntendidoVoz({
         tipo: "directo",
@@ -724,8 +707,20 @@ export default function App() {
       });
       const textToSend = textoNormalizado;
       enviarMensaje(textToSend);
+      return;
     }
-  }, [transcript, confirmarVozAntes]);
+
+    // NUNCA enviar automáticamente sin que el docente pulse Enviar.
+    // El texto dictado queda en el cuadro de texto editable y modal, esperando acción explícita.
+    setEntendidoVoz({
+      tipo: "confirmacion_previa",
+      texto: textoNormalizado,
+      analisis,
+      bajaConfianza: Boolean(res?.isLowConfidence),
+      enviado: false
+    });
+    handleAbrirTexto(textoNormalizado, "Revisa tu planificación antes de enviar");
+  }, [transcript]);
 
   useEffect(() => {
     handleFinDictadoRef.current = handleFinDictado;
@@ -1453,7 +1448,7 @@ export default function App() {
                   }}
                   onClick={() => {
                     const res = stop();
-                    handleFinDictado(res);
+                    handleFinDictado(res, { forzarEnvio: true });
                   }}
                   disabled={!transcript?.trim()}
                 >
@@ -1550,7 +1545,8 @@ export default function App() {
                       const txt = entendidoVoz.texto;
                       setEntendidoVoz(null);
                       fuePorVozRef.current = true;
-                      enviarMensaje(txt);
+                      const textToSend = txt;
+                      enviarMensaje(textToSend);
                     }}
                   >
                     ✅ Generar
@@ -1585,7 +1581,8 @@ export default function App() {
                       const txt = entendidoVoz.texto;
                       setEntendidoVoz(null);
                       fuePorVozRef.current = true;
-                      enviarMensaje(txt);
+                      const textToSend = txt;
+                      enviarMensaje(textToSend);
                     }}
                   >
                     ✅ Enviar

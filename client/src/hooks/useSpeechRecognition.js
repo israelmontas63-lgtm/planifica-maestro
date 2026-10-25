@@ -30,6 +30,7 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
   const accumulatedTextRef = useRef("");
   const sessionFinalRef = useRef("");
   const isExplicitStopRef = useRef(false);
+  const isRecordingRef = useRef(false);
   const silenceTimerRef = useRef(null);
   const silenceTimeoutRef = useRef(silenceTimeout);
   const onSilenceStopRef = useRef(onSilenceStop);
@@ -65,6 +66,7 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
   }, []);
 
   const stop = useCallback(() => {
+    isRecordingRef.current = false;
     isExplicitStopRef.current = true;
     clearSilenceTimer();
     if (recognitionRef.current) {
@@ -79,9 +81,7 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
     setListening(false);
     setInterimTranscript("");
 
-    const finalText = [accumulatedTextRef.current, sessionFinalRef.current]
-      .filter(Boolean)
-      .join(" ")
+    const finalText = accumulatedTextRef.current
       .replace(/\s+/g, " ")
       .trim();
 
@@ -153,6 +153,48 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
+  /**
+   * Concatena fragmentos de voz previniendo duplicaciones en Chrome Android
+   * (tanto cuando el motor reenvía cadenas acumulativas completas como cuando envía fragmentos incrementales).
+   */
+  const unirSinDuplicar = (textoActual, nuevoFragmento) => {
+    const actual = (textoActual || "").trim();
+    const nuevo = (nuevoFragmento || "").trim();
+    if (!actual) return nuevo;
+    if (!nuevo) return actual;
+
+    // Si el nuevo fragmento ya contiene al actual desde el inicio (transcripción acumulativa del motor)
+    if (nuevo.toLowerCase().startsWith(actual.toLowerCase())) {
+      return nuevo;
+    }
+
+    // Si el texto actual ya termina exactamente con el nuevo fragmento (evento repetido)
+    if (actual.toLowerCase().endsWith(nuevo.toLowerCase())) {
+      return actual;
+    }
+
+    // Si hay solapamiento al final del actual y principio del nuevo (Android jitter)
+    const palabrasActual = actual.split(/\s+/);
+    const palabrasNuevo = nuevo.split(/\s+/);
+    let solapamiento = 0;
+    const maxCheck = Math.min(palabrasActual.length, palabrasNuevo.length, 6);
+    for (let k = maxCheck; k >= 1; k--) {
+      const finActual = palabrasActual.slice(-k).join(" ").toLowerCase();
+      const iniNuevo = palabrasNuevo.slice(0, k).join(" ").toLowerCase();
+      if (finActual === iniNuevo) {
+        solapamiento = k;
+        break;
+      }
+    }
+
+    if (solapamiento > 0) {
+      const restoNuevo = palabrasNuevo.slice(solapamiento).join(" ");
+      return restoNuevo ? `${actual} ${restoNuevo}` : actual;
+    }
+
+    return `${actual} ${nuevo}`;
+  };
+
   const initRecognitionInstance = useCallback(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) return null;
@@ -169,29 +211,27 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
     };
 
     recognition.onresult = (event) => {
-      let finalStr = "";
       let interimStr = "";
 
-      for (let i = 0; i < event.results.length; i++) {
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
         const item = event.results[i];
-        const piece = item[0]?.transcript || "";
+        const piece = (item[0]?.transcript || "").trim();
         if (item.isFinal) {
-          finalStr += piece;
+          if (piece) {
+            accumulatedTextRef.current = unirSinDuplicar(accumulatedTextRef.current, piece);
+          }
           if (typeof item[0]?.confidence === "number" && item[0].confidence > 0) {
             confidenceSumRef.current += item[0].confidence;
             confidenceCountRef.current++;
           }
         } else {
-          interimStr += piece;
+          interimStr += (item[0]?.transcript || "");
         }
       }
 
-      const finalClean = finalStr.trim();
+      const fullFinal = accumulatedTextRef.current.replace(/\s+/g, " ").trim();
       const interimClean = interimStr.trim();
-      sessionFinalRef.current = finalClean;
-
-      const fullFinal = [accumulatedTextRef.current, finalClean].filter(Boolean).join(" ").replace(/\s+/g, " ");
-      const fullPreview = [fullFinal, interimClean].filter(Boolean).join(" ").replace(/\s+/g, " ");
+      const fullPreview = [fullFinal, interimClean].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
 
       confirmedTextRef.current = fullFinal;
       setFinalTranscript(fullFinal);
@@ -204,6 +244,7 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
     };
 
     function handleErrorTerminal(codigoError) {
+      isRecordingRef.current = false;
       isExplicitStopRef.current = true;
       if (recognitionRef.current) {
         try { recognitionRef.current.abort(); } catch (err) {}
@@ -217,9 +258,11 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
 
       let errorMsg = "Error en el reconocimiento de voz. Puedes escribir tu consulta directamente.";
       if (codigoError === "network") {
-        errorMsg = "No pude conectar con el servicio de voz de tu navegador. Puedes reintentar, grabar y transcribir, o escribir tu consulta.";
+        errorMsg = "Falla de red en el servicio de voz del navegador. Verifica tu conexión a internet o escribe tu consulta.";
       } else if (codigoError === "not-allowed") {
-        errorMsg = "Permiso de micrófono denegado. Habilítalo en los ajustes del navegador o escribe tu consulta.";
+        errorMsg = "Permiso de micrófono denegado. Por favor, habilita el acceso al micrófono en los ajustes del navegador o escribe tu consulta.";
+      } else if (codigoError === "no-speech") {
+        errorMsg = "No se detectó voz en el micrófono. Pulsa el micrófono para hablar o escribe tu consulta.";
       } else if (codigoError === "service-not-allowed") {
         errorMsg = "El servicio de reconocimiento de voz no está habilitado en este navegador o modo PWA. Puedes grabar y transcribir o escribir tu consulta.";
       } else if (codigoError === "audio-capture") {
@@ -238,24 +281,29 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
       lastErrorRef.current = e.error;
       console.log("🎙️ [SpeechRecognition] onerror:", e.error);
 
-      // 1b: no-speech y aborted NO son errores graves: no mostrar error en UI
-      if (e.error === "no-speech" || e.error === "aborted") {
-        isExplicitStopRef.current = true;
-        setListening(false);
-        setInterimTranscript("");
-        if (activeStreamRef.current) {
-          activeStreamRef.current.getTracks().forEach((track) => track.stop());
-          activeStreamRef.current = null;
-        }
+      // Pausa natural en Android: Chrome emite 'no-speech' al pausar 1-2s. NO es fin de grabación.
+      if (e.error === "no-speech") {
+        console.log("🎙️ [SpeechRecognition] Pausa detectada ('no-speech'). Manteniendo grabación activa.");
         return;
       }
 
-      // 1c: Para 'network': un solo reintento automático tras 1 segundo, sin bucles
+      if (e.error === "aborted") {
+        if (!isRecordingRef.current) {
+          setListening(false);
+          setInterimTranscript("");
+          return;
+        }
+        console.log("🎙️ [SpeechRecognition] Transición 'aborted' con grabación activa, permitiendo reinicio.");
+        return;
+      }
+
+      // Para 'network': un solo reintento automático tras 1 segundo
       if (e.error === "network" && !networkRetryAttemptedRef.current) {
         networkRetryAttemptedRef.current = true;
         console.warn("🎙️ [SpeechRecognition] Error 'network'. Reintentando automáticamente en 1s...");
         setListening(false);
         setTimeout(() => {
+          if (!isRecordingRef.current || isExplicitStopRef.current) return;
           try {
             if (recognitionRef.current) {
               try { recognitionRef.current.abort(); } catch (err) {}
@@ -279,24 +327,18 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
 
     recognition.onend = () => {
       clearSilenceTimer();
-      console.log("🎙️ [SpeechRecognition] onend (último error:", lastErrorRef.current, ")");
+      console.log("🎙️ [SpeechRecognition] onend (isRecording:", isRecordingRef.current, "isExplicitStop:", isExplicitStopRef.current, "último error:", lastErrorRef.current, ")");
 
       // Si el usuario tocó parar conscientemente o hubo error terminal, no reiniciar
-      if (isExplicitStopRef.current) {
+      if (!isRecordingRef.current || isExplicitStopRef.current) {
         setListening(false);
         setInterimTranscript("");
-        const fullFinal = [accumulatedTextRef.current, sessionFinalRef.current].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+        const fullFinal = accumulatedTextRef.current.replace(/\s+/g, " ").trim();
         setTranscript(fullFinal);
         return;
       }
 
-      // Consolidar el texto de la sesión actual en el acumulador sin duplicar
-      if (sessionFinalRef.current) {
-        accumulatedTextRef.current = [accumulatedTextRef.current, sessionFinalRef.current].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
-        sessionFinalRef.current = "";
-      }
-
-      // El 'no-speech' es una pausa natural o silencio, NO debe contar como fallo rápido
+      // El 'no-speech' es una pausa natural del docente en Android, NO cuenta como fallo rápido
       const eraNoSpeech = lastErrorRef.current === "no-speech";
       lastErrorRef.current = null;
 
@@ -312,13 +354,14 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
 
       if (rapidRestartsRef.current >= 5) {
         console.warn("Límite de reinicios automáticos consecutivos alcanzado (5). Deteniendo micrófono.");
+        isRecordingRef.current = false;
         setListening(false);
         setInterimTranscript("");
-        setTranscript(accumulatedTextRef.current);
+        setTranscript(accumulatedTextRef.current.replace(/\s+/g, " ").trim());
         return;
       }
 
-      // Reinicio automático transparente para mantener el micrófono activo el tiempo que el usuario necesite
+      // Reinicio automático inmediato para mantener el micrófono activo mientras el docente dicta
       try {
         const nextInstance = initRecognitionInstance();
         if (nextInstance) {
@@ -327,11 +370,26 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
           setListening(true);
           resetSilenceTimer();
         } else {
+          isRecordingRef.current = false;
           setListening(false);
         }
       } catch (err) {
         console.warn("Error al reiniciar SpeechRecognition automáticamente:", err);
-        setListening(false);
+        setTimeout(() => {
+          if (isRecordingRef.current && !isExplicitStopRef.current) {
+            try {
+              const retryInstance = initRecognitionInstance();
+              if (retryInstance) {
+                recognitionRef.current = retryInstance;
+                retryInstance.start();
+                setListening(true);
+                resetSilenceTimer();
+              }
+            } catch (retryErr) {
+              console.warn("Fallo reintento secundario de SpeechRecognition:", retryErr);
+            }
+          }
+        }, 150);
       }
     };
 
@@ -389,6 +447,7 @@ export function useSpeechRecognition({ silenceTimeout = 0, onSilenceStop = null,
       } catch (e) {}
     }
 
+    isRecordingRef.current = true;
     isExplicitStopRef.current = false;
     accumulatedTextRef.current = "";
     sessionFinalRef.current = "";

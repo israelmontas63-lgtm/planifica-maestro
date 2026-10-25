@@ -155,6 +155,18 @@
   2. `/api/health` separando 'vivo' de 'listo': HTTP 503 cuando la base de datos está en memoria o en degradación, soporte de `?readiness=1` reportando `curriculo_filas` (156 secuencias en Supabase) preservando compatibilidad con `test_t11_health.mjs`.
   3. Diagnóstico claro en `ErrorBoundary.jsx` con código de error, tipología de fallo y botón no destructivo de reintento de componente sin perder datos.
   4. PWA manifest calibrado a `lang: "es-DO"` y renderizado de banner visible de actualización en `App.jsx`.
-- **Frase Textual del Dueño:** `"Mejoras, por prioridad: Que /version.json y /api/health digan la verdad... Separar “vivo” de “listo”... Pasar el SQL pendiente... Service worker con estrategia clara..."` (Aprobación formal del Implementation Plan).
-- **Estado:** EN PROCESO
+- **Estado:** APLICADA
+
+### Autorización 028
+- **Fecha:** 2026-10-24
+- **Componentes:** `client/vite.config.js`, `scripts/deploy.js`, `client/public/version.json`, `tests/test_t12_sw_cache_version.mjs`, `client/src/hooks/useSpeechRecognition.js`, `client/src/App.jsx`, `tests/test_microfono_continuo.mjs`, `PROTEGIDO.hashes.json`
+- **Motivo:** Actualización de PWA a versión de caché Workbox v4 y corrección del dictado por voz continuo en Chrome Android:
+  1. Activación de bandera `isRecordingRef` y prevención de corte por pausa (`no-speech` tratado como pausa natural del docente).
+  2. Acumulación sin duplicación mediante `unirSinDuplicar` y lectura desde `event.resultIndex`.
+  3. Desactivación de envío automático al terminar dictado: el texto se presenta editable en el cuadro de texto / modal y solo se envía cuando el docente pulsa "Enviar" / "Generar".
+  4. Mensajes amigables y claros en español para permisos (`not-allowed`), pausas (`no-speech`) y red (`network`).
+- **Frase Textual del Dueño:** `"En Chrome Android, el micrófono corta la frase cuando el docente hace una pausa y no espera a que termine de hablar. El método correcto es este: el docente habla todo lo que necesite, el texto va apareciendo en pantalla mientras dicta, y SOLO cuando él pulse Enviar se manda el texto completo al robot."`
+- **Estado:** APLICADA
+
+
 

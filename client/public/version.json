@@ -1,7 +1,7 @@
 {
   "commit": "local",
   "fecha": "2026-10-24T00:00:00.000Z",
-  "cache_version": "planifica-maestro-v3",
+  "cache_version": "planifica-maestro-v4",
   "build_id": "pm-local",
   "ambiente": "desarrollo",
   "nombre": "Planifica Maestro PWA"
