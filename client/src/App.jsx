@@ -39,6 +39,10 @@ const RegistroCalificacionesModal = lazy(() => import("./components/RegistroCali
 const AccessGate = lazy(() => import("./components/AccessGate.jsx"));
 const OjoVisorCamara = lazy(() => import("./components/OjoVisorCamara.jsx"));
 const EditorImagenModal = lazy(() => import("./components/EditorImagenModal.jsx"));
+const AcercaModal = lazy(() => import("./components/AcercaModal.jsx"));
+const BottomNavFlotante = lazy(() => import("./components/BottomNavFlotante.jsx"));
+const MenuSheetModal = lazy(() => import("./components/MenuSheetModal.jsx"));
+import { useTema } from "./hooks/useTema.js";
 import { verificarAccesoAutorizado } from "./components/AccessGate.jsx";
 
 export default function App() {
@@ -112,6 +116,28 @@ export default function App() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [notificacionSync, setNotificacionSync] = useState(null);
   const [estadoCuota, setEstadoCuota] = useState(null);
+  const [vistaNueva, setVistaNueva] = useState(() => {
+    try {
+      const v = localStorage.getItem("pm_vista_nueva");
+      return v === "true"; // Por defecto vista clásica (false) para despliegues de prueba
+    } catch (e) {
+      // Fallback seguro a vista clásica si localStorage no está disponible
+      return false;
+    }
+  });
+  const { modoTema, aplicarTema } = useTema();
+  const [menuSheetOpen, setMenuSheetOpen] = useState(false);
+  const [acercaModalOpen, setAcercaModalOpen] = useState(false);
+
+  const alternarVista = () => {
+    const prox = !vistaNueva;
+    setVistaNueva(prox);
+    try {
+      localStorage.setItem("pm_vista_nueva", String(prox));
+    } catch (e) {
+      // Silencioso si localStorage está restringido en navegación privada
+    }
+  };
 
   const refrescarContadorNotificaciones = useCallback(() => {
     try {
@@ -993,6 +1019,7 @@ export default function App() {
         onAbrirNotificaciones={() => { setNotificacionesOpen(true); setMenuOpen(false); }}
         onAbrirConfiguracion={() => { setConfiguracionOpen(true); setMenuOpen(false); }}
         contadorNotificaciones={contadorNotificaciones}
+        onAbrirMenuSheet={vistaNueva ? () => setMenuSheetOpen(true) : undefined}
       />
       
       <section className="pm-title-card no-print">
@@ -1830,6 +1857,18 @@ export default function App() {
         </footer>
       </div>
       
+      {vistaNueva ? (
+        <Suspense fallback={null}>
+          <BottomNavFlotante
+            onFoto={() => setOjoVisorOpen(true)}
+            onDictar={handleDictadoClick}
+            listening={listening}
+            duracionTexto={tiempoTranscurrido}
+            onHistorial={() => setBibliotecaOpen(true)}
+            onAcerca={() => setAcercaModalOpen(true)}
+          />
+        </Suspense>
+      ) : (
       <BottomPanel
         periodoActivo={periodo}
         nivelActivo={nivel}
@@ -1855,7 +1894,32 @@ export default function App() {
         onInstallApp={handleInstallApp}
         onAbrirConfiguracion={() => { setConfiguracionOpen(true); setMenuOpen(false); }}
         onAbrirAyuda={() => { setAyudaOpen(true); setMenuOpen(false); }}
+        onToggleVista={alternarVista}
       />
+      )}
+
+      <Suspense fallback={null}>
+        <MenuSheetModal
+          isOpen={menuSheetOpen}
+          onClose={() => setMenuSheetOpen(false)}
+          modoTema={modoTema}
+          onCambiarTema={aplicarTema}
+          onAbrirAcerca={() => setAcercaModalOpen(true)}
+          vistaNueva={vistaNueva}
+          onToggleVista={alternarVista}
+          onAbrirPerfil={() => setPerfilOpen(true)}
+          onAbrirConfiguracion={() => setConfiguracionOpen(true)}
+        />
+      </Suspense>
+
+      {acercaModalOpen && (
+        <Suspense fallback={null}>
+          <AcercaModal
+            onCerrar={() => setAcercaModalOpen(false)}
+            onAplicarActualizacion={aplicarActualizacionPWA}
+          />
+        </Suspense>
+      )}
       
       {authModalOpen && isAuthEnabled && (
         <Suspense fallback={null}>

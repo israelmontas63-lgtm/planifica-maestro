@@ -339,7 +339,8 @@ export default function BottomPanel({
   canInstall,
   onInstallApp,
   onAbrirConfiguracion,
-  onAbrirAyuda
+  onAbrirAyuda,
+  onToggleVista
 }) {
   // Acordeón: solo una sección abierta a la vez. Abierta al cargar: diaria
   const [openSection, setOpenSection] = useState("diaria");
@@ -752,6 +753,27 @@ export default function BottomPanel({
                           <DownloadIcon />
                         </div>
                         <span>Instalar aplicación</span>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* Probar nueva interfaz de inicio (Rollback / Toggle) - Oculto en producción hasta completar Fase 2 */}
+                  {onToggleVista && import.meta.env.DEV && (
+                    <button
+                      type="button"
+                      className="pm-link-row pm-touch-row"
+                      style={{ color: "var(--pm-pri, #0f9d76)", fontWeight: "600" }}
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onToggleVista();
+                      }}
+                      title="Probar la nueva interfaz de inicio simplificada"
+                    >
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <div className="pm-link-icon-box" style={{ backgroundColor: "rgba(15, 157, 118, 0.15)", color: "var(--pm-pri, #0f9d76)" }}>
+                          ✨
+                        </div>
+                        <span>Cambiar a Nueva Interfaz</span>
                       </div>
                     </button>
                   )}

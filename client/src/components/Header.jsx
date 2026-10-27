@@ -34,7 +34,8 @@ export default function Header({
   onInstallApp,
   onAbrirNotificaciones,
   onAbrirConfiguracion,
-  contadorNotificaciones = 0
+  contadorNotificaciones = 0,
+  onAbrirMenuSheet
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
@@ -166,7 +167,13 @@ export default function Header({
           <button
             type="button"
             className="pm-avatar-btn"
-            onClick={() => setOpen((o) => !o)}
+            onClick={() => {
+              if (onAbrirMenuSheet) {
+                onAbrirMenuSheet();
+              } else {
+                setOpen((o) => !o);
+              }
+            }}
             title={
               isOwner 
                 ? "👑 Modo Propietario (Acceso Ilimitado)" 

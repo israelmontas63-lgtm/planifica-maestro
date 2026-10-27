@@ -168,5 +168,26 @@
 - **Frase Textual del Dueño:** `"En Chrome Android, el micrófono corta la frase cuando el docente hace una pausa y no espera a que termine de hablar. El método correcto es este: el docente habla todo lo que necesite, el texto va apareciendo en pantalla mientras dicta, y SOLO cuando él pulse Enviar se manda el texto completo al robot."`
 - **Estado:** APLICADA
 
+### Autorización 029
+- **Fecha:** 25/10/2026 (Actualizada 26/10/2026 4:56 p.m. con segunda edición acotada)
+- **Componentes:** `client/src/App.jsx`, `client/src/hooks/useTema.js`, `client/src/components/Header.jsx`, `client/src/components/BottomPanel.jsx`, `client/src/index.css`, `client/src/components/BottomNavFlotante.jsx`, `client/src/components/MenuSheetModal.jsx`, `client/src/components/AcercaModal.jsx`, `client/package.json`, `client/package-lock.json`, `client/src/test/bloque1_componentes_reales.test.jsx`, `client/index.html`, `client/src/components/WizardStepper.jsx`, `PROTEGIDO.hashes.json`
+- **Componentes Afectados en Bloque 1:**
+  - `client/src/App.jsx` (PROTEGIDO - primera edición: extracción de tema a `useTema.js`, Suspense en `BottomNavFlotante` y `MenuSheetModal`, comentarios en catch y preservación de indentación de `BottomPanel`; segunda edición: `onAbrirMenuSheet` condicionado a `vistaNueva ? () => setMenuSheetOpen(true) : undefined` para preservar el menú original del avatar en vista clásica)
+  - `client/src/hooks/useTema.js` (No protegido - nuevo hook para centralizar modoTema, aplicarTema, efecto data-theme y pm_tema)
+  - `client/src/components/Header.jsx` (No protegido)
+  - `client/src/components/BottomPanel.jsx` (No protegido - botón nueva interfaz oculto en producción con `import.meta.env.DEV`)
+  - `client/src/index.css` (No protegido)
+  - `client/src/components/BottomNavFlotante.jsx` (No protegido - nuevo)
+  - `client/src/components/MenuSheetModal.jsx` (No protegido - nuevo; fila rollback condicionada con `import.meta.env.DEV && onToggleVista`)
+  - `client/src/components/AcercaModal.jsx` (No protegido - nuevo para vista de versión y actualización PWA)
+  - `client/package.json` y `client/package-lock.json` (No protegidos - adición de `@testing-library/dom` como devDependency requerida por `@testing-library/react` para montaje real en JSDOM con Vitest)
+  - `client/src/test/bloque1_componentes_reales.test.jsx` (No protegido - nuevo)
+- **Componentes de Tarea Previa (24/10/2026 - Viewport y Textos Cortados, a segregar en commit previo):**
+  - `client/index.html` (No protegido - corrección de meta viewport sin restricción forzada de zoom para accesibilidad y evitar cortes en móvil)
+  - `client/src/components/WizardStepper.jsx` (No protegido - sustitución de espacio por `&nbsp;▾` para evitar salto de línea huérfano en chevron)
+- **Motivo:** Integración del Bloque 1: estructura general, tokens CSS de tema centralizados con `useTema.js`, barra inferior flotante de 3 botones (Foto, Dictar, Historial) con versión interactiva verídica, hoja modal de menú desplegable desde el avatar preservando menú clásico y bloqueando puerta de producción, e interruptor de rollback en desarrollo.
+- **Frase Textual del Dueño:** `"procede"` (25/10/2026) y segunda edición: `"AUTORIZO UNA SEGUNDA EDICIÓN ACOTADA DE client/src/App.jsx (dentro de la Autorización 029)"` (26/10/2026 4:56 p.m.)
+- **Estado:** APLICADA
+
 
 

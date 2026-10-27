@@ -816,11 +816,13 @@ body {
   padding: 6px 10px;
   border-radius: 10px;
   border: 1px solid #e2e8f0;
+  flex-shrink: 0;
 }
 .pm-switch-label {
   font-size: 11.5px;
   font-weight: 700;
   color: #475569;
+  white-space: nowrap;
 }
 .pm-switch input { display: none; }
 .pm-switch-track { width: 34px; height: 18px; background: #CBD5E1; border-radius: 10px; position: relative; transition: 0.25s; }
@@ -921,13 +923,16 @@ body {
   font-weight: 700;
   color: #1A2B3C;
   line-height: 1.2;
-  white-space: normal;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .pm-step-chevron {
   font-size: 0.75rem;
   color: #1a7d8c;
+  white-space: nowrap;
+  display: inline;
 }
 
 .pm-step-detalle {
@@ -1131,6 +1136,10 @@ body {
     gap: 4px;
     padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px)) 6px;
   }
+}
+
+.pm-chat-container {
+  padding-bottom: calc(115px + env(safe-area-inset-bottom, 0px)) !important;
 }
 
 .pm-menu-backdrop {
@@ -4435,10 +4444,238 @@ body {
   color: #92400e;
 }
 
+/* ══════════════════════════════════════════════════════════════
+   BLOQUE 1: TOKENS CENTRALIZADOS DE DISEÑO (referencia: html rr.html)
+   ══════════════════════════════════════════════════════════════ */
+:root {
+  --pm-bg: #f4f8f6;
+  --pm-card: #ffffff;
+  --pm-ink: #12304a;
+  --pm-mut: #546576;
+  --pm-line: #d9e4df;
+  --pm-pri: #0f9d76;
+  --pm-on: #ffffff;
+  --pm-soft: #e2f5ed;
+  --pm-err: #fdeaea;
+  --pm-errk: #8f1d1d;
+  --pm-sh: 0 6px 20px rgba(18, 48, 74, 0.12);
+  --pm-bottom-nav-height: 84px;
+}
 
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --pm-bg: #0e1a22;
+    --pm-card: #16262f;
+    --pm-ink: #e8f1f5;
+    --pm-mut: #9db0bc;
+    --pm-line: #26404d;
+    --pm-pri: #2cc596;
+    --pm-on: #06241a;
+    --pm-soft: #12362c;
+    --pm-err: #3a1a1a;
+    --pm-errk: #ffb4b4;
+    --pm-sh: 0 6px 20px rgba(0, 0, 0, 0.5);
+  }
+}
 
+:root[data-theme="dark"] {
+  --pm-bg: #0e1a22;
+  --pm-card: #16262f;
+  --pm-ink: #e8f1f5;
+  --pm-mut: #9db0bc;
+  --pm-line: #26404d;
+  --pm-pri: #2cc596;
+  --pm-on: #06241a;
+  --pm-soft: #12362c;
+  --pm-err: #3a1a1a;
+  --pm-errk: #ffb4b4;
+  --pm-sh: 0 6px 20px rgba(0, 0, 0, 0.5);
+}
 
+:root[data-theme="light"] {
+  --pm-bg: #f4f8f6;
+  --pm-card: #ffffff;
+  --pm-ink: #12304a;
+  --pm-mut: #546576;
+  --pm-line: #d9e4df;
+  --pm-pri: #0f9d76;
+  --pm-on: #ffffff;
+  --pm-soft: #e2f5ed;
+  --pm-err: #fdeaea;
+  --pm-errk: #8f1d1d;
+  --pm-sh: 0 6px 20px rgba(18, 48, 74, 0.12);
+}
 
+/* Espaciado de seguridad inferior estricto para modo standalone Android */
+.pm-chat-container,
+.pm-pantalla-inicio {
+  padding-bottom: calc(125px + env(safe-area-inset-bottom, 0px)) !important;
+}
 
+/* Barra inferior flotante fija de 3 botones (html rr.html) */
+.pm-nav-flotante {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--pm-card);
+  border-top: 1px solid var(--pm-line);
+  padding: 6px 8px calc(4px + env(safe-area-inset-bottom, 0px));
+  z-index: 1000;
+  box-shadow: var(--pm-sh);
+}
 
+.pm-nav-flotante-inner {
+  max-width: 480px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: end;
+  justify-items: center;
+}
 
+.pm-nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 0;
+  min-height: 56px;
+  background: none;
+  border: none;
+  color: var(--pm-ink);
+  cursor: pointer;
+  width: 100%;
+}
+
+.pm-nav-btn svg {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pm-nav-btn.pm-nav-mic {
+  margin-top: -26px;
+}
+
+.pm-nav-btn.pm-nav-mic .pm-nav-mic-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--pm-pri);
+  color: var(--pm-on);
+  display: grid;
+  place-items: center;
+  box-shadow: var(--pm-sh);
+  border: 4px solid var(--pm-card);
+  transition: transform 0.15s ease, background-color 0.2s ease;
+}
+
+.pm-nav-btn.pm-nav-mic.recording .pm-nav-mic-circle {
+  background: #e11d48;
+  animation: pm-pulse 1.5s infinite;
+}
+
+@keyframes pm-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.pm-nav-version {
+  display: block;
+  width: 100%;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--pm-mut);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 0 0 0;
+  min-height: 22px;
+}
+
+.pm-nav-version:hover {
+  text-decoration: underline;
+}
+
+/* Hoja Modal de Menú (Sheet modal desde el avatar) */
+.pm-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 15, 22, 0.55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 2000;
+  animation: pm-fade-in 0.2s ease-out;
+}
+
+.pm-sheet-modal {
+  background: var(--pm-bg);
+  color: var(--pm-ink);
+  width: 100%;
+  max-width: 480px;
+  max-height: 88vh;
+  overflow-y: auto;
+  border-radius: 24px 24px 0 0;
+  padding: 20px 18px calc(24px + env(safe-area-inset-bottom, 0px));
+  box-shadow: var(--pm-sh);
+  animation: pm-slide-up 0.25s ease-out;
+}
+
+@keyframes pm-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pm-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.pm-sheet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.pm-sheet-header h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.pm-sheet-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--pm-line);
+  font-size: 0.95rem;
+  width: 100%;
+  background: none;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.pm-sheet-select {
+  border-radius: 10px;
+  border: 1px solid var(--pm-line);
+  background: var(--pm-card);
+  color: var(--pm-ink);
+  padding: 6px 10px;
+  font-size: 0.9rem;
+}
