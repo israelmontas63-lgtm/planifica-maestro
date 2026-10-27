@@ -86,7 +86,7 @@ export default function WizardStepper({
                 <span className="pm-step-titulo">
                   <span className="pm-step-label-short">{p.tituloCorto}</span>
                   <span className="pm-step-label-full">{p.titulo}</span>
-                  {p.clickable && <span className="pm-step-chevron"> ▾</span>}
+                  {p.clickable && <span className="pm-step-chevron">&nbsp;▾</span>}
                 </span>
                 <span className="pm-step-detalle">
                   <span className="pm-step-label-short">{p.detalleCorto}</span>
