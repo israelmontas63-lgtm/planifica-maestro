@@ -189,5 +189,12 @@
 - **Frase Textual del Dueño:** `"procede"` (25/10/2026) y segunda edición: `"AUTORIZO UNA SEGUNDA EDICIÓN ACOTADA DE client/src/App.jsx (dentro de la Autorización 029)"` (26/10/2026 4:56 p.m.)
 - **Estado:** APLICADA
 
-
-
+### Autorización 030
+- **Fecha:** 28/10/2026
+- **Componentes:** `client/src/App.jsx`, `client/src/index.css`
+- **Componentes Afectados en Bloque 1:**
+  - `client/src/App.jsx` (PROTEGIDO - agregar useEffect para alternar clase pm-vista-nueva en body, y condicionar renderizado de MenuSheetModal a vistaNueva)
+  - `client/src/index.css` (No protegido - restaurar reglas clásicas de .pm-switch, .pm-switch-label, .pm-step-titulo y .pm-step-chevron; eliminar regla de 115px; limitar espaciado de 125px a body.pm-vista-nueva)
+- **Motivo:** Corrección de vista clásica: restaurar reglas CSS originales, limitar padding inferior a body.pm-vista-nueva, montar MenuSheetModal solo con vistaNueva.
+- **Frase Textual del Dueño:** `"ORDEN 030 - CORRECCIÓN DE VISTA CLÁSICA (EDICIÓN PERMITIDA SOLO EN LOS 2 ARCHIVOS INDICADOS)"` y `"ORDEN 031 - REGISTRO DE AUTORIZACIÓN 030, COMMIT Y SELLADO (AUTORIZADA POR EL DUEÑO AL PEGAR ESTA ORDEN)"`
+- **Estado:** APLICADA

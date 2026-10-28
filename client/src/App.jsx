@@ -139,6 +139,11 @@ export default function App() {
     }
   };
 
+  useEffect(() => {
+    document.body.classList.toggle("pm-vista-nueva", vistaNueva);
+    return () => document.body.classList.remove("pm-vista-nueva");
+  }, [vistaNueva]);
+
   const refrescarContadorNotificaciones = useCallback(() => {
     try {
       const c = obtenerConteoNotificacionesNoLeidas({ userId: user?.id });
@@ -1898,19 +1903,21 @@ export default function App() {
       />
       )}
 
-      <Suspense fallback={null}>
-        <MenuSheetModal
-          isOpen={menuSheetOpen}
-          onClose={() => setMenuSheetOpen(false)}
-          modoTema={modoTema}
-          onCambiarTema={aplicarTema}
-          onAbrirAcerca={() => setAcercaModalOpen(true)}
-          vistaNueva={vistaNueva}
-          onToggleVista={alternarVista}
-          onAbrirPerfil={() => setPerfilOpen(true)}
-          onAbrirConfiguracion={() => setConfiguracionOpen(true)}
-        />
-      </Suspense>
+      {vistaNueva && (
+        <Suspense fallback={null}>
+          <MenuSheetModal
+            isOpen={menuSheetOpen}
+            onClose={() => setMenuSheetOpen(false)}
+            modoTema={modoTema}
+            onCambiarTema={aplicarTema}
+            onAbrirAcerca={() => setAcercaModalOpen(true)}
+            vistaNueva={vistaNueva}
+            onToggleVista={alternarVista}
+            onAbrirPerfil={() => setPerfilOpen(true)}
+            onAbrirConfiguracion={() => setConfiguracionOpen(true)}
+          />
+        </Suspense>
+      )}
 
       {acercaModalOpen && (
         <Suspense fallback={null}>

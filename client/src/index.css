@@ -816,13 +816,11 @@ body {
   padding: 6px 10px;
   border-radius: 10px;
   border: 1px solid #e2e8f0;
-  flex-shrink: 0;
 }
 .pm-switch-label {
   font-size: 11.5px;
   font-weight: 700;
   color: #475569;
-  white-space: nowrap;
 }
 .pm-switch input { display: none; }
 .pm-switch-track { width: 34px; height: 18px; background: #CBD5E1; border-radius: 10px; position: relative; transition: 0.25s; }
@@ -923,16 +921,13 @@ body {
   font-weight: 700;
   color: #1A2B3C;
   line-height: 1.2;
-  white-space: nowrap;
+  white-space: normal;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .pm-step-chevron {
   font-size: 0.75rem;
   color: #1a7d8c;
-  white-space: nowrap;
-  display: inline;
 }
 
 .pm-step-detalle {
@@ -1138,9 +1133,6 @@ body {
   }
 }
 
-.pm-chat-container {
-  padding-bottom: calc(115px + env(safe-area-inset-bottom, 0px)) !important;
-}
 
 .pm-menu-backdrop {
   position: fixed;
@@ -4506,9 +4498,9 @@ body {
   --pm-sh: 0 6px 20px rgba(18, 48, 74, 0.12);
 }
 
-/* Espaciado de seguridad inferior estricto para modo standalone Android */
-.pm-chat-container,
-.pm-pantalla-inicio {
+/* Espaciado inferior SOLO en vista nueva (la barra flotante tapa el contenido) */
+body.pm-vista-nueva .pm-chat-container,
+body.pm-vista-nueva .pm-pantalla-inicio {
   padding-bottom: calc(125px + env(safe-area-inset-bottom, 0px)) !important;
 }
 
