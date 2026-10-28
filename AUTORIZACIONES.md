@@ -198,3 +198,10 @@
 - **Motivo:** Corrección de vista clásica: restaurar reglas CSS originales, limitar padding inferior a body.pm-vista-nueva, montar MenuSheetModal solo con vistaNueva.
 - **Frase Textual del Dueño:** `"ORDEN 030 - CORRECCIÓN DE VISTA CLÁSICA (EDICIÓN PERMITIDA SOLO EN LOS 2 ARCHIVOS INDICADOS)"` y `"ORDEN 031 - REGISTRO DE AUTORIZACIÓN 030, COMMIT Y SELLADO (AUTORIZADA POR EL DUEÑO AL PEGAR ESTA ORDEN)"`
 - **Estado:** APLICADA
+
+### Autorización 031
+- **Fecha:** 28/10/2026
+- **Componentes:** `client/src/App.jsx`, `client/src/components/Header.jsx`, `client/src/services/pwaManager.js`
+- **Motivo:** Actualización automática de la PWA (autoUpdate, skipWaiting, clientsClaim, búsqueda periódica y recarga al tomar control) y entrada Acerca de y actualización en el menú de la vista clásica
+- **Frase Textual del Dueño:** `"ORDEN 036 - PWA CON ACTUALIZACIÓN AUTOMÁTICA + BOTÓN DE ACTUALIZACIÓN EN VISTA CLÁSICA + DESPLIEGUE + PUSH"`
+- **Estado:** APLICADA

@@ -34,6 +34,7 @@ export default function Header({
   onInstallApp,
   onAbrirNotificaciones,
   onAbrirConfiguracion,
+  onAbrirAcerca,
   contadorNotificaciones = 0,
   onAbrirMenuSheet
 }) {
@@ -304,6 +305,14 @@ export default function Header({
                     >
                       ⚙️ Configuración (v2.0)
                     </button>
+                    {onAbrirAcerca && (
+                      <button
+                        type="button"
+                        onClick={() => { setOpen(false); onAbrirAcerca?.(); }}
+                      >
+                        🔄 Acerca de y actualización
+                      </button>
+                    )}
                     <button
                       type="button"
                       className="logout-btn"
@@ -366,6 +375,14 @@ export default function Header({
                     >
                       ⚙️ Configuración (v2.0)
                     </button>
+                    {onAbrirAcerca && (
+                      <button
+                        type="button"
+                        onClick={() => { setOpen(false); onAbrirAcerca?.(); }}
+                      >
+                        🔄 Acerca de y actualización
+                      </button>
+                    )}
                   </div>
                 </>
               )}

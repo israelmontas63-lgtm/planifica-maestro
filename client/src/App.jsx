@@ -1023,6 +1023,7 @@ export default function App() {
         onInstallApp={installPrompt ? handleInstallApp : null}
         onAbrirNotificaciones={() => { setNotificacionesOpen(true); setMenuOpen(false); }}
         onAbrirConfiguracion={() => { setConfiguracionOpen(true); setMenuOpen(false); }}
+        onAbrirAcerca={() => { setAcercaModalOpen(true); setMenuOpen(false); }}
         contadorNotificaciones={contadorNotificaciones}
         onAbrirMenuSheet={vistaNueva ? () => setMenuSheetOpen(true) : undefined}
       />

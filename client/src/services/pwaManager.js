@@ -22,6 +22,24 @@ let isReloading = false;
 let updateSWFn = null;
 let currentRegistration = null;
 
+// Actualización automática tipo app nativa
+const teniaControlador = !!(navigator.serviceWorker && navigator.serviceWorker.controller);
+let recargando = false;
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!teniaControlador || recargando) return;
+    recargando = true;
+    window.location.reload();
+  });
+  const buscarActualizacion = () => {
+    navigator.serviceWorker.getRegistration().then((r) => { if (r) r.update().catch(() => {}); }).catch(() => {});
+  };
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") buscarActualizacion();
+  });
+  setInterval(buscarActualizacion, 30 * 60 * 1000);
+}
+
 /**
  * Recarga la aplicación protegiendo contra bucles infinitos en sessionStorage
  */
