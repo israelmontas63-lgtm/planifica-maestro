@@ -56,9 +56,28 @@ export function explicarFallo({ codigo, detalle = "", datos = {} } = {}) {
   if (cod === "CURRICULO_SIN_DATOS") {
     const g = fmtGrado(d.grado);
     const donde = [d.area, g].filter(Boolean).join(" de ");
-    motivo = `No encontré el tema "${d.tema || "indicado"}"${donde ? ` en ${donde}` : ""} dentro del currículo oficial cargado.`;
-    for (const t of lista(d.cercanos).slice(0, 4)) {
-      opciones.push({ texto: `Planificar "${t}"`, mensaje: `Quiero la planificación de ${d.area || ""} ${g} tema ${t}`.replace(/\s+/g, " ").trim() });
+    motivo = d.motivo || `No encontré el tema "${d.tema || "indicado"}"${donde ? ` en ${donde}` : ""} dentro del currículo oficial cargado.`;
+    if (d.queFalta) {
+      queFalta = d.queFalta;
+    }
+    if (Array.isArray(d.opciones)) {
+      opciones.push(...d.opciones);
+    } else {
+      for (const t of lista(d.cercanos).slice(0, 4)) {
+        const matchGrado = typeof t === "string" && t.match(/^(.+?)\s*\(([1-6]\.º)\)$/);
+        if (matchGrado) {
+          const [, titulo, gVecino] = matchGrado;
+          opciones.push({
+            texto: `Planificar "${titulo}" (${gVecino})`,
+            mensaje: `Quiero la planificación de ${d.area || ""} ${gVecino} tema ${titulo}`.replace(/\s+/g, " ").trim()
+          });
+        } else {
+          opciones.push({
+            texto: `Planificar "${t}"`,
+            mensaje: `Quiero la planificación de ${d.area || ""} ${g} tema ${t}`.replace(/\s+/g, " ").trim()
+          });
+        }
+      }
     }
   }
   if (cod === "CONFLICTO_AREA_TEMA") {

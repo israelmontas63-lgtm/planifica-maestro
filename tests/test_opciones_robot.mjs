@@ -270,3 +270,183 @@ test('5. Autodiagnóstico: omite "Probar otra vez" sin mensajeUsuario y la inclu
   assert.ok(optCambiar, 'Debe incluir opción "Cambiar el tema"');
   assert.strictEqual(optCambiar.mensaje, 'Muéstrame temas de Ciencias Sociales 2.º');
 });
+
+// ============================================================================
+// (6) Opción de grado vecino: mensaje con el grado real y sin "(n.º)"
+// ============================================================================
+test('6. Opción de grado vecino: mensaje contiene el grado del tema vecino y NO contiene "(1.º)" ni "(3.º)"', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, opts) => {
+    const urlStr = String(url);
+    if (urlStr.includes('curriculo_secuencias')) {
+      if (urlStr.includes('grado_num=eq.2')) {
+        return {
+          ok: true,
+          json: async () => [
+            { source_id: 'SEC-CS-2', tema: 'El barrio, el paraje y los símbolos patrios' }
+          ]
+        };
+      }
+      if (urlStr.includes('grado_num=eq.1')) {
+        return {
+          ok: true,
+          json: async () => [
+            { source_id: 'SEC-CS-1', tema: 'La familia, la escuela y la comunidad' }
+          ]
+        };
+      }
+      if (urlStr.includes('grado_num=eq.3')) {
+        return {
+          ok: true,
+          json: async () => [
+            { source_id: 'SEC-CS-3', tema: 'El municipio y la provincia' }
+          ]
+        };
+      }
+    }
+    return originalFetch(url, opts);
+  };
+
+  try {
+    const envWithSupabase = {
+      ...envBase,
+      SUPABASE_URL: 'https://test-curriculo.supabase.co',
+      SUPABASE_ANON_KEY: 'test-anon-key'
+    };
+
+    const req = new Request('https://planifica-maestro.test.workers.dev/api/plan/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-app-key': 'clave-institucional-test'
+      },
+      body: JSON.stringify({
+        messages: [{ role: 'user', text: 'Quiero la planificación de ciencias sociales de 2.º tema la familia' }]
+      })
+    });
+
+    const res = await worker.fetch(req, envWithSupabase, { waitUntil: () => {} });
+    assert.strictEqual(res.status, 200);
+    const data = await res.json();
+
+    assert.strictEqual(data.codigo, 'CURRICULO_SIN_DATOS');
+    assert.ok(Array.isArray(data.opciones), 'Debe tener opciones');
+
+    // Buscar la opción del grado vecino 1.º
+    const optVecino1 = data.opciones.find((o) => o.texto.includes('(1.º)'));
+    assert.ok(optVecino1, 'Debe existir una opción para el tema de 1.º');
+    assert.ok(optVecino1.mensaje.includes('1.º'), `El mensaje debe contener 1.º: ${optVecino1.mensaje}`);
+    assert.ok(!optVecino1.mensaje.includes('(1.º)'), `El mensaje NO debe tener el sufijo "(1.º)": ${optVecino1.mensaje}`);
+    assert.ok(!optVecino1.mensaje.includes('(3.º)'), `El mensaje NO debe tener el sufijo "(3.º)": ${optVecino1.mensaje}`);
+    assert.strictEqual(
+      optVecino1.mensaje,
+      'Quiero la planificación de Ciencias Sociales 1.º tema La familia, la escuela y la comunidad'
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+// ============================================================================
+// (7) Área y grado sin datos: motivo empieza por "No tengo secuencias cargadas de",
+//     incluye área y grado, y opciones solo tienen grados con datos
+// ============================================================================
+test('7. Área y grado sin datos: motivo empieza por "No tengo secuencias cargadas de", incluye área y grado, y opciones solo tienen grados que sí tienen datos', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, opts) => {
+    const urlStr = String(url);
+    if (urlStr.includes('curriculo_secuencias')) {
+      if (urlStr.includes('grado_num=eq.5') && urlStr.includes('area=eq.Lengua%20Espa%C3%B1ola')) {
+        return { ok: true, json: async () => [] };
+      }
+      if (urlStr.includes('select=grado_num')) {
+        return {
+          ok: true,
+          json: async () => [{ grado_num: 1 }, { grado_num: 2 }, { grado_num: 3 }]
+        };
+      }
+    }
+    return originalFetch(url, opts);
+  };
+
+  try {
+    const envWithSupabase = {
+      ...envBase,
+      SUPABASE_URL: 'https://test-curriculo.supabase.co',
+      SUPABASE_ANON_KEY: 'test-anon-key'
+    };
+
+    const req = new Request('https://planifica-maestro.test.workers.dev/api/plan/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-app-key': 'clave-institucional-test'
+      },
+      body: JSON.stringify({
+        messages: [{ role: 'user', text: 'Quiero la planificación de lengua española de 5.º tema el cuento' }]
+      })
+    });
+
+    const res = await worker.fetch(req, envWithSupabase, { waitUntil: () => {} });
+    assert.strictEqual(res.status, 200);
+    const data = await res.json();
+
+    assert.strictEqual(data.codigo, 'CURRICULO_SIN_DATOS');
+    assert.ok(data.motivo.startsWith('No tengo secuencias cargadas de'), `Motivo debe empezar por "No tengo secuencias cargadas de": ${data.motivo}`);
+    assert.ok(data.motivo.includes('Lengua Española'), `Motivo debe incluir el área: ${data.motivo}`);
+    assert.ok(data.motivo.includes('5.º'), `Motivo debe incluir el grado pedido: ${data.motivo}`);
+    assert.ok(data.motivo.includes('Sí tengo Lengua Española en: 1.º, 2.º, 3.º'), `Motivo debe listar los grados disponibles: ${data.motivo}`);
+
+    assert.ok(Array.isArray(data.opciones), 'Debe tener opciones');
+    assert.strictEqual(data.opciones.length, 3);
+    assert.ok(data.opciones.every((o) => ['1.º', '2.º', '3.º'].some((g) => o.texto.includes(g))));
+    assert.ok(!data.opciones.some((o) => o.texto.includes('5.º')), 'No debe incluir el grado sin datos');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+// ============================================================================
+// (8) Área sin ningún dato en ningún grado: sin opciones
+// ============================================================================
+test('8. Área sin ningún dato en ningún grado: sin opciones', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, opts) => {
+    const urlStr = String(url);
+    if (urlStr.includes('curriculo_secuencias')) {
+      return { ok: true, json: async () => [] };
+    }
+    return originalFetch(url, opts);
+  };
+
+  try {
+    const envWithSupabase = {
+      ...envBase,
+      SUPABASE_URL: 'https://test-curriculo.supabase.co',
+      SUPABASE_ANON_KEY: 'test-anon-key'
+    };
+
+    const req = new Request('https://planifica-maestro.test.workers.dev/api/plan/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-app-key': 'clave-institucional-test'
+      },
+      body: JSON.stringify({
+        messages: [{ role: 'user', text: 'Quiero la planificación de educación física de 2.º tema calentamiento' }]
+      })
+    });
+
+    const res = await worker.fetch(req, envWithSupabase, { waitUntil: () => {} });
+    assert.strictEqual(res.status, 200);
+    const data = await res.json();
+
+    assert.strictEqual(data.codigo, 'CURRICULO_SIN_DATOS');
+    assert.ok(data.motivo.startsWith('No tengo secuencias cargadas de'), `Motivo debe empezar por "No tengo secuencias cargadas de": ${data.motivo}`);
+    assert.strictEqual(data.motivo, 'No tengo secuencias cargadas de Educación Física en ningún grado.');
+    assert.ok(Array.isArray(data.opciones), 'Debe tener arreglo de opciones');
+    assert.strictEqual(data.opciones.length, 0, 'No debe tener opciones si no hay datos en ningún grado');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

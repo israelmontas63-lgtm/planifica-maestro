@@ -237,4 +237,12 @@
 - **Frase Textual del Dueño:** `"ORDEN 043 - EL ROBOT PREGUNTA EL GRADO, LOS BOTONES FUNCIONAN DE VERDAD Y SE MIDE LA COBERTURA DEL CURRÍCULO"`
 - **Estado:** APLICADA
 
+### Autorización 036
+- **Fecha:** 29/10/2026
+- **Componentes:** `worker/index.js`, `shared/explicadorFallos.js`, `tests/test_opciones_robot.mjs`
+- **Motivo:** Botones de grados vecinos con el grado real, aviso de grados disponibles cuando un área y grado no tienen datos
+- **Frase Textual del Dueño:** `"ORDEN 044 - BOTONES DE GRADOS VECINOS CORRECTOS, COBERTURA REAL DEL CURRÍCULO, AVISO DE GRADOS DISPONIBLES Y PRUEBAS POR LA RUTA DEL CLIENTE"`
+- **Estado:** APLICADA
+
+
 

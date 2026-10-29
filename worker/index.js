@@ -2965,21 +2965,99 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
       });
     }
 
-    // 3b. Tema inexistente en el currículo de ese grado y área
-    if (gradoPre && areaPre && temaPre && env.SUPABASE_URL && (env.SUPABASE_ANON_KEY || env.SUPABASE_SERVICE_ROLE_KEY) && !esModoPrueba && !esLocalhost) {
+    // 3b. Verificación curricular: si el área+grado pedidos no tienen secuencias o si el tema no existe
+    if (gradoPre && areaPre && env.SUPABASE_URL && (env.SUPABASE_ANON_KEY || env.SUPABASE_SERVICE_ROLE_KEY) && !esModoPrueba && !esLocalhost) {
       try {
+        const gNum = typeof gradoPre === "number" ? gradoPre : gradoANumero(gradoPre);
+        const gFmt = typeof gradoPre === "number" ? `${gradoPre}.º` : (String(gradoPre).includes("º") ? gradoPre : `${gradoPre}.º`);
         const filasTemas = await consultarTemasREST({
           url: env.SUPABASE_URL,
           clave: env.SUPABASE_ANON_KEY || env.SUPABASE_SERVICE_ROLE_KEY,
           grado: gradoPre,
           area: areaPre
         });
-        if (filasTemas && filasTemas.length > 0) {
+
+        // PASO 3: Si el área+grado pedidos tienen 0 secuencias en el currículo
+        if (!filasTemas || filasTemas.length === 0) {
+          let otrosGrados = [];
+          try {
+            const urlGrados = `${env.SUPABASE_URL.replace(/\/+$/, "")}/rest/v1/curriculo_secuencias?select=grado_num&area=eq.${encodeURIComponent(areaPre)}&vigente=eq.true&order=grado_num.asc`;
+            const rG = await fetch(urlGrados, {
+              headers: {
+                apikey: env.SUPABASE_ANON_KEY || env.SUPABASE_SERVICE_ROLE_KEY,
+                Authorization: `Bearer ${env.SUPABASE_ANON_KEY || env.SUPABASE_SERVICE_ROLE_KEY}`
+              }
+            });
+            if (rG.ok) {
+              const fG = await rG.json();
+              if (Array.isArray(fG)) {
+                otrosGrados = [...new Set(fG.map(r => r.grado_num).filter(g => g && g !== gNum))].sort((a, b) => a - b);
+              }
+            }
+          } catch (eG) {
+            // ignore
+          }
+
+          let motivo;
+          let opciones = [];
+          if (otrosGrados.length > 0) {
+            const listaGrados = otrosGrados.map(g => `${g}.º`).join(", ");
+            motivo = `No tengo secuencias cargadas de ${areaPre} ${gFmt}. Sí tengo ${areaPre} en: ${listaGrados}.`;
+            opciones = otrosGrados.slice(0, 6).map(g => ({
+              texto: `${areaPre} ${g}.º`,
+              mensaje: `Muéstrame temas de ${areaPre} ${g}.º`
+            }));
+          } else {
+            motivo = `No tengo secuencias cargadas de ${areaPre} en ningún grado.`;
+            opciones = [];
+          }
+
+          const queFalta = otrosGrados.length > 0
+            ? "Elegir un grado con secuencias disponibles."
+            : "Que esta área sea incorporada al currículo oficial.";
+
+          const exp = explicarFallo({
+            codigo: "CURRICULO_SIN_DATOS",
+            datos: {
+              area: areaPre,
+              areaPedida: areaPre,
+              areaDelTema: null,
+              tema: temaPre || null,
+              grado: gradoPre,
+              faltantes: [],
+              motivo,
+              queFalta,
+              opciones
+            }
+          });
+
+          exp.motivo = motivo;
+          exp.queFalta = queFalta;
+          exp.opciones = opciones;
+          exp.textoUsuario = opciones.length ? `${motivo} Opciones:` : motivo;
+
+          return responderWorker({
+            data: {
+              ok: false,
+              isError: true,
+              error: true,
+              codigo: "CURRICULO_SIN_DATOS",
+              codigoError: "CURRICULO_SIN_DATOS",
+              ...exp,
+              mensaje_chat: exp.textoUsuario,
+              plan_completado: false,
+              datos_planificacion: null
+            },
+            status: 200,
+            estado: "conversando"
+          });
+        }
+
+        if (temaPre) {
           const temasUnicos = listarTemasUnicos(filasTemas);
           const existeTema = filasTemas.some(f => coincideConTema(temaPre, f.tema));
           if (!existeTema && temasUnicos.length > 0) {
             let cercanos = temasUnicos.slice(0, 4);
-            const gNum = typeof gradoPre === "number" ? gradoPre : gradoANumero(gradoPre);
             if (cercanos.length < 4 && gNum) {
               const gradosVecinos = [];
               if (gNum > 1) gradosVecinos.push(gNum - 1);
@@ -3022,7 +3100,6 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
               }
             });
 
-            const gFmt = typeof gradoPre === "number" ? `${gradoPre}.º` : gradoPre;
             if (Array.isArray(exp.opciones)) {
               exp.opciones.push({
                 texto: `Ver todos los temas de ${areaPre} ${gFmt}`.replace(/\s+/g, " ").trim(),
