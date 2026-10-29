@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { explicarFallo, clasificarFallo, limpiarDetalle, CODIGOS_FALLO } from "../shared/explicadorFallos.js";
+import { explicarFallo, clasificarFallo, limpiarDetalle, CODIGOS_FALLO, describirCapacidades, esPreguntaAutodiagnostico } from "../shared/explicadorFallos.js";
 
 const PROHIBIDAS = /int[eé]ntalo|intenta (de nuevo|nuevamente)|m[aá]s tarde|tuve dificultades/i;
 
@@ -48,3 +48,32 @@ test("clasificarFallo mapea causas reales", () => {
   assert.equal(clasificarFallo({ mensaje: "relation curriculo_secuencias does not exist" }), "CURRICULO_NO_CONECTADO");
   assert.equal(clasificarFallo({}), "ERROR_INTERNO");
 });
+
+test("Conflicto: un tema que es nombre de área se explica como área y el grado sale como 2.º", () => {
+  const r = explicarFallo({ codigo: "CONFLICTO_AREA_TEMA", datos: { areaPedida: "Ciencias Sociales", areaDelTema: "Matemática", tema: "matemática", grado: "2" } });
+  assert.match(r.motivo, /es un área, no un tema/);
+  assert.ok(!/pertenece a Matem/.test(r.motivo));
+  assert.ok(r.opciones.length === 2 && r.opciones.every((o) => /2\.º/.test(o.mensaje)));
+});
+test("Datos incompletos: sin texto duplicado y con 6 botones de grado", () => {
+  const r = explicarFallo({ codigo: "DATOS_INCOMPLETOS", datos: { faltantes: ["grado"], area: "Matemática", tema: "suma" } });
+  assert.equal(r.opciones.length, 6);
+  assert.ok(!/Falta: /.test(r.textoUsuario));
+  assert.match(r.opciones[1].mensaje, /2\.º tema suma/);
+});
+test("describirCapacidades dice qué componente falla", () => {
+  assert.match(describirCapacidades([{ componente: "Base de datos (Supabase)", estado: "falla", detalle: "sin respuesta" }]), /Supabase.*sin respuesta/);
+  assert.match(describirCapacidades([{ componente: "Servicio de IA", estado: "ok", detalle: "" }]), /todos responden bien/);
+});
+
+test("Autodiagnóstico: detecta preguntas dirigidas al robot", () => {
+  for (const q of ["Por qué no puedes hacer la planificación", "¿Por qué no pudiste?", "por qué falló", "Qué te pasó", "¿Qué pasó con mi planificación?", "Por qué no funciona"]) {
+    assert.equal(esPreguntaAutodiagnostico(q), true, q);
+  }
+});
+test("Autodiagnóstico: NO se activa con preguntas pedagógicas normales", () => {
+  for (const q of ["¿Qué tienes sobre fracciones en 3.º?", "¿Qué pasó el 27 de febrero de 1844?", "Quiero la planificación de ciencias sociales de 2.º tema la familia", "Por qué no planificamos el tema del agua para la próxima semana en el aula", "hola"]) {
+    assert.equal(esPreguntaAutodiagnostico(q), false, q);
+  }
+});
+

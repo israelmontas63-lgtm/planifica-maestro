@@ -24,6 +24,10 @@ const CATALOGO = {
 
 const lista = (a) => (Array.isArray(a) ? a.filter(Boolean) : []);
 
+const quitarAcentos = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+const fmtGrado = (g) => (/^\d+$/.test(String(g || "").trim()) ? `${String(g).trim()}.º` : String(g || "").trim());
+const AREAS = ["Lengua Española", "Matemática", "Ciencias Sociales", "Ciencias de la Naturaleza"];
+
 export function limpiarDetalle(texto) {
   return String(texto || "")
     .replace(/(key|token|apikey|api_key|authorization)\s*[=:]\s*\S+/gi, "$1=[REDACTADO]")
@@ -50,20 +54,40 @@ export function explicarFallo({ codigo, detalle = "", datos = {} } = {}) {
   const d = datos || {};
 
   if (cod === "CURRICULO_SIN_DATOS") {
-    const donde = [d.area, d.grado].filter(Boolean).join(" de ");
+    const g = fmtGrado(d.grado);
+    const donde = [d.area, g].filter(Boolean).join(" de ");
     motivo = `No encontré el tema "${d.tema || "indicado"}"${donde ? ` en ${donde}` : ""} dentro del currículo oficial cargado.`;
     for (const t of lista(d.cercanos).slice(0, 4)) {
-      opciones.push({ texto: `Planificar "${t}"`, mensaje: `Quiero la planificación de ${d.area || ""} ${d.grado || ""} tema ${t}`.replace(/\s+/g, " ").trim() });
+      opciones.push({ texto: `Planificar "${t}"`, mensaje: `Quiero la planificación de ${d.area || ""} ${g} tema ${t}`.replace(/\s+/g, " ").trim() });
     }
   }
   if (cod === "CONFLICTO_AREA_TEMA") {
-    motivo = `Pediste ${d.areaPedida || "un área"}, pero "${d.tema || "ese tema"}" pertenece a ${d.areaDelTema || "otra área"}; no los puedo mezclar sin que me confirmes cuál quieres.`;
-    if (d.areaDelTema) opciones.push({ texto: `Planificar ${d.areaDelTema}${d.grado ? ` de ${d.grado}` : ""} tema ${d.tema || ""}`.trim(), mensaje: `Quiero la planificación de ${d.areaDelTema} ${d.grado || ""} tema ${d.tema || ""}`.replace(/\s+/g, " ").trim() });
-    if (d.areaPedida) opciones.push({ texto: `Elegir otro tema de ${d.areaPedida}`, mensaje: `Muéstrame temas de ${d.areaPedida} ${d.grado || ""}`.replace(/\s+/g, " ").trim() });
+    const g = fmtGrado(d.grado);
+    const temaEsArea = [d.areaDelTema, d.areaPedida].some((a) => a && quitarAcentos(a) === quitarAcentos(d.tema));
+    if (temaEsArea) {
+      motivo = `"${d.tema}" es un área, no un tema. Pediste ${d.areaPedida || "otra área"}; dime si quieres planificar ${d.areaDelTema || d.tema}${g ? ` de ${g}` : ""} o un tema de ${d.areaPedida || "esa área"}.`;
+      if (d.areaDelTema) opciones.push({ texto: `Planificar ${d.areaDelTema}${g ? ` de ${g}` : ""}`, mensaje: `Muéstrame temas de ${d.areaDelTema} ${g}`.replace(/\s+/g, " ").trim() });
+      if (d.areaPedida) opciones.push({ texto: `Elegir un tema de ${d.areaPedida}`, mensaje: `Muéstrame temas de ${d.areaPedida} ${g}`.replace(/\s+/g, " ").trim() });
+    } else {
+      motivo = `Pediste ${d.areaPedida || "un área"}, pero el tema "${d.tema || "indicado"}" corresponde a ${d.areaDelTema || "otra área"}; no los puedo mezclar sin que me confirmes cuál quieres.`;
+      if (d.areaDelTema) opciones.push({ texto: `Planificar ${d.areaDelTema}${g ? ` de ${g}` : ""} tema ${d.tema || ""}`.trim(), mensaje: `Quiero la planificación de ${d.areaDelTema} ${g} tema ${d.tema || ""}`.replace(/\s+/g, " ").trim() });
+      if (d.areaPedida) opciones.push({ texto: `Elegir otro tema de ${d.areaPedida}`, mensaje: `Muéstrame temas de ${d.areaPedida} ${g}`.replace(/\s+/g, " ").trim() });
+    }
   }
   if (cod === "DATOS_INCOMPLETOS" && lista(d.faltantes).length) {
-    motivo = `Me faltan datos para planificar: ${lista(d.faltantes).join(", ")}.`;
-    queFalta = lista(d.faltantes).join(", ");
+    const f = lista(d.faltantes);
+    motivo = `Me faltan datos para planificar: ${f.join(", ")}.`;
+    queFalta = `Que me indiques ${f.join(", ")}.`;
+    const tail = d.tema ? ` tema ${d.tema}` : "";
+    if (f.includes("grado")) {
+      for (const g of ["1.º", "2.º", "3.º", "4.º", "5.º", "6.º"]) {
+        opciones.push({ texto: g, mensaje: `Quiero la planificación de ${d.area || ""} ${g}${tail}`.replace(/\s+/g, " ").trim() });
+      }
+    } else if (f.includes("área") || f.includes("area")) {
+      for (const a of AREAS) {
+        opciones.push({ texto: a, mensaje: `Quiero la planificación de ${a} ${fmtGrado(d.grado)}${tail}`.replace(/\s+/g, " ").trim() });
+      }
+    }
   }
   if (cod === "IA_RESPUESTA_INVALIDA" && lista(d.faltantes).length) {
     queFalta = `Estos bloques de la planificación: ${lista(d.faltantes).join(", ")}.`;
@@ -80,7 +104,7 @@ export function explicarFallo({ codigo, detalle = "", datos = {} } = {}) {
       : "No pude comunicarme con el servidor: no respondió (puede estar caído o saturado).";
   }
 
-  const partes = [motivo, `Falta: ${queFalta}`];
+  const partes = cod === "DATOS_INCOMPLETOS" ? [motivo] : [motivo, `Falta: ${queFalta}`];
   if (base.reintentable) partes.push("Es un fallo que puede ser momentáneo; puedes pedirlo otra vez.");
   if (opciones.length) partes.push("Opciones:");
 
@@ -95,4 +119,16 @@ export function explicarFallo({ codigo, detalle = "", datos = {} } = {}) {
     detalleTecnico: limpiarDetalle(detalle),
     textoUsuario: partes.join(" ")
   };
+}
+
+export function describirCapacidades(capacidades = []) {
+  const malas = lista(capacidades).filter((c) => c.estado === "falla" || (c.estado === "no_configurado" && !/V2|STREAMING/.test(c.componente)));
+  if (!malas.length) return "Revisé mis componentes (IA, base curricular, cuotas) y todos responden bien.";
+  return "Revisé mis componentes y esto no funciona: " + malas.map((c) => `${c.componente}: ${c.detalle}`).join("; ") + ".";
+}
+
+export function esPreguntaAutodiagnostico(texto) {
+  const t = String(texto || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  if (!t || t.length > 80) return false;
+  return /por que (no (puedes|pudiste|funciona|me (haces|hiciste|respondes)|planific(as|aste|a)\b)|fallo|te fallo)|que (te paso|te pasa)\b|que paso con (la|mi|esa|esta) planificacion/.test(t);
 }

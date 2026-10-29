@@ -26,7 +26,7 @@ import { procesarConsultaMatematica } from "../shared/matematica.mjs";
 import { respuestaEspecialMatematica } from "../shared/metodosMatematicos.mjs";
 import { coincideConTema, listarTemasUnicos, formatearListaTemas, consultarTemasREST } from "../shared/coincidenciaTema.mjs";
 import { capacidadesManifest, generarRespuestaQuePuedesHacer } from "../shared/capacidades.mjs";
-import { explicarFallo, clasificarFallo, CODIGOS_FALLO, limpiarDetalle } from "../shared/explicadorFallos.js";
+import { explicarFallo, clasificarFallo, CODIGOS_FALLO, limpiarDetalle, describirCapacidades, esPreguntaAutodiagnostico } from "../shared/explicadorFallos.js";
 
 export function esCoincidente(f, consulta = "") {
   if (!f || (f.coincide_tema !== true && f.coincide_tema !== "true")) return false;
@@ -931,6 +931,26 @@ async function handleApiRequest(request, env, ctx) {
   const method = request.method;
   const clientIp = request.headers.get("cf-connecting-ip") || "unknown";
 
+  const devHeader = request.headers.get("x-device-id") || request.headers.get("X-Device-Id") || url.searchParams.get("docenteId") || request.headers.get("x-docente-id");
+  let deviceId = devHeader || ("dev_anon_" + clientIp);
+
+  async function guardarUltimoFallo(devId, fallo = {}) {
+    const id = devId || deviceId;
+    if (!id || !env || !env.RATE_LIMIT_KV) return;
+    try {
+      const payload = JSON.stringify({
+        codigoError: fallo.codigoError || fallo.codigo || "ERROR_INTERNO",
+        componente: fallo.componente || "Servidor",
+        motivo: fallo.motivo || fallo.mensaje || "",
+        queFalta: fallo.queFalta || fallo.sugerencia || "",
+        ts: Date.now()
+      });
+      await env.RATE_LIMIT_KV.put("ultimo_fallo:" + id, payload, { expirationTtl: 3600 });
+    } catch (e) {
+      // Si el KV falla, ignóralo sin romper la respuesta
+    }
+  }
+
   // Headers CORS para desarrollo o integración segura
   const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -950,7 +970,7 @@ async function handleApiRequest(request, env, ctx) {
     ...CODIGOS_FALLO
   ]);
 
-  function generarErrorPlanificacion(codigo, mensaje, sugerencia, reintentable = true, status = 200, cuota = null, datos = {}) {
+  async function generarErrorPlanificacion(codigo, mensaje, sugerencia, reintentable = true, status = 200, cuota = null, datos = {}) {
     const incidentId = "INC-" + generarCodigoSeguro(6);
     const mensajeLimpio = enmascararSecretos(mensaje, env);
     const sugerenciaLimpia = enmascararSecretos(sugerencia, env);
@@ -975,6 +995,7 @@ async function handleApiRequest(request, env, ctx) {
       plan_completado: false
     };
     if (cuota) payload.cuota = cuota;
+    await guardarUltimoFallo(deviceId, payload);
     return new Response(JSON.stringify(payload), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
@@ -1321,13 +1342,21 @@ async function handleApiRequest(request, env, ctx) {
     }
     const rawDevId = request.headers.get("x-device-id") || request.headers.get("X-Device-Id") || (docenteId && docenteId !== "docente_default" ? docenteId : null) || request.headers.get("x-docente-id") || ("dev_anon_" + clientIp);
     const resolvedDocenteId = rawDevId;
+    deviceId = rawDevId;
 
     // T6: resolvedDocenteId listo para evaluación posterior tras intenciones locales
 
     const iaApagada = await verificarIaApagada(env);
 
     if (!messages.length) {
-      return generarErrorPlanificacion("DATOS_INCOMPLETOS", "Faltan 'messages'.", "Envía al menos un mensaje con tu solicitud pedagógica.", false, 400, null, { faltantes: ["mensajes"] });
+      return generarErrorPlanificacion("DATOS_INCOMPLETOS", "Faltan 'messages'.", "Envía al menos un mensaje con tu solicitud pedagógica.", false, 400, null, {
+        area: null,
+        areaPedida: null,
+        areaDelTema: null,
+        tema: null,
+        grado: null,
+        faltantes: ["mensajes"]
+      });
     }
 
     const ultimoMsg = messages[messages.length - 1] || {};
@@ -1435,7 +1464,10 @@ async function handleApiRequest(request, env, ctx) {
 
     const isStream = Boolean(stream || request.headers.get("accept")?.includes("text/event-stream"));
 
-    function responderWorker({ data, status = 200, estado = "pensando" }) {
+    async function responderWorker({ data, status = 200, estado = "pensando" }) {
+      if (data && (data.error === true || data.isError === true)) {
+        await guardarUltimoFallo(deviceId, data);
+      }
       if (resultadoCorreccion) {
         data.texto_original = resultadoCorreccion.textoOriginal;
         data.texto_corregido = resultadoCorreccion.textoCorregido;
@@ -1695,6 +1727,53 @@ async function handleApiRequest(request, env, ctx) {
           });
         }
       }
+    }
+
+    const mencionaNivelNoPrimario = /(?:secundaria|secundario|bachillerato|liceo|nivel\s+medio|inicial|preescolar|universidad|universitario)/i.test(textoParaProcesar);
+
+    // Pregunta de autodiagnóstico del docente (sin llamada a IA)
+    if (!mencionaNivelNoPrimario && (esPreguntaAutodiagnostico(textoConsulta) || esPreguntaAutodiagnostico(textoParaProcesar))) {
+      const caps = await evaluarCapacidades(env, { consultarDb: true });
+      const primeraFrase = describirCapacidades(caps);
+
+      let falloRecienteStr = "No tengo registrado un error previo en este dispositivo.";
+      if (env && env.RATE_LIMIT_KV && deviceId) {
+        try {
+          const rawFallo = await env.RATE_LIMIT_KV.get("ultimo_fallo:" + deviceId);
+          if (rawFallo) {
+            const f = JSON.parse(rawFallo);
+            if (f && f.ts && (Date.now() - f.ts < 3600 * 1000)) {
+              falloRecienteStr = `Lo último que no pude hacer: ${f.motivo} Falta: ${f.queFalta}`;
+            }
+          }
+        } catch (errKv) {
+          console.warn("[Autodiagnostico] Error al leer ultimo_fallo de KV:", errKv?.message || errKv);
+        }
+      }
+
+      const cierre = "¿Quieres que lo pruebe otra vez con los mismos datos o prefieres cambiar el tema?";
+      const mensajeChat = `${primeraFrase} ${falloRecienteStr} ${cierre}`;
+
+      const opciones = [
+        { texto: "Probar otra vez con los mismos datos", mensaje: "Prueba otra vez con los mismos datos" },
+        { texto: "Cambiar el tema", mensaje: "Quiero cambiar el tema" }
+      ];
+
+      return responderWorker({
+        data: {
+          ok: true,
+          isError: false,
+          modo: "autodiagnostico",
+          categoria: "autodiagnostico",
+          mensaje_chat: mensajeChat,
+          texto: mensajeChat,
+          opciones,
+          plan_completado: false,
+          datos_planificacion: null
+        },
+        status: 200,
+        estado: "conversando"
+      });
     }
 
     // Clasificación de intención (0 ms, reglas deterministas)
@@ -2765,10 +2844,12 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
       const exp = explicarFallo({
         codigo: "CONFLICTO_AREA_TEMA",
         datos: {
+          area: areaPre,
           areaPedida: areaPre,
           areaDelTema,
           tema: temaPre,
-          grado: gradoPre || 2
+          grado: gradoPre,
+          faltantes: []
         }
       });
       return responderWorker({
@@ -2805,9 +2886,12 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
             const exp = explicarFallo({
               codigo: "CURRICULO_SIN_DATOS",
               datos: {
-                grado: gradoPre,
                 area: areaPre,
+                areaPedida: areaPre,
+                areaDelTema: null,
                 tema: temaPre,
+                grado: gradoPre,
+                faltantes: [],
                 cercanos
               }
             });
@@ -2843,7 +2927,14 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
       if (faltantes.length > 0) {
         const exp = explicarFallo({
           codigo: "DATOS_INCOMPLETOS",
-          datos: { faltantes, grado: gradoPre, area: areaPre, tema: temaPre }
+          datos: {
+            area: areaPre,
+            areaPedida: areaPre,
+            areaDelTema: areaDelTema || null,
+            tema: temaPre,
+            grado: gradoPre,
+            faltantes
+          }
         });
         return responderWorker({
           data: {

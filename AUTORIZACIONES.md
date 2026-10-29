@@ -222,4 +222,12 @@
 - **Tipo de Autorización:** EXPLICITA_DEL_DUENO
 - **Estado:** APLICADA
 
+### Autorización 034
+- **Fecha:** 28/10/2026
+- **Componentes:** `shared/explicadorFallos.js`, `tests/test_explicador_fallos.mjs`, `worker/index.js`
+- **Motivo:** Pulir explicaciones del robot (área vs tema, grados, botones), detector de autodiagnóstico con pruebas, último fallo guardado en KV y conciliación con el test histórico 3a.2 de la Autorización 022
+- **Frase Textual del Dueño:** `"ORDEN 040 - PULIR LAS EXPLICACIONES DEL ROBOT, RESPONDER ¿POR QUÉ NO PUDISTE? Y CORREGIR EL MENÚ"`, `"ORDEN 041 - CORREGIR EL DETECTOR DE AUTODIAGNÓSTICO, SELLAR, DESPLEGAR Y PROBAR"` y `"ORDEN 042 - CONCILIAR EL AUTODIAGNÓSTICO CON EL TEST 3a.2"`
+- **Tipo de Autorización:** EXPLICITA_DEL_DUENO
+- **Estado:** APLICADA
+
 
