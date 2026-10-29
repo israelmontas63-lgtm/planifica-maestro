@@ -523,6 +523,9 @@ export default function App() {
           chatText = "No pude armar la planificación, ¿intentamos otra vez?";
         }
       }
+      if (parsedObj.error === true && parsedObj.motivo) {
+        chatText = parsedObj.textoUsuario || (parsedObj.queFalta ? `${parsedObj.motivo} Falta: ${parsedObj.queFalta}` : parsedObj.motivo);
+      }
       if (!chatText || chatText.trim() === "") {
         chatText = parsedObj.datos_planificacion
           ? "He preparado tu planificación docente basada en el currículo."
@@ -544,7 +547,7 @@ export default function App() {
         distintivo: data.distintivo || null,
         esRespaldo: data.es_respaldo || false,
         origen: data.origen || null,
-        opciones: data.opciones || null,
+        opciones: data.opciones || parsedObj.opciones || null,
         modo: data.modo || null,
         tipoVisual: data.tipo_visual || null,
         esBorrosa: data.es_borrosa || false,
@@ -555,8 +558,12 @@ export default function App() {
         huboCorrecciones: Boolean(data.hubo_correcciones),
         cambioSignificado: Boolean(data.cambio_significado),
         ok: data.ok,
-        isError: data.ok === false,
-        codigoError: data.codigo || null,
+        isError: data.ok === false || data.error === true,
+        codigoError: data.codigoError || data.codigo || parsedObj.codigoError || parsedObj.codigo || null,
+        componente: data.componente || parsedObj.componente || null,
+        detalleTecnico: data.detalleTecnico || parsedObj.detalleTecnico || null,
+        motivo: data.motivo || parsedObj.motivo || null,
+        queFalta: data.queFalta || parsedObj.queFalta || null,
         sugerencia: data.sugerencia || null,
         reintentable: data.reintentable !== false
       };
@@ -1356,54 +1363,70 @@ export default function App() {
               </Suspense>
             )}
 
-            {/* FASE 1: Opciones interactivas del Ojo Digital / Clasificador de intención / Confirmaciones */}
+            {/* FASE 1 / Orden 039: Opciones interactivas del Cerebro / Ojo Digital / Clasificador */}
             {m.role === 'assistant' && m.opciones && m.opciones.length > 0 && i === messages.length - 1 && !cargando && (
               <div className="pm-intencion-opciones-container no-print" style={{ margin: "10px 0 6px 0" }}>
                 <span className="pm-quick-replies-label" style={{ display: "block", marginBottom: "6px", fontWeight: "600", fontSize: "12px", color: "var(--teal, #1a7d8c)" }}>
-                  {m.modo === "confirmar_correccion" ? "Confirmar interpretación:" : m.modo === "aclarar_ambiguedad" ? "Seleccionar término exacto:" : "¿Qué te gustaría hacer?"}
+                  {m.modo === "confirmar_correccion" ? "Confirmar interpretación:" : m.modo === "aclarar_ambiguedad" ? "Seleccionar término exacto:" : "Opciones disponibles:"}
                 </span>
                 <div className="pm-quick-replies-row" style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                  {m.opciones.map((op, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      className="pm-quick-reply-pill pm-btn-opcion-intencion"
-                      style={{
-                        padding: "6px 14px",
-                        borderRadius: "20px",
-                        border: "1px solid var(--teal, #1a7d8c)",
-                        backgroundColor: "#f0fdfa",
-                        color: "#0f766e",
-                        fontSize: "13px",
-                        fontWeight: "600",
-                        cursor: "pointer",
-                        transition: "all 0.15s ease"
-                      }}
-                      onClick={() => {
-                        if (m.modo === "confirmar_correccion") {
-                          if (op.startsWith("Sí, continuar")) {
-                            enviarMensaje(m.textoCorregido || op, null, null, null, { confirmado: true });
+                  {m.opciones.map((op, idx) => {
+                    const textoBoton = typeof op === "object" && op.texto ? op.texto : String(op);
+                    const mensajeEnviar = typeof op === "object" && op.mensaje ? op.mensaje : String(op);
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        className="pm-quick-reply-pill pm-btn-opcion-intencion"
+                        style={{
+                          padding: "6px 14px",
+                          borderRadius: "20px",
+                          border: "1px solid var(--teal, #1a7d8c)",
+                          backgroundColor: "#f0fdfa",
+                          color: "#0f766e",
+                          fontSize: "13px",
+                          fontWeight: "600",
+                          cursor: "pointer",
+                          transition: "all 0.15s ease"
+                        }}
+                        onClick={() => {
+                          if (m.modo === "confirmar_correccion") {
+                            if (textoBoton.startsWith("Sí, continuar")) {
+                              enviarMensaje(m.textoCorregido || mensajeEnviar, null, null, null, { confirmado: true });
+                            } else {
+                              enviarMensaje(m.textoOriginal || mensajeEnviar, null, null, null, { forzarOriginal: true });
+                            }
+                          } else if (m.modo === "aclarar_ambiguedad") {
+                            if (textoBoton.startsWith("Mantener")) {
+                              enviarMensaje(m.textoOriginal || mensajeEnviar, null, null, null, { forzarOriginal: true });
+                            } else {
+                              const matchTermino = textoBoton.match(/Usar "([^"]+)"/);
+                              const valTermino = matchTermino ? matchTermino[1] : mensajeEnviar;
+                              enviarMensaje(valTermino, null, null, null, { confirmado: true });
+                            }
                           } else {
-                            enviarMensaje(m.textoOriginal || op, null, null, null, { forzarOriginal: true });
+                            enviarMensaje(mensajeEnviar);
                           }
-                        } else if (m.modo === "aclarar_ambiguedad") {
-                          if (op.startsWith("Mantener")) {
-                            enviarMensaje(m.textoOriginal || op, null, null, null, { forzarOriginal: true });
-                          } else {
-                            const matchTermino = op.match(/Usar "([^"]+)"/);
-                            const valTermino = matchTermino ? matchTermino[1] : op;
-                            enviarMensaje(valTermino, null, null, null, { confirmado: true });
-                          }
-                        } else {
-                          enviarMensaje(op);
-                        }
-                      }}
-                    >
-                      👉 {op}
-                    </button>
-                  ))}
+                        }}
+                      >
+                        👉 {textoBoton}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
+            )}
+
+            {/* Orden 039: Detalle técnico plegable */}
+            {m.role === 'assistant' && (m.codigoError || m.detalleTecnico || m.componente) && (
+              <details className="no-print" style={{ margin: "6px 0 4px 0", fontSize: "11px", color: "var(--text-secondary, #64748b)" }}>
+                <summary style={{ cursor: "pointer", fontWeight: "600" }}>Detalle técnico</summary>
+                <div style={{ marginTop: "4px", padding: "6px 10px", background: "rgba(0,0,0,0.04)", borderRadius: "6px", fontFamily: "monospace", fontSize: "11px", lineHeight: "1.4" }}>
+                  {m.codigoError && <div><strong>Código:</strong> {m.codigoError}</div>}
+                  {m.componente && <div><strong>Componente:</strong> {m.componente}</div>}
+                  {m.detalleTecnico && <div><strong>Detalle:</strong> {m.detalleTecnico}</div>}
+                </div>
+              </details>
             )}
 
             {/* FASE A: Píldoras de respuesta rápida para planificación generada */}

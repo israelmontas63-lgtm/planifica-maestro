@@ -26,11 +26,112 @@ import { procesarConsultaMatematica } from "../shared/matematica.mjs";
 import { respuestaEspecialMatematica } from "../shared/metodosMatematicos.mjs";
 import { coincideConTema, listarTemasUnicos, formatearListaTemas, consultarTemasREST } from "../shared/coincidenciaTema.mjs";
 import { capacidadesManifest, generarRespuestaQuePuedesHacer } from "../shared/capacidades.mjs";
+import { explicarFallo, clasificarFallo, CODIGOS_FALLO, limpiarDetalle } from "../shared/explicadorFallos.js";
 
 export function esCoincidente(f, consulta = "") {
   if (!f || (f.coincide_tema !== true && f.coincide_tema !== "true")) return false;
   if (!consulta) return true;
   return coincideConTema(consulta, f.tema);
+}
+
+export async function evaluarCapacidades(env, opciones = {}) {
+  const { consultarDb = true } = opciones;
+  const lista = [];
+
+  // 1. Clave de IA
+  const tieneIaKey = Boolean(env && env.GEMINI_API_KEY && String(env.GEMINI_API_KEY).trim().length > 0);
+  lista.push({
+    componente: "Servicio de IA (Gemini)",
+    estado: tieneIaKey ? "ok" : "no_configurado",
+    detalle: tieneIaKey ? "Clave configurada" : "Falta GEMINI_API_KEY"
+  });
+
+  // 2. Base de datos (Supabase)
+  const tieneUrl = Boolean(env && env.SUPABASE_URL);
+  const tieneKey = Boolean(env && (env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY));
+  if (!tieneUrl || !tieneKey) {
+    lista.push({
+      componente: "Base de datos (Supabase)",
+      estado: "no_configurado",
+      detalle: "Credenciales de Supabase no configuradas"
+    });
+  } else if (!consultarDb) {
+    lista.push({
+      componente: "Base de datos (Supabase)",
+      estado: "ok",
+      detalle: "Credenciales configuradas (verificación en reposo)"
+    });
+  } else {
+    try {
+      const authKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+      const res = await fetch(`${env.SUPABASE_URL.replace(/\/+$/, "")}/rest/v1/curriculo_secuencias?select=id&limit=1`, {
+        method: "GET",
+        headers: {
+          apikey: authKey,
+          Authorization: `Bearer ${authKey}`,
+          Prefer: "count=exact",
+          Range: "0-0"
+        }
+      });
+      if (res.ok) {
+        let conteo = 1;
+        const cr = res.headers.get("content-range");
+        if (cr) {
+          const m = cr.match(/\/(\d+)$/);
+          if (m) conteo = parseInt(m[1], 10);
+        }
+        lista.push({
+          componente: "Base de datos (Supabase)",
+          estado: "ok",
+          detalle: `Alcanzable (${conteo} secuencias curriculares registradas)`
+        });
+      } else {
+        lista.push({
+          componente: "Base de datos (Supabase)",
+          estado: "falla",
+          detalle: `Respuesta HTTP ${res.status} al consultar curriculo_secuencias`
+        });
+      }
+    } catch (err) {
+      lista.push({
+        componente: "Base de datos (Supabase)",
+        estado: "falla",
+        detalle: `Fallo de conexión: ${limpiarDetalle(err?.message)}`
+      });
+    }
+  }
+
+  // 3. Banderas V2
+  const v2Herramientas = Boolean(env && (env.HERRAMIENTAS_V2 === "true" || env.HERRAMIENTAS_V2 === true));
+  lista.push({
+    componente: "HERRAMIENTAS_V2",
+    estado: v2Herramientas ? "ok" : "no_configurado",
+    detalle: v2Herramientas ? "Activo" : "Inactivo"
+  });
+
+  const v2Prompt = Boolean(env && (env.PROMPT_SISTEMA_V2 === "true" || env.PROMPT_SISTEMA_V2 === true));
+  lista.push({
+    componente: "PROMPT_SISTEMA_V2",
+    estado: v2Prompt ? "ok" : "no_configurado",
+    detalle: v2Prompt ? "Activo" : "Inactivo"
+  });
+
+  const v2Streaming = Boolean(env && (env.STREAMING_PROGRESIVO === "true" || env.STREAMING_PROGRESIVO === true));
+  lista.push({
+    componente: "STREAMING_PROGRESIVO",
+    estado: v2Streaming ? "ok" : "no_configurado",
+    detalle: v2Streaming ? "Activo" : "Inactivo"
+  });
+
+  // 4. KV de cuota
+  const tieneKv = Boolean(env && env.RATE_LIMIT_KV);
+  lista.push({
+    componente: "KV de cuota (RATE_LIMIT_KV)",
+    estado: tieneKv ? "ok" : "no_configurado",
+    detalle: tieneKv ? "Namespace KV enlazado" : "En memoria (Map temporal)"
+  });
+
+  return lista;
 }
 
 /**
@@ -845,25 +946,32 @@ async function handleApiRequest(request, env, ctx) {
     "IA_NO_DISPONIBLE",
     "PROVEEDOR_IA_SATURADO",
     "CUOTA_DIARIA_AGOTADA",
-    "ERROR_INTERNO"
+    "ERROR_INTERNO",
+    ...CODIGOS_FALLO
   ]);
 
-  function generarErrorPlanificacion(codigo, mensaje, sugerencia, reintentable = true, status = 200, cuota = null) {
+  function generarErrorPlanificacion(codigo, mensaje, sugerencia, reintentable = true, status = 200, cuota = null, datos = {}) {
     const incidentId = "INC-" + generarCodigoSeguro(6);
-    const codigoFinal = CODIGOS_ERROR_CERRADOS.has(codigo) ? codigo : "ERROR_INTERNO";
     const mensajeLimpio = enmascararSecretos(mensaje, env);
     const sugerenciaLimpia = enmascararSecretos(sugerencia, env);
-    console.warn(`[PlanError ${incidentId}] ${codigoFinal} - ${mensajeLimpio}`);
+    console.warn(`[PlanError ${incidentId}] ${codigo} - ${mensajeLimpio}`);
+
+    const codClasificado = clasificarFallo({ status, mensaje: mensajeLimpio });
+    const codigoFinal = CODIGOS_FALLO.includes(codigo) ? codigo : (CODIGOS_FALLO.includes(codClasificado) ? codClasificado : "ERROR_INTERNO");
+    const exp = explicarFallo({ codigo: codigoFinal, detalle: mensajeLimpio, datos });
+
     const payload = {
       ok: false,
       isError: true,
+      error: true,
+      ...exp,
       codigo: codigoFinal,
       codigoError: codigoFinal,
-      mensaje: mensajeLimpio,
-      sugerencia: sugerenciaLimpia,
-      reintentable,
+      mensaje: mensajeLimpio || exp.motivo,
+      sugerencia: sugerenciaLimpia || exp.queFalta,
+      reintentable: reintentable !== undefined ? reintentable : exp.reintentable,
       incidentId,
-      mensaje_chat: `${mensajeLimpio}\n\n💡 Sugerencia: ${sugerenciaLimpia}`,
+      mensaje_chat: exp.textoUsuario,
       plan_completado: false
     };
     if (cuota) payload.cuota = cuota;
@@ -887,6 +995,8 @@ async function handleApiRequest(request, env, ctx) {
     const dbConfigurada = Boolean(env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY);
     const dbEstado = dbConfigurada ? "ok" : "en_memoria";
     const esReadinessCheck = url.searchParams.get("readiness") === "1" || url.searchParams.get("ready") === "1";
+    const consultarDbReal = esReadinessCheck || isOwner || (url.hostname !== "localhost" && url.hostname !== "127.0.0.1");
+    const capacidades = await evaluarCapacidades(env, { consultarDb: consultarDbReal });
 
     // Si la base de datos está en memoria (sin credenciales Supabase), no estamos listos para producción
     if (!dbConfigurada) {
@@ -896,6 +1006,7 @@ async function handleApiRequest(request, env, ctx) {
         timestamp: new Date().toISOString(),
         error: "Base de datos en memoria (SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY no configurados)",
         tablas_disponibles: [],
+        capacidades,
         services: {
           text_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
           vision_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
@@ -945,6 +1056,7 @@ async function handleApiRequest(request, env, ctx) {
         timestamp: new Date().toISOString(),
         curriculo_filas: curriculoFilas,
         tablas_disponibles: listo ? ["curriculo_secuencias"] : [],
+        capacidades,
         services: {
           text_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
           vision_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
@@ -966,6 +1078,7 @@ async function handleApiRequest(request, env, ctx) {
         worker: "cloudflare-workers",
         timestamp: new Date().toISOString(),
         tablas_disponibles: [],
+        capacidades,
         services: {
           text_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
           vision_ai: env.GEMINI_API_KEY ? "ok" : "sin_configurar",
@@ -1214,10 +1327,7 @@ async function handleApiRequest(request, env, ctx) {
     const iaApagada = await verificarIaApagada(env);
 
     if (!messages.length) {
-      return new Response(JSON.stringify({ error: "Faltan 'messages'." }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return generarErrorPlanificacion("DATOS_INCOMPLETOS", "Faltan 'messages'.", "Envía al menos un mensaje con tu solicitud pedagógica.", false, 400, null, { faltantes: ["mensajes"] });
     }
 
     const ultimoMsg = messages[messages.length - 1] || {};
@@ -2532,9 +2642,221 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
 
     if (iaApagada) return generarErrorPlanificacion("IA_NO_DISPONIBLE", "El servicio de inteligencia artificial está en mantenimiento breve.", "Puedes seguir consultando el currículo oficial y las secuencias didácticas disponibles.", false);
 
+    // 1. Verificación previa de clave de IA
     if (!env.GEMINI_API_KEY) {
-        return generarErrorPlanificacion("ERROR_INTERNO", "Tuve un problema interno y no sé la causa exacta; te dejo un código para soporte.", "Falta GEMINI_API_KEY en la configuración del servidor.", false);
+      return generarErrorPlanificacion("SIN_CLAVE_IA", "Falta GEMINI_API_KEY en la configuración del servidor.", "Configura GEMINI_API_KEY en las variables de entorno de Cloudflare Workers.", false, 503);
+    }
+
+    // 2. Verificación de Supabase si está configurado (ping de 1 fila, timeout 1500ms)
+    const esLocalhost = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+    if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY && !esModoPrueba && !esLocalhost) {
+      try {
+        const pingUrl = `${env.SUPABASE_URL.replace(/\/+$/, "")}/rest/v1/curriculo_secuencias?select=source_id&limit=1`;
+        const pingRes = await fetchWithTimeout(pingUrl, {
+          headers: {
+            apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+            Accept: "application/json"
+          }
+        }, 1500);
+        if (!pingRes || !pingRes.ok) {
+          return generarErrorPlanificacion(
+            "CURRICULO_NO_CONECTADO",
+            "La base curricular de Supabase no respondió al ping de verificación.",
+            "Verifica la disponibilidad del servicio Supabase y sus claves.",
+            true,
+            503
+          );
+        }
+      } catch (errSupabase) {
+        return generarErrorPlanificacion(
+          "CURRICULO_NO_CONECTADO",
+          `No se pudo conectar a la base curricular: ${errSupabase?.message || errSupabase}`,
+          "Verifica la conectividad de red con Supabase.",
+          true,
+          503
+        );
       }
+    }
+
+    // 3. Pre-chequeo semántico R2 (conflicto de área/tema, tema inexistente, datos incompletos)
+    let gradoPre = body.grado ? gradoANumero(body.grado) : gradoANumero(textoParaProcesar);
+    if (!gradoPre) {
+      const mgPre = gradosMultiples(textoParaProcesar);
+      if (mgPre.length > 0) gradoPre = mgPre[0];
+    }
+
+    let temaPre = (body.tema || "").trim();
+    if (!temaPre) {
+      const matchTema = textoParaProcesar.match(/(?:tema|sobre el tema|contenido|sobre|clase de)\s*[:\s]?\s*([a-záéíóúñÁÉÍÓÚÑ0-9\s]+?)(?=(?:\s+(?:para|en|de\s+\d|\d\.\º|\ddo|\dto|\dro|maestro|docente|escuela|del?|seg[uú]n)|$))/i);
+      if (matchTema) temaPre = matchTema[1].trim();
+    }
+    if (!temaPre) {
+      const matchTema2 = textoParaProcesar.match(/(?:planifica|planificar|diseña|diseñar)\s+(?:una\s+)?(?:clase\s+)?(?:de\s+)?([a-záéíóúñÁÉÍÓÚÑ0-9\s]+?)(?=(?:\s+(?:para|en|de\s+\d|\d\.\º|\ddo|\dto|\dro|maestro|docente|escuela|del?|seg[uú]n)|$))/i);
+      if (matchTema2) temaPre = matchTema2[1].trim();
+    }
+    if (temaPre && /^(?:una\s+)?(?:clase|planificación|unidad|secuencia)$/i.test(temaPre)) {
+      temaPre = "";
+    }
+
+    let areaPre = (body.area || "").trim();
+    const textoSinTema = temaPre
+      ? textoParaProcesar.replace(new RegExp('(?:tema|sobre el tema|contenido|sobre|clase de)\\s*[:\\s]?\\s*' + temaPre.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&'), 'i'), '')
+      : textoParaProcesar;
+
+    if (!areaPre) {
+      const matchAreaExplicita = textoSinTema.match(/\b(?:en|de|área\s+de)\s+(?:primaria\s+)?(ciencias?\s+sociales?|ciencias?\s+(?:de\s+la\s+)?naturaleza|matem[aá]tica[s]?|lengua\s+española|educaci[oó]n\s+art[ií]stica|educaci[oó]n\s+f[ií]sica|formaci[oó]n\s+integral|ingl[eé]s)\b/i);
+      if (matchAreaExplicita) {
+        const aExp = matchAreaExplicita[1].toLowerCase();
+        if (aExp.includes("social")) areaPre = "Ciencias Sociales";
+        else if (aExp.includes("matem")) areaPre = "Matemática";
+        else if (aExp.includes("naturaleza")) areaPre = "Ciencias de la Naturaleza";
+        else if (aExp.includes("lengua") || aExp.includes("español")) areaPre = "Lengua Española";
+        else if (aExp.includes("art")) areaPre = "Educación Artística";
+        else if (aExp.includes("físic") || aExp.includes("fisic")) areaPre = "Educación Física";
+        else if (aExp.includes("formacion")) areaPre = "Formación Integral Humana y Religiosa";
+        else if (aExp.includes("ingl")) areaPre = "Lenguas Extranjeras - Inglés";
+      }
+    }
+
+    if (!areaPre) {
+      try {
+        areaPre = normalizarArea(textoSinTema);
+      } catch (e) {
+        if (/social/i.test(textoSinTema)) areaPre = "Ciencias Sociales";
+        else if (/matem/i.test(textoSinTema)) areaPre = "Matemática";
+        else if (/natural/i.test(textoSinTema)) areaPre = "Ciencias de la Naturaleza";
+        else if (/lengua|espanol/i.test(textoSinTema)) areaPre = "Lengua Española";
+        else if (/artistica/i.test(textoSinTema)) areaPre = "Educación Artística";
+        else if (/fisica/i.test(textoSinTema)) areaPre = "Educación Física";
+        else if (/formacion|humana|religiosa/i.test(textoSinTema)) areaPre = "Formación Integral Humana y Religiosa";
+        else if (/ingles/i.test(textoSinTema)) areaPre = "Lenguas Extranjeras - Inglés";
+      }
+    }
+
+    let areaDelTema = null;
+    if (temaPre) {
+      try {
+        areaDelTema = normalizarArea(temaPre);
+      } catch (e) {
+        if (/\b(?:fraccion|fracciones|sumas?|restas?|multiplic|division|numeros?|algebra|geometr|matemat)\b/i.test(temaPre)) {
+          areaDelTema = "Matemática";
+        } else if (/\b(?:ecosistema|seres vivos|materia|energia|celula|cuerpo humano|naturaleza)\b/i.test(temaPre)) {
+          areaDelTema = "Ciencias de la Naturaleza";
+        } else if (/\b(?:mapas|geografia|historia|patria|independencia|constitucion|social)\b/i.test(temaPre)) {
+          areaDelTema = "Ciencias Sociales";
+        } else if (/\b(?:cuento|fabula|noticia|carta|instructivo|poema|lengua)\b/i.test(temaPre)) {
+          areaDelTema = "Lengua Española";
+        }
+      }
+    }
+
+    if (!areaPre && areaDelTema) {
+      areaPre = areaDelTema;
+    }
+
+    // 3a. Conflicto entre área pedida y área a la que pertenece el tema
+    if (areaPre && areaDelTema && areaPre !== areaDelTema) {
+      const exp = explicarFallo({
+        codigo: "CONFLICTO_AREA_TEMA",
+        datos: {
+          areaPedida: areaPre,
+          areaDelTema,
+          tema: temaPre,
+          grado: gradoPre || 2
+        }
+      });
+      return responderWorker({
+        data: {
+          ok: false,
+          isError: true,
+          error: true,
+          codigo: "CONFLICTO_AREA_TEMA",
+          codigoError: "CONFLICTO_AREA_TEMA",
+          ...exp,
+          mensaje_chat: exp.textoUsuario,
+          plan_completado: false,
+          datos_planificacion: null
+        },
+        status: 200,
+        estado: "conversando"
+      });
+    }
+
+    // 3b. Tema inexistente en el currículo de ese grado y área
+    if (gradoPre && areaPre && temaPre && env.SUPABASE_URL && (env.SUPABASE_ANON_KEY || env.SUPABASE_SERVICE_ROLE_KEY) && !esModoPrueba && !esLocalhost) {
+      try {
+        const filasTemas = await consultarTemasREST({
+          url: env.SUPABASE_URL,
+          clave: env.SUPABASE_ANON_KEY || env.SUPABASE_SERVICE_ROLE_KEY,
+          grado: gradoPre,
+          area: areaPre
+        });
+        if (filasTemas && filasTemas.length > 0) {
+          const temasUnicos = listarTemasUnicos(filasTemas);
+          const existeTema = filasTemas.some(f => coincideConTema(temaPre, f.tema));
+          if (!existeTema && temasUnicos.length > 0) {
+            const cercanos = temasUnicos.slice(0, 4);
+            const exp = explicarFallo({
+              codigo: "CURRICULO_SIN_DATOS",
+              datos: {
+                grado: gradoPre,
+                area: areaPre,
+                tema: temaPre,
+                cercanos
+              }
+            });
+            return responderWorker({
+              data: {
+                ok: false,
+                isError: true,
+                error: true,
+                codigo: "CURRICULO_SIN_DATOS",
+                codigoError: "CURRICULO_SIN_DATOS",
+                ...exp,
+                mensaje_chat: exp.textoUsuario,
+                plan_completado: false,
+                datos_planificacion: null
+              },
+              status: 200,
+              estado: "conversando"
+            });
+          }
+        }
+      } catch (errTemas) {
+        console.warn("[Pre-chequeo Temas] Error al consultar temas:", errTemas?.message || errTemas);
+      }
+    }
+
+    // 3c. Faltan datos indispensables (área, grado o tema)
+    const esConsultaCortaIncompleta = textoParaProcesar.trim().split(/\s+/).length < 5;
+    if (clasificacion && clasificacion.categoria === "planificacion" && !esModoPrueba && esConsultaCortaIncompleta) {
+      const faltantes = [];
+      if (!gradoPre) faltantes.push("grado");
+      if (!areaPre) faltantes.push("área");
+      if (!temaPre) faltantes.push("tema");
+      if (faltantes.length > 0) {
+        const exp = explicarFallo({
+          codigo: "DATOS_INCOMPLETOS",
+          datos: { faltantes, grado: gradoPre, area: areaPre, tema: temaPre }
+        });
+        return responderWorker({
+          data: {
+            ok: false,
+            isError: true,
+            error: true,
+            codigo: "DATOS_INCOMPLETOS",
+            codigoError: "DATOS_INCOMPLETOS",
+            ...exp,
+            mensaje_chat: exp.textoUsuario,
+            plan_completado: false,
+            datos_planificacion: null
+          },
+          status: 200,
+          estado: "conversando"
+        });
+      }
+    }
 
     const modeloHeader = request.headers.get("x-gemini-model");
     const modeloBody = body && body.modelo ? body.modelo : null;
@@ -2914,14 +3236,22 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                 muestraTexto: (fullText || "").slice(0, 300)
               });
 
+              const expInvalida = explicarFallo({
+                codigo: "IA_RESPUESTA_INVALIDA",
+                detalle: motivoDetalle,
+                datos: { camposFaltantes, motivoDetalle }
+              });
               parsedFinal = {
                 ok: false,
                 isError: true,
+                error: true,
                 codigo: "IA_RESPUESTA_INVALIDA",
-                mensaje: `El modelo de IA devolvió una estructura incompleta (${motivoDetalle}).`,
-                sugerencia: "Intenta pedir la planificación nuevamente indicando el área curricular, grado y un tema específico.",
+                codigoError: "IA_RESPUESTA_INVALIDA",
+                ...expInvalida,
+                mensaje: expInvalida.motivo,
+                sugerencia: expInvalida.queFalta,
                 reintentable: true,
-                mensaje_chat: `Tuve dificultades para organizar los componentes de esta planificación (${motivoDetalle}).\n\n💡 Sugerencia: Intenta solicitarla nuevamente con términos más específicos.`,
+                mensaje_chat: expInvalida.textoUsuario,
                 plan_completado: false,
                 diagnostico_tecnico: {
                   motivo: "VALIDACION_CAMPOS_FALLIDA",

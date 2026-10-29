@@ -1,6 +1,7 @@
 import { obtenerDocenteId } from "./services/perfilStorage.js";
 import { obtenerOrearDispositivoId } from "./hooks/useAuth.js";
 import { extraerJson, mensajeParaChat, validarCamposPlanificacion } from "./utils/parseadorJsonSeguro.js";
+import { explicarFallo } from "../../shared/explicadorFallos.js";
 
 /**
  * Cliente único y centralizado de API para Planifica Maestro.
@@ -160,16 +161,15 @@ async function request(endpoint, options = {}, retries = 2) {
 
     // Error de red o timeout
     const isTimeout = err.name === "AbortError";
-    const isOffline = !navigator.onLine || err.message?.includes("Failed to fetch") || err.message?.includes("NetworkError");
+    const sinInternet = typeof navigator !== "undefined" && navigator.onLine === false;
+    const texto = sinInternet
+      ? "No pude comunicarme con el servidor: este dispositivo no tiene conexión a internet."
+      : "No pude comunicarme con el servidor: no respondió (puede estar caído o saturado). Falta: que el servidor vuelva a responder.";
 
     const apiErr = new ApiError({
       message: err.message,
-      friendlyMessage: isOffline
-        ? "Sin conexión a internet. Verifica tu conexión de red o WiFi."
-        : isTimeout
-        ? "La consulta tardó demasiado en responder (tiempo límite agotado)."
-        : "No fue posible comunicarse con el servidor.",
-      type: isOffline ? "OFFLINE" : isTimeout ? "TIMEOUT" : "NETWORK",
+      friendlyMessage: texto,
+      type: sinInternet ? "OFFLINE" : isTimeout ? "TIMEOUT" : "NETWORK",
       status: 0,
       canRetry: true,
       raw: err,
@@ -411,23 +411,23 @@ export async function generarPlanificacion({
       if (validarCamposPlanificacion(parsedAccum)) return parsedAccum;
     }
 
-    // Fallback de error: mostrar causa devuelta por el worker si existe (T10)
+    // Fallback de error: mostrar causa devuelta por el worker si existe (T10 / Orden 039)
     const errBase = finalData || parsedAccum || {};
     const causaWorker = errBase.mensaje_chat || errBase.mensaje || (accumulatedText && !accumulatedText.startsWith("{") ? accumulatedText.trim() : null);
-    const sugerenciaWorker = errBase.sugerencia || "Intenta solicitarla nuevamente con términos más específicos.";
-    const codigoWorker = errBase.codigo || errBase.codigoError || "IA_RESPUESTA_INVALIDA";
+    const codigoWorker = errBase.codigo || errBase.codigoError || (causaWorker ? "ERROR_INTERNO" : "IA_RESPUESTA_INVALIDA");
+    const exp = explicarFallo({ codigo: codigoWorker, detalle: causaWorker || accumulatedText, datos: errBase });
 
     return {
       ok: false,
       isError: true,
-      codigo: codigoWorker,
-      codigoError: codigoWorker,
-      mensaje: errBase.mensaje || causaWorker || "El modelo de IA devolvió una respuesta incompleta o desordenada.",
-      sugerencia: sugerenciaWorker,
-      reintentable: errBase.reintentable !== false,
-      mensaje_chat: causaWorker
-        ? (causaWorker.includes("💡 Sugerencia") ? causaWorker : `${causaWorker}\n\n💡 Sugerencia: ${sugerenciaWorker}`)
-        : `Tuve dificultades para organizar los componentes de esta planificación.\n\n💡 Sugerencia: ${sugerenciaWorker}`,
+      error: true,
+      ...exp,
+      codigo: exp.codigoError,
+      codigoError: exp.codigoError,
+      mensaje: exp.motivo,
+      sugerencia: exp.queFalta,
+      reintentable: exp.reintentable,
+      mensaje_chat: causaWorker || exp.textoUsuario,
       plan_completado: false,
       ...errBase
     };
@@ -436,21 +436,25 @@ export async function generarPlanificacion({
   // 2. Respuesta estándar JSON
   const resJson = await res.json().catch(() => null);
   if (resJson) {
-    if (resJson.ok === false || resJson.isError) return resJson;
+    if (resJson.ok === false || resJson.isError || resJson.error === true) return resJson;
     if (validarCamposPlanificacion(resJson)) return resJson;
   }
   const causaWorkerJson = resJson?.mensaje_chat || resJson?.mensaje;
-  const sugerenciaWorkerJson = resJson?.sugerencia || "Intenta de nuevo en unos momentos.";
+  const expJson = explicarFallo({
+    codigo: resJson?.codigo || resJson?.codigoError || "ERROR_INTERNO",
+    detalle: causaWorkerJson || "Respuesta sin datos válidos de planificación",
+    datos: resJson || {}
+  });
   return {
     ok: false,
     isError: true,
-    codigo: resJson?.codigo || resJson?.codigoError || "ERROR_INTERNO",
-    codigoError: resJson?.codigoError || resJson?.codigo || "ERROR_INTERNO",
-    mensaje: resJson?.mensaje || "Error al procesar la respuesta del servidor.",
-    sugerencia: sugerenciaWorkerJson,
-    mensaje_chat: causaWorkerJson
-      ? (causaWorkerJson.includes("💡 Sugerencia") ? causaWorkerJson : `${causaWorkerJson}\n\n💡 Sugerencia: ${sugerenciaWorkerJson}`)
-      : "Tuve un problema técnico y no pude completar la solicitud.\n\n💡 Sugerencia: Intenta de nuevo.",
+    error: true,
+    ...expJson,
+    codigo: expJson.codigoError,
+    codigoError: expJson.codigoError,
+    mensaje: expJson.motivo,
+    sugerencia: expJson.queFalta,
+    mensaje_chat: causaWorkerJson || expJson.textoUsuario,
     plan_completado: Boolean(resJson?.plan_completado && resJson?.datos_planificacion),
     ...resJson
   };

@@ -205,3 +205,12 @@
 - **Motivo:** Actualización automática de la PWA (autoUpdate, skipWaiting, clientsClaim, búsqueda periódica y recarga al tomar control) y entrada Acerca de y actualización en el menú de la vista clásica
 - **Frase Textual del Dueño:** `"ORDEN 036 - PWA CON ACTUALIZACIÓN AUTOMÁTICA + BOTÓN DE ACTUALIZACIÓN EN VISTA CLÁSICA + DESPLIEGUE + PUSH"`
 - **Estado:** APLICADA
+
+### Autorización 032
+- **Fecha:** 2026-10-28
+- **Componentes:** `shared/explicadorFallos.js`, `tests/test_explicador_fallos.mjs`, `worker/index.js`, `client/src/api.js`, `client/src/App.jsx`
+- **Motivo:** Cerebro que explica sus fallos, autoevaluación de componentes, detección de contradicciones y opciones tocables
+- **Frase Textual del Dueño:** `"ORDEN 039 - CEREBRO QUE EXPLICA SUS FALLOS, SE AUTOEVALÚA Y BUSCA OPCIONES (AUTORIZADA POR EL DUEÑO AL PEGAR ESTA ORDEN)"`
+- **Tipo de Autorización:** EXPLICITA_DEL_DUENO
+- **Estado:** APLICADA
+
