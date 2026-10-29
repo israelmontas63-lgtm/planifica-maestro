@@ -2650,15 +2650,19 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
     // 2. Verificación de Supabase si está configurado (ping de 1 fila, timeout 1500ms)
     const esLocalhost = url.hostname === "localhost" || url.hostname === "127.0.0.1";
     if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY && !esModoPrueba && !esLocalhost) {
+      const pingController = new AbortController();
+      const pingTimer = setTimeout(() => pingController.abort(), 1500);
       try {
         const pingUrl = `${env.SUPABASE_URL.replace(/\/+$/, "")}/rest/v1/curriculo_secuencias?select=source_id&limit=1`;
-        const pingRes = await fetchWithTimeout(pingUrl, {
+        const pingRes = await fetch(pingUrl, {
           headers: {
             apikey: env.SUPABASE_SERVICE_ROLE_KEY,
             Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
             Accept: "application/json"
-          }
-        }, 1500);
+          },
+          signal: pingController.signal
+        });
+        clearTimeout(pingTimer);
         if (!pingRes || !pingRes.ok) {
           return generarErrorPlanificacion(
             "CURRICULO_NO_CONECTADO",
@@ -2669,6 +2673,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
           );
         }
       } catch (errSupabase) {
+        clearTimeout(pingTimer);
         return generarErrorPlanificacion(
           "CURRICULO_NO_CONECTADO",
           `No se pudo conectar a la base curricular: ${errSupabase?.message || errSupabase}`,
