@@ -1,10 +1,10 @@
 {
   "version": "2.0.0",
-  "fecha_generacion": "2026-10-29T00:12:36.196Z",
-  "commit": "37baf5f",
+  "fecha_generacion": "2026-10-29T00:17:26.610Z",
+  "commit": "d78d9d0",
   "algoritmo": "sha256",
   "total_archivos": 62,
-  "resumen": "73b8a7c6cbaa5240c44a3efc72f1f3179373b82e11beeee686c639f1e7643603",
+  "resumen": "8dba70b0a84c1dbf2f876214b06d88bbd3cd6ac17b6a8933f06b9a00c5e3a224",
   "hashes": {
     "client/src/App.jsx": "3250cc439341fb2d5cf0ef169437fa7a852a1a547da18dded6b8b84c01cf7c72",
     "client/src/api.js": "cf06bedb228a8e163a5e1a4fec872da328dfbd572066f0478ddda6bebb8818d9",
@@ -67,6 +67,6 @@
     "worker/services/curriculoService.js": "3a3647c1d91bdeef07685f84507bece4de9b06748af0ac92eb070e1ffcc2c7bd",
     "worker/services/voiceProvider.js": "362fadb6c4b99aecc26b60ddb8133a0ea76bbbab4c1f7d5044600bdf37697635",
     "worker/verificadorCitas.js": "bbdc7b502b6027eb268b28d360e0af5c6b41b182e52a61f85c900fdcb19f8a81",
-    "wrangler.toml": "b1de29e5f23ea7999db81e3ad1fcbe234bc3d59bfdaee0a87e4edfe49e98a2f1"
+    "wrangler.toml": "5886a94a7eea0bc9a56b5d30be7e22ef6fb39f456ada46059befbe58f5bdd011"
   }
 }
