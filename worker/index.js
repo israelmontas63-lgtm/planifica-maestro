@@ -1332,16 +1332,16 @@ async function handleApiRequest(request, env, ctx) {
     });
   }
 
-  // 7. POST /api/plan/generate y /api/plan (Generación con Gemini y soporte SSE Streaming)
-  if ((path === "/api/plan/generate" || path === "/api/plan") && method === "POST") {
+  // 7. POST /api/plan/generate, /api/plan y /api/planificar (Generación con Gemini y soporte SSE Streaming)
+  if ((path === "/api/plan/generate" || path === "/api/plan" || path === "/api/planificar") && method === "POST") {
     const auth = requerirAcceso(request, env, corsHeaders);
     if (auth.errorResponse) return auth.errorResponse;
     const isOwner = auth.isOwner;
 
     const body = await request.json().catch(() => ({}));
     let { messages = [], nivel, periodo = "diaria", docenteId = "docente_default", stream = false } = body;
-    if ((!messages || messages.length === 0) && (body.tema || body.prompt)) {
-      const query = body.prompt || `Planifica el tema: ${body.tema} (${body.grado || ""} - ${body.area || ""})`;
+    if ((!messages || messages.length === 0) && (body.tema || body.prompt || body.mensaje)) {
+      const query = body.mensaje || body.prompt || `Planifica el tema: ${body.tema} (${body.grado || ""} - ${body.area || ""})`;
       messages = [{ role: "user", text: query }];
     }
     const rawDevId = request.headers.get("x-device-id") || request.headers.get("X-Device-Id") || (docenteId && docenteId !== "docente_default" ? docenteId : null) || request.headers.get("x-docente-id") || ("dev_anon_" + clientIp);
