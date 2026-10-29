@@ -5,6 +5,9 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 ACCESO_ABIERTO = "true"
+HERRAMIENTAS_V2 = "true"
+PROMPT_SISTEMA_V2 = "true"
+STREAMING_PROGRESIVO = "true"
 RATE_LIMIT_DISPOSITIVO_DIARIO = "25"
 RATE_LIMIT_IP_DIARIO = "75"
 RATE_LIMIT_GLOBAL_DIARIO = "500"

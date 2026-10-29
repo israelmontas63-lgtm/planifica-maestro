@@ -214,3 +214,12 @@
 - **Tipo de Autorización:** EXPLICITA_DEL_DUENO
 - **Estado:** APLICADA
 
+### Autorización 033
+- **Fecha:** 2026-10-28
+- **Componentes:** `wrangler.toml`
+- **Motivo:** Activación de banderas V2 del cerebro (herramientas, prompt del sistema y streaming progresivo)
+- **Frase Textual del Dueño:** `"ORDEN 039 - CEREBRO QUE EXPLICA SUS FALLOS, SE AUTOEVALÚA Y BUSCA OPCIONES (AUTORIZADA POR EL DUEÑO AL PEGAR ESTA ORDEN)"`
+- **Tipo de Autorización:** EXPLICITA_DEL_DUENO
+- **Estado:** APLICADA
+
+
