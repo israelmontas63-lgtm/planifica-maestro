@@ -938,11 +938,15 @@ async function handleApiRequest(request, env, ctx) {
     const id = devId || deviceId;
     if (!id || !env || !env.RATE_LIMIT_KV) return;
     try {
+      const msgUser = String(fallo.mensajeUsuario || fallo.texto_original || (typeof textoConsulta !== "undefined" ? textoConsulta : "") || "").trim();
       const payload = JSON.stringify({
         codigoError: fallo.codigoError || fallo.codigo || "ERROR_INTERNO",
         componente: fallo.componente || "Servidor",
         motivo: fallo.motivo || fallo.mensaje || "",
         queFalta: fallo.queFalta || fallo.sugerencia || "",
+        mensajeUsuario: msgUser ? msgUser.slice(0, 300) : undefined,
+        area: fallo.area || fallo.datos?.area || (typeof areaPre !== "undefined" ? areaPre : undefined) || undefined,
+        grado: fallo.grado || fallo.datos?.grado || (typeof gradoPre !== "undefined" ? gradoPre : undefined) || undefined,
         ts: Date.now()
       });
       await env.RATE_LIMIT_KV.put("ultimo_fallo:" + id, payload, { expirationTtl: 3600 });
@@ -1464,9 +1468,17 @@ async function handleApiRequest(request, env, ctx) {
 
     const isStream = Boolean(stream || request.headers.get("accept")?.includes("text/event-stream"));
 
+    let gradoPre = null;
+    let areaPre = null;
+
     async function responderWorker({ data, status = 200, estado = "pensando" }) {
       if (data && (data.error === true || data.isError === true)) {
-        await guardarUltimoFallo(deviceId, data);
+        await guardarUltimoFallo(deviceId, {
+          ...data,
+          mensajeUsuario: textoConsulta,
+          area: (typeof areaPre !== "undefined" && areaPre) ? areaPre : (data.datos?.area || data.area || undefined),
+          grado: (typeof gradoPre !== "undefined" && gradoPre) ? gradoPre : (data.datos?.grado || data.grado || undefined)
+        });
       }
       if (resultadoCorreccion) {
         data.texto_original = resultadoCorreccion.textoOriginal;
@@ -1737,6 +1749,7 @@ async function handleApiRequest(request, env, ctx) {
       const primeraFrase = describirCapacidades(caps);
 
       let falloRecienteStr = "No tengo registrado un error previo en este dispositivo.";
+      let fGuardado = null;
       if (env && env.RATE_LIMIT_KV && deviceId) {
         try {
           const rawFallo = await env.RATE_LIMIT_KV.get("ultimo_fallo:" + deviceId);
@@ -1744,6 +1757,7 @@ async function handleApiRequest(request, env, ctx) {
             const f = JSON.parse(rawFallo);
             if (f && f.ts && (Date.now() - f.ts < 3600 * 1000)) {
               falloRecienteStr = `Lo último que no pude hacer: ${f.motivo} Falta: ${f.queFalta}`;
+              fGuardado = f;
             }
           }
         } catch (errKv) {
@@ -1754,19 +1768,143 @@ async function handleApiRequest(request, env, ctx) {
       const cierre = "¿Quieres que lo pruebe otra vez con los mismos datos o prefieres cambiar el tema?";
       const mensajeChat = `${primeraFrase} ${falloRecienteStr} ${cierre}`;
 
-      const opciones = [
-        { texto: "Probar otra vez con los mismos datos", mensaje: "Prueba otra vez con los mismos datos" },
-        { texto: "Cambiar el tema", mensaje: "Quiero cambiar el tema" }
-      ];
+      const opciones = [];
+      if (fGuardado && fGuardado.mensajeUsuario) {
+        opciones.push({
+          texto: "Probar otra vez con los mismos datos",
+          mensaje: fGuardado.mensajeUsuario
+        });
+      }
+      if (fGuardado && fGuardado.area && fGuardado.grado) {
+        const gFmt = typeof fGuardado.grado === "number" ? `${fGuardado.grado}.º` : fGuardado.grado;
+        opciones.push({
+          texto: "Cambiar el tema",
+          mensaje: `Muéstrame temas de ${fGuardado.area} ${gFmt}`.replace(/\s+/g, " ").trim()
+        });
+      }
+
+      const payloadDiag = {
+        ok: true,
+        isError: false,
+        modo: "autodiagnostico",
+        categoria: "autodiagnostico",
+        mensaje_chat: mensajeChat,
+        texto: mensajeChat,
+        plan_completado: false,
+        datos_planificacion: null
+      };
+      if (opciones.length > 0) {
+        payloadDiag.opciones = opciones;
+      }
+
+      return responderWorker({
+        data: payloadDiag,
+        status: 200,
+        estado: "conversando"
+      });
+    }
+
+    // Atajo determinista: "Muéstrame temas de <área> <grado>"
+    const matchMuestrameTemas = textoParaProcesar.match(/^\s*mu[eé]strame\s+temas\s+de\s+(.+?)\s*$/i);
+    if (matchMuestrameTemas) {
+      const restoTemas = matchMuestrameTemas[1].trim();
+      let gradoTema = gradoANumero(restoTemas);
+      if (!gradoTema) {
+        const mg = gradosMultiples(restoTemas);
+        if (mg.length > 0) gradoTema = mg[0];
+      }
+      let areaTema = null;
+      try {
+        areaTema = normalizarArea(restoTemas);
+      } catch (eArea) {
+        if (/social/i.test(restoTemas)) areaTema = "Ciencias Sociales";
+        else if (/matem/i.test(restoTemas)) areaTema = "Matemática";
+        else if (/natural/i.test(restoTemas)) areaTema = "Ciencias de la Naturaleza";
+        else if (/lengua|español|espanol/i.test(restoTemas)) areaTema = "Lengua Española";
+        else if (/artistica/i.test(restoTemas)) areaTema = "Educación Artística";
+        else if (/fisica/i.test(restoTemas)) areaTema = "Educación Física";
+        else if (/formacion|humana|religiosa/i.test(restoTemas)) areaTema = "Formación Integral Humana y Religiosa";
+        else if (/ingles/i.test(restoTemas)) areaTema = "Lenguas Extranjeras - Inglés";
+      }
+
+      if (!gradoTema) {
+        const exp = explicarFallo({
+          codigo: "DATOS_INCOMPLETOS",
+          datos: {
+            area: areaTema || restoTemas,
+            faltantes: ["grado"]
+          }
+        });
+        return responderWorker({
+          data: {
+            ok: false,
+            isError: true,
+            error: true,
+            codigo: "DATOS_INCOMPLETOS",
+            codigoError: "DATOS_INCOMPLETOS",
+            ...exp,
+            mensaje_chat: exp.textoUsuario,
+            plan_completado: false,
+            datos_planificacion: null
+          },
+          status: 200,
+          estado: "conversando"
+        });
+      }
+
+      const gradoFmt = typeof gradoTema === "number" ? `${gradoTema}.º` : gradoTema;
+      let filasTemas = [];
+      if (env && env.SUPABASE_URL && (env.SUPABASE_ANON_KEY || env.SUPABASE_SERVICE_ROLE_KEY)) {
+        try {
+          filasTemas = await consultarTemasREST({
+            url: env.SUPABASE_URL,
+            clave: env.SUPABASE_ANON_KEY || env.SUPABASE_SERVICE_ROLE_KEY,
+            grado: gradoTema,
+            area: areaTema
+          });
+        } catch (eTemas) {
+          console.warn("[Lista Temas] Error al consultar temas:", eTemas?.message || eTemas);
+        }
+      }
+
+      const temasUnicos = listarTemasUnicos(filasTemas);
+      if (temasUnicos.length === 0) {
+        const msgVacio = `No tengo temas cargados de ${areaTema || restoTemas} ${gradoFmt} en el currículo oficial.`;
+        return responderWorker({
+          data: {
+            ok: true,
+            modo: "lista_temas",
+            categoria: "lista_temas",
+            mensaje_chat: msgVacio,
+            texto: msgVacio,
+            opciones: [],
+            plan_completado: false,
+            datos_planificacion: null
+          },
+          status: 200,
+          estado: "conversando"
+        });
+      }
+
+      const textoResumen = formatearListaTemas(temasUnicos, 10);
+      const listaNumerada = temasUnicos.slice(0, 10).map((t, idx) => `${idx + 1}. ${t}`).join("\n");
+      const sufijoResto = temasUnicos.length > 10 ? `\n... y ${temasUnicos.length - 10} más.` : "";
+      const mensajeChat = `Temas de ${areaTema} ${gradoFmt} en el currículo oficial:\n${listaNumerada}${sufijoResto}`;
+
+      const opciones = temasUnicos.slice(0, 6).map(tema => ({
+        texto: tema,
+        mensaje: `Quiero la planificación de ${areaTema} ${gradoFmt} tema ${tema}`.replace(/\s+/g, " ").trim()
+      }));
 
       return responderWorker({
         data: {
           ok: true,
-          isError: false,
-          modo: "autodiagnostico",
-          categoria: "autodiagnostico",
+          modo: "lista_temas",
+          categoria: "lista_temas",
           mensaje_chat: mensajeChat,
           texto: mensajeChat,
+          resumen_temas: textoResumen,
+          temas: temasUnicos,
           opciones,
           plan_completado: false,
           datos_planificacion: null
@@ -2719,52 +2857,10 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
       };
     });
 
-    if (iaApagada) return generarErrorPlanificacion("IA_NO_DISPONIBLE", "El servicio de inteligencia artificial está en mantenimiento breve.", "Puedes seguir consultando el currículo oficial y las secuencias didácticas disponibles.", false);
-
-    // 1. Verificación previa de clave de IA
-    if (!env.GEMINI_API_KEY) {
-      return generarErrorPlanificacion("SIN_CLAVE_IA", "Falta GEMINI_API_KEY en la configuración del servidor.", "Configura GEMINI_API_KEY en las variables de entorno de Cloudflare Workers.", false, 503);
-    }
-
-    // 2. Verificación de Supabase si está configurado (ping de 1 fila, timeout 1500ms)
     const esLocalhost = url.hostname === "localhost" || url.hostname === "127.0.0.1";
-    if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY && !esModoPrueba && !esLocalhost) {
-      const pingController = new AbortController();
-      const pingTimer = setTimeout(() => pingController.abort(), 1500);
-      try {
-        const pingUrl = `${env.SUPABASE_URL.replace(/\/+$/, "")}/rest/v1/curriculo_secuencias?select=source_id&limit=1`;
-        const pingRes = await fetch(pingUrl, {
-          headers: {
-            apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-            Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
-            Accept: "application/json"
-          },
-          signal: pingController.signal
-        });
-        clearTimeout(pingTimer);
-        if (!pingRes || !pingRes.ok) {
-          return generarErrorPlanificacion(
-            "CURRICULO_NO_CONECTADO",
-            "La base curricular de Supabase no respondió al ping de verificación.",
-            "Verifica la disponibilidad del servicio Supabase y sus claves.",
-            true,
-            503
-          );
-        }
-      } catch (errSupabase) {
-        clearTimeout(pingTimer);
-        return generarErrorPlanificacion(
-          "CURRICULO_NO_CONECTADO",
-          `No se pudo conectar a la base curricular: ${errSupabase?.message || errSupabase}`,
-          "Verifica la conectividad de red con Supabase.",
-          true,
-          503
-        );
-      }
-    }
-
     // 3. Pre-chequeo semántico R2 (conflicto de área/tema, tema inexistente, datos incompletos)
-    let gradoPre = body.grado ? gradoANumero(body.grado) : gradoANumero(textoParaProcesar);
+    const gradoEnCuerpo = body.grado || body.perfil?.grado || body.contextoDocente?.grado || body.contexto?.grado || null;
+    gradoPre = gradoEnCuerpo ? (gradoANumero(gradoEnCuerpo) || gradoEnCuerpo) : gradoANumero(textoParaProcesar);
     if (!gradoPre) {
       const mgPre = gradosMultiples(textoParaProcesar);
       if (mgPre.length > 0) gradoPre = mgPre[0];
@@ -2783,7 +2879,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
       temaPre = "";
     }
 
-    let areaPre = (body.area || "").trim();
+    areaPre = (body.area || "").trim();
     const textoSinTema = temaPre
       ? textoParaProcesar.replace(new RegExp('(?:tema|sobre el tema|contenido|sobre|clase de)\\s*[:\\s]?\\s*' + temaPre.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&'), 'i'), '')
       : textoParaProcesar;
@@ -2882,7 +2978,37 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
           const temasUnicos = listarTemasUnicos(filasTemas);
           const existeTema = filasTemas.some(f => coincideConTema(temaPre, f.tema));
           if (!existeTema && temasUnicos.length > 0) {
-            const cercanos = temasUnicos.slice(0, 4);
+            let cercanos = temasUnicos.slice(0, 4);
+            const gNum = typeof gradoPre === "number" ? gradoPre : gradoANumero(gradoPre);
+            if (cercanos.length < 4 && gNum) {
+              const gradosVecinos = [];
+              if (gNum > 1) gradosVecinos.push(gNum - 1);
+              if (gNum < 6) gradosVecinos.push(gNum + 1);
+              for (const gV of gradosVecinos) {
+                if (cercanos.length >= 4) break;
+                try {
+                  const filasV = await consultarTemasREST({
+                    url: env.SUPABASE_URL,
+                    clave: env.SUPABASE_ANON_KEY || env.SUPABASE_SERVICE_ROLE_KEY,
+                    grado: gV,
+                    area: areaPre
+                  });
+                  if (filasV && filasV.length > 0) {
+                    const temasV = listarTemasUnicos(filasV);
+                    for (const tv of temasV) {
+                      if (cercanos.length >= 4) break;
+                      const temaConGrado = `${tv} (${gV}.º)`;
+                      if (!cercanos.includes(temaConGrado)) {
+                        cercanos.push(temaConGrado);
+                      }
+                    }
+                  }
+                } catch (eV) {
+                  // ignore
+                }
+              }
+            }
+
             const exp = explicarFallo({
               codigo: "CURRICULO_SIN_DATOS",
               datos: {
@@ -2895,6 +3021,15 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                 cercanos
               }
             });
+
+            const gFmt = typeof gradoPre === "number" ? `${gradoPre}.º` : gradoPre;
+            if (Array.isArray(exp.opciones)) {
+              exp.opciones.push({
+                texto: `Ver todos los temas de ${areaPre} ${gFmt}`.replace(/\s+/g, " ").trim(),
+                mensaje: `Muéstrame temas de ${areaPre} ${gFmt}`.replace(/\s+/g, " ").trim()
+              });
+            }
+
             return responderWorker({
               data: {
                 ok: false,
@@ -2903,6 +3038,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                 codigo: "CURRICULO_SIN_DATOS",
                 codigoError: "CURRICULO_SIN_DATOS",
                 ...exp,
+                cercanos,
                 mensaje_chat: exp.textoUsuario,
                 plan_completado: false,
                 datos_planificacion: null
@@ -2918,12 +3054,18 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
     }
 
     // 3c. Faltan datos indispensables (área, grado o tema)
-    const esConsultaCortaIncompleta = textoParaProcesar.trim().split(/\s+/).length < 5;
-    if (clasificacion && clasificacion.categoria === "planificacion" && !esModoPrueba && esConsultaCortaIncompleta) {
+    if (clasificacion && clasificacion.categoria === "planificacion" && !esModoPrueba) {
       const faltantes = [];
-      if (!gradoPre) faltantes.push("grado");
-      if (!areaPre) faltantes.push("área");
-      if (!temaPre) faltantes.push("tema");
+      const docenteDijoGrado = Boolean(gradoANumero(textoParaProcesar) || (gradosMultiples(textoParaProcesar).length > 0));
+      const tieneGradoExplicitoCuerpo = Boolean(gradoEnCuerpo);
+      if (!docenteDijoGrado && !tieneGradoExplicitoCuerpo) {
+        faltantes.push("grado");
+      }
+      const esConsultaCortaIncompleta = textoParaProcesar.trim().split(/\s+/).length < 5;
+      if (esConsultaCortaIncompleta) {
+        if (!areaPre) faltantes.push("área");
+        if (!temaPre) faltantes.push("tema");
+      }
       if (faltantes.length > 0) {
         const exp = explicarFallo({
           codigo: "DATOS_INCOMPLETOS",
@@ -2951,6 +3093,51 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
           status: 200,
           estado: "conversando"
         });
+      }
+    }
+
+
+    if (iaApagada) return generarErrorPlanificacion("IA_NO_DISPONIBLE", "El servicio de inteligencia artificial está en mantenimiento breve.", "Puedes seguir consultando el currículo oficial y las secuencias didácticas disponibles.", false);
+
+    // 1. Verificación previa de clave de IA
+    if (!env.GEMINI_API_KEY) {
+      return generarErrorPlanificacion("SIN_CLAVE_IA", "Falta GEMINI_API_KEY en la configuración del servidor.", "Configura GEMINI_API_KEY en las variables de entorno de Cloudflare Workers.", false, 503);
+    }
+
+    // 2. Verificación de Supabase si está configurado (ping de 1 fila, timeout 1500ms)
+    // esLocalhost ya evaluado en pre-chequeo
+    if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY && !esModoPrueba && !esLocalhost) {
+      const pingController = new AbortController();
+      const pingTimer = setTimeout(() => pingController.abort(), 1500);
+      try {
+        const pingUrl = `${env.SUPABASE_URL.replace(/\/+$/, "")}/rest/v1/curriculo_secuencias?select=source_id&limit=1`;
+        const pingRes = await fetch(pingUrl, {
+          headers: {
+            apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+            Accept: "application/json"
+          },
+          signal: pingController.signal
+        });
+        clearTimeout(pingTimer);
+        if (!pingRes || !pingRes.ok) {
+          return generarErrorPlanificacion(
+            "CURRICULO_NO_CONECTADO",
+            "La base curricular de Supabase no respondió al ping de verificación.",
+            "Verifica la disponibilidad del servicio Supabase y sus claves.",
+            true,
+            503
+          );
+        }
+      } catch (errSupabase) {
+        clearTimeout(pingTimer);
+        return generarErrorPlanificacion(
+          "CURRICULO_NO_CONECTADO",
+          `No se pudo conectar a la base curricular: ${errSupabase?.message || errSupabase}`,
+          "Verifica la conectividad de red con Supabase.",
+          true,
+          503
+        );
       }
     }
 

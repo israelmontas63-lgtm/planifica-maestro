@@ -230,4 +230,11 @@
 - **Tipo de Autorización:** EXPLICITA_DEL_DUENO
 - **Estado:** APLICADA
 
+### Autorización 035
+- **Fecha:** 29/10/2026
+- **Componentes:** `worker/index.js`, `tests/test_opciones_robot.mjs`
+- **Motivo:** El robot pregunta el grado en vez de adivinarlo, opciones de temas cercanos y botón Ver todos los temas, lista de temas por área y grado, y botones del autodiagnóstico sin callejones
+- **Frase Textual del Dueño:** `"ORDEN 043 - EL ROBOT PREGUNTA EL GRADO, LOS BOTONES FUNCIONAN DE VERDAD Y SE MIDE LA COBERTURA DEL CURRÍCULO"`
+- **Estado:** APLICADA
+
 
