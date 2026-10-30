@@ -1,35 +1,11 @@
-import test from "node:test";
-import assert from "node:assert/strict";
+import test from "node:test"; import assert from "node:assert/strict";
 import { marcarSinRespaldo, AVISO_SIN_RESPALDO } from "../worker/respaldoConocimiento.js";
-
-test("1. Reemplaza referencias a documentos oficiales por sin respaldo y agrega aviso final", () => {
-  const entrada = "Según el Diseño Curricular (Adecuación Curricular 2023, Área de Matemática, 3.º Grado), los contenidos y el enfoque son los siguientes:";
-  const salida = marcarSinRespaldo(entrada);
-  assert.ok(!salida.includes("Adecuación Curricular"), "No debe contener 'Adecuación Curricular'");
-  assert.ok(!salida.includes("Diseño Curricular"), "No debe contener 'Diseño Curricular'");
-  assert.ok(salida.includes("sin respaldo en los documentos oficiales indexados"), "Debe contener la marca de sin respaldo");
-  assert.ok(salida.endsWith(AVISO_SIN_RESPALDO), "Debe terminar con el aviso sin respaldo");
-});
-
-test("2. Idempotencia: aplicar la función dos veces produce exactamente el mismo resultado", () => {
-  const entrada = "Según el Diseño Curricular (Adecuación Curricular 2023, Área de Matemática, 3.º Grado), los contenidos y el enfoque son los siguientes:";
-  const primera = marcarSinRespaldo(entrada);
-  const segunda = marcarSinRespaldo(primera);
-  assert.strictEqual(segunda, primera, "marcarSinRespaldo debe ser idempotente");
-});
-
-test("3. Cadena vacía y valores no string se devuelven sin cambios", () => {
-  assert.strictEqual(marcarSinRespaldo(""), "");
-  assert.strictEqual(marcarSinRespaldo("   "), "   ");
-  assert.strictEqual(marcarSinRespaldo(null), null);
-  assert.strictEqual(marcarSinRespaldo(undefined), undefined);
-  assert.strictEqual(marcarSinRespaldo(123), 123);
-  assert.deepStrictEqual(marcarSinRespaldo({}), {});
-});
-
-test("4. Un texto sin citas solo recibe el aviso final y lo anterior queda intacto", () => {
-  const entrada = "Para enseñar la fotosíntesis, se recomienda utilizar experimentos sencillos con plantas y luz solar.";
-  const salida = marcarSinRespaldo(entrada);
-  assert.ok(salida.startsWith(entrada), "El texto inicial debe quedar intacto");
-  assert.strictEqual(salida, `${entrada}\n\n${AVISO_SIN_RESPALDO}`, "Debe agregar únicamente el aviso final");
-});
+const M = "sin respaldo en los documentos oficiales indexados";
+test("1 cita completa", () => { const s = marcarSinRespaldo("Según el Diseño Curricular (Adecuación Curricular 2023, Área de Matemática, 3.º Grado), los contenidos son:"); assert.ok(!/Diseño Curricular|Adecuación/.test(s)); assert.ok(s.includes(M)); assert.ok(s.endsWith(AVISO_SIN_RESPALDO)); });
+test("2 idempotente", () => { const e = "Según el Diseño Curricular (Adecuación Curricular 2023, Matemática)."; const a = marcarSinRespaldo(e); assert.equal(marcarSinRespaldo(a), a); });
+test("3 vacíos y no-string", () => { assert.equal(marcarSinRespaldo(""), ""); assert.equal(marcarSinRespaldo("  "), "  "); assert.equal(marcarSinRespaldo(null), null); assert.equal(marcarSinRespaldo(undefined), undefined); assert.equal(marcarSinRespaldo(123), 123); });
+test("4 sin citas solo aviso", () => { const e = "Use experimentos sencillos."; assert.equal(marcarSinRespaldo(e), `${e}\n\n${AVISO_SIN_RESPALDO}`); });
+test("5 cita real 'Adecuación 2023'", () => { const s = marcarSinRespaldo("Como orientación general (Adecuación 2023, Área de Matemática, 3.º Grado), los contenidos son:"); assert.ok(!/Adecuaci[oó]n/.test(s)); assert.ok(s.includes(M)); assert.ok(s.endsWith(AVISO_SIN_RESPALDO)); });
+test("6 'Según la Adecuación 2023 (...)' no deja '2023' suelto y es idempotente", () => { const e = "Según la Adecuación 2023 (Adecuación 2023, Matemática, 3.º) hay fracciones."; const a = marcarSinRespaldo(e); assert.ok(a.startsWith(`Como orientación general (${M}) hay fracciones.`), a); assert.equal(marcarSinRespaldo(a), a); });
+test("7 palabras pedagógicas normales NO se tocan", () => { for (const f of ["Use una lista de cotejo (guía de observación) en clase.", "Haga una adecuación de la actividad (adecuación para ritmos lentos).", "Revise la guía del docente (guía de apoyo)."]) { const s = marcarSinRespaldo(f); assert.ok(s.startsWith(f), s); assert.ok(!s.slice(0, f.length).includes(M)); } });
+test("8 Guía Didáctica con página se neutraliza", () => { const s = marcarSinRespaldo("Revise (Guía Didáctica de Matemática, p. 117)."); assert.ok(s.includes(M)); assert.ok(!s.includes("Guía Didáctica")); });

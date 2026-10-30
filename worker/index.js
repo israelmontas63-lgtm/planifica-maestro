@@ -16,6 +16,7 @@ import { tieneIntencionExplicita, identificarImagenWorker, getGeminiVisionModels
 import { corregirTextoPedagogico } from "./correctorTexto.js";
 import { verificarYSanearCitas } from "./verificadorCitas.js";
 import { marcarSinRespaldo } from "./respaldoConocimiento.js";
+import { filtrarTemas } from "./filtroTemas.js";
 import { extraerJson, mensajeParaChat, validarCamposPlanificacion, repararJsonTruncado, extraerBloquesCompletados, planEsRecuperable } from "./parseadorJsonSeguro.js";
 import { evaluarPoliticaDignidad } from "./politicaDignidadImagen.js";
 import { obtenerOperacionPorId } from "./catalogoEdicionImagen.js";
@@ -1868,7 +1869,7 @@ async function handleApiRequest(request, env, ctx) {
         }
       }
 
-      const temasUnicos = listarTemasUnicos(filasTemas);
+      const temasUnicos = filtrarTemas(listarTemasUnicos(filasTemas));
       if (temasUnicos.length === 0) {
         const msgVacio = `No tengo temas cargados de ${areaTema || restoTemas} ${gradoFmt} en el currículo oficial.`;
         return responderWorker({
@@ -3056,7 +3057,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
         }
 
         if (temaPre) {
-          const temasUnicos = listarTemasUnicos(filasTemas);
+          const temasUnicos = filtrarTemas(listarTemasUnicos(filasTemas));
           const existeTema = filasTemas.some(f => coincideConTema(temaPre, f.tema));
           if (!existeTema && temasUnicos.length > 0) {
             let cercanos = temasUnicos.slice(0, 4);
@@ -3074,7 +3075,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                     area: areaPre
                   });
                   if (filasV && filasV.length > 0) {
-                    const temasV = listarTemasUnicos(filasV);
+                    const temasV = filtrarTemas(listarTemasUnicos(filasV));
                     for (const tv of temasV) {
                       if (cercanos.length >= 4) break;
                       const temaConGrado = `${tv} (${gV}.º)`;

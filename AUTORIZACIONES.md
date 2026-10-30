@@ -245,8 +245,16 @@
 - **Estado:** APLICADA
 
 ### Autorización 037
-- **Fecha:** 29/10/2026
+- **Fecha:** 30/10/2026
 - **Componentes:** `worker/index.js`, `worker/respaldoConocimiento.js`, `tests/test_opciones_robot.mjs`, `tests/test_conocimiento_respaldo.mjs`
 - **Motivo:** Botones de grados disponibles abren la lista de temas; respaldo explícito en conocimiento general
 - **Frase Textual del Dueño:** `"ORDEN 046 - CORRECCIÓN REAL DEL PASO 3, RESPALDO EN CONOCIMIENTO GENERAL Y DIAGNÓSTICO DE RUTA"`
 - **Estado:** APLICADA
+
+### Autorización 038
+- **Fecha:** 30/10/2026
+- **Componentes:** `worker/index.js`, `worker/respaldoConocimiento.js`, `worker/filtroTemas.js`, `tests/test_conocimiento_respaldo.mjs`, `tests/test_filtro_temas.mjs`, `tests/test_opciones_robot.mjs`
+- **Motivo:** Citas falsas neutralizadas con patrón específico para adecuación con año, filtro de temas fragmentados en listas y opciones
+- **Frase Textual del Dueño:** `"ORDEN 048 - CITAS FALSAS, FILTRO DE TEMAS FRAGMENTADOS Y DIAGNOSTICO DE VELOCIDAD"`
+- **Estado:** APLICADA
+

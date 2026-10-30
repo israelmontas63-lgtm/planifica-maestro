@@ -513,3 +513,58 @@ test('9. Botones de grados disponibles con tema en el pedido abren lista de tema
   }
 });
 
+// ============================================================================
+// (10) Descarte de temas fragmentados en lista_temas
+// ============================================================================
+test('10. Descarte de temas fragmentados en lista_temas: no incluye "naturales como mínimo"', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, opts) => {
+    const urlStr = String(url);
+    if (urlStr.includes('curriculo_secuencias')) {
+      return {
+        ok: true,
+        json: async () => [
+          { source_id: 'SEC-PRI-2-MAT-001', tema: 'Conteo y representación de números' },
+          { source_id: 'SEC-PRI-2-MAT-002', tema: 'Series numéricas y valor de posición' },
+          { source_id: 'SEC-PRI-2-MAT-003', tema: 'Suma y resta con agrupamientos de 10' },
+          { source_id: 'SEC-PRI-2-MAT-007', tema: 'naturales como mínimo' }
+        ]
+      };
+    }
+    return originalFetch(url, opts);
+  };
+
+  try {
+    const envWithSupabase = {
+      ...envBase,
+      SUPABASE_URL: 'https://test-curriculo.supabase.co',
+      SUPABASE_ANON_KEY: 'test-anon-key'
+    };
+
+    const req = new Request('http://localhost/api/plan/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-app-key': 'clave-institucional-test'
+      },
+      body: JSON.stringify({
+        messages: [{ role: 'user', text: 'Muéstrame temas de Matemática 2.º' }]
+      })
+    });
+
+    const res = await worker.fetch(req, envWithSupabase, { waitUntil: () => {} });
+    assert.strictEqual(res.status, 200);
+    const data = await res.json();
+
+    assert.strictEqual(data.ok, true);
+    assert.strictEqual(data.modo, 'lista_temas');
+    assert.ok(Array.isArray(data.temas), 'Debe traer arreglo de temas');
+    assert.ok(!data.temas.includes('naturales como mínimo'), 'data.temas NO debe contener "naturales como mínimo"');
+    assert.ok(!data.opciones.some((o) => /naturales/i.test(o.mensaje)), 'ningún data.opciones[].mensaje debe contener "naturales"');
+    assert.ok(!data.mensaje_chat.includes('naturales como mínimo'), 'data.mensaje_chat NO debe contener "naturales como mínimo"');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+
