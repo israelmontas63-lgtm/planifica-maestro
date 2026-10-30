@@ -401,6 +401,15 @@ test('7. Área y grado sin datos: motivo empieza por "No tengo secuencias cargad
     assert.strictEqual(data.opciones.length, 3);
     assert.ok(data.opciones.every((o) => ['1.º', '2.º', '3.º'].some((g) => o.texto.includes(g))));
     assert.ok(!data.opciones.some((o) => o.texto.includes('5.º')), 'No debe incluir el grado sin datos');
+    assert.ok(
+      data.opciones.every(
+        (o) =>
+          o.mensaje.startsWith('Muéstrame temas de ') &&
+          o.mensaje.includes('Lengua Española') &&
+          ['1.º', '2.º', '3.º'].some((g) => o.mensaje.includes(g))
+      ),
+      `Cada mensaje de opción debe empezar por "Muéstrame temas de " y contener área y grado: ${JSON.stringify(data.opciones)}`
+    );
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -450,3 +459,57 @@ test('8. Área sin ningún dato en ningún grado: sin opciones', async () => {
     globalThis.fetch = originalFetch;
   }
 });
+
+// ============================================================================
+// (9) Botones de grados disponibles con tema en el pedido abren lista de temas
+// ============================================================================
+test('9. Botones de grados disponibles con tema en el pedido abren lista de temas', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, opts) => {
+    const urlStr = String(url);
+    if (urlStr.includes('curriculo_secuencias')) {
+      if (urlStr.includes('grado_num=eq.5') && urlStr.includes('area=eq.Lengua%20Espa%C3%B1ola')) {
+        return { ok: true, json: async () => [] };
+      }
+      if (urlStr.includes('select=grado_num')) {
+        return {
+          ok: true,
+          json: async () => [{ grado_num: 1 }, { grado_num: 2 }, { grado_num: 3 }]
+        };
+      }
+    }
+    return originalFetch(url, opts);
+  };
+
+  try {
+    const envWithSupabase = {
+      ...envBase,
+      SUPABASE_URL: 'https://test-curriculo.supabase.co',
+      SUPABASE_ANON_KEY: 'test-anon-key'
+    };
+
+    const req = new Request('https://planifica-maestro.test.workers.dev/api/plan/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-app-key': 'clave-institucional-test'
+      },
+      body: JSON.stringify({
+        messages: [{ role: 'user', text: 'Quiero la planificación de lengua española de 5.º tema el cuento' }]
+      })
+    });
+
+    const res = await worker.fetch(req, envWithSupabase, { waitUntil: () => {} });
+    assert.strictEqual(res.status, 200);
+    const data = await res.json();
+
+    assert.ok(data.opciones.length > 0, 'Debe haber botones de grados disponibles');
+    assert.ok(
+      data.opciones.every((o) => o.mensaje.startsWith('Muéstrame temas de ') && !/tema el cuento/i.test(o.mensaje)),
+      `Los botones deben abrir la lista de temas, no pedir el tema original: ${JSON.stringify(data.opciones)}`
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+

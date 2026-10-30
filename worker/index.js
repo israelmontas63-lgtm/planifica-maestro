@@ -15,6 +15,7 @@ import {
 import { tieneIntencionExplicita, identificarImagenWorker, getGeminiVisionModels, analizarCalidadImagen } from "./ojoDigital.js";
 import { corregirTextoPedagogico } from "./correctorTexto.js";
 import { verificarYSanearCitas } from "./verificadorCitas.js";
+import { marcarSinRespaldo } from "./respaldoConocimiento.js";
 import { extraerJson, mensajeParaChat, validarCamposPlanificacion, repararJsonTruncado, extraerBloquesCompletados, planEsRecuperable } from "./parseadorJsonSeguro.js";
 import { evaluarPoliticaDignidad } from "./politicaDignidadImagen.js";
 import { obtenerOperacionPorId } from "./catalogoEdicionImagen.js";
@@ -2646,6 +2647,7 @@ async function handleApiRequest(request, env, ctx) {
             if (res && res.ok) {
               const data = await res.json();
               textoGenerado = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+              textoGenerado = marcarSinRespaldo(textoGenerado);
               if (textoGenerado) break;
             }
           } catch (e) {

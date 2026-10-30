@@ -244,5 +244,9 @@
 - **Frase Textual del Dueño:** `"ORDEN 044 - BOTONES DE GRADOS VECINOS CORRECTOS, COBERTURA REAL DEL CURRÍCULO, AVISO DE GRADOS DISPONIBLES Y PRUEBAS POR LA RUTA DEL CLIENTE"`
 - **Estado:** APLICADA
 
-
-
+### Autorización 037
+- **Fecha:** 29/10/2026
+- **Componentes:** `worker/index.js`, `worker/respaldoConocimiento.js`, `tests/test_opciones_robot.mjs`, `tests/test_conocimiento_respaldo.mjs`
+- **Motivo:** Botones de grados disponibles abren la lista de temas; respaldo explícito en conocimiento general
+- **Frase Textual del Dueño:** `"ORDEN 046 - CORRECCIÓN REAL DEL PASO 3, RESPALDO EN CONOCIMIENTO GENERAL Y DIAGNÓSTICO DE RUTA"`
+- **Estado:** APLICADA
