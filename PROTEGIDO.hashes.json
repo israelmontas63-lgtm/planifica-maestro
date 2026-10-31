@@ -1,10 +1,10 @@
 {
   "version": "2.0.0",
-  "fecha_generacion": "2026-10-31T14:19:38.141Z",
-  "commit": "61fdb5c",
+  "fecha_generacion": "2026-10-31T14:43:15.352Z",
+  "commit": "e881312",
   "algoritmo": "sha256",
   "total_archivos": 62,
-  "resumen": "e893ba7d5441821d91337c37b68fd88966b78c72bf519e9513f800b67c4672db",
+  "resumen": "80b5b0ceedf9822b2452e0c6d0ae7d24a0732a2c128267c51b767d190d3af351",
   "hashes": {
     "client/src/App.jsx": "3250cc439341fb2d5cf0ef169437fa7a852a1a547da18dded6b8b84c01cf7c72",
     "client/src/api.js": "cf06bedb228a8e163a5e1a4fec872da328dfbd572066f0478ddda6bebb8818d9",
@@ -37,7 +37,7 @@
     "shared/catalogoEdicionImagen.js": "16e5e58f051ddfa79bc56b426bbc3a698c074d01517a8247e19961ec0e2b751f",
     "shared/ciclo.js": "215b9443ce855a75288cebc35c602895206eb0cf742576674a25906ad70665e0",
     "shared/clasificadorIntencion.js": "657bc3a1f57a2f0263903c32dc758583603ca387d26065fc4e87dfe27ab07d61",
-    "shared/constantsOjoDigital.js": "b3a777c27261599b25f1b91a9ccb65aa854d59c870636767e51206bf060b4600",
+    "shared/constantsOjoDigital.js": "e7ef5b68d177da331cd92b92bef997785e53d7d02f7d7f943e93604c65f8645b",
     "shared/construirInformeSupervisionDocx.js": "47e0c1c2320c8042d0155e67d95c9a8b29ae6e090e3c538094746f5d690c9412",
     "shared/correctorTexto.js": "899d4391c9526d745ba868c580cedd48ed17bc2e61b51880b602b8f8196900f8",
     "shared/curriculoService.mjs": "c03143ed2dd3a016bd7f59e5938c8a93946e0c894d184aea4f7e229e891b4e6d",
@@ -67,6 +67,6 @@
     "worker/services/curriculoService.js": "3a3647c1d91bdeef07685f84507bece4de9b06748af0ac92eb070e1ffcc2c7bd",
     "worker/services/voiceProvider.js": "362fadb6c4b99aecc26b60ddb8133a0ea76bbbab4c1f7d5044600bdf37697635",
     "worker/verificadorCitas.js": "bbdc7b502b6027eb268b28d360e0af5c6b41b182e52a61f85c900fdcb19f8a81",
-    "wrangler.toml": "5886a94a7eea0bc9a56b5d30be7e22ef6fb39f456ada46059befbe58f5bdd011"
+    "wrangler.toml": "2c5144cf7e6cd8e3c677db48a90e07b06b109e167e1921932911a04e30c8abb0"
   }
 }
