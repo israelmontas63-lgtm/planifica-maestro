@@ -43,7 +43,7 @@ test("ETAPA B: Ojo Digital - Formato de petición, normalización y resiliencia"
     const models2 = getGeminiVisionModels(envModel);
     assert.equal(models2[0], "gemini-3.5-flash-lite");
     assert.ok(models2.includes("gemini-3.5-flash"));
-    assert.ok(models2.includes("gemini-flash-latest"));
+    assert.ok(!models2.includes("gemini-flash-latest"));
   });
 
   await t.test("3. Verificación del cuerpo JSON real enviado a Gemini", async () => {

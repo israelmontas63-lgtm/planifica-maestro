@@ -33,7 +33,7 @@ export function getGeminiVisionModels(env) {
     if (list.length > 0) return list;
   }
   const primary = (env && env.GEMINI_MODEL ? env.GEMINI_MODEL.trim() : "gemini-3.1-flash-lite");
-  const defaults = ["gemini-3.1-flash-lite", "gemini-3-flash-preview", "gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-flash-latest"];
+  const defaults = ["gemini-3.1-flash-lite", "gemini-3-flash-preview", "gemini-3.5-flash-lite", "gemini-3.5-flash"];
   const models = [primary];
   for (const m of defaults) {
     if (!models.includes(m)) models.push(m);

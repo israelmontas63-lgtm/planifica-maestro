@@ -1694,6 +1694,7 @@ async function handleApiRequest(request, env, ctx) {
                   "Content-Type": "application/json",
                   "x-goog-api-key": env.GEMINI_API_KEY
                 },
+                timeoutMs: 45000,
                 body: JSON.stringify({
                   contents: [{
                     role: "user",
@@ -2438,7 +2439,7 @@ async function handleApiRequest(request, env, ctx) {
             grado: gradoDetectado,
             area: areaCanonica
           });
-          const temasUnicos = listarTemasUnicos(filasTema.length ? filasTema : filasRetornadas);
+          const temasUnicos = filtrarTemas(listarTemasUnicos(filasTema.length ? filasTema : filasRetornadas));
           if (temasUnicos.length > 0) {
             mensajeRespuesta += `\n\nTemas disponibles en la base para ese grado y área: ${formatearListaTemas(temasUnicos, 10)}`;
           }
@@ -3362,6 +3363,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
               "Content-Type": "application/json",
               "x-goog-api-key": env.GEMINI_API_KEY,
             },
+            timeoutMs: 45000,
             body: JSON.stringify({
               contents,
               systemInstruction: { parts: [{ text: promptParaStreaming }] },
@@ -3548,6 +3550,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                     "Content-Type": "application/json",
                     "x-goog-api-key": env.GEMINI_API_KEY,
                   },
+                  timeoutMs: 45000,
                   body: JSON.stringify({
                     contents,
                     systemInstruction: { parts: [{ text: promptReintento }] },
@@ -3810,6 +3813,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
             "Content-Type": "application/json",
             "x-goog-api-key": env.GEMINI_API_KEY,
           },
+          timeoutMs: 45000,
           body: JSON.stringify({
             contents,
             systemInstruction: { parts: [{ text: dynamicPrompt }] },
@@ -3854,6 +3858,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
               "Content-Type": "application/json",
               "x-goog-api-key": env.GEMINI_API_KEY,
             },
+            timeoutMs: 45000,
             body: JSON.stringify({
               contents,
               systemInstruction: { parts: [{ text: promptReintento }] },
@@ -4037,6 +4042,7 @@ Genera un JSON estricto con:
             "Content-Type": "application/json",
             "x-goog-api-key": env.GEMINI_API_KEY,
           },
+          timeoutMs: 45000,
           body: JSON.stringify({
             contents: [{ role: "user", parts: [{ text: prompt }] }],
             generationConfig: { temperature: 0.0, responseMimeType: "application/json" },

@@ -54,7 +54,6 @@ export function getGeminiModels(env, modeloPreferido = null) {
   const models = [primary];
   if (primary !== FALLBACK_GEMINI_MODEL) models.push(FALLBACK_GEMINI_MODEL);
   if (!models.includes("gemini-3.1-flash-lite")) models.push("gemini-3.1-flash-lite");
-  if (!models.includes("gemini-flash-latest")) models.push("gemini-flash-latest");
   return models;
 }
 
@@ -102,12 +101,21 @@ export async function fetchGeminiConThinking(url, model, baseOptions, construirB
   return res;
 }
 
+import { fetchConLimite, esTimeoutIntento } from "./timeoutIntento.js";
+
+export const TIMEOUT_INTENTO_MS = 25000;
+
 /**
  * Realiza fetch hacia la API de Gemini con hasta 2 intentos (por defecto) y espera creciente
  * ante errores transitorios de disponibilidad (503) o límites de tasa temporales (429).
  * Se mantiene corto porque la cadena de modelos de respaldo ya actúa como reintento.
  */
-export async function fetchGeminiWithRetry(url, options, maxAttempts = 2) {
+export async function fetchGeminiWithRetry(url, options = {}, maxAttempts = 2) {
+  const { timeoutMs: customTimeout, ...optionsSinTimeoutMs } = options || {};
+  const timeoutMs = typeof customTimeout === "number" ? customTimeout : TIMEOUT_INTENTO_MS;
+  const modeloMatch = String(url).match(/\/models\/([^:]+)/);
+  const modelo = modeloMatch ? modeloMatch[1] : "desconocido";
+
   let attempt = 0;
   let delay = 600;
 
@@ -115,8 +123,13 @@ export async function fetchGeminiWithRetry(url, options, maxAttempts = 2) {
     attempt++;
     let res;
     try {
-      res = await fetch(url, options);
+      res = await fetchConLimite(url, optionsSinTimeoutMs, timeoutMs);
     } catch (netErr) {
+      if (esTimeoutIntento(netErr)) {
+        const timeoutErr = new Error(`TIMEOUT_INTENTO:${timeoutMs}ms:${modelo}`);
+        timeoutErr.name = "TimeoutError";
+        throw timeoutErr;
+      }
       if (attempt >= maxAttempts || netErr.name === "AbortError") throw netErr;
       console.warn(`[Gemini Retry] Error de red en intento ${attempt}/${maxAttempts}: ${netErr.message}. Reintentando en ${delay}ms...`);
       await new Promise((r) => setTimeout(r, delay));
