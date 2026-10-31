@@ -1,6 +1,7 @@
 import { LEVELS } from "./levels.js";
 import { obtenerContextoConBase } from "./contextoConBase.js";
 import { getAiProvider, getGeminiModels, fetchGeminiWithRetry, fetchGeminiConThinking } from "./services/aiProvider.js";
+import { fetchConLimite } from "./services/timeoutIntento.js";
 import { generateVoice } from "./services/voiceProvider.js";
 import { clasificarIntencion, clasificarPorReglas } from "./clasificadorIntencion.js";
 import { generarRespuestaCharlaLocal, SYSTEM_PROMPT_CONVERSACIONAL, limpiarSaludoInnecesario } from "./modoConversacional.js";
@@ -1340,7 +1341,19 @@ async function handleApiRequest(request, env, ctx) {
     if (auth.errorResponse) return auth.errorResponse;
     const isOwner = auth.isOwner;
 
-    const body = await request.json().catch(() => ({}));
+    const raw = await request.text();
+    if (raw.length > 1000000) {
+      return new Response(JSON.stringify({ ok: false, error: "El payload supera el tamaño máximo permitido de 1 MB." }), {
+        status: 413,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    let body = {};
+    try {
+      body = JSON.parse(raw);
+    } catch {
+      body = {};
+    }
     let { messages = [], nivel, periodo = "diaria", docenteId = "docente_default", stream = false } = body;
     if ((!messages || messages.length === 0) && (body.tema || body.prompt || body.mensaje)) {
       const query = body.mensaje || body.prompt || `Planifica el tema: ${body.tema} (${body.grado || ""} - ${body.area || ""})`;
@@ -4339,8 +4352,8 @@ Genera un JSON estricto con:
         },
       });
     } catch (e) {
-      console.warn("Error en /api/voice/generate:", e.message);
-      return new Response(JSON.stringify({ fallbackLocal: true, error: e.message }), {
+      console.warn("Error en /api/voice/generate:", enmascararSecretos(e.message, env));
+      return new Response(JSON.stringify({ fallbackLocal: true, error: "VOZ_NO_DISPONIBLE" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -4403,10 +4416,11 @@ Genera un JSON estricto con:
         }
       );
     } catch (err) {
+      console.warn("[Vision] fallo:", enmascararSecretos(err.message, env));
       return new Response(
         JSON.stringify({
           error: "No se pudo procesar la imagen con visión artificial.",
-          detalle: err.message,
+          detalle: "Servicio de visión no disponible. Intenta de nuevo.",
         }),
         {
           status: 500,
@@ -4519,7 +4533,7 @@ Genera un JSON estricto con:
       for (const modelo of modelosGemini) {
         try {
           const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`;
-          const gRes = await fetch(geminiUrl, {
+          const gRes = await fetchConLimite(geminiUrl, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -4538,7 +4552,7 @@ Genera un JSON estricto con:
                 maxOutputTokens: 1000
               }
             })
-          });
+          }, 30000);
           if (gRes.ok) {
             const gData = await gRes.json();
             const texto = gData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
@@ -4701,7 +4715,7 @@ Genera un JSON estricto con:
         const mimeType = (imagen && imagen.startsWith("data:")) ? imagen.split(";")[0].replace("data:", "") : "image/jpeg";
 
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`;
-        const gRes = await fetch(geminiUrl, {
+        const gRes = await fetchConLimite(geminiUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -4716,7 +4730,7 @@ Genera un JSON estricto con:
               ]
             }]
           })
-        });
+        }, 45000);
 
         if (gRes.status === 429 || gRes.status === 403) {
           continue;

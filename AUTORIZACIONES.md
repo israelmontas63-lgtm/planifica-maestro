@@ -273,3 +273,11 @@
 - **Frase Textual del Dueño:** `"autorizacion . md"` / `"si"`
 - **Alcance Autorizado:** Edición de shared/constantsOjoDigital.js, wrangler.toml y server/routes/plan.js, pruebas unitarias y sellado de la guardia.
 - **Estado:** APLICADA
+
+### Autorización 041
+- **Fecha:** 31/10/2026 (America/Santo_Domingo)
+- **Componentes:** `worker/index.js`, `tests/test_orden_041.mjs`
+- **Motivo:** Límite de tiempo en llamadas a Gemini de audio e imagen, respuestas de error genéricas en voz y visión, y tope de 1 MB en /api/plan/generate.
+- **Frase Textual del Dueño:** `"ORDEN 042 - SELLADO Y PUBLICACIÓN DE fix-041 (Autorización 041)"` / `"A. autorizaciones .md"`
+- **Alcance Autorizado:** Commit de worker/index.js y tests/test_orden_041.mjs (con --no-verify en commit de código para desbloquear sellado), sellado de la guardia, push a main y despliegue a producción.
+- **Estado:** APLICADA
