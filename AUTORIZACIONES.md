@@ -281,3 +281,12 @@
 - **Frase Textual del Dueño:** `"ORDEN 042 - SELLADO Y PUBLICACIÓN DE fix-041 (Autorización 041)"` / `"A. autorizaciones .md"`
 - **Alcance Autorizado:** Commit de worker/index.js y tests/test_orden_041.mjs (con --no-verify en commit de código para desbloquear sellado), sellado de la guardia, push a main y despliegue a producción.
 - **Estado:** APLICADA
+
+### Autorización 042
+- **Fecha:** 31/10/2026 (America/Santo_Domingo)
+- **Componentes:** `scripts/guardia.js`, `PROTEGIDO.hashes.json`, `worker/services/timeoutIntento.js`, `worker/filtroTemas.js`, `worker/respaldoConocimiento.js`, `worker/services/asistenteService.js`, `worker/services/investigadorService.js`, `worker/services/wikipedia.js`, `shared/explicadorFallos.js`, `shared/coincidenciaTema.mjs`, `shared/matematica.mjs`, `shared/metodosMatematicos.mjs`, `shared/capacidades.mjs`, `shared/capacidades.json`, `shared/intencionMatematica.mjs`, `shared/numeroLetras.mjs`, `server/routes/plan.js`, `server/routes/ocr.js`, `server/routes/audio.js`, `server/routes/voice.js`, `server/routes/auth.js`, `server/routes/export.js`, `tests/test_orden_041.mjs`
+- **Motivo:** Blindaje y ampliación del perímetro de seguridad criptográfica de 62 a 83 archivos protegidos.
+- **Frase Textual del Dueño:** `"si deceo blindar los alchivo"`
+- **Alcance Autorizado:** Inclusión de los 21 archivos en adicionales de scripts/guardia.js, sellado de la guardia, commit, push a main y despliegue a producción.
+- **Estado:** APLICADA
+

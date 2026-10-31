@@ -354,7 +354,28 @@ export function sellarGuardia(cwd = process.cwd(), { confirmar = false, verbose 
     'shared/herramientas.mjs',
     'shared/promptSistemaV2.js',
     'shared/catalogoCurricular.mjs',
-    'scripts/guardia.js'
+    'scripts/guardia.js',
+    'worker/services/timeoutIntento.js',
+    'worker/filtroTemas.js',
+    'worker/respaldoConocimiento.js',
+    'worker/services/asistenteService.js',
+    'worker/services/investigadorService.js',
+    'worker/services/wikipedia.js',
+    'shared/explicadorFallos.js',
+    'shared/coincidenciaTema.mjs',
+    'shared/matematica.mjs',
+    'shared/metodosMatematicos.mjs',
+    'shared/capacidades.mjs',
+    'shared/capacidades.json',
+    'shared/intencionMatematica.mjs',
+    'shared/numeroLetras.mjs',
+    'server/routes/plan.js',
+    'server/routes/ocr.js',
+    'server/routes/audio.js',
+    'server/routes/voice.js',
+    'server/routes/auth.js',
+    'server/routes/export.js',
+    'tests/test_orden_041.mjs'
   ];
   for (const ad of adicionales) {
     if (fs.existsSync(path.resolve(cwd, ad)) && !hashes[ad]) {
