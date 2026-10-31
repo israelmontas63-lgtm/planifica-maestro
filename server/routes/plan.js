@@ -68,8 +68,7 @@ const geminiClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const PRIMARY_MODELS = [
   "gemini-3-flash-preview",
   "gemini-3.5-flash",
-  "gemini-3.1-flash-lite",
-  "gemini-flash-latest"
+  "gemini-3.1-flash-lite"
 ];
 
 async function generarConGeminiRapido({ contents, systemInstruction, responseMimeType = "application/json" }) {

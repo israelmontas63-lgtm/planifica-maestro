@@ -265,3 +265,11 @@
 - **Frase Textual del Dueño:** `"como tú tienes la experiencia, el desarrollo del código, elige tú cuál de los puntos vas a hacer, si quieres hazlo 4 puntos en bloques diferentes o un solo prompt con todos los bloques que tú entiendes que debes solucionar y cada bloque no se puede crear limitadamente los bloques deben ser para producción"` / `"autorizacion .md"`
 - **Alcance Autorizado:** BLOQUES A, B y C (cambios de código), suite de pruebas ajustada para exclusión de gemini-flash-latest, y avance autorizado para sellado con la guardia.
 - **Estado:** APLICADA
+
+### Autorización 040
+- **Fecha:** 31/10/2026 (America/Santo_Domingo)
+- **Componentes:** `shared/constantsOjoDigital.js`, `wrangler.toml`, `server/routes/plan.js`
+- **Motivo:** Retiro definitivo de gemini-flash-latest de constantes de visión, configuración wrangler y rutas de servidor.
+- **Frase Textual del Dueño:** `"autorizacion . md"` / `"si"`
+- **Alcance Autorizado:** Edición de shared/constantsOjoDigital.js, wrangler.toml y server/routes/plan.js, pruebas unitarias y sellado de la guardia.
+- **Estado:** APLICADA
