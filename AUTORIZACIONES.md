@@ -262,6 +262,6 @@
 - **Fecha:** 30/10/2026 20:57 (America/Santo_Domingo)
 - **Componentes:** `worker/services/aiProvider.js`, `worker/services/timeoutIntento.js`, `worker/ojoDigital.js`, `worker/index.js`, `tests/test_cadena_modelos.mjs`, `tests/test_timeout.mjs`, `tests/test_retry_timeout.mjs`, `tests/test_opciones_robot.mjs`, `tests/test_vision_resilience.mjs`
 - **Motivo:** Orden 050: Retiro de gemini-flash-latest de cadena de modelos y ojo digital, límite de tiempo estricto por intento en llamadas a Gemini, filtrado de temas fragmentados en ruta consulta_curricular.
-- **Frase Textual del Dueño:** `"como tú tienes la experiencia, el desarrollo del código, elige tú cuál de los puntos vas a hacer, si quieres hazlo 4 puntos en bloques diferentes o un solo prompt con todos los bloques que tú entiendes que debes solucionar y cada bloque no se puede crear limitadamente los bloques deben ser para producción"` / `"prosede"`
+- **Frase Textual del Dueño:** `"como tú tienes la experiencia, el desarrollo del código, elige tú cuál de los puntos vas a hacer, si quieres hazlo 4 puntos en bloques diferentes o un solo prompt con todos los bloques que tú entiendes que debes solucionar y cada bloque no se puede crear limitadamente los bloques deben ser para producción"` / `"autorizacion .md"`
 - **Alcance Autorizado:** BLOQUES A, B y C (cambios de código), suite de pruebas ajustada para exclusión de gemini-flash-latest, y avance autorizado para sellado con la guardia.
 - **Estado:** APLICADA
