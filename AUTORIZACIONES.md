@@ -322,5 +322,14 @@
 - **Alcance Autorizado:** Modificación de `client/src/App.jsx` línea 953, build del cliente, suite de pruebas, sellado de la guardia (actualización de hashes SHA-256), commit, push a main y despliegue a producción.
 - **Estado:** APLICADA
 
+### Autorización 047
+- **Fecha:** 03/11/2026 (America/Santo_Domingo)
+- **Componentes:** `client/src/components/HomeGreeting.jsx`
+- **Motivo:** Estructuración limpia del Dashboard central con barra de entrada unificada tipo cápsula (Search Pill), foco estilizado y botones de ideas curriculares aireados y adaptados para dispositivos móviles.
+- **Frase Textual del Dueño:** `"Por favor, reemplaza el return de client/src/components/HomeGreeting.jsx para corregir la barra de entrada rota y los botones apiñados en móvil por esta estructura limpia:"`
+- **Alcance Autorizado:** Modificación del bloque de renderizado en `client/src/components/HomeGreeting.jsx`, build de Vite, pruebas de cliente y despliegue a producción.
+- **Estado:** APLICADA
+
+
 
 
