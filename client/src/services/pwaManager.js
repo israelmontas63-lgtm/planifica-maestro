@@ -29,7 +29,7 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.addEventListener("controllerchange", () => {
     if (!teniaControlador || recargando) return;
     recargando = true;
-    window.location.reload();
+    safeReload();
   });
   const buscarActualizacion = () => {
     navigator.serviceWorker.getRegistration().then((r) => { if (r) r.update().catch(() => {}); }).catch(() => {});
@@ -106,26 +106,45 @@ export async function initPWA({ isBusy, saveDraft, onUpdatePending } = {}) {
     return null;
   }
 
+  // Purgar proactivamente cachés obsoletas de versiones previas
+  if ("caches" in window) {
+    caches.keys().then((keys) => {
+      const cachesValidas = ["planifica-maestro-v4", "html-cache-v4", "static-resources-v4", "static-assets-v4"];
+      keys.forEach((k) => {
+        if (!cachesValidas.some((pref) => k.includes(pref))) {
+          console.log("[PWA] Purgando caché obsoleta:", k);
+          caches.delete(k);
+        }
+      });
+    }).catch(() => {});
+  }
+
+  const purgarCachesYRecargar = async () => {
+    if (saveDraft) saveDraft();
+    try {
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      }
+      if (navigator.serviceWorker) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        for (const r of regs) await r.unregister();
+      }
+    } catch (e) {}
+    safeReload();
+  };
+
   // Capturar errores de carga dinámica de chunks (vite:preloadError) tras un nuevo despliegue
   window.addEventListener("unhandledrejection", (e) => {
     if (e.reason && e.reason.message && e.reason.message.includes("Failed to fetch dynamically imported module")) {
       e.preventDefault();
-      console.warn("[PWA] Mdulo dinmico no encontrado. Limpiando cach...");
-      if (saveDraft) saveDraft();
-      if (navigator.serviceWorker) {
-         navigator.serviceWorker.getRegistrations().then(regs => {
-           for(let r of regs) r.unregister();
-           safeReload();
-         });
-      } else {
-         safeReload();
-      }
+      console.warn("[PWA] Módulo dinámico no encontrado. Purgando caché obsoleta y recargando...");
+      purgarCachesYRecargar();
     }
   });
   window.addEventListener("vite:preloadError", () => {
-    console.warn("[PWA] Error de carga en bundle dinámico (chunk obsoleto). Aplicando recarga limpia...");
-    if (saveDraft) saveDraft();
-    safeReload();
+    console.warn("[PWA] Error de carga en bundle dinámico (chunk obsoleto). Purgando caché obsoleta...");
+    purgarCachesYRecargar();
   });
 
   const aplicarActualizacionSegura = (customReloadTrigger) => {

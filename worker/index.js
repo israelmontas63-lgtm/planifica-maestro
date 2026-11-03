@@ -2722,10 +2722,21 @@ async function handleApiRequest(request, env, ctx) {
     const esquema = LEVELS[nivel] || LEVELS["primario"];
     const instruccionesTemporal = PROFUNDIDAD_TEMPORAL[periodo] || PROFUNDIDAD_TEMPORAL["diaria"];
 
-    // Caché segura en memoria y KV (SHA-256 curricular sin datos personales)
+    // Pre-resolución de grado escolar real para clave de caché consistente
+    const mgMensajePre = gradosMultiples(textoParaProcesar);
+    const mensajeDiceGradoPre = /\bgrados?\b|\b[1-6](?:\s*\.?\s*[\u00b0\u00ba]|\.o\b|\.?(?:ro|er|ero|do|to)\b)|\b(?:para|de|en|del?)\s+(?:primero?|segundo?|tercero?|cuarto?|quinto?|sexto?)\b/i.test(textoParaProcesar);
+    const gradoExplicitoMensajePre = (mgMensajePre.length === 1 && mensajeDiceGradoPre) ? mgMensajePre[0] : null;
+    const gradoEnCuerpoPre = body.grado || body.perfil?.grado || body.contextoDocente?.grado || body.contexto?.grado || null;
+    gradoPre = gradoExplicitoMensajePre || (gradoEnCuerpoPre ? (gradoANumero(gradoEnCuerpoPre) || gradoEnCuerpoPre) : gradoANumero(textoParaProcesar));
+    if (!gradoPre) {
+      const mgPre = gradosMultiples(textoParaProcesar);
+      if (mgPre.length > 0) gradoPre = mgPre[0];
+    }
+
+    // Caché segura en memoria (SHA-256 curricular sin datos personales)
     const claveCache = (!imageBase64 && textoConsulta)
       ? await generarClaveCurricularSha256({
-          grado: body.grado || "",
+          grado: String(gradoPre || body.grado || ""),
           area: body.area || "",
           tema: textoConsulta,
           nivel: nivel || "primario",

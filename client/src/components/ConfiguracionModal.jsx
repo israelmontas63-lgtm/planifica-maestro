@@ -29,16 +29,24 @@ export default function ConfiguracionModal({
     } catch (e) {}
   };
 
-  const handleLimpiarCache = () => {
+  const handleLimpiarCache = async () => {
     if (window.confirm("¿Deseas limpiar la memoria temporal y caché del navegador? Tus planificaciones guardadas y perfil NO se borrarán.")) {
       try {
         if ("caches" in window) {
-          caches.keys().then((names) => {
-            names.forEach((name) => caches.delete(name));
-          });
+          const names = await caches.keys();
+          await Promise.all(names.map((name) => caches.delete(name)));
         }
+        if ("serviceWorker" in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          for (const reg of regs) {
+            await reg.unregister();
+          }
+        }
+        sessionStorage.clear();
         setLimpiado(true);
-        setTimeout(() => setLimpiado(false), 2500);
+        setTimeout(() => {
+          window.location.reload();
+        }, 800);
       } catch (err) {
         console.warn("Error limpiando caché:", err);
       }

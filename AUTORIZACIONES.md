@@ -330,6 +330,15 @@
 - **Alcance Autorizado:** Modificación del bloque de renderizado en `client/src/components/HomeGreeting.jsx`, build de Vite, pruebas de cliente y despliegue a producción.
 - **Estado:** APLICADA
 
+### Autorización 048
+- **Fecha:** 03/11/2026 (America/Santo_Domingo)
+- **Componentes:** `worker/index.js`, `client/src/services/pwaManager.js`, `client/src/components/ConfiguracionModal.jsx`
+- **Motivo:** Saneamiento de caché integral: (1) En Worker (Capa 8), resolución previa del grado explícito real para evitar envenenamiento de clave de caché entre grados; (2) En Cliente PWA (pwaManager.js), eliminación de recargas ciegas descontroladas en controllerchange, purga completa proactiva de cachés obsoletas y purga de window.caches ante errores de módulos dinámicos desfasados; (3) En Configuración (ConfiguracionModal.jsx), limpieza real y atómica de cachés, Service Worker y recarga limpia sin residuos.
+- **Frase Textual del Dueño:** `"limpia el codigo de cache malicna oh que no funciona"`
+- **Alcance Autorizado:** Modificación de `worker/index.js`, `client/src/services/pwaManager.js` y `client/src/components/ConfiguracionModal.jsx`, build de Vite, suite de pruebas, sellado con la guardia (actualización de hashes SHA-256), commit, push a main y despliegue a producción.
+- **Estado:** APLICADA
+
+
 
 
 
