@@ -22,12 +22,13 @@ import { extraerJson, mensajeParaChat, validarCamposPlanificacion, repararJsonTr
 import { evaluarPoliticaDignidad } from "./politicaDignidadImagen.js";
 import { obtenerOperacionPorId } from "./catalogoEdicionImagen.js";
 import { cicloToolCalling } from "../shared/ciclo.js";
-import { PROMPT_SISTEMA_V2_TEXTO } from "../shared/promptSistemaV2.js";
+import { PROMPT_SISTEMA_V2_TEXTO, construirPromptSistemaV2 } from "../shared/promptSistemaV2.js";
 import { HERRAMIENTAS_INVESTIGACION } from "../shared/herramientasInvestigacion.mjs";
 import { recuperarHistorialSesion, guardarTurnoConversacion } from "./services/memoriaService.js";
 import { generarClaveCache, consultarCache, guardarEnCache } from "./services/cacheSemanticaService.js";
 import { calcularFaithfulness, calcularRelevance, registrarMetricasRagas } from "./services/evaluadorRagas.js";
 import { auditarFidelidadCurricular } from "./services/criticoCurricular.js";
+import { reclasificarFragmentos } from "./services/rerankerCurricular.js";
 import { buscarCurriculoOficial, consultarCurriculoMINERD, limpiarConsultaCurricular } from "../shared/curriculoService.mjs";
 import { ejecutarBusquedaWeb } from "./services/investigadorService.js";
 import { gradoANumero, normalizarArea, gradosMultiples } from "../shared/catalogoCurricular.mjs";
@@ -2846,7 +2847,7 @@ async function handleApiRequest(request, env, ctx) {
 
     const t0PromptV2 = performance.now();
     const usaPromptV2 = Boolean(env && (env.PROMPT_SISTEMA_V2 === "true" || env.PROMPT_SISTEMA_V2 === true)) && !(esModoPrueba && env.DESACTIVAR_CAPA_3 === "true");
-    const basePrompt = usaPromptV2 ? PROMPT_SISTEMA_V2_TEXTO : SYSTEM_PROMPT;
+    const basePrompt = usaPromptV2 ? (typeof construirPromptSistemaV2 === "function" ? construirPromptSistemaV2() : PROMPT_SISTEMA_V2_TEXTO) : SYSTEM_PROMPT;
 
     const dynamicPrompt = `${basePrompt}
 ## ESQUEMA SELECCIONADO: ${esquema.label}
@@ -3280,6 +3281,17 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
     const modeloBody = body && body.modelo ? body.modelo : null;
     const models = getGeminiModels(env, modeloHeader || modeloBody);
 
+    if (sesionId) {
+      try {
+        const historialPrevio = await recuperarHistorialSesion(env, sesionId, 6);
+        if (Array.isArray(historialPrevio) && historialPrevio.length > 0) {
+          contents.unshift(...historialPrevio);
+        }
+      } catch (errHist) {
+        console.warn("[Memoria] Error recuperando historial:", errHist.message);
+      }
+    }
+
     // Modo Streaming SSE
     if (isStream) {
       if (esModoPrueba && env.DESACTIVAR_CAPA_6 === "true") {
@@ -3341,11 +3353,17 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
             }
             const filasCoincidentes = filasTodas.filter(esCoincidente);
             if (filasCoincidentes.length > 0) {
-              const filasVerificadas = filasCoincidentes.filter(f => f.estado_validacion === "validado");
+              const fragmentosReclasificados = reclasificarFragmentos(filasCoincidentes, {
+                consulta: temaPre || textoParaProcesar,
+                grado: gradoPre,
+                area: areaPre
+              }, { umbralMinimo: 0.35 });
+              const filasFinales = fragmentosReclasificados.length > 0 ? fragmentosReclasificados : filasCoincidentes;
+              const filasVerificadas = filasFinales.filter(f => f.estado_validacion === "validado");
               if (filasVerificadas.length > 0) {
                 huboFragmentosInyectados = true;
               }
-              fragmentosRecuperadosTexto = filasCoincidentes
+              fragmentosRecuperadosTexto = filasFinales
                 .map((f) => {
                   const docNombre = (f.fuente_documento || f.fuente || f.documento_titulo || "MINERD")
                     .replace(/\s*\(pág\..*$/i, "")
@@ -3754,6 +3772,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
             if (objetoPlan && objetoPlan.plan_completado && objetoPlan.datos_planificacion) {
               const bloqueCurriculoPaginas = fragmentosRecuperadosTexto || "";
               const filasDepuradas = consultasAuditadasStreaming.flatMap(c => c.filas || []).filter(esCoincidente);
+              const auditoriaFidelidad = auditarFidelidadCurricular(objetoPlan.datos_planificacion, filasDepuradas);
               const fScore = calcularFaithfulness(objetoPlan.datos_planificacion, bloqueCurriculoPaginas);
               const rScore = calcularRelevance(objetoPlan.datos_planificacion, temaPre || textoParaProcesar);
 
@@ -4047,6 +4066,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
       if (objetoPlan && objetoPlan.plan_completado && objetoPlan.datos_planificacion) {
         const bloqueCurriculoPaginas = (typeof fragmentosRecuperadosTexto !== "undefined" ? fragmentosRecuperadosTexto : "");
         const filasDepuradas = typeof filasCoincidentes !== "undefined" ? filasCoincidentes : [];
+        const auditoriaFidelidad = auditarFidelidadCurricular(objetoPlan.datos_planificacion, filasDepuradas);
         const fScore = calcularFaithfulness(objetoPlan.datos_planificacion, bloqueCurriculoPaginas);
         const rScore = calcularRelevance(objetoPlan.datos_planificacion, temaPre || textoParaProcesar);
 
