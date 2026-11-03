@@ -2876,12 +2876,10 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
 
     const esLocalhost = url.hostname === "localhost" || url.hostname === "127.0.0.1";
     // 3. Pre-chequeo semántico R2 (conflicto de área/tema, tema inexistente, datos incompletos)
+    const mgMensaje = gradosMultiples(textoParaProcesar);
+    const gradoExplicitoMensaje = mgMensaje.length > 0 ? mgMensaje[0] : null;
     const gradoEnCuerpo = body.grado || body.perfil?.grado || body.contextoDocente?.grado || body.contexto?.grado || null;
-    gradoPre = gradoEnCuerpo ? (gradoANumero(gradoEnCuerpo) || gradoEnCuerpo) : gradoANumero(textoParaProcesar);
-    if (!gradoPre) {
-      const mgPre = gradosMultiples(textoParaProcesar);
-      if (mgPre.length > 0) gradoPre = mgPre[0];
-    }
+    gradoPre = gradoExplicitoMensaje || (gradoEnCuerpo ? (gradoANumero(gradoEnCuerpo) || gradoEnCuerpo) : gradoANumero(textoParaProcesar));
 
     let temaPre = (body.tema || "").trim();
     if (!temaPre) {

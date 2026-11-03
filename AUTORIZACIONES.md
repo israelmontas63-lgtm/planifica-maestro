@@ -290,3 +290,10 @@
 - **Alcance Autorizado:** Inclusión de los 21 archivos en adicionales de scripts/guardia.js, sellado de la guardia, commit, push a main y despliegue a producción.
 - **Estado:** APLICADA
 
+### Autorización 043
+- **Fecha:** 02/11/2026 (America/Santo_Domingo)
+- **Componentes:** `worker/index.js`, `tests/test_grado_explicito_mensaje.mjs`
+- **Motivo:** Prevalencia del grado explícito extraído del mensaje del docente sobre body.grado en /api/plan/generate (resuelve conflicto de botones de temas de grados vecinos para que la consulta curricular y el prompt a Gemini utilicen el grado explícito).
+- **Frase Textual del Dueño:** `"has el des pliegue"` / `"de todo"` / `"subetodo"`
+- **Alcance Autorizado:** Modificación de precedencia de grado en worker/index.js, inclusión de suite de pruebas tests/test_grado_explicito_mensaje.mjs, sellado de la guardia, commit, push a main y despliegue a producción.
+- **Estado:** APLICADA
