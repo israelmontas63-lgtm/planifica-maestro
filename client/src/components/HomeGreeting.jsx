@@ -72,53 +72,149 @@ export default function HomeGreeting({ user, onSeleccionarSugerencia }) {
   };
 
   return (
-    <div className="w-full max-w-sm mx-auto flex flex-col items-center text-center px-2 py-4" aria-live="polite">
+    <div 
+      style={{
+        width: '100%',
+        maxWidth: '380px',
+        margin: '0 auto',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        textAlign: 'center',
+        padding: '12px 10px 16px 10px',
+        boxSizing: 'border-box'
+      }}
+      aria-live="polite"
+    >
       {/* 1. Saludo superior */}
-      <div className="flex justify-center mb-3">
-        <div className="bg-amber-50 border border-amber-200/80 text-amber-900 font-semibold text-xs px-3.5 py-1 rounded-full shadow-xs inline-flex items-center gap-1.5">
+      <div style={{ marginBottom: '14px' }}>
+        <div 
+          style={{
+            backgroundColor: '#fef3c7',
+            border: '1px solid #fde68a',
+            color: '#78350f',
+            fontWeight: 600,
+            fontSize: '12px',
+            padding: '5px 14px',
+            borderRadius: '9999px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}
+        >
           <span aria-hidden="true">☀️</span>
           <span>{saludo}</span>
         </div>
       </div>
 
       {/* 2. Pregunta central */}
-      <h1 className="text-slate-900 font-extrabold text-2xl tracking-tight text-center mb-5 leading-tight">
+      <h1 
+        style={{
+          color: '#0f172a',
+          fontWeight: 800,
+          fontSize: '22px',
+          letterSpacing: '-0.025em',
+          lineHeight: '1.25',
+          margin: '0 0 16px 0'
+        }}
+      >
         ¿Qué vamos a hacer, maestro?
       </h1>
 
-      {/* 3. Barra de entrada unificada tipo cápsula (Search Pill) */}
-      <form onSubmit={handleSubmit} className="w-full mb-6">
-        <div className="relative flex items-center bg-white border border-slate-300 rounded-full shadow-sm pl-4 pr-1.5 py-1.5 focus-within:border-[#1a5b6c] focus-within:ring-2 focus-within:ring-[#1a5b6c]/10 transition-all">
-          <span className="text-slate-400 text-lg mr-2 select-none" aria-hidden="true">✍️</span>
+      {/* 3. Cápsula de búsqueda unificada */}
+      <form onSubmit={handleSubmit} style={{ width: '100%', marginBottom: '20px' }}>
+        <div 
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            backgroundColor: '#ffffff',
+            border: '1.5px solid #cbd5e1',
+            borderRadius: '9999px',
+            padding: '4px 6px 4px 14px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+            boxSizing: 'border-box',
+            width: '100%'
+          }}
+        >
+          <span style={{ fontSize: '18px', marginRight: '8px', userSelect: 'none' }} aria-hidden="true">✍️</span>
           <input
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Escribe un tema o idea..."
-            className="w-full bg-transparent focus:outline-none text-slate-900 text-sm placeholder-slate-400 font-medium"
+            style={{
+              flex: 1,
+              border: 'none',
+              outline: 'none',
+              background: 'transparent',
+              color: '#0f172a',
+              fontSize: '14px',
+              fontWeight: 500,
+              minWidth: 0
+            }}
             aria-label="Consulta o tema curricular"
           />
           <button
             type="submit"
-            className="bg-[#1a5b6c] text-white rounded-full px-4 py-2 text-xs font-semibold hover:bg-[#154957] active:scale-95 transition-all shadow-xs shrink-0 cursor-pointer ml-1"
+            style={{
+              backgroundColor: '#1a5b6c',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '9999px',
+              padding: '8px 16px',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              flexShrink: 0,
+              boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+            }}
           >
             Planificar
           </button>
         </div>
       </form>
 
-      {/* 4. Ideas curriculares limpias y aireadas */}
+      {/* 4. Sugerencias curriculares */}
       {onSeleccionarSugerencia && (
-        <div className="w-full">
-          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3 text-center">
+        <div style={{ width: '100%' }}>
+          <div 
+            style={{
+              fontSize: '11px',
+              fontWeight: 700,
+              color: '#64748b',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              marginBottom: '10px'
+            }}
+          >
             💡 Ideas curriculares para empezar hoy:
           </div>
-          <div className="flex flex-wrap justify-center gap-2">
+          <div 
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              justifyContent: 'center',
+              gap: '8px'
+            }}
+          >
             {SUGERENCIAS_CURRICULARES.map((sug, idx) => (
               <button
                 key={idx}
                 type="button"
-                className="bg-white border border-slate-200/90 text-slate-700 shadow-2xs hover:border-slate-300 hover:bg-slate-50 font-medium text-xs px-3 py-1.5 rounded-full inline-flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                style={{
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #e2e8f0',
+                  color: '#334155',
+                  fontWeight: 600,
+                  fontSize: '12px',
+                  padding: '7px 12px',
+                  borderRadius: '9999px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
+                }}
                 onClick={() => onSeleccionarSugerencia(sug.prompt)}
                 title={`Crear: ${sug.prompt}`}
               >

@@ -338,6 +338,15 @@
 - **Alcance Autorizado:** Modificación de `worker/index.js`, `client/src/services/pwaManager.js` y `client/src/components/ConfiguracionModal.jsx`, build de Vite, suite de pruebas, sellado con la guardia (actualización de hashes SHA-256), commit, push a main y despliegue a producción.
 - **Estado:** APLICADA
 
+### Autorización 049
+- **Fecha:** 03/11/2026 (America/Santo_Domingo)
+- **Componentes:** `client/src/components/HomeGreeting.jsx`
+- **Motivo:** Integración de estilos directos garantizados (inline style objects) en el return de HomeGreeting.jsx para asegurar que la cápsula de búsqueda, saludo y botones de ideas curriculares mantengan proporciones móviles milimétricas independientemente de cualquier compilación o purga CSS externa.
+- **Frase Textual del Dueño:** `"Reemplaza el return de client/src/components/HomeGreeting.jsx por esta versión con estilos directos garantizados, para que el diseño móvil quede perfecto y no dependa de la compilación de clases CSS externas:"`
+- **Alcance Autorizado:** Modificación de `client/src/components/HomeGreeting.jsx`, compilación de cliente Vite, pruebas unitarias y despliegue a producción.
+- **Estado:** APLICADA
+
+
 
 
 
