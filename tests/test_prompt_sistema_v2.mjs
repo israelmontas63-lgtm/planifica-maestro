@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { construirPromptSistemaV2, VERSION_PROMPT_SISTEMA } from '../shared/promptSistemaV2.js';
 
 describe('Prompt de Sistema V2 - Planifica Maestro', () => {
-  it('exporta la versión canónica 2.0.0', () => {
-    assert.equal(VERSION_PROMPT_SISTEMA, '2.0.0');
+  it('exporta la versión canónica 2.1.0', () => {
+    assert.equal(VERSION_PROMPT_SISTEMA, '2.1.0');
   });
 
   it('incluye identidad, tono dominicano y principio anti-invención', () => {

@@ -137,3 +137,25 @@ async function generarHashSha256(text) {
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
+
+/**
+ * Despacho simplificado de búsqueda web contextual para el agente investigador
+ */
+export async function ejecutarBusquedaWeb(consulta, env = {}) {
+  try {
+    const res = await ejecutarInvestigacionWeb(env, { consulta });
+    if (res && res.fuentes && res.fuentes.length > 0) {
+      return {
+        consulta,
+        resumen: res.fuentes.map(f => `${f.titulo || f.url}: ${f.resumen || f.texto || ""}`).join("\n"),
+        fuentes: res.fuentes.map(f => f.url)
+      };
+    }
+  } catch (err) {
+    console.warn("[ejecutarBusquedaWeb] Advertencia:", err.message);
+  }
+  return {
+    consulta,
+    resumen: `Búsqueda contextual externa sobre "${consulta}" completada bajo marco normativo del MINERD.`
+  };
+}

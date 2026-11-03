@@ -346,8 +346,16 @@
 - **Alcance Autorizado:** Modificación de `client/src/components/HomeGreeting.jsx`, compilación de cliente Vite, pruebas unitarias y despliegue a producción.
 - **Estado:** APLICADA
 
-
-
-
-
-
+### Autorización 050
+- **Fecha:** 03/11/2026 (America/Santo_Domingo)
+- **Componentes:** `shared/herramientasInvestigacion.mjs`, `shared/promptSistemaV2.js`, `worker/services/memoriaService.js`, `worker/services/rerankerCurricular.js`, `supabase/memoria_sesiones.sql`, `worker/index.js`, `worker/services/aiProvider.js`, `worker/services/investigadorService.js`, `shared/curriculoService.mjs`, `shared/herramientas.mjs`, `shared/ciclo.js`, `scripts/busqueda_hibrida_curriculo.py`, `tests/test_herramientas_investigacion.mjs`, `tests/test_reranker_curricular.mjs`
+- **Motivo:** Integración del Agente Investigador Autónomo (Fases 1, 2 y 3), Sistema de Memoria Conversacional Persistente y Re-ranking Semántico Cross-Scoring (Reimers & Gurevych): catálogo formal de herramientas (`consultar_fuente_curricular` y `buscar_contexto_web`), protocolo de clarificación metodológica de fuentes (Adecuación 2023 / Con Base / Diseño Base) en el System Prompt v2.1, recuperación en paralelo de historial y fragmentos oficiales, eliminación de latencia con thinkingBudget 0, streaming SSE instantáneo, despacho multi-herramientas, re-ranking semántico de fragmentos y persistencia en segundo plano mediante `ctx.waitUntil`.
+- **Frase Textual del Dueño:** `"FASE 1: DECLARACIÓN DE HERRAMIENTAS DEL AGENTE INVESTIGADOR ... FASE 2: SYSTEM PROMPT DE INVESTIGACIÓN Y CLARIFICACIÓN METODOLÓGICA ... FASE 3: BUCLE DE ORQUESTACIÓN DE SUB-AGENTES EN EL WORKER ... AUDITORÍA PREVIA Y DESPLIEGUE: CAPA DE MEMORIA CONVERSACIONAL ... worker/services/rerankerCurricular.js"`
+- **Alcance Autorizado:** Creación de `shared/herramientasInvestigacion.mjs`, `worker/services/memoriaService.js`, `worker/services/rerankerCurricular.js`, `supabase/memoria_sesiones.sql`, `scripts/busqueda_hibrida_curriculo.py`, `tests/test_herramientas_investigacion.mjs`, `tests/test_reranker_curricular.mjs`, actualización de `shared/promptSistemaV2.js`, `worker/index.js`, `worker/services/aiProvider.js`, `shared/herramientas.mjs`, `shared/curriculoService.mjs` y `shared/ciclo.js`, ejecución de suites de pruebas unitarias.
+### Autorización 051
+- **Fecha:** 03/11/2026 (America/Santo_Domingo)
+- **Componentes:** `worker/index.js`, `worker/services/criticoCurricular.js`, `worker/services/cacheSemanticaService.js`, `worker/services/evaluadorRagas.js`, `scripts/cargar_curriculo_paginas.mjs`, `supabase/curriculo_paginas_y_ragas.sql`, `tests/test_critico_curricular.mjs`, `tests/test_evaluador_ragas.mjs`
+- **Motivo:** Integración del Evaluador RAGAS en Producción (Es et al., EACL 2024), Self-RAG y auto-corrección pedagógica (Asai et al., ICLR 2024; Shinn et al., NeurIPS 2023), Caché Semántica Canónica (<60ms), Extracción y carga de páginas curriculares (2,691 páginas) y auditoría automatizada en segundo plano vía Supabase PostgREST.
+- **Frase Textual del Dueño:** `"ORDEN DE SELLADO Y VERIFICACIÓN INTEGRAL: Por favor, confirma que se hayan completado las 5 fases y ejecuta el siguiente protocolo de control de calidad: 1. COMPROBACIÓN DE ARCHIVOS: worker/services/memoriaService.js, worker/services/rerankerCurricular.js, worker/services/criticoCurricular.js, worker/services/cacheSemanticaService.js, worker/services/evaluadorRagas.js, shared/promptSistemaV2.js 2. BATERÍA DE PRUEBAS AUTOMATIZADAS: Ejecuta npm.cmd test en la consola local. Verifica que los 614 tests existentes más las pruebas nuevas pasen al 100% sin regresiones. Si se modificó worker/index.js, actualiza la guardia en PROTEGIDO.hashes.json conforme a la política del proyecto. 3. DESPLIEGUE A PRODUCCIÓN: Genera el build limpio y despliega el Worker actualizado en Cloudflare. Muestra el ID de versión y la URL activa para realizar la prueba en vivo."`
+- **Alcance Autorizado:** Modificación de `worker/index.js`, creación de `worker/services/criticoCurricular.js`, `worker/services/cacheSemanticaService.js`, `worker/services/evaluadorRagas.js`, `scripts/cargar_curriculo_paginas.mjs`, `supabase/curriculo_paginas_y_ragas.sql`, pruebas automatizadas, sellado oficial con `node scripts/guardia.js --sellar`, build y despliegue a producción en Cloudflare Workers.
+- **Estado:** EN EJECUCIÓN

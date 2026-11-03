@@ -7,6 +7,7 @@
  */
 
 import { responderLlamadas } from './herramientas.mjs';
+import { HERRAMIENTAS_INVESTIGACION } from './herramientasInvestigacion.mjs';
 
 export const HERRAMIENTAS_DECLARACION = [
   {
@@ -36,7 +37,8 @@ export const HERRAMIENTAS_DECLARACION = [
       },
       required: ['nivel', 'grado', 'area', 'tema_o_concepto']
     }
-  }
+  },
+  ...HERRAMIENTAS_INVESTIGACION
 ];
 
 export async function cicloToolCalling({

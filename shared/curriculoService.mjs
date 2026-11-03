@@ -246,3 +246,36 @@ export async function consultarCurriculoMINERD(args, env = {}, opciones = {}) {
     throw new ErrorCurricular('RED', `Fallo de conexión de red con el repositorio curricular: ${err.message}`);
   }
 }
+
+/**
+ * Búsqueda curricular oficial adaptada para el agente investigador (despacho de consultar_fuente_curricular)
+ */
+export async function buscarCurriculoOficial(env, { texto, grado, area, fuenteFiltro } = {}) {
+  try {
+    const nivel = "Primario";
+    const gradoNormalizado = String(grado || "1");
+    const filas = await consultarCurriculoMINERD({
+      nivel,
+      grado: gradoNormalizado,
+      area: area || "Lengua Española",
+      tema_o_concepto: texto || "",
+      limite: 5
+    }, env);
+
+    if (Array.isArray(filas) && filas.length > 0) {
+      let docNombre = "Adecuación Curricular 2023";
+      if (fuenteFiltro === "guia_con_base_lengua") docNombre = "Guía Didáctica Con Base (Lengua Española)";
+      else if (fuenteFiltro === "guia_con_base_matematica") docNombre = "Guía Didáctica Con Base (Matemática)";
+      else if (fuenteFiltro === "diseno_curricular_base") docNombre = "Diseño Curricular Base MINERD";
+
+      return filas.map(f => ({
+        fuente_documento: f.fuente_documento || f.fuente || docNombre,
+        pagina: f.pagina || f.pág || "1",
+        texto: [f.tema, f.competencia_especifica, f.contenidos_texto_original, Array.isArray(f.indicadores_logro) ? f.indicadores_logro.join("; ") : f.indicadores_logro].filter(Boolean).join(" | ")
+      }));
+    }
+  } catch (err) {
+    console.warn("[buscarCurriculoOficial] Error:", err.message);
+  }
+  return [];
+}

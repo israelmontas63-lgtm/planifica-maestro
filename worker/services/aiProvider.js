@@ -170,8 +170,13 @@ export class GeminiProvider extends AiProvider {
     const bodyPayload = {
       contents: messages,
       generationConfig: {
-        temperature: 0.2,
+        temperature: 0.1,
+        maxOutputTokens: 4096,
         responseMimeType: responseMimeType,
+        // Elimina la latencia de razonamiento silencioso previo
+        thinkingConfig: {
+          thinkingBudget: 0
+        }
       },
     };
 

@@ -23,7 +23,13 @@ import { evaluarPoliticaDignidad } from "./politicaDignidadImagen.js";
 import { obtenerOperacionPorId } from "./catalogoEdicionImagen.js";
 import { cicloToolCalling } from "../shared/ciclo.js";
 import { PROMPT_SISTEMA_V2_TEXTO } from "../shared/promptSistemaV2.js";
-import { consultarCurriculoMINERD, limpiarConsultaCurricular } from "../shared/curriculoService.mjs";
+import { HERRAMIENTAS_INVESTIGACION } from "../shared/herramientasInvestigacion.mjs";
+import { recuperarHistorialSesion, guardarTurnoConversacion } from "./services/memoriaService.js";
+import { generarClaveCache, consultarCache, guardarEnCache } from "./services/cacheSemanticaService.js";
+import { calcularFaithfulness, calcularRelevance, registrarMetricasRagas } from "./services/evaluadorRagas.js";
+import { auditarFidelidadCurricular } from "./services/criticoCurricular.js";
+import { buscarCurriculoOficial, consultarCurriculoMINERD, limpiarConsultaCurricular } from "../shared/curriculoService.mjs";
+import { ejecutarBusquedaWeb } from "./services/investigadorService.js";
 import { gradoANumero, normalizarArea, gradosMultiples } from "../shared/catalogoCurricular.mjs";
 import { procesarConsultaMatematica } from "../shared/matematica.mjs";
 import { respuestaEspecialMatematica } from "../shared/metodosMatematicos.mjs";
@@ -1355,6 +1361,7 @@ async function handleApiRequest(request, env, ctx) {
       body = {};
     }
     let { messages = [], nivel, periodo = "diaria", docenteId = "docente_default", stream = false } = body;
+    const sesionId = body.sesionId || body.sessionId || body.sesion_id || null;
     if ((!messages || messages.length === 0) && (body.tema || body.prompt || body.mensaje)) {
       const query = body.mensaje || body.prompt || `Planifica el tema: ${body.tema} (${body.grado || ""} - ${body.area || ""})`;
       messages = [{ role: "user", text: query }];
@@ -3205,6 +3212,26 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
     }
 
 
+    // 1. Verificación previa en caché semántica (<60ms)
+    const claveCacheSem = generarClaveCache(gradoPre, areaPre, temaPre || textoParaProcesar);
+    if (claveCacheSem && !isStream) {
+      const cacheHit = await consultarCache(env, claveCacheSem);
+      if (cacheHit && cacheHit.plan_json) {
+        return new Response(JSON.stringify({
+          mensaje_chat: "¡Planificación recuperada y validada del currículo oficial!",
+          plan_completado: true,
+          datos_planificacion: cacheHit.plan_json,
+          confianza_curricular: {
+            nivel_certeza: "alta",
+            origen: "cache_semantica_validada"
+          }
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json", "X-Cache-Status": "HIT" }
+        });
+      }
+    }
+
     if (iaApagada) return generarErrorPlanificacion("IA_NO_DISPONIBLE", "El servicio de inteligencia artificial está en mantenimiento breve.", "Puedes seguir consultando el currículo oficial y las secuencias didácticas disponibles.", false);
 
     // 1. Verificación previa de clave de IA
@@ -3395,9 +3422,12 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
               contents,
               systemInstruction: { parts: [{ text: promptParaStreaming }] },
               generationConfig: {
-                temperature: 0.0,
+                temperature: 0.1,
                 responseMimeType: "application/json",
-                maxOutputTokens: 8192,
+                maxOutputTokens: 4096,
+                thinkingConfig: {
+                  thinkingBudget: 0,
+                },
               },
             }),
             signal: request.signal,
@@ -3720,6 +3750,58 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
               await guardarRespuestaEnCache(claveCache, parsedFinal, undefined, env, ctx);
             }
 
+            const objetoPlan = parsedFinal;
+            if (objetoPlan && objetoPlan.plan_completado && objetoPlan.datos_planificacion) {
+              const bloqueCurriculoPaginas = fragmentosRecuperadosTexto || "";
+              const filasDepuradas = consultasAuditadasStreaming.flatMap(c => c.filas || []).filter(esCoincidente);
+              const fScore = calcularFaithfulness(objetoPlan.datos_planificacion, bloqueCurriculoPaginas);
+              const rScore = calcularRelevance(objetoPlan.datos_planificacion, temaPre || textoParaProcesar);
+
+              const tareaAuditoria = registrarMetricasRagas(env, {
+                sesionId: sesionId,
+                grado: gradoPre,
+                area: areaPre,
+                tema: temaPre || textoParaProcesar,
+                faithfulness: fScore,
+                relevance: rScore,
+                precision: filasDepuradas.length > 0 ? 1.0 : 0.5
+              });
+
+              if (ctx && ctx.waitUntil) {
+                ctx.waitUntil(tareaAuditoria);
+              } else {
+                tareaAuditoria.catch(console.error);
+              }
+
+              // Guardado en caché semántica (<60ms) si cumple umbral de fidelidad
+              const claveCacheSem = generarClaveCache(gradoPre, areaPre, temaPre || textoParaProcesar);
+              if (claveCacheSem && fScore >= 0.70) {
+                const tareaCacheSem = guardarEnCache(env, {
+                  claveHash: claveCacheSem,
+                  grado: gradoPre,
+                  area: areaPre,
+                  tema: temaPre || textoParaProcesar,
+                  planJson: objetoPlan.datos_planificacion,
+                  fuentes: objetoPlan.confianza_curricular || null
+                });
+                if (ctx && ctx.waitUntil) {
+                  ctx.waitUntil(tareaCacheSem);
+                } else {
+                  tareaCacheSem.catch(console.error);
+                }
+              }
+            }
+
+            if (sesionId) {
+              const promptUsuario = textoConsulta;
+              const respuestaFinal = parsedFinal?.mensaje_chat || (typeof parsedFinal === "string" ? parsedFinal : JSON.stringify(finalPayload));
+              if (ctx && ctx.waitUntil) {
+                ctx.waitUntil(guardarTurnoConversacion(env, sesionId, promptUsuario, respuestaFinal));
+              } else {
+                guardarTurnoConversacion(env, sesionId, promptUsuario, respuestaFinal).catch(console.error);
+              }
+            }
+
             await writer.write(encoder.encode(`data: ${JSON.stringify({ final: finalPayload })}\n\n`));
             await writer.write(encoder.encode("data: [DONE]\n\n"));
           } catch (err) {
@@ -3959,6 +4041,58 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
 
       if (claveCache && esRespuestaCacheable(parsed)) {
         guardarRespuestaEnCache(claveCache, parsed);
+      }
+
+      const objetoPlan = parsed;
+      if (objetoPlan && objetoPlan.plan_completado && objetoPlan.datos_planificacion) {
+        const bloqueCurriculoPaginas = (typeof fragmentosRecuperadosTexto !== "undefined" ? fragmentosRecuperadosTexto : "");
+        const filasDepuradas = typeof filasCoincidentes !== "undefined" ? filasCoincidentes : [];
+        const fScore = calcularFaithfulness(objetoPlan.datos_planificacion, bloqueCurriculoPaginas);
+        const rScore = calcularRelevance(objetoPlan.datos_planificacion, temaPre || textoParaProcesar);
+
+        const tareaAuditoria = registrarMetricasRagas(env, {
+          sesionId: sesionId,
+          grado: gradoPre,
+          area: areaPre,
+          tema: temaPre || textoParaProcesar,
+          faithfulness: fScore,
+          relevance: rScore,
+          precision: filasDepuradas.length > 0 ? 1.0 : 0.5
+        });
+
+        if (ctx && ctx.waitUntil) {
+          ctx.waitUntil(tareaAuditoria);
+        } else {
+          tareaAuditoria.catch(console.error);
+        }
+
+        // Guardado en caché semántica si supera el umbral
+        const claveCacheSem = generarClaveCache(gradoPre, areaPre, temaPre || textoParaProcesar);
+        if (claveCacheSem && fScore >= 0.70) {
+          const tareaCacheSem = guardarEnCache(env, {
+            claveHash: claveCacheSem,
+            grado: gradoPre,
+            area: areaPre,
+            tema: temaPre || textoParaProcesar,
+            planJson: objetoPlan.datos_planificacion,
+            fuentes: objetoPlan.confianza_curricular || null
+          });
+          if (ctx && ctx.waitUntil) {
+            ctx.waitUntil(tareaCacheSem);
+          } else {
+            tareaCacheSem.catch(console.error);
+          }
+        }
+      }
+
+      if (sesionId) {
+        const promptUsuario = textoConsulta;
+        const respuestaFinal = parsed?.mensaje_chat || (typeof parsed === "string" ? parsed : JSON.stringify(parsed));
+        if (ctx && ctx.waitUntil) {
+          ctx.waitUntil(guardarTurnoConversacion(env, sesionId, promptUsuario, respuestaFinal));
+        } else {
+          guardarTurnoConversacion(env, sesionId, promptUsuario, respuestaFinal).catch(console.error);
+        }
       }
 
       return new Response(

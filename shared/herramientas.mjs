@@ -4,7 +4,8 @@
  * Despachador de herramientas y formatador oficial para Gemini Function Calling.
  */
 
-import { consultarCurriculoMINERD, ErrorCurricular } from './curriculoService.mjs';
+import { consultarCurriculoMINERD, buscarCurriculoOficial, ErrorCurricular } from './curriculoService.mjs';
+import { ejecutarBusquedaWeb } from '../worker/services/investigadorService.js';
 
 export const NIVELES = ['Inicial', 'Primario', 'Secundario'];
 export const REQUERIDOS = ['nivel', 'grado', 'area', 'tema_o_concepto'];
@@ -58,6 +59,28 @@ export const HANDLERS = {
 
     const filas = await consultarCurriculoMINERD(args, env, { signal, timeoutMs: TIMEOUT_MS });
     return formatearRespuestaCurricular(filas);
+  },
+
+  consultar_fuente_curricular: async (args, env) => {
+    const { fuente, grado, area, termino } = args || {};
+    const resultados = await buscarCurriculoOficial(env, {
+      texto: termino,
+      grado: grado,
+      area: area,
+      fuenteFiltro: fuente
+    });
+    return {
+      total_encontrados: resultados.length,
+      fragmentos: resultados.map(r => ({
+        documento: r.fuente_documento,
+        pagina: r.pagina,
+        texto: r.texto
+      }))
+    };
+  },
+
+  buscar_contexto_web: async (args, env) => {
+    return await ejecutarBusquedaWeb(args?.consulta, env);
   }
 };
 
@@ -69,19 +92,20 @@ export async function ejecutarUna(call, env, opciones = {}) {
   if (!handler) {
     response = { error: `Herramienta no permitida: ${name}` };
   } else {
-    const errorArgs = validarArgs(args);
-    if (errorArgs) {
-      response = { error: errorArgs };
-    } else {
-      try {
-        response = await handler(args, env, opciones);
-      } catch (e) {
-        const codigo = e instanceof ErrorCurricular ? e.codigo : 'ERROR_INTERNO';
-        response = { 
-          error: `[${codigo}] No se pudo consultar la base de datos oficial. Informa al docente sin inventar.`,
-          codigo 
-        };
+    if (name === 'consultar_base_datos') {
+      const errorArgs = validarArgs(args);
+      if (errorArgs) {
+        return { functionResponse: { name, response: { error: errorArgs } } };
       }
+    }
+    try {
+      response = await handler(args, env, opciones);
+    } catch (e) {
+      const codigo = e instanceof ErrorCurricular ? e.codigo : 'ERROR_INTERNO';
+      response = { 
+        error: `[${codigo}] No se pudo consultar la base de datos oficial. Informa al docente sin inventar.`,
+        codigo 
+      };
     }
   }
   return { functionResponse: { name, response } };
