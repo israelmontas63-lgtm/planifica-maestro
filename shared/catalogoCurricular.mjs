@@ -80,9 +80,9 @@ export function gradosMultiples(texto) {
   if (/\bquint(?:o|a)?\b/.test(t)) encontrados.add(5);
   if (/\bsext(?:o|a)?\b/.test(t)) encontrados.add(6);
 
-  if (/\b1\s*(?:ro|er|\.[°ºo]|\b\.[°ºo]?|[°º])\b|1\.[°ºo]/i.test(t)) encontrados.add(1);
+  if (/\b1\s*(?:ro|ero|er|\.[°ºo]|\b\.[°ºo]?|[°º])\b|1\.[°ºo]/i.test(t)) encontrados.add(1);
   if (/\b2\s*(?:do|\.[°ºo]|\b\.[°ºo]?|[°º])\b|2\.[°ºo]/i.test(t)) encontrados.add(2);
-  if (/\b3\s*(?:ro|er|\.[°ºo]|\b\.[°ºo]?|[°º])\b|3\.[°ºo]/i.test(t)) encontrados.add(3);
+  if (/\b3\s*(?:ro|ero|er|\.[°ºo]|\b\.[°ºo]?|[°º])\b|3\.[°ºo]/i.test(t)) encontrados.add(3);
   if (/\b4\s*(?:to|\.[°ºo]|\b\.[°ºo]?|[°º])\b|4\.[°ºo]/i.test(t)) encontrados.add(4);
   if (/\b5\s*(?:to|\.[°ºo]|\b\.[°ºo]?|[°º])\b|5\.[°ºo]/i.test(t)) encontrados.add(5);
   if (/\b6\s*(?:to|\.[°ºo]|\b\.[°ºo]?|[°º])\b|6\.[°ºo]/i.test(t)) encontrados.add(6);

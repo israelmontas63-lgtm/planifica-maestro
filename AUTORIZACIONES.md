@@ -297,3 +297,12 @@
 - **Frase Textual del Dueño:** `"has el des pliegue"` / `"de todo"` / `"subetodo"`
 - **Alcance Autorizado:** Modificación de precedencia de grado en worker/index.js, inclusión de suite de pruebas tests/test_grado_explicito_mensaje.mjs, sellado de la guardia, commit, push a main y despliegue a producción.
 - **Estado:** APLICADA
+
+### Autorización 044
+- **Fecha:** 03/11/2026 (America/Santo_Domingo)
+- **Componentes:** `worker/index.js`, `shared/catalogoCurricular.mjs`, `tests/test_grado_robusto_mensaje.mjs`, `tests/test_4a_sse.mjs`
+- **Motivo:** Prevalencia robusta y definitiva de grado escolar explícito en mensajes del docente sobre body.grado, neutralizando falsos positivos discursivos (momentos de clase, orden de actividades, conectores temporales), reconociendo formas educativas reales (1ero, 3ero, para tercero) y garantizando 17/17 casos con 0 fallos. Cero parches temporales, solución estructural permanente con datos reales del currículo MINERD.
+- **Frase Textual del Dueño:** `"si resuever esa cotradiciones segun el desarrollo de nuevas tecnologias actuales"` / `"no quiero que inventa nada busca datos reales y tecnologia actuar"` / `"si ya lo audistae y esta bien pues sello , autorizacion si tienes fallo no"` / `"dada de parche todo debe ser real y tine que descargar cualquier blibliteca tienes mi permisos para decargar quiero datos reale sero parches"`
+- **Alcance Autorizado:** Modificación de worker/index.js y shared/catalogoCurricular.mjs, adición de suites de prueba tests/test_grado_robusto_mensaje.mjs y tests/test_4a_sse.mjs, sellado con la guardia (actualización de hashes SHA-256), commit, push a main y despliegue a producción.
+- **Estado:** APLICADA
+

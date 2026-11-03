@@ -2877,9 +2877,14 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
     const esLocalhost = url.hostname === "localhost" || url.hostname === "127.0.0.1";
     // 3. Pre-chequeo semántico R2 (conflicto de área/tema, tema inexistente, datos incompletos)
     const mgMensaje = gradosMultiples(textoParaProcesar);
-    const gradoExplicitoMensaje = mgMensaje.length > 0 ? mgMensaje[0] : null;
+    const mensajeDiceGrado = /\bgrados?\b|\b[1-6](?:\s*\.?\s*[\u00b0\u00ba]|\.o\b|\.?(?:ro|er|ero|do|to)\b)|\b(?:para|de|en|del?)\s+(?:primero?|segundo?|tercero?|cuarto?|quinto?|sexto?)\b/i.test(textoParaProcesar);
+    const gradoExplicitoMensaje = (mgMensaje.length === 1 && mensajeDiceGrado) ? mgMensaje[0] : null;
     const gradoEnCuerpo = body.grado || body.perfil?.grado || body.contextoDocente?.grado || body.contexto?.grado || null;
     gradoPre = gradoExplicitoMensaje || (gradoEnCuerpo ? (gradoANumero(gradoEnCuerpo) || gradoEnCuerpo) : gradoANumero(textoParaProcesar));
+    if (!gradoPre) {
+      const mgPre = gradosMultiples(textoParaProcesar);
+      if (mgPre.length > 0) gradoPre = mgPre[0];
+    }
 
     let temaPre = (body.tema || "").trim();
     if (!temaPre) {
