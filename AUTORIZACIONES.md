@@ -314,4 +314,13 @@
 - **Alcance Autorizado:** Actualización de estilos en App.jsx, HomeGreeting.jsx e index.css, build de Vite, pruebas client/vitest, sellado de la guardia (actualización de hashes SHA-256), commit, push a main y despliegue a producción.
 - **Estado:** APLICADA
 
+### Autorización 046
+- **Fecha:** 03/11/2026 (America/Santo_Domingo)
+- **Componentes:** `client/src/App.jsx`
+- **Motivo:** Ajuste del contenedor principal de la vista móvil (`.phone-shell`) con `w-full max-w-md mx-auto min-h-screen flex flex-col shadow-2xl border-x border-slate-200` para mantener proporciones de smartphone centradas en pantallas grandes/desktop.
+- **Frase Textual del Dueño:** `"En client/src/App.jsx, ajusta el contenedor principal de la vista móvil para que mantenga proporciones de smartphone en pantallas grandes: 1. Localiza el div envolvente principal: <div className=\"phone-shell bg-slate-50\"> 2. Cámbialo por: <div className=\"phone-shell bg-slate-50 w-full max-w-md mx-auto min-h-screen flex flex-col shadow-2xl border-x border-slate-200\">"`
+- **Alcance Autorizado:** Modificación de `client/src/App.jsx` línea 953, build del cliente, suite de pruebas, sellado de la guardia (actualización de hashes SHA-256), commit, push a main y despliegue a producción.
+- **Estado:** APLICADA
+
+
 

@@ -950,7 +950,7 @@ export default function App() {
 
 
   return (
-    <div className="phone-shell bg-slate-50">
+    <div className="phone-shell bg-slate-50 w-full max-w-md mx-auto min-h-screen flex flex-col shadow-2xl border-x border-slate-200">
       {/* FASE 13: Banner de modo offline y notificación de sincronización automática */}
       {!isOnline && (
         <div className="pm-offline-banner no-print">
