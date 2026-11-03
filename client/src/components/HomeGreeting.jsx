@@ -1,3 +1,4 @@
+// Ruta: client/src/components/HomeGreeting.jsx
 import { useState, useMemo } from "react";
 import { cargarPerfil } from "../services/perfilStorage.js";
 
@@ -32,7 +33,6 @@ const SUGERENCIAS_CURRICULARES = [
 export default function HomeGreeting({ user, onSeleccionarSugerencia }) {
   const [inputValue, setInputValue] = useState("");
 
-  // 1. Saludo contextual según la hora del día en República Dominicana
   const saludo = useMemo(() => {
     let hour = new Date().getHours();
     try {
@@ -65,31 +65,31 @@ export default function HomeGreeting({ user, onSeleccionarSugerencia }) {
 
   const handleSubmit = (e) => {
     e?.preventDefault();
-    if (onSeleccionarSugerencia) {
+    if (onSeleccionarSugerencia && inputValue.trim()) {
       onSeleccionarSugerencia(inputValue.trim());
       setInputValue("");
     }
   };
 
   return (
-    <div className="pm-home-greeting-container flex flex-col items-center justify-center text-center px-4 py-8 max-w-xl mx-auto w-full" aria-live="polite">
-      {/* 1. Saludo superior centrado con píldora ámbar */}
-      <div className="flex justify-center mb-4">
-        <div className="bg-amber-50 border border-amber-200/80 text-amber-900 font-semibold text-xs px-3 py-1 rounded-full shadow-2xs inline-flex items-center gap-1.5">
+    <div className="w-full max-w-xl mx-auto flex flex-col items-center justify-center text-center px-4 py-6 bg-transparent" aria-live="polite">
+      {/* 1. Saludo superior */}
+      <div className="flex justify-center mb-3">
+        <div className="bg-amber-50 border border-amber-200 text-amber-900 font-semibold text-xs px-3.5 py-1 rounded-full shadow-xs inline-flex items-center gap-1.5">
           <span aria-hidden="true">☀️</span>
           <span>{saludo}</span>
         </div>
       </div>
 
-      {/* 2. Texto central de alto contraste */}
-      <h1 className="text-slate-900 font-extrabold text-2xl sm:text-3xl tracking-tight text-center mb-4 leading-tight">
+      {/* 2. Pregunta central de máximo contraste sobre fondo blanco */}
+      <h1 className="text-slate-900 font-extrabold text-2xl sm:text-3xl tracking-tight text-center mb-5 leading-tight">
         ¿Qué vamos a hacer, maestro?
       </h1>
 
-      {/* 3. Campo de entrada interactivo con foco limpio y alto contraste */}
+      {/* 3. Input interactivo con botón en azul petróleo */}
       <form onSubmit={handleSubmit} className="w-full max-w-md mx-auto mb-6">
-        <div className="relative flex items-center bg-white border border-slate-200 rounded-2xl shadow-2xs hover:border-slate-300 focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-slate-900/5 transition-all px-4 py-2.5">
-          <span className="text-slate-400 text-lg mr-2.5 select-none" aria-hidden="true">✍️</span>
+        <div className="relative flex items-center bg-white border border-slate-300 rounded-2xl shadow-xs hover:border-slate-400 focus-within:border-[#1a5b6c] focus-within:ring-2 focus-within:ring-[#1a5b6c]/10 transition-all px-4 py-2.5">
+          <span className="text-slate-400 text-base mr-2.5 select-none" aria-hidden="true">✍️</span>
           <input
             type="text"
             value={inputValue}
@@ -100,7 +100,7 @@ export default function HomeGreeting({ user, onSeleccionarSugerencia }) {
           />
           <button
             type="submit"
-            className="ml-2 inline-flex items-center justify-center bg-slate-900 text-white rounded-xl px-3 py-1.5 text-xs font-semibold hover:bg-slate-800 active:scale-95 transition-all shadow-sm shrink-0 cursor-pointer"
+            className="ml-2 inline-flex items-center justify-center bg-[#1a5b6c] text-white rounded-xl px-3.5 py-1.5 text-xs font-semibold hover:bg-[#154957] active:scale-95 transition-all shadow-xs shrink-0 cursor-pointer"
             title="Iniciar planificación"
           >
             <span>Planificar</span>
@@ -108,10 +108,10 @@ export default function HomeGreeting({ user, onSeleccionarSugerencia }) {
         </div>
       </form>
 
-      {/* 4. Sugerencias curriculares como píldoras de alto contraste */}
+      {/* 4. Sugerencias curriculares */}
       {onSeleccionarSugerencia && (
         <div className="w-full max-w-lg mx-auto">
-          <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2.5 text-center">
+          <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-3 text-center">
             💡 Ideas curriculares para empezar hoy:
           </div>
           <div className="flex flex-wrap justify-center gap-2">
@@ -119,7 +119,7 @@ export default function HomeGreeting({ user, onSeleccionarSugerencia }) {
               <button
                 key={idx}
                 type="button"
-                className="bg-white border border-slate-200 text-slate-800 shadow-2xs hover:border-slate-300 font-medium text-xs px-3 py-1.5 rounded-full inline-flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
+                className="bg-white border border-slate-200 text-slate-800 shadow-2xs hover:border-slate-300 hover:bg-slate-50 font-medium text-xs px-3.5 py-1.5 rounded-full inline-flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                 onClick={() => onSeleccionarSugerencia(sug.prompt)}
                 title={`Crear: ${sug.prompt}`}
               >
@@ -133,3 +133,4 @@ export default function HomeGreeting({ user, onSeleccionarSugerencia }) {
     </div>
   );
 }
+
