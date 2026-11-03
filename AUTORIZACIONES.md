@@ -306,3 +306,12 @@
 - **Alcance Autorizado:** Modificación de worker/index.js y shared/catalogoCurricular.mjs, adición de suites de prueba tests/test_grado_robusto_mensaje.mjs y tests/test_4a_sse.mjs, sellado con la guardia (actualización de hashes SHA-256), commit, push a main y despliegue a producción.
 - **Estado:** APLICADA
 
+### Autorización 045
+- **Fecha:** 03/11/2026 (America/Santo_Domingo)
+- **Componentes:** `client/src/App.jsx`, `client/src/components/HomeGreeting.jsx`, `client/src/index.css`
+- **Motivo:** Unificación de fondo global a claro/blanco (bg-slate-50 / bg-white) eliminando contenedores oscuros intermedios, actualización de texto central a "¿Qué vamos a hacer, maestro?" con alto contraste, foco limpio de input y píldoras estilizadas de saludo y sugerencias curriculares.
+- **Frase Textual del Dueño:** `"Por favor, ajusta los estilos del Dashboard principal de Planifica Maestro para unificar el fondo y resolver el contraste del input/pregunta central: 1. FONDO GLOBAL UNIFICADO A BLANCO ... 2. TEXTO CENTRAL Y CAMPO DE ENTRADA LEGIBLE ... 3. INTEGRACIÓN DE LA PÍLDORA DE SALUDO Y SUGERENCIAS"`
+- **Alcance Autorizado:** Actualización de estilos en App.jsx, HomeGreeting.jsx e index.css, build de Vite, pruebas client/vitest, sellado de la guardia (actualización de hashes SHA-256), commit, push a main y despliegue a producción.
+- **Estado:** APLICADA
+
+

@@ -950,7 +950,7 @@ export default function App() {
 
 
   return (
-    <div className="phone-shell">
+    <div className="phone-shell bg-slate-50">
       {/* FASE 13: Banner de modo offline y notificación de sincronización automática */}
       {!isOnline && (
         <div className="pm-offline-banner no-print">
@@ -1090,9 +1090,9 @@ export default function App() {
         }}
       />
 
-      <div 
+      <main 
         ref={chatContainerRef}
-        className="pm-chat-container"
+        className="pm-chat-container bg-slate-50"
         style={{ 
           flex: 1, 
           overflowY: 'auto', 
@@ -1102,7 +1102,7 @@ export default function App() {
           maxWidth: '100%',
           boxSizing: 'border-box',
           padding: '10px 10px calc(85px + env(safe-area-inset-bottom, 0px)) 10px', 
-          background: 'var(--pm-bg)', 
+          background: '#f8fafc', 
           display: 'flex', 
           flexDirection: 'column', 
           gap: '12px' 
@@ -1884,7 +1884,7 @@ export default function App() {
           <br />
           Privacidad: no guardamos tus audios ni fotos en ningún servidor.
         </footer>
-      </div>
+      </main>
       
       {vistaNueva ? (
         <Suspense fallback={null}>

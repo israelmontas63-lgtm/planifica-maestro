@@ -4440,52 +4440,52 @@ body {
    BLOQUE 1: TOKENS CENTRALIZADOS DE DISEÑO (referencia: html rr.html)
    ══════════════════════════════════════════════════════════════ */
 :root {
-  --pm-bg: #f4f8f6;
+  --pm-bg: #f8fafc;
   --pm-card: #ffffff;
-  --pm-ink: #12304a;
-  --pm-mut: #546576;
-  --pm-line: #d9e4df;
+  --pm-ink: #0f172a;
+  --pm-mut: #64748b;
+  --pm-line: #e2e8f0;
   --pm-pri: #0f9d76;
   --pm-on: #ffffff;
   --pm-soft: #e2f5ed;
   --pm-err: #fdeaea;
   --pm-errk: #8f1d1d;
-  --pm-sh: 0 6px 20px rgba(18, 48, 74, 0.12);
+  --pm-sh: 0 6px 20px rgba(18, 48, 74, 0.08);
   --pm-bottom-nav-height: 84px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --pm-bg: #0e1a22;
-    --pm-card: #16262f;
-    --pm-ink: #e8f1f5;
-    --pm-mut: #9db0bc;
-    --pm-line: #26404d;
-    --pm-pri: #2cc596;
-    --pm-on: #06241a;
-    --pm-soft: #12362c;
-    --pm-err: #3a1a1a;
-    --pm-errk: #ffb4b4;
-    --pm-sh: 0 6px 20px rgba(0, 0, 0, 0.5);
+    --pm-bg: #f8fafc;
+    --pm-card: #ffffff;
+    --pm-ink: #0f172a;
+    --pm-mut: #64748b;
+    --pm-line: #e2e8f0;
+    --pm-pri: #0f9d76;
+    --pm-on: #ffffff;
+    --pm-soft: #e2f5ed;
+    --pm-err: #fdeaea;
+    --pm-errk: #8f1d1d;
+    --pm-sh: 0 6px 20px rgba(0, 0, 0, 0.08);
   }
 }
 
 :root[data-theme="dark"] {
-  --pm-bg: #0e1a22;
-  --pm-card: #16262f;
-  --pm-ink: #e8f1f5;
-  --pm-mut: #9db0bc;
-  --pm-line: #26404d;
-  --pm-pri: #2cc596;
-  --pm-on: #06241a;
-  --pm-soft: #12362c;
-  --pm-err: #3a1a1a;
-  --pm-errk: #ffb4b4;
-  --pm-sh: 0 6px 20px rgba(0, 0, 0, 0.5);
+  --pm-bg: #f8fafc;
+  --pm-card: #ffffff;
+  --pm-ink: #0f172a;
+  --pm-mut: #64748b;
+  --pm-line: #e2e8f0;
+  --pm-pri: #0f9d76;
+  --pm-on: #ffffff;
+  --pm-soft: #e2f5ed;
+  --pm-err: #fdeaea;
+  --pm-errk: #8f1d1d;
+  --pm-sh: 0 6px 20px rgba(0, 0, 0, 0.08);
 }
 
 :root[data-theme="light"] {
-  --pm-bg: #f4f8f6;
+  --pm-bg: #f8fafc;
   --pm-card: #ffffff;
   --pm-ink: #12304a;
   --pm-mut: #546576;
@@ -4671,3 +4671,41 @@ body.pm-vista-nueva .pm-pantalla-inicio {
   padding: 6px 10px;
   font-size: 0.9rem;
 }
+
+/* ═══════════════════════════════════════════
+   UTILIDADES DASHBOARD CLARO Y ALTO CONTRASTE
+   ═══════════════════════════════════════════ */
+.bg-slate-50 { background-color: #f8fafc !important; }
+.bg-white { background-color: #ffffff !important; }
+.text-slate-900 { color: #0f172a !important; }
+.text-slate-800 { color: #1e293b !important; }
+.text-slate-500 { color: #64748b !important; }
+.text-slate-400 { color: #94a3b8 !important; }
+.placeholder-slate-400::placeholder { color: #94a3b8 !important; }
+.font-extrabold { font-weight: 800 !important; }
+.font-bold { font-weight: 700 !important; }
+.font-semibold { font-weight: 600 !important; }
+.font-medium { font-weight: 500 !important; }
+.text-xs { font-size: 0.75rem !important; line-height: 1rem !important; }
+.text-sm { font-size: 0.875rem !important; line-height: 1.25rem !important; }
+.text-base { font-size: 1rem !important; line-height: 1.5rem !important; }
+.text-2xl { font-size: 1.5rem !important; line-height: 2rem !important; }
+@media (min-width: 640px) {
+  .sm\:text-3xl { font-size: 1.875rem !important; line-height: 2.25rem !important; }
+}
+.tracking-tight { letter-spacing: -0.025em !important; }
+.tracking-wider { letter-spacing: 0.05em !important; }
+.text-center { text-align: center !important; }
+.focus\:outline-none:focus { outline: 2px solid transparent !important; outline-offset: 2px !important; }
+.bg-amber-50 { background-color: #fffbeb !important; }
+.border-amber-200\/80 { border-color: rgba(253, 230, 138, 0.8) !important; }
+.text-amber-900 { color: #78350f !important; }
+.border-slate-200 { border-color: #e2e8f0 !important; }
+.border-slate-300 { border-color: #cbd5e1 !important; }
+.border-slate-400 { border-color: #94a3b8 !important; }
+.hover\:border-slate-300:hover { border-color: #cbd5e1 !important; }
+.shadow-2xs { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03) !important; }
+.rounded-full { border-radius: 9999px !important; }
+.rounded-2xl { border-radius: 1rem !important; }
+.rounded-xl { border-radius: 0.75rem !important; }
+

@@ -1,11 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { cargarPerfil } from "../services/perfilStorage.js";
-
-const PHRASES = [
-  "¿Qué vamos a hacer hoy?",
-  "¿Qué nos toca hoy?",
-  "¿En qué te ayudo?"
-];
 
 const SUGERENCIAS_CURRICULARES = [
   {
@@ -36,10 +30,7 @@ const SUGERENCIAS_CURRICULARES = [
 ];
 
 export default function HomeGreeting({ user, onSeleccionarSugerencia }) {
-  const [phraseIndex, setPhraseIndex] = useState(0);
-  const [displayText, setDisplayText] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const [inputValue, setInputValue] = useState("");
 
   // 1. Saludo contextual según la hora del día en República Dominicana
   const saludo = useMemo(() => {
@@ -72,82 +63,63 @@ export default function HomeGreeting({ user, onSeleccionarSugerencia }) {
     }
   }, [user]);
 
-  // 2. Detección de preferencia de movimiento reducido
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setPrefersReducedMotion(mediaQuery.matches);
-
-    const handler = (e) => setPrefersReducedMotion(e.matches);
-    mediaQuery.addEventListener("change", handler);
-    return () => mediaQuery.removeEventListener("change", handler);
-  }, []);
-
-  // 3. Efecto máquina de escribir (Typewriter) o rotación estática para movimiento reducido
-  useEffect(() => {
-    const currentTarget = PHRASES[phraseIndex];
-
-    if (prefersReducedMotion) {
-      setDisplayText(currentTarget);
-      const timer = setTimeout(() => {
-        setPhraseIndex((prev) => (prev + 1) % PHRASES.length);
-      }, 4000);
-      return () => clearTimeout(timer);
+  const handleSubmit = (e) => {
+    e?.preventDefault();
+    if (onSeleccionarSugerencia) {
+      onSeleccionarSugerencia(inputValue.trim());
+      setInputValue("");
     }
-
-    let timeout;
-    if (!isDeleting) {
-      // Escribiendo
-      if (displayText.length < currentTarget.length) {
-        timeout = setTimeout(() => {
-          setDisplayText(currentTarget.slice(0, displayText.length + 1));
-        }, 65);
-      } else {
-        // Pausa cuando se completa la frase
-        timeout = setTimeout(() => {
-          setIsDeleting(true);
-        }, 2200);
-      }
-    } else {
-      // Borrando
-      if (displayText.length > 0) {
-        timeout = setTimeout(() => {
-          setDisplayText(currentTarget.slice(0, displayText.length - 1));
-        }, 35);
-      } else {
-        // Pasar a la siguiente frase
-        setIsDeleting(false);
-        setPhraseIndex((prev) => (prev + 1) % PHRASES.length);
-        timeout = setTimeout(() => {}, 350);
-      }
-    }
-
-    return () => clearTimeout(timeout);
-  }, [displayText, isDeleting, phraseIndex, prefersReducedMotion]);
+  };
 
   return (
-    <div className="pm-home-greeting-container" aria-live="polite">
-      <div className="pm-greeting-badge">
-        <span className="pm-greeting-sun" aria-hidden="true">☀️</span>
-        <span className="pm-greeting-time-text">{saludo}</span>
+    <div className="pm-home-greeting-container flex flex-col items-center justify-center text-center px-4 py-8 max-w-xl mx-auto w-full" aria-live="polite">
+      {/* 1. Saludo superior centrado con píldora ámbar */}
+      <div className="flex justify-center mb-4">
+        <div className="bg-amber-50 border border-amber-200/80 text-amber-900 font-semibold text-xs px-3 py-1 rounded-full shadow-2xs inline-flex items-center gap-1.5">
+          <span aria-hidden="true">☀️</span>
+          <span>{saludo}</span>
+        </div>
       </div>
 
-      <h1 className="pm-greeting-typewriter-title">
-        <span className="pm-greeting-serif-text">{displayText}</span>
-        <span className="pm-typewriter-cursor" aria-hidden="true">|</span>
+      {/* 2. Texto central de alto contraste */}
+      <h1 className="text-slate-900 font-extrabold text-2xl sm:text-3xl tracking-tight text-center mb-4 leading-tight">
+        ¿Qué vamos a hacer, maestro?
       </h1>
 
+      {/* 3. Campo de entrada interactivo con foco limpio y alto contraste */}
+      <form onSubmit={handleSubmit} className="w-full max-w-md mx-auto mb-6">
+        <div className="relative flex items-center bg-white border border-slate-200 rounded-2xl shadow-2xs hover:border-slate-300 focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-slate-900/5 transition-all px-4 py-2.5">
+          <span className="text-slate-400 text-lg mr-2.5 select-none" aria-hidden="true">✍️</span>
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder="¿Qué vamos a hacer, maestro?"
+            className="w-full bg-transparent focus:outline-none placeholder-slate-400 text-slate-900 font-medium text-sm sm:text-base"
+            aria-label="Consulta o tema curricular"
+          />
+          <button
+            type="submit"
+            className="ml-2 inline-flex items-center justify-center bg-slate-900 text-white rounded-xl px-3 py-1.5 text-xs font-semibold hover:bg-slate-800 active:scale-95 transition-all shadow-sm shrink-0 cursor-pointer"
+            title="Iniciar planificación"
+          >
+            <span>Planificar</span>
+          </button>
+        </div>
+      </form>
+
+      {/* 4. Sugerencias curriculares como píldoras de alto contraste */}
       {onSeleccionarSugerencia && (
-        <div className="pm-home-suggestions-container" style={{ marginTop: "14px", animation: "fadeIn 0.3s ease" }}>
-          <div style={{ fontSize: "11.5px", fontWeight: "600", color: "#64748b", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+        <div className="w-full max-w-lg mx-auto">
+          <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2.5 text-center">
             💡 Ideas curriculares para empezar hoy:
           </div>
-          <div className="pm-quick-replies-row" style={{ justifyContent: "center" }}>
+          <div className="flex flex-wrap justify-center gap-2">
             {SUGERENCIAS_CURRICULARES.map((sug, idx) => (
               <button
                 key={idx}
                 type="button"
-                className="pm-quick-reply-pill"
+                className="bg-white border border-slate-200 text-slate-800 shadow-2xs hover:border-slate-300 font-medium text-xs px-3 py-1.5 rounded-full inline-flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer"
                 onClick={() => onSeleccionarSugerencia(sug.prompt)}
                 title={`Crear: ${sug.prompt}`}
               >
