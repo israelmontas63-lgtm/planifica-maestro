@@ -1,12 +1,12 @@
 {
   "version": "2.0.0",
-  "fecha_generacion": "2026-11-04T01:02:04.794Z",
-  "commit": "3c67c31",
+  "fecha_generacion": "2026-11-04T01:24:46.944Z",
+  "commit": "b509521",
   "algoritmo": "sha256",
   "total_archivos": 83,
-  "resumen": "3667270dc095d83ffb3704c2a9458376ef48bd81b3603c7e929aa29afdbfa97c",
+  "resumen": "4994a0ca8fe83fa8f44c552f259027d19132b6d0ba061dff5c0423997a2a0428",
   "hashes": {
-    "client/src/App.jsx": "cf0e335c92c2e11adb01bfa627b55fbf27977c3d27a2e0e382cad6b42adadc9e",
+    "client/src/App.jsx": "36beb62c5573233dfc6c88b8ed3f9ef1b444f76f51d687cbc3c2d2a3821b9574",
     "client/src/api.js": "cf06bedb228a8e163a5e1a4fec872da328dfbd572066f0478ddda6bebb8818d9",
     "client/src/components/EditorImagenModal.jsx": "381369355f719d19ec46fe455bf3f13c1e3706367cdf3dfc4ff099d03b8afbd5",
     "client/src/components/MisPlanificaciones.jsx": "a7303fde51b6eac64382aef88758f68c81a7db0536da6b44a69f5992d5272de0",
