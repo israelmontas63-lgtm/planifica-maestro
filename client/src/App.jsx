@@ -42,6 +42,7 @@ const EditorImagenModal = lazy(() => import("./components/EditorImagenModal.jsx"
 const AcercaModal = lazy(() => import("./components/AcercaModal.jsx"));
 const BottomNavFlotante = lazy(() => import("./components/BottomNavFlotante.jsx"));
 const MenuSheetModal = lazy(() => import("./components/MenuSheetModal.jsx"));
+const OrbeVozVisualizer = lazy(() => import("./components/OrbeVozVisualizer.jsx"));
 import { useTema } from "./hooks/useTema.js";
 import { verificarAccesoAutorizado } from "./components/AccessGate.jsx";
 
@@ -1475,68 +1476,23 @@ export default function App() {
           </div>
         ))}
 
-        {/* FASE A: Vista previa en vivo del dictado con ondas sonoras dinámicas y 'Escuchando…' */}
+        {/* Esfera Fluida 3D Reactiva al Audio (Audio Visualizer) */}
         {listening && (
-          <div className="pm-dictado-live-preview no-print" role="status" aria-live="assertive">
-            <div className="pm-voice-wave-wrapper" aria-hidden="true">
-              <span className="pm-wave-bar bar-1"></span>
-              <span className="pm-wave-bar bar-2"></span>
-              <span className="pm-wave-bar bar-3"></span>
-              <span className="pm-wave-bar bar-4"></span>
-              <span className="pm-wave-bar bar-5"></span>
-            </div>
-            <div className="pm-dictado-content">
-              <div className="pm-dictado-hint">
-                <span className="pm-listening-badge">Escuchando…</span>
-                <span>Di el tema, grado o área curricular:</span>
-              </div>
-              <div className="pm-dictado-text">
-                {transcript || <span style={{ color: "#0F6E56", fontStyle: "italic", opacity: 0.8 }}>Habla con confianza, te escucho...</span>}
-              </div>
-              <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-                <button
-                  type="button"
-                  className="pm-btn-enviar-dictado"
-                  style={{
-                    background: "var(--teal, #1a7d8c)",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "6px",
-                    padding: "6px 12px",
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    cursor: "pointer"
-                  }}
-                  onClick={() => {
-                    const res = stop();
-                    handleFinDictado(res, { forzarEnvio: true });
-                  }}
-                  disabled={!transcript?.trim()}
-                >
-                  🎙️ Enviar a Planificar
-                </button>
-                <button
-                  type="button"
-                  style={{
-                    background: "#f1f5f9",
-                    color: "#64748b",
-                    border: "1px solid #cbd5e1",
-                    borderRadius: "6px",
-                    padding: "6px 12px",
-                    fontSize: "13px",
-                    fontWeight: "600",
-                    cursor: "pointer"
-                  }}
-                  onClick={() => {
-                    stop();
-                    resetTranscript();
-                  }}
-                >
-                  ✕ Cancelar
-                </button>
-              </div>
-            </div>
-          </div>
+          <Suspense fallback={null}>
+            <OrbeVozVisualizer
+              isOpen={listening}
+              transcript={transcript}
+              duracionTexto={tiempoTranscurrido}
+              onEnviar={() => {
+                const res = stop();
+                handleFinDictado(res, { forzarEnvio: true });
+              }}
+              onCancelar={() => {
+                stop();
+                resetTranscript();
+              }}
+            />
+          </Suspense>
         )}
 
         {/* ETAPA 2: Confirmación inteligente 'Entendí: …' */}
