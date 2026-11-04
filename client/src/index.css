@@ -4709,3 +4709,16 @@ body.pm-vista-nueva .pm-pantalla-inicio {
 .rounded-2xl { border-radius: 1rem !important; }
 .rounded-xl { border-radius: 0.75rem !important; }
 
+/* ── Visor de Cámara PWA - Pantalla Completa Real (Edge-to-Edge) ── */
+video.visor,
+video.visor-camara {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+  object-position: center;
+  z-index: 0;
+}
+

@@ -54,8 +54,11 @@ export default function OjoVisorCamara({
     const constraints = {
       video: {
         facingMode: { ideal: "environment" },
-        width: { ideal: 1280 },
-        height: { ideal: 720 }
+        width: { ideal: 1920, min: 1280 },
+        height: { ideal: 1080, min: 720 },
+        aspectRatio: { ideal: 16 / 9 },
+        // Activa enfoque continuo si el navegador móvil lo soporta
+        focusMode: { ideal: "continuous" }
       },
       audio: false
     };
@@ -63,6 +66,15 @@ export default function OjoVisorCamara({
     navigator.mediaDevices?.getUserMedia(constraints)
       .then((stream) => {
         streamRef.current = stream;
+        const track = stream.getVideoTracks()?.[0];
+        if (track && typeof track.applyConstraints === "function") {
+          try {
+            const capabilities = track.getCapabilities?.() || {};
+            if (capabilities.focusMode && capabilities.focusMode.includes("continuous")) {
+              track.applyConstraints({ advanced: [{ focusMode: "continuous" }] }).catch(() => {});
+            }
+          } catch (_) {}
+        }
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.play().catch(() => {});
@@ -247,281 +259,523 @@ export default function OjoVisorCamara({
       style={{
         position: "fixed",
         inset: 0,
-        backgroundColor: "rgba(0, 0, 0, 0.92)",
         zIndex: 9999,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "space-between",
+        backgroundColor: "#000000",
+        overflow: "hidden",
+        userSelect: "none",
         color: "#ffffff",
         fontFamily: "system-ui, sans-serif"
       }}
     >
-      {/* ── BARRA SUPERIOR ── */}
+      {/* ── 1. VIDEO A PANTALLA COMPLETA REAL (EDGE-TO-EDGE) ── */}
+      <video
+        ref={videoRef}
+        className="visor visor-camara"
+        playsInline
+        muted
+        autoPlay
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          objectFit: "cover",
+          objectPosition: "center",
+          transform: `scale(${zoom})`,
+          transition: "transform 0.15s ease-out",
+          display: iniciando || errorCamara ? "none" : "block",
+          zIndex: 0
+        }}
+        onClick={handleTouchVideo}
+      />
+
+      {/* Capa de interacción táctil para re-enfocar tocando la pantalla */}
+      {!iniciando && !errorCamara && (
+        <div
+          onClick={handleTouchVideo}
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 5,
+            cursor: "crosshair"
+          }}
+        />
+      )}
+
+      {/* ── MENSAJES DE ESTADO (INICIANDO / ERROR) ── */}
+      {(iniciando || errorCamara) && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 15,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "24px",
+            textAlign: "center",
+            backgroundColor: "rgba(0, 0, 0, 0.85)",
+            backdropFilter: "blur(8px)"
+          }}
+        >
+          {iniciando ? (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "14px" }}>
+              <div
+                style={{
+                  width: "44px",
+                  height: "44px",
+                  borderRadius: "50%",
+                  border: "3.5px solid #10b981",
+                  borderTopColor: "transparent",
+                  animation: "spin 1s linear infinite"
+                }}
+              />
+              <div style={{ fontSize: "0.95rem", fontWeight: "500", color: "#e2e8f0" }}>
+                Iniciando cámara escolar en alta definición...
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", maxWidth: "320px" }}>
+              <span style={{ fontSize: "2.5rem" }}>⚠️</span>
+              <div style={{ fontSize: "0.9rem", color: "#fca5a5" }}>{errorCamara}</div>
+              <button
+                onClick={onClose}
+                style={{
+                  marginTop: "8px",
+                  padding: "6px 16px",
+                  borderRadius: "20px",
+                  backgroundColor: "rgba(255, 255, 255, 0.2)",
+                  border: "none",
+                  color: "#fff",
+                  fontSize: "0.8rem",
+                  cursor: "pointer"
+                }}
+              >
+                Cerrar
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── 2. CABECERA DESPEJADA Y FLOTANTE ── */}
       <div
         style={{
-          width: "100%",
-          padding: "14px 18px",
+          position: "absolute",
+          top: "16px",
+          left: 0,
+          right: 0,
           display: "flex",
-          justifyContent: "space-between",
+          justifyContent: "center",
           alignItems: "center",
-          backgroundColor: "rgba(0,0,0,0.6)",
-          backdropFilter: "blur(8px)"
+          padding: "0 16px",
+          zIndex: 20,
+          pointerEvents: "none"
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "1.4rem" }}>👁️</span>
-          <div>
-            <div style={{ fontWeight: "700", fontSize: "1rem" }}>Ojo Visor en Vivo</div>
-            <div style={{ fontSize: "0.75rem", opacity: 0.8 }}>
-              {modoEnVivo ? "🔴 Modo Mirando en Vivo" : "📷 Modo Foto Puntual"}
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <button
-            onClick={() => setModoEnVivo(!modoEnVivo)}
+        <div
+          style={{
+            pointerEvents: "auto",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "14px",
+            backgroundColor: "rgba(0, 0, 0, 0.45)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+            color: "#ffffff",
+            borderRadius: "9999px",
+            padding: "8px 18px",
+            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.3)"
+          }}
+        >
+          <div
             style={{
-              padding: "6px 12px",
-              borderRadius: "20px",
-              border: "1px solid #4ade80",
-              backgroundColor: modoEnVivo ? "#15803d" : "transparent",
-              color: "#ffffff",
-              fontSize: "0.75rem",
-              fontWeight: "600",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
               cursor: "pointer"
             }}
+            onClick={() => setModoEnVivo(!modoEnVivo)}
+            title="Toca para alternar Modo En Vivo"
           >
-            {modoEnVivo ? "Mirando Activo" : "Activar Mirando"}
-          </button>
+            <span
+              style={{
+                display: "inline-block",
+                width: "9px",
+                height: "9px",
+                borderRadius: "50%",
+                backgroundColor: modoEnVivo ? "#10b981" : "#38bdf8",
+                boxShadow: modoEnVivo ? "0 0 10px #10b981" : "0 0 10px #38bdf8"
+              }}
+            />
+            <span style={{ fontSize: "0.82rem", fontWeight: "600", letterSpacing: "0.02em" }}>
+              {modoEnVivo ? "Visor IA Activo (En Vivo)" : "Visor IA Activo"}
+            </span>
+          </div>
+
+          <div style={{ width: "1px", height: "14px", backgroundColor: "rgba(255, 255, 255, 0.2)" }} />
 
           <button
             onClick={onClose}
+            aria-label="Cerrar visor"
             style={{
               background: "none",
               border: "none",
-              color: "#fff",
-              fontSize: "1.6rem",
+              color: "rgba(255, 255, 255, 0.8)",
+              fontSize: "1rem",
               cursor: "pointer",
-              padding: "0 6px"
+              padding: "0 2px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "color 0.15s ease"
             }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#ffffff")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255, 255, 255, 0.8)")}
           >
             ✕
           </button>
         </div>
       </div>
 
-      {/* ── ÁREA DE VISOR Y VIDEO ── */}
-      <div
-        style={{
-          position: "relative",
-          width: "100%",
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          overflow: "hidden"
-        }}
-        onClick={handleTouchVideo}
-      >
-        {iniciando && (
-          <div style={{ textAlign: "center", opacity: 0.8 }}>
-            <div style={{ fontSize: "2rem", marginBottom: "8px" }}>⏳</div>
-            <div>Iniciando cámara escolar...</div>
-          </div>
-        )}
-
-        {errorCamara && (
-          <div style={{ textAlign: "center", color: "#f87171", padding: "20px", maxWidth: "340px" }}>
-            <div style={{ fontSize: "2rem", marginBottom: "8px" }}>⚠️</div>
-            <div>{errorCamara}</div>
-          </div>
-        )}
-
-        <video
-          ref={videoRef}
-          playsInline
-          muted
-          autoPlay
+      {/* ── 3. RETÍCULA DE ENFOQUE HUD MINIMALISTA ── */}
+      {!iniciando && !errorCamara && (
+        <div
           style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "contain",
-            transform: `scale(${zoom})`,
-            transition: "transform 0.15s ease-out",
-            display: iniciando || errorCamara ? "none" : "block"
+            position: "absolute",
+            left: `${cuadroCrop.x}%`,
+            top: `${cuadroCrop.y}%`,
+            width: `${cuadroCrop.w}%`,
+            height: `${cuadroCrop.h}%`,
+            pointerEvents: "none",
+            zIndex: 10,
+            transition: "all 0.15s ease-out"
           }}
-        />
-
-        {/* Notificación de cambio de escena */}
-        {cambioEscenaDetectado && (
+        >
+          {/* Esquina Superior Izquierda */}
           <div
             style={{
               position: "absolute",
-              top: "16px",
-              backgroundColor: "rgba(16, 185, 129, 0.9)",
-              color: "#fff",
-              padding: "6px 14px",
-              borderRadius: "16px",
-              fontSize: "0.8rem",
-              fontWeight: "600",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.4)"
+              top: 0,
+              left: 0,
+              width: "24px",
+              height: "24px",
+              borderTop: "2.5px solid rgba(52, 211, 153, 0.95)",
+              borderLeft: "2.5px solid rgba(52, 211, 153, 0.95)",
+              borderTopLeftRadius: "10px"
             }}
-          >
-            ✨ Nuevo objeto didáctico enfocado
-          </div>
-        )}
-
-        {/* Cuadro de Enfoque Touch-to-Crop */}
-        {!iniciando && !errorCamara && (
+          />
+          {/* Esquina Superior Derecha */}
           <div
             style={{
               position: "absolute",
-              left: `${cuadroCrop.x}%`,
-              top: `${cuadroCrop.y}%`,
-              width: `${cuadroCrop.w}%`,
-              height: `${cuadroCrop.h}%`,
-              border: "2px dashed #38bdf8",
-              borderRadius: "8px",
-              pointerEvents: "none",
-              boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.35)",
-              display: "flex",
-              alignItems: "flex-end",
-              justifyContent: "flex-end",
-              padding: "4px"
+              top: 0,
+              right: 0,
+              width: "24px",
+              height: "24px",
+              borderTop: "2.5px solid rgba(52, 211, 153, 0.95)",
+              borderRight: "2.5px solid rgba(52, 211, 153, 0.95)",
+              borderTopRightRadius: "10px"
+            }}
+          />
+          {/* Esquina Inferior Izquierda */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              width: "24px",
+              height: "24px",
+              borderBottom: "2.5px solid rgba(52, 211, 153, 0.95)",
+              borderLeft: "2.5px solid rgba(52, 211, 153, 0.95)",
+              borderBottomLeftRadius: "10px"
+            }}
+          />
+          {/* Esquina Inferior Derecha */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: 0,
+              right: 0,
+              width: "24px",
+              height: "24px",
+              borderBottom: "2.5px solid rgba(52, 211, 153, 0.95)",
+              borderRight: "2.5px solid rgba(52, 211, 153, 0.95)",
+              borderBottomRightRadius: "10px"
+            }}
+          />
+          {/* Etiqueta discreta inferior */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: "-28px",
+              left: 0,
+              right: 0,
+              textAlign: "center"
             }}
           >
-            <span style={{ fontSize: "0.65rem", backgroundColor: "rgba(0,0,0,0.6)", padding: "2px 6px", borderRadius: "4px" }}>
-              Enfoque (Toca para mover)
+            <span
+              style={{
+                fontSize: "0.72rem",
+                color: "rgba(255, 255, 255, 0.9)",
+                backgroundColor: "rgba(0, 0, 0, 0.5)",
+                backdropFilter: "blur(6px)",
+                padding: "3px 10px",
+                borderRadius: "14px",
+                border: "1px solid rgba(255, 255, 255, 0.15)",
+                letterSpacing: "0.02em"
+              }}
+            >
+              {cambioEscenaDetectado ? "✨ Objeto didáctico enfocado" : "Escaneando currículo..."}
             </span>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* ── BARRA DE CONTROLES INFERIOR ── */}
+      {/* ── CAMPO DE PREGUNTA PEDAGÓGICA FLOTANTE (COMPACTO) ── */}
       <div
         style={{
-          width: "100%",
-          padding: "14px 18px",
-          backgroundColor: "rgba(0,0,0,0.85)",
+          position: "absolute",
+          bottom: "148px",
+          left: 0,
+          right: 0,
           display: "flex",
-          flexDirection: "column",
-          gap: "12px",
-          backdropFilter: "blur(10px)"
+          justifyContent: "center",
+          padding: "0 20px",
+          zIndex: 20,
+          pointerEvents: "none"
         }}
       >
-        {/* Controles de Zoom */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
-          <button
-            onClick={() => setZoom((z) => Math.max(1, +(z - 0.25).toFixed(2)))}
-            style={{ padding: "4px 10px", background: "#334155", color: "#fff", border: "none", borderRadius: "4px" }}
-          >
-            -
-          </button>
-          <input
-            type="range"
-            min="1"
-            max="3"
-            step="0.1"
-            value={zoom}
-            onChange={(e) => setZoom(parseFloat(e.target.value))}
-            style={{ width: "140px" }}
-          />
-          <button
-            onClick={() => setZoom((z) => Math.min(3, +(z + 0.25).toFixed(2)))}
-            style={{ padding: "4px 10px", background: "#334155", color: "#fff", border: "none", borderRadius: "4px" }}
-          >
-            +
-          </button>
-          <span style={{ fontSize: "0.8rem", width: "35px" }}>{zoom.toFixed(1)}x</span>
-        </div>
-
-        {/* Campo de Pregunta o Voz */}
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div
+          style={{
+            pointerEvents: "auto",
+            width: "100%",
+            maxWidth: "380px",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            backgroundColor: "rgba(0, 0, 0, 0.45)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            border: "1px solid rgba(255, 255, 255, 0.15)",
+            borderRadius: "9999px",
+            padding: "4px 8px 4px 14px",
+            boxShadow: "0 4px 16px rgba(0, 0, 0, 0.3)"
+          }}
+        >
           <input
             type="text"
-            placeholder="Pregunta pedagógica (ej. ¿Qué tema enseñar con esto?)"
+            placeholder="Pregunta pedagógica (opcional)..."
             value={preguntaTexto}
             onChange={(e) => setPreguntaTexto(e.target.value)}
             style={{
               flex: 1,
-              padding: "8px 12px",
-              borderRadius: "8px",
-              border: "1px solid #475569",
-              backgroundColor: "#1e293b",
-              color: "#fff",
-              fontSize: "0.85rem"
+              background: "transparent",
+              border: "none",
+              color: "#ffffff",
+              fontSize: "0.8rem",
+              outline: "none"
             }}
           />
           <button
             onClick={alternarReconocimientoVoz}
             style={{
-              padding: "8px 12px",
-              borderRadius: "8px",
+              background: escuchandoVoz ? "#ef4444" : "rgba(255, 255, 255, 0.15)",
               border: "none",
-              backgroundColor: escuchandoVoz ? "#ef4444" : "#3b82f6",
+              borderRadius: "50%",
+              width: "28px",
+              height: "28px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
               color: "#fff",
-              cursor: "pointer"
+              fontSize: "0.75rem",
+              transition: "background 0.2s"
             }}
             title="Preguntar por voz"
           >
             {escuchandoVoz ? "⏹️" : "🎙️"}
           </button>
         </div>
+      </div>
 
-        {/* Botones de Acción */}
-        <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center", gap: "8px" }}>
-          <button
-            onClick={() => handleCompletarAnalisis("editor")}
-            style={{
-              flex: 1,
-              padding: "10px",
-              borderRadius: "8px",
-              border: "1px solid #3b82f6",
-              backgroundColor: "#1e3a8a",
-              color: "#fff",
-              fontSize: "0.85rem",
-              fontWeight: "600",
-              cursor: "pointer"
-            }}
-          >
-            🎨 Editar Foto
-          </button>
+      {/* ── 4. CONTROL DE ZOOM FLOTANTE ── */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: "105px",
+          left: 0,
+          right: 0,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: 20,
+          pointerEvents: "none"
+        }}
+      >
+        <button
+          onClick={() => {
+            const escalas = [1.0, 1.5, 2.0, 3.0];
+            const idx = escalas.indexOf(zoom);
+            const sig = idx >= 0 && idx < escalas.length - 1 ? escalas[idx + 1] : escalas[0];
+            setZoom(sig);
+          }}
+          style={{
+            pointerEvents: "auto",
+            backgroundColor: "rgba(0, 0, 0, 0.45)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            border: "1px solid rgba(255, 255, 255, 0.15)",
+            color: "#ffffff",
+            borderRadius: "9999px",
+            padding: "4px 14px",
+            fontSize: "0.75rem",
+            fontWeight: "700",
+            cursor: "pointer",
+            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.35)",
+            letterSpacing: "0.05em"
+          }}
+          title="Toca para cambiar nivel de zoom"
+        >
+          {zoom.toFixed(1)}x
+        </button>
+      </div>
 
+      {/* ── 5. DOCK DE CONTROLES INFERIOR EN CRISTAL (GLASSMORPHISM) ── */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: "14px",
+          left: 0,
+          right: 0,
+          padding: "0 16px",
+          zIndex: 20,
+          display: "flex",
+          justifyContent: "center"
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            maxWidth: "420px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            backgroundColor: "rgba(0, 0, 0, 0.4)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+            borderRadius: "28px",
+            padding: "10px 16px",
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)"
+          }}
+        >
+          {/* Izquierda: Botón tipo píldora 'Planificar' con icono de libreta */}
           <button
             onClick={() => handleCompletarAnalisis("planificar")}
             style={{
-              flex: 1.2,
-              padding: "12px",
-              borderRadius: "8px",
-              border: "none",
-              backgroundColor: "#16a34a",
-              color: "#fff",
-              fontSize: "0.9rem",
-              fontWeight: "700",
-              cursor: "pointer"
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              backgroundColor: "rgba(16, 185, 129, 0.2)",
+              border: "1px solid rgba(52, 211, 153, 0.4)",
+              color: "#6ee7b7",
+              borderRadius: "9999px",
+              padding: "8px 14px",
+              fontSize: "0.78rem",
+              fontWeight: "600",
+              cursor: "pointer",
+              transition: "all 0.15s ease"
             }}
           >
-            📸 Planificar Clase
+            <span>📓</span>
+            <span>Planificar</span>
           </button>
 
+          {/* Centro: Disparador principal (captura) con círculo blanco brillante y borde esmeralda */}
           <button
-            onClick={() => handleCompletarAnalisis("analizar")}
+            onClick={() => handleCompletarAnalisis("planificar")}
+            aria-label="Capturar y planificar"
             style={{
-              flex: 1,
-              padding: "10px",
-              borderRadius: "8px",
-              border: "1px solid #64748b",
-              backgroundColor: "#334155",
-              color: "#fff",
-              fontSize: "0.85rem",
-              fontWeight: "600",
-              cursor: "pointer"
+              position: "relative",
+              width: "64px",
+              height: "64px",
+              borderRadius: "50%",
+              backgroundColor: "transparent",
+              border: "3.5px solid #10b981",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "4px",
+              cursor: "pointer",
+              boxShadow: "0 0 20px rgba(16, 185, 129, 0.5)",
+              transition: "transform 0.1s ease, box-shadow 0.1s ease"
             }}
+            onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.92)")}
+            onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
+            onTouchStart={(e) => (e.currentTarget.style.transform = "scale(0.92)")}
+            onTouchEnd={(e) => (e.currentTarget.style.transform = "scale(1)")}
           >
-            🔍 Ojo Digital
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                borderRadius: "50%",
+                backgroundColor: "#ffffff",
+                boxShadow: "0 2px 10px rgba(0, 0, 0, 0.3)"
+              }}
+            />
           </button>
+
+          {/* Derecha: Botón tipo píldora 'Ojo Digital' con icono de destello o lupa */}
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <button
+              onClick={() => handleCompletarAnalisis("analizar")}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                backgroundColor: "rgba(56, 189, 248, 0.2)",
+                border: "1px solid rgba(56, 189, 248, 0.4)",
+                color: "#7dd3fc",
+                borderRadius: "9999px",
+                padding: "8px 14px",
+                fontSize: "0.78rem",
+                fontWeight: "600",
+                cursor: "pointer",
+                transition: "all 0.15s ease"
+              }}
+            >
+              <span>✨</span>
+              <span>Ojo Digital</span>
+            </button>
+
+            {/* Acceso complementario: Editor de Imagen */}
+            <button
+              onClick={() => handleCompletarAnalisis("editor")}
+              title="Abrir en Editor de Imágenes"
+              style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+                backgroundColor: "rgba(255, 255, 255, 0.1)",
+                border: "1px solid rgba(255, 255, 255, 0.15)",
+                color: "#ffffff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                fontSize: "0.75rem"
+              }}
+            >
+              🎨
+            </button>
+          </div>
         </div>
       </div>
     </div>
