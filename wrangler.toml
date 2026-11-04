@@ -16,6 +16,8 @@ GEMINI_VISION_MODELS = "gemini-3.1-flash-lite,gemini-3-flash-preview,gemini-3.5-
 AI_PROVIDER = "gemini"
 IA_APAGADA = "false"
 RATE_LIMIT_ANONIMO_DIARIO = "25"
+GEMINI_THINKING_LEVEL = "high"
+GEMINI_MAX_OUTPUT_TOKENS = "16384"
 
 [[kv_namespaces]]
 binding = "RATE_LIMIT_KV"

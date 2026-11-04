@@ -385,32 +385,23 @@ export function corregirTextoPedagogicoLocal(textoOriginal) {
   texto = texto.replace(/[ \t]+/g, " ").trim();
 
   // Paso 5: Clasificar si hubo cambios estructurales (grado, área o tema)
-  const cambioGrado = cambios.find((c) => c.tipo === "grado_minerd");
-  const cambioArea = cambios.find((c) =>
-    (c.despues && ["Matemática", "Matemáticas", "Española", "Sociales", "Naturaleza", "Artística", "Física"].includes(c.despues))
-  );
   const cambioTema = cambios.find((c) => c.tipo === "levenshtein_minerd");
+  const ambiguedades = cambios.filter((c) => c.tipo === "ambiguedad_levenshtein");
 
+  // Reglas de normalización sin cambio de significado (grado_minerd, tilde_vocabulario, homofono): no requieren confirmación
+  // Reglas de cambio de significado real (levenshtein_minerd con cambio léxico, ambigüedades): requieren confirmación
   let cambioEstructural = false;
   let tipoCambioEstructural = null;
   let detalleConfirmacion = null;
 
-  if (cambioGrado) {
-    cambioEstructural = true;
-    tipoCambioEstructural = "grado escolar";
-    detalleConfirmacion = cambioGrado;
-  } else if (cambioArea) {
-    cambioEstructural = true;
-    tipoCambioEstructural = "área curricular";
-    detalleConfirmacion = cambioArea;
-  } else if (cambioTema) {
+  if (cambioTema) {
     cambioEstructural = true;
     tipoCambioEstructural = "tema pedagógico";
     detalleConfirmacion = cambioTema;
   }
 
-  const ambiguedades = cambios.filter((c) => c.tipo === "ambiguedad_levenshtein");
-  const cambioSignificado = normalizarSinTildesNiMayusculas(textoOriginal) !== normalizarSinTildesNiMayusculas(texto);
+  const tieneCambioReal = Boolean(cambioTema || ambiguedades.length > 0);
+  const cambioSignificado = tieneCambioReal;
 
   return {
     textoOriginal,

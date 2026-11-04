@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import { execSync } from "node:child_process";
 
-if (!fs.existsSync("client/node_modules/vite")) {
+if (!fs.existsSync("client/node_modules/vite") && !fs.existsSync("node_modules/vite")) {
   console.log("📦 [Build] Instalando dependencias del cliente PWA en entorno limpio...");
   execSync("npm ci --prefix client", { stdio: "inherit" });
 } else {

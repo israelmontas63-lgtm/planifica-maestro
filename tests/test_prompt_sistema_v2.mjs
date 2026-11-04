@@ -22,9 +22,11 @@ describe('Prompt de Sistema V2 - Planifica Maestro', () => {
     assert.match(prompt, /<DATO>[\s\S]*Resuelve operaciones básicas[\s\S]*<\/DATO>/);
   });
 
-  it('mantiene la regla de una sola pregunta clarificadora ante datos incompletos', () => {
+  it('incluye bloque de FUENTE POR DEFECTO y directiva proactiva de planificación sin bloqueos', () => {
     const prompt = construirPromptSistemaV2();
-    assert.match(prompt, /haz UNA SOLA pregunta concisa/);
+    assert.match(prompt, /FUENTE POR DEFECTO:/);
+    assert.match(prompt, /No interrumpas para preguntar la fuente/);
+    assert.match(prompt, /haz UNA sola pregunta corta/);
   });
 
   it('exige formato de salida JSON válido con mensaje_chat y datos_planificacion', () => {

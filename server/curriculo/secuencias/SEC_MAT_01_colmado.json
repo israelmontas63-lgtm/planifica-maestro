@@ -1,0 +1,540 @@
+{
+  "project": "planifica-maestro",
+  "version": "2.0.0",
+  "context": {
+    "jurisdiction": "MINERD (República Dominicana)",
+    "framework": "CON BASE / Adecuación Curricular 2023",
+    "grade_mode": "Multigrado (1.º, 2.º y 3.º de Primaria)",
+    "subject": "Matemática",
+    "sequence_id": "SEC-MAT-01",
+    "sequence_title": "Matemática en el colmado",
+    "duration_activities": 19,
+    "cognitive_ranges": {
+      "elemental": "1.º grado (concreto, cardinal ≤ 10/20, figuras básicas)",
+      "basico": "2.º grado (decenas, hasta 100, dobles ≤ 20, partes de cuerpos)",
+      "intermedio": "2.º/3.º grado (descomposición D-U, hasta 100, dobles/triples)",
+      "avanzado": "3.º grado (centenas C-D-U, hasta 1,000, multiplicación, relaciones tridimensionales)"
+    }
+  },
+  "curricular_matrix": {
+    "fundamental_competencies": [
+      "Comunicativa",
+      "Pensamiento Lógico, Creativo y Crítico; Resolución de Problemas; Científica y Tecnológica",
+      "Ética y Ciudadana; Desarrollo Personal y Espiritual; Ambiental y de la Salud"
+    ],
+    "grades": {
+      "1ro": {
+        "specific_competency_comunicativa": "Relaciona materiales y objetos físicos con ideas matemáticas cotidianas.",
+        "specific_competency_resolucion": "Resuelve situaciones problemáticas con apoyo de recursos manipulativos.",
+        "specific_competency_ciudadana": "Valora normas de convivencia y trabajo en equipo respetando ideas de compañeros.",
+        "conceptos": [
+          "Secuencia numérica ≤ 10",
+          "Adición y sustracción ≤ 10",
+          "Cuerpos geométricos (cubo, esfera, cilindro, cono, prisma, pirámide)"
+        ],
+        "procedimientos": [
+          "Conteo 1 a 1 (≤ 10)",
+          "Resolución de problemas de agregar/quitar",
+          "Clasificación de formas cotidianas asociadas a cuerpos"
+        ],
+        "actitudes": [
+          "Esfuerzo, perseverancia y disfrute del trabajo y juego matemático."
+        ],
+        "indicadores_logro": [
+          "Construye significado de adición y sustracción hasta 10.",
+          "Describe cuerpos y figuras del entorno.",
+          "Trabaja colaborativamente respetando puntos de vista."
+        ]
+      },
+      "2do": {
+        "specific_competency_comunicativa": "Explica sus ideas utilizando números naturales en el lenguaje cotidiano.",
+        "specific_competency_resolucion": "Utiliza la estimación para resolver problemas.",
+        "specific_competency_ciudadana": "Respeta los puntos de vista y argumentos de los demás en situaciones matemáticas.",
+        "conceptos": [
+          "Secuencia numérica ≤ 100",
+          "Adición y sustracción ≤ 100",
+          "Partes de cuerpos (caras, aristas, vértices)",
+          "Figuras planas en caras"
+        ],
+        "procedimientos": [
+          "Conteo y agrupamiento hasta 100",
+          "Composición/descomposición aditiva hasta 100",
+          "Uso de signos =, +, -",
+          "Cuerpos en la vida diaria"
+        ],
+        "actitudes": [
+          "Responsabilidad, autonomía y satisfacción de sentirse competente."
+        ],
+        "indicadores_logro": [
+          "Justifica secuencias y operaciones con números menores que 100 entendiendo la decena.",
+          "Expresa soluciones de orden y comparación.",
+          "Clasifica figuras planas y cuerpos geométricos."
+        ]
+      },
+      "3ro": {
+        "specific_competency_comunicativa": "Representa, leyendo, escribiendo y discutiendo problemas matemáticos.",
+        "specific_competency_resolucion": "Usa estrategias sistemáticas justificando razonamientos propios de forma inductiva.",
+        "specific_competency_ciudadana": "Interpreta posibles soluciones del entorno con saberes matemáticos.",
+        "conceptos": [
+          "Secuencia numérica ≤ 1,000",
+          "Valor posicional (U, D, C)",
+          "Cálculo mental, estimación, adición y sustracción ≤ 1,000",
+          "Cuerpos y figuras"
+        ],
+        "procedimientos": [
+          "Secuencia hasta 1,000 y descomposición C-D-U",
+          "Operaciones de hasta 3 cifras",
+          "Dobles, triples y multiplicación como suma reiterada"
+        ],
+        "actitudes": [
+          "Perseverancia, disfrute y responsabilidad en compromisos matemáticos."
+        ],
+        "indicadores_logro": [
+          "Expresa secuencias hasta 1,000 y justifica valor posicional hasta unidad de mil.",
+          "Resuelve problemas comunitarios aplicando adición, dobles y geometría."
+        ]
+      }
+    }
+  },
+  "blocks": [
+    {
+      "block_id": 1,
+      "block_title": "Sistema de numeración, conteo, orden, comparación y valor posicional",
+      "activities_range": "1 a 9",
+      "activities": [
+        {
+          "activity_number": 1,
+          "duration_minutes": 90,
+          "title": "Uso social de los números",
+          "purpose": "Reconocer el uso social de los números en envases y etiquetas de colmado; diferenciar letras de números.",
+          "tasks_by_scope": {
+            "elemental_1ro": "Encerrar números en etiquetas reales de productos y leer dígitos aislados.",
+            "basico_2do": "Leer números de 2 cifras distinguiendo precio y cantidad directa de unidades.",
+            "intermedio_avanzado_3ro": "Leer números de 2 o más cifras; explicar qué expresan (peso en g/ml, teléfono, registro sanitario, código de barras)."
+          },
+          "resources": [
+            "Envases vacíos de colmado",
+            "Etiquetas comerciales",
+            "Papelógrafo de aprendizajes",
+            "Calendario"
+          ],
+          "evaluation": {
+            "technique": "Observación de conversación y análisis de producciones grupales",
+            "instrument": "Lista de cotejo (diferenciación grafías y función social del número)"
+          }
+        },
+        {
+          "activity_number": 2,
+          "duration_minutes": 90,
+          "title": "Números en el calendario",
+          "purpose": "Usar el calendario como portador numérico regular para ubicar, ordenar fechas y resolver problemas de tiempo.",
+          "tasks_by_scope": {
+            "elemental_1ro": "Pintar domingos, primer y último día del mes; ubicar día 7.",
+            "basico_2do": "Completar números omitidos en el mes de septiembre; ubicar día 15 y 20.",
+            "intermedio_avanzado_3ro": "Calcular días transcurridos; detectar regularidades (miércoles cada 7 días); ordenar fechas 4, 14 y 24 decidiendo cuál conviene elegir."
+          },
+          "resources": [
+            "Calendario mural",
+            "Fascículo mes de septiembre",
+            "Lápices de colores"
+          ],
+          "evaluation": {
+            "technique": "Recorrido docente y puesta en común",
+            "instrument": "Lista de cotejo (localización, cálculo de intervalos y justificación de orden)"
+          }
+        },
+        {
+          "activity_number": 3,
+          "duration_minutes": 90,
+          "title": "¿Cuántos hay en la funda?",
+          "purpose": "Identificar el conteo para cardinalizar colecciones concretas y producir cantidades dadas.",
+          "tasks_by_scope": {
+            "elemental_1ro": "Funda con 6 piedrecitas (conteo 1 a 1 sin omisiones ni repeticiones).",
+            "basico_2do": "Funda con 18 elementos; registrar cardinal exacto en etiqueta.",
+            "intermedio_2do_3ro": "Funda con 35 elementos; agrupar de 5 en 5 o 10 en 10.",
+            "avanzado_3ro": "Funda con 54 elementos; armar fundas de pedido dadas de 10, 20, 40 y 60."
+          },
+          "resources": [
+            "Fundas plásticas",
+            "Semillas/tapitas",
+            "Etiquetas de papel en blanco"
+          ],
+          "evaluation": {
+            "technique": "Observación del conteo y agrupamiento",
+            "instrument": "Registro descriptivo (estrategias: 1 a 1, sobreconteo, decenas)"
+          }
+        },
+        {
+          "activity_number": 4,
+          "duration_minutes": 90,
+          "title": "Colecciones gráficas en tarjetas",
+          "purpose": "Cardinalizar colecciones representadas gráficamente en tarjetas y anotar numerales.",
+          "tasks_by_scope": {
+            "elemental_1ro": "Contar objetos gráficos sueltos hasta 10 y escribir el numeral.",
+            "basico_2do": "Contar colecciones gráficas hasta 40 (combinación de unidades sueltas y paquetes).",
+            "intermedio_avanzado_3ro": "Contar colecciones hasta 60 considerando que un paquete vale 10 sin recontar uno a uno cada elemento."
+          },
+          "resources": [
+            "Tarjetas recortables (págs. 149-155)",
+            "Tijeras",
+            "Banda numérica"
+          ],
+          "evaluation": {
+            "technique": "Revisión de registros individuales",
+            "instrument": "Lista de cotejo (cardinal total y escritura correcta del número)"
+          }
+        },
+        {
+          "activity_number": 5,
+          "duration_minutes": 90,
+          "title": "Juego: El Menor",
+          "purpose": "Comparar cantidades y numerales en juego reglado justificando estrategias de ordenamiento.",
+          "tasks_by_scope": {
+            "elemental_1ro": "Comparar cartas hasta 10 con apoyo de la recta numérica.",
+            "basico_2do": "Comparar cantidades hasta 40 (18 vs 15; 12 vs 14).",
+            "intermedio_avanzado_3ro": "Comparar números de dos y tres cifras (54 vs 45; 35 vs 50); completar cartas vacías reconociendo múltiples respuestas posibles (ej. 'Juan gana a 25')."
+          },
+          "resources": [
+            "Cartas recortables de productos",
+            "Fascículo págs. 13-15"
+          ],
+          "evaluation": {
+            "technique": "Observación de juego y puesta en común",
+            "instrument": "Registro de argumentos de comparación (número de cifras vs. valor de cifra izquierda)"
+          }
+        },
+        {
+          "activity_number": 6,
+          "duration_minutes": 90,
+          "title": "El frasco y el buen conteo",
+          "purpose": "Recitar series orales con diferentes inicios y fijar las reglas del 'Buen Conteo'.",
+          "tasks_by_scope": {
+            "elemental_1ro": "Serie oral de 1 en 1 desde el 1. Estimar y contar frasco con 8 dulces.",
+            "basico_2do": "Serie desde número distinto a 1 hasta 20. Frasco con 15 dulces.",
+            "intermedio_2do_3ro": "Serie de 10 en 10 hasta 100. Frasco con 38 elementos.",
+            "avanzado_3ro": "Serie de 100 en 100 hasta 1,000. Frasco con 51 elementos.",
+            "todos": "Sistematizar en el cuaderno las 5 reglas de un buen conteo."
+          },
+          "resources": [
+            "4 frascos transparentes",
+            "Semillas/tapitas",
+            "Pizarra"
+          ],
+          "evaluation": {
+            "technique": "Recitado oral, estimación y conteo",
+            "instrument": "Lista de cotejo (fluidez, estimación razonable y principios de conteo)"
+          }
+        },
+        {
+          "activity_number": 7,
+          "duration_minutes": 90,
+          "title": "Cartas de valor posicional",
+          "purpose": "Componer y descomponer números por valor posicional y comparar números formados.",
+          "tasks_by_scope": {
+            "elemental_1ro": "Cartas del 1 al 10; comparar números apoyados en la banda numérica.",
+            "basico_2do": "Cartas del 1 al 20; buscar números perdedores ante un número dado.",
+            "intermedio_2do_3ro": "Pilones de 10 en 10 y de 1 en 1 (ej. 40 + 3 = 43).",
+            "avanzado_3ro": "Tres pilones (centenas, decenas, unidades; ej. 500 + 60 + 2 = 562); explicar valor relativo de cada dígito."
+          },
+          "resources": [
+            "Cartas recortables (0-9, 10-90, 100-900)",
+            "Banda numérica",
+            "Cuadro del 100"
+          ],
+          "evaluation": {
+            "technique": "Análisis de registros simbólicos",
+            "instrument": "Rúbrica formativa de composición aditiva y valor posicional"
+          }
+        },
+        {
+          "activity_number": 8,
+          "duration_minutes": 90,
+          "title": "Recapitulación Bloque 1",
+          "purpose": "Monitorear el dominio de la serie oral, conteo de colecciones y valor posicional del Bloque 1.",
+          "tasks_by_scope": {
+            "elemental_1ro": "Serie 1 a 10; contar funda con 9 semillas; circular número mayor.",
+            "basico_2do": "Serie desde el 5 al 20; funda con 18 semillas; perdedores para 9 y 12.",
+            "intermedio_2do_3ro": "Serie de 10 en 10; funda con 45 semillas; descomponer 81 y 58.",
+            "avanzado_3ro": "Serie de 100 en 100; funda con 78 semillas; descomponer 987 y 523."
+          },
+          "resources": [
+            "Cuadernos y fascículos",
+            "Fundas con semillas",
+            "Papelógrafo de aprendizajes"
+          ],
+          "evaluation": {
+            "technique": "Tarea de desempeño en parejas",
+            "instrument": "Registro de evaluación de proceso (monitoreo individual por tareas)"
+          }
+        },
+        {
+          "activity_number": 9,
+          "duration_minutes": 90,
+          "title": "Retroalimentación activa",
+          "purpose": "Retroalimentación formativa y consolidación grupal de contenidos con dificultades.",
+          "tasks_by_scope": {
+            "estacion_conteo": "Práctica de correspondencia uno a uno con movimiento físico de tapitas.",
+            "estacion_calendario": "Resolución de días anteriores, posteriores y semanas completas.",
+            "estacion_posicional": "Composición con dinero didáctico y cartas de decenas/centenas."
+          },
+          "resources": [
+            "Cuadernos corregidos",
+            "Material concreto según necesidad",
+            "Pizarra"
+          ],
+          "evaluation": {
+            "technique": "Devolución formativa focalizada",
+            "instrument": "Registro de avances (superación de errores del repaso)"
+          }
+        }
+      ]
+    },
+    {
+      "block_id": 2,
+      "block_title": "Operaciones aditivas, relaciones multiplicativas y geometría",
+      "activities_range": "10 a 19",
+      "activities": [
+        {
+          "activity_number": 10,
+          "duration_minutes": 90,
+          "title": "¿Tiene razón? (Argumentación)",
+          "purpose": "Validar o refutar afirmaciones matemáticas justificando mediante cálculo o valor posicional.",
+          "tasks_by_scope": {
+            "elemental_1ro": "María compró 4 y Jonathan 3; dicen que tienen 8 o 6 (conteo real 4+3=7, ninguno acierta).",
+            "basico_2do": "Juliana 12 y Alberto 8 (12+8=20, refutar errores de 18 y 19).",
+            "intermedio_2do_3ro": "Ángel prefiere 28 sobre 32 'porque tiene un 8' (refutar con decenas: 20 vs 30).",
+            "avanzado_3ro": "Paquete de 192 vs 214 caramelos (refutar con centenas: 100 vs 200)."
+          },
+          "resources": [
+            "Fascículo pág. 17",
+            "Semillas",
+            "Pizarra en 4 cuadrantes"
+          ],
+          "evaluation": {
+            "technique": "Argumentación oral y socialización en pizarra",
+            "instrument": "Lista de cotejo (capacidad de argumentación y juicio crítico)"
+          }
+        },
+        {
+          "activity_number": 11,
+          "duration_minutes": 90,
+          "title": "Problemas de agregar y quitar",
+          "purpose": "Resolver problemas de agregar y quitar con incógnita final estructurando: CONOZCO / AVERIGUO.",
+          "tasks_by_scope": {
+            "elemental_1ro": "Había 4 paletas y agregan 3; había 7 y venden 3 (apoyo en dedos/banda).",
+            "basico_2do": "Había 12 caramelos y agregan 6 (18); había 18 y venden 6 (12).",
+            "intermedio_2do_3ro": "Sumar y restar decenas enteras sin canje (20+40=60; 60-40=20).",
+            "avanzado_3ro": "Operaciones con centenas en dinero: Tenía RD, ingresaron RD (900); pagar RD de RD (300). Escribir respuesta completa."
+          },
+          "resources": [
+            "Fascículo págs. 18-20",
+            "Banda numérica",
+            "Monedas didácticas"
+          ],
+          "evaluation": {
+            "technique": "Resolución de problemas estructurados",
+            "instrument": "Lista de cotejo (discriminación de datos vs incógnita y cálculo exacto)"
+          }
+        },
+        {
+          "activity_number": 12,
+          "duration_minutes": 90,
+          "title": "Signos +, - y valor posicional",
+          "purpose": "Introducir formalmente los signos +, -, = y operar sumas y restas descomponiendo por posición.",
+          "tasks_by_scope": {
+            "elemental_1ro": "Funda con 5, agregar 4 -> 5+4=9. Quitar 4 a 10 -> 10-4=6.",
+            "basico_2do": "Registrar con símbolos formales: 9+6=15; 20-4=16.",
+            "intermedio_2do_3ro": "Sumar descomponiendo D y U: (20+40)+(3+6)=69. Restar: (60-40)+(8-6)=22.",
+            "avanzado_3ro": "Descomponer 3 cifras: (400+500)+(50+40)+(6+2)=998. Restas de centenas sin reagrupación."
+          },
+          "resources": [
+            "Fundas con habichuelas",
+            "Tarjetas de valor posicional (10-90, 100-900)"
+          ],
+          "evaluation": {
+            "technique": "Revisión de registros en cuadernos",
+            "instrument": "Lista de cotejo (uso formal de signos y descomposición aditiva)"
+          }
+        },
+        {
+          "activity_number": 13,
+          "duration_minutes": 90,
+          "title": "Cálculos con cifras distintas de cero",
+          "purpose": "Operar algoritmos horizontales y verticales sin reagrupación (sin llevada) sumando posiciones iguales.",
+          "tasks_by_scope": {
+            "elemental_1ro": "Cálculos orales hasta 10 (3+5=8; 6-2=4).",
+            "basico_2do": "Sumas y restas de dos dígitos hasta 20 (11+7=18; 16-5=11).",
+            "intermedio_2do_3ro": "Operaciones con decenas sin canje (34+15=49; 49-32=17).",
+            "avanzado_3ro": "Operaciones de tres cifras sin canje (123+225=348; 348-123=225) encolumnando verticalmente U, D y C."
+          },
+          "resources": [
+            "Pizarra con tizas de color",
+            "Cuadro numérico"
+          ],
+          "evaluation": {
+            "technique": "Prueba de ejecución de cálculo escrito",
+            "instrument": "Lista de cotejo (alineación vertical y cálculo posicional sin canje)"
+          }
+        },
+        {
+          "activity_number": 14,
+          "duration_minutes": 90,
+          "title": "Dobles con los dedos",
+          "purpose": "Construir el concepto de doble como la suma de dos veces una misma cantidad apoyados en los dedos.",
+          "tasks_by_scope": {
+            "elemental_1ro": "Dobles del 1 al 5 usando dedos de una mano (3+3=6).",
+            "basico_2do": "Dobles del 1 al 10 con ambas manos (7+7=14).",
+            "intermedio_2do_3ro": "Cada dedo vale 2; escala de dobles de 2 en 2 hasta 20.",
+            "avanzado_3ro": "Cada dedo vale 5 o 10; dobles de 25, 30 y 50 (35+35=70). Notación formal: 2 x 35 = 70."
+          },
+          "resources": [
+            "Dedos de las manos",
+            "Fascículo págs. 21-22",
+            "Anillos de papel numerados"
+          ],
+          "evaluation": {
+            "technique": "Observación de dinámicas en parejas",
+            "instrument": "Lista de cotejo (comprensión del doble como dos veces la misma cantidad)"
+          }
+        },
+        {
+          "activity_number": 15,
+          "duration_minutes": 90,
+          "title": "Ofertas: dobles, triples y multiplicación",
+          "purpose": "Calcular dobles y triples en ofertas del colmado y vincular suma repetida con multiplicación.",
+          "tasks_by_scope": {
+            "elemental_1ro": "Duplicar cantidades físicas de productos en láminas de colmado.",
+            "basico_2do": "Tabla de precios: 1 vs 2 paquetes (Doble de  -> ).",
+            "intermedio_2do_3ro": "Calcular triples de precios (Triple de  -> ; 3 panes a  -> ).",
+            "avanzado_3ro": "Problemas multiplicativos: '6 libras de arroz a ' -> 30 sumado 6 veces = 6 x 30 = 180."
+          },
+          "resources": [
+            "Tabla de ofertas del fascículo",
+            "Monedas didácticas de RD y RD",
+            "Papelógrafo"
+          ],
+          "evaluation": {
+            "technique": "Producción en tabla comercial y puesta en común",
+            "instrument": "Rúbrica de proceso (cálculo proporcional y multiplicación formal)"
+          }
+        },
+        {
+          "activity_number": 16,
+          "duration_minutes": 90,
+          "title": "Cuerpos geométricos del colmado",
+          "purpose": "Identificar y nombrar cuerpos geométricos del entorno; describir caras, aristas y vértices al tacto.",
+          "tasks_by_scope": {
+            "todos": "Juego 'El cuerpo oculto' en cajas ciegas: tocar sin mirar y describir si rueda o resbala, caras curvas o planas.",
+            "elemental_basico_1ro_2do": "Unir dibujo con nombre (cubo, esfera, cono, cilindro, prisma, pirámide); identificar vértices y aristas.",
+            "avanzado_3ro": "Clasificar cuerpos sin vértices (esfera), con todas caras planas (cubo/prisma) o con superficies curvas (cilindro)."
+          },
+          "resources": [
+            "Cajas ciegas con orificio",
+            "Cuerpos geométricos",
+            "Envases cotidianos de colmado"
+          ],
+          "evaluation": {
+            "technique": "Manipulación táctil y asociación visual",
+            "instrument": "Lista de cotejo (vocabulario formal: cara, arista, vértice y cuerpos redondos)"
+          }
+        },
+        {
+          "activity_number": 17,
+          "duration_minutes": 90,
+          "title": "Las caras de los cuerpos son figuras",
+          "purpose": "Reconocer figuras planas en las caras de los cuerpos al planificar cómo forrarlos.",
+          "tasks_by_scope": {
+            "elemental_basico_1ro_2do": "Contornear caras de cajas en papel; nombrar círculo, triángulo, cuadrado y rectángulo según lados y vértices.",
+            "intermedio_avanzado_3ro": "Planificar pedido exacto de figuras para forrar cajas: determinar qué figuras y cuántas cubren un prisma (4 rectángulos y 2 cuadrados) o pirámide de base cuadrada (4 triángulos y 1 cuadrado)."
+          },
+          "resources": [
+            "Cuerpos geométricos y cajas",
+            "Figuras recortadas en papel de color",
+            "Papelógrafo de figuras"
+          ],
+          "evaluation": {
+            "technique": "Proyecto práctico de recubrimiento y puesta en común",
+            "instrument": "Lista de cotejo (reconocimiento de figuras planas como caras del cuerpo)"
+          }
+        },
+        {
+          "activity_number": 18,
+          "duration_minutes": 90,
+          "title": "Producción final: Pizarra de ofertas",
+          "purpose": "Elaborar de forma autónoma una pizarra de colmado integrando lectura, orden, cálculo de compras y geometría.",
+          "tasks_by_scope": {
+            "elemental_1ro": "4 productos con precios hasta ; indicar producto más caro/barato; costo de 2 unidades.",
+            "basico_2do": "Precios hasta ; producto libre entre  y ; costo de 2 unidades.",
+            "intermedio_2do_3ro": "Precios hasta ; producto libre (-); costo de 2 y 3 unidades.",
+            "avanzado_3ro": "Precios > ; producto libre (-); costo de 7 unidades."
+          },
+          "resources": [
+            "Media cartulina u hoja por estudiante",
+            "Tarjetas de productos",
+            "Monedas/billetes didácticos"
+          ],
+          "evaluation": {
+            "technique": "Evaluación de producto integrador y exposición",
+            "instrument": "Rúbrica sumativa individual (numeración, orden, dobles/multiplicación)"
+          }
+        },
+        {
+          "activity_number": 19,
+          "duration_minutes": 90,
+          "title": "Metacognición y cierre",
+          "purpose": "Reflexionar sobre los avances individuales y colectivos a través de la dinámica de las tres caras de colores.",
+          "tasks_by_scope": {
+            "devolucion": "Entrega docente de producciones corregidas (oral para 1.º/2.º; escrita para 3.º).",
+            "registro": "Marcar fecha de cierre en papelógrafo de aprendizajes.",
+            "dinamica_caras": {
+              "verde": "Lo que aprendí bien y me gustó hacer.",
+              "amarilla": "Lo que me costó hacer y todavía necesito apoyo.",
+              "naranja": "Lo que no entendí o se me dificultó mucho."
+            }
+          },
+          "resources": [
+            "Pizarras de ofertas evaluadas",
+            "3 caras grandes (verde, amarilla, naranja)",
+            "Papelógrafos en blanco"
+          ],
+          "evaluation": {
+            "technique": "Retroalimentación y autoevaluación guiada",
+            "instrument": "Registro metacognitivo grupal en papelógrafo"
+          }
+        }
+      ]
+    }
+  ],
+  "rubric_summary": {
+    "criteria": [
+      {
+        "name": "Numeración y Conteo",
+        "insuficiente": "No mantiene correspondencia 1 a 1; salta o duplica elementos.",
+        "en_desarrollo": "Cuenta apoyado solo en serie de 1 en 1 sin estructurar agrupamientos.",
+        "bueno": "Cuenta y agrupa en decenas; lee y escribe números naturales del rango de su grado.",
+        "destacado": "Reconoce patrones, descompone por valor posicional y justifica orden con autonomía."
+      },
+      {
+        "name": "Resolución Aditiva (+ / -)",
+        "insuficiente": "Confunde agregar y quitar; no identifica datos ni incógnita.",
+        "en_desarrollo": "Resuelve sumas y restas solo con apoyo directo de dedos o material concreto.",
+        "bueno": "Estructura datos e incógnita (CONOZCO/AVERIGUO); plantea cálculo con signos (+, -, =).",
+        "destacado": "Opera con fluidez mentalmente y encolumna algoritmos verticales con exactitud posicional."
+      },
+      {
+        "name": "Repertorio Multiplicativo",
+        "insuficiente": "Confunde el cálculo del doble con sumar una unidad.",
+        "en_desarrollo": "Obtiene dobles mediante conteo directo 1 a 1 con dedos o semillas.",
+        "bueno": "Calcula dobles y triples mentalmente o mediante sumas sucesivas.",
+        "destacado": "Vincula suma reiterada con multiplicación (a x b) en problemas cotidianos."
+      },
+      {
+        "name": "Geometría Espacial y Plana",
+        "insuficiente": "Nombra cuerpos como figuras planas (ej. llama círculo a la esfera).",
+        "en_desarrollo": "Reconoce cuerpos familiares pero no diferencia caras, aristas o vértices.",
+        "bueno": "Identifica y nombra cuerpos, caras, aristas y vértices usando vocabulario formal.",
+        "destacado": "Anticipa el desarrollo plano exacto de figuras necesarias para forrar un cuerpo."
+      }
+    ]
+  }
+}

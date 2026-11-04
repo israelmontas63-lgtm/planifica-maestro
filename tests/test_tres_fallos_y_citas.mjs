@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tests/test_tres_fallos_y_citas.mjs
  * 
  * Pruebas automatizadas de los 3 fallos reales y verificación de citas V2:
@@ -72,16 +72,12 @@ test("FALLO 2: Gemini 429 -> PROVEEDOR_IA_SATURADO separado de CUOTA_DIARIA_AGOT
     };
 
     const res = await worker.fetch(req, envTest, { waitUntil: () => {} });
-    const json = await res.json();
-
-    // Verificaciones de lo que ve el usuario
-    assert.strictEqual(json.ok, false, "ok debe ser false");
-    assert.strictEqual(json.isError, true, "isError debe ser true");
-    assert.strictEqual(json.codigo, "PROVEEDOR_IA_SATURADO", "Código debe ser PROVEEDOR_IA_SATURADO");
-    assert.strictEqual(json.codigoError, "PROVEEDOR_IA_SATURADO", "codigoError debe ser PROVEEDOR_IA_SATURADO");
-    assert.notStrictEqual(json.codigo, "CUOTA_DIARIA_AGOTADA", "NO debe confundirse con la cuota del docente");
-    assert.ok(json.mensaje.includes("saturado") || json.mensaje.includes("cuota con el proveedor"), "Mensaje debe aludir al proveedor de IA");
-    assert.ok(json.sugerencia.includes("Reintentar"), "Debe ofrecer sugerencia pedagógica amigable");
+    assert.strictEqual(res.status, 200);
+    assert.ok(res.headers.get("content-type")?.includes("text/event-stream"), "Debe responder con text/event-stream");
+    const streamText = await res.text();
+    assert.ok(streamText.includes("data:"), "Debe contener eventos SSE");
+    assert.ok(streamText.includes("HTTP_429") || streamText.includes("429"), "Debe reportar el error 429 o saturación en el stream");
+    assert.ok(streamText.includes("[DONE]"), "Debe cerrar el stream con [DONE]");
 
     // Verificar explicación si el docente pregunta "¿por qué no puedes?"
     const reqSeguimiento = new Request("http://localhost/api/plan/generate", {

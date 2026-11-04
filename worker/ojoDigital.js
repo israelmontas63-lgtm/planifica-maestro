@@ -11,6 +11,7 @@
  */
 
 import { PROMPT_OJO_DIGITAL, generarOpcionesSegunTipoVisual, tieneIntencionExplicita } from "./constantsOjoDigital.js";
+import { textoDeCandidato } from "./services/aiProvider.js";
 
 export { generarOpcionesSegunTipoVisual, tieneIntencionExplicita };
 
@@ -240,7 +241,7 @@ export async function identificarImagenWorker({
         }
 
         const data = await res.json();
-        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        const rawText = textoDeCandidato(data?.candidates?.[0]);
         if (rawText) {
           let parsed = null;
           try {

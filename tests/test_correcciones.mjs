@@ -199,17 +199,21 @@ test("ETAPA 3: Correcciones Inteligentes de Texto y Voz Pedagógica", async (t) 
   });
 
   await t.test("10. Confirmación de cambios estructurales (grado, área o tema)", () => {
-    // Cambio de grado con errata fonética: 'tersero' -> '3.º'
+    // Bajo Orden 7-U V2: cambio de grado se normaliza automáticamente sin bloquear (cambioEstructural = false)
     const resTersero = corregirLocalNode("actividad para tersero de primaria");
-    assert.ok(resTersero.cambioEstructural, "Debe marcar cambioEstructural = true para 'tersero'");
-    assert.equal(resTersero.tipoCambioEstructural, "grado escolar");
+    assert.equal(resTersero.cambioEstructural, false, "Normalización de grado no bloquea con cambioEstructural");
     assert.ok(resTersero.textoCorregido.includes("3.º"));
 
     // Otro grado con errata: 'segumdo' -> '2.º'
     const resSegundo = corregirLocalNode("plan de clase para segumdo grado");
-    assert.ok(resSegundo.cambioEstructural, "Debe marcar cambioEstructural para 'segumdo'");
-    assert.equal(resSegundo.tipoCambioEstructural, "grado escolar");
+    assert.equal(resSegundo.cambioEstructural, false, "Normalización de grado no bloquea con cambioEstructural");
     assert.ok(resSegundo.textoCorregido.includes("2.º"));
+
+    // Cambio en tema pedagógico vía Levenshtein ('ecocistema' -> 'ecosistema') sí marca cambioEstructural
+    const resTema = corregirLocalNode("plan sobre ecocistema para 3ro");
+    assert.equal(resTema.cambioEstructural, true, "Debe marcar cambioEstructural = true para cambio de tema");
+    assert.equal(resTema.tipoCambioEstructural, "tema pedagógico");
+    assert.ok(resTema.textoCorregido.includes("ecosistema"));
 
     // Frase sin cambios estructurales
     const resNormal = corregirLocalNode("hola buenos días profesor");
@@ -295,17 +299,21 @@ test("ETAPA 3: Correcciones Inteligentes de Texto y Voz Pedagógica", async (t) 
     assert.equal(casoAcentosN.huboCambios, true);
     assert.equal(casoAcentosN.cambioSignificado, false);
 
-    // 12b. Homófonos y sustituciones de palabras -> cambioSignificado === true
+    // 12b. Bajo Orden 7-U V2: homófonos y normalizaciones fonéticas no alteran significado pedagógico
     const casoHaberN = corregirLocalNode("vamos haber los temas");
     const casoHaberW = corregirLocalWorker("vamos haber los temas");
-    assert.equal(casoHaberN.cambioSignificado, true, "'vamos haber' -> 'vamos a ver' altera significado en Node");
-    assert.equal(casoHaberW.cambioSignificado, true, "'vamos haber' -> 'vamos a ver' altera significado en Worker");
+    assert.equal(casoHaberN.cambioSignificado, false, "'vamos haber' -> 'vamos a ver' se normaliza sin cambio de significado");
+    assert.equal(casoHaberW.cambioSignificado, false, "'vamos haber' -> 'vamos a ver' se normaliza sin cambio de significado");
 
     const casoTuboN = corregirLocalNode("el docente tubo que salir");
-    assert.equal(casoTuboN.cambioSignificado, true, "'tubo' -> 'tuvo' altera significado");
+    assert.equal(casoTuboN.cambioSignificado, false, "'tubo' -> 'tuvo' se normaliza sin cambio de significado");
 
     const casoTerseroN = corregirLocalNode("plan para tersero");
-    assert.equal(casoTerseroN.cambioSignificado, true, "'tersero' -> '3.º' altera significado");
+    assert.equal(casoTerseroN.cambioSignificado, false, "'tersero' -> '3.º' se normaliza sin cambio de significado");
+
+    // Corrección léxica/tema sí altera significado (cambioSignificado === true)
+    const casoTemaN = corregirLocalNode("plan sobre ecocistema");
+    assert.equal(casoTemaN.cambioSignificado, true, "Levenshtein léxico sí altera significado");
 
     // 12c. Contrato API en Worker: cambio_significado viaja en JSON y SSE
     const workerModule = await import("../worker/index.js");
@@ -328,7 +336,7 @@ test("ETAPA 3: Correcciones Inteligentes de Texto y Voz Pedagógica", async (t) 
     assert.equal(dataTildes.hubo_correcciones, true);
     assert.equal(dataTildes.cambio_significado, false, "La respuesta JSON del Worker debe indicar cambio_significado: false para tildes");
 
-    // Caso homófono: cambio_significado = true
+    // Caso homófono: cambio_significado = false (normalización transparente Orden 7-U)
     const reqHomofono = new Request("http://localhost/api/plan/generate", {
       method: "POST",
       headers: authHeaders,
@@ -341,6 +349,6 @@ test("ETAPA 3: Correcciones Inteligentes de Texto y Voz Pedagógica", async (t) 
     });
     const resHomofono = await worker.fetch(reqHomofono, testEnv);
     const streamHomofono = await resHomofono.text();
-    assert.ok(streamHomofono.includes('"cambio_significado":true'), "El stream SSE debe reportar cambio_significado: true para homófonos");
+    assert.ok(streamHomofono.includes('"cambio_significado":false'), "El stream SSE debe reportar cambio_significado: false para homófonos");
   });
 });
