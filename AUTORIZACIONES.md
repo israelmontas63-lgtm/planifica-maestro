@@ -367,3 +367,15 @@
 - **Frase Textual del Dueño:** `"ORDEN DE REDISEÑO VISUAL: MODO CÁMARA INMERSIVO Y BOTONES COMPACTOS (ESTILO GOOGLE LENS) ... 1. VIDEO A PANTALLA COMPLETA (INMERSIVO) ... 2. ÁREA DE ENFOQUE MINIMALISTA ... 3. CONTROLES Y BOTONES FLOTANTES COMPACTOS ... 4. CABECERA DESPEJADA ... Actualiza el cliente, compila el build de la PWA y despliega."`
 - **Alcance Autorizado:** Modificación de `client/src/components/OjoVisorCamara.jsx`, `client/src/index.css`, build de la PWA, ejecución de batería de pruebas, sellado oficial con `node scripts/guardia.js --sellar`, commit y despliegue a producción.
 - **Estado:** APLICADA
+
+### Autorización 053
+- **Fecha:** 03/11/2026 (America/Santo_Domingo)
+- **Componentes:** `client/src/App.jsx`, `client/src/components/HomeGreeting.jsx`, `client/src/components/Header.jsx`, `client/src/index.css`
+- **Motivo:** Refacción y pulido UI/UX en Home PWA:
+  1. Campo de entrada multipropósito: botón de envío moderno (icono ↑ / Enviar), placeholder actualizado a "Pregunta, pide una idea o escribe un tema...", y despacho directo a `enviarMensaje` para permitir tanto consultas libres como planificaciones sin forzar un modal rígido.
+  2. Corrección crítica de contraste en cabecera: texto junto al rayo ⚡ ajustado con `text-slate-700 font-medium text-xs` y estilos nítidos para asegurar visibilidad sobre fondos claros.
+  3. Prevención de traslape inferior: contenedor principal scrollable reforzado con `pb-32` (relleno inferior seguro) para evitar solapamiento con la barra de navegación fija.
+  4. Gestión de persistencia de banner: ocultamiento inmediato al pulsar "Entendido" y almacenamiento en `localStorage` (`pm_aviso_guardado_visto`).
+- **Frase Textual del Dueño:** `"ORDEN DE REFACCIÓN Y PULIDO UI/UX (HOME PWA - PLANIFICA MAESTRO) ... BLOQUE 1: CAMPO DE ENTRADA MULTIPROPÓSITO Y ACCIÓN GENERAL ... BLOQUE 2: CORRECCIÓN CRÍTICA DE CONTRASTE Y TIPOGRAFÍA (CABECERA) ... BLOQUE 3: ESPACIADO Y PREVENCIÓN DE TRASLAPE INFERIOR ... BLOQUE 4: GESTIÓN LIMPIA DEL BANNER DE PERSISTENCIA ... BLOQUE 5: COMPILACIÓN, PRUEBAS Y DESPLIEGUE"`
+- **Alcance Autorizado:** Modificación de `client/src/App.jsx`, `client/src/components/HomeGreeting.jsx`, `client/src/components/Header.jsx` y `client/src/index.css`, compilación PWA, ejecución de pruebas unitarias/integración, sellado con `guardia.js`, commit y despliegue a producción.
+- **Estado:** APLICADA

@@ -30,7 +30,7 @@ const SUGERENCIAS_CURRICULARES = [
   }
 ];
 
-export default function HomeGreeting({ user, onSeleccionarSugerencia }) {
+export default function HomeGreeting({ user, onSeleccionarSugerencia, onEnviarConsulta }) {
   const [inputValue, setInputValue] = useState("");
 
   const saludo = useMemo(() => {
@@ -65,10 +65,14 @@ export default function HomeGreeting({ user, onSeleccionarSugerencia }) {
 
   const handleSubmit = (e) => {
     e?.preventDefault();
-    if (onSeleccionarSugerencia && inputValue.trim()) {
-      onSeleccionarSugerencia(inputValue.trim());
-      setInputValue("");
+    const texto = inputValue.trim();
+    if (!texto) return;
+    if (onEnviarConsulta) {
+      onEnviarConsulta(texto);
+    } else if (onSeleccionarSugerencia) {
+      onSeleccionarSugerencia(texto);
     }
+    setInputValue("");
   };
 
   return (
@@ -141,7 +145,7 @@ export default function HomeGreeting({ user, onSeleccionarSugerencia }) {
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Escribe un tema o idea..."
+            placeholder="Pregunta, pide una idea o escribe un tema..."
             style={{
               flex: 1,
               border: 'none',
@@ -156,20 +160,27 @@ export default function HomeGreeting({ user, onSeleccionarSugerencia }) {
           />
           <button
             type="submit"
+            aria-label="Enviar"
+            title="Enviar mensaje o consulta"
             style={{
               backgroundColor: '#1a5b6c',
               color: '#ffffff',
               border: 'none',
               borderRadius: '9999px',
               padding: '8px 16px',
-              fontSize: '12px',
+              fontSize: '13px',
               fontWeight: 700,
               cursor: 'pointer',
               flexShrink: 0,
-              boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+              transition: 'all 0.15s ease'
             }}
           >
-            Planificar
+            <span>Enviar</span>
+            <span style={{ fontSize: '14px', lineHeight: 1 }} aria-hidden="true">↑</span>
           </button>
         </div>
       </form>

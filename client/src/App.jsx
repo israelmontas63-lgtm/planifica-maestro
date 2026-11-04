@@ -65,7 +65,10 @@ export default function App() {
   });
   const [avisoDispositivoVisto, setAvisoDispositivoVisto] = useState(() => {
     try {
-      return localStorage.getItem("pm_aviso_dispositivo_visto") === "true";
+      return (
+        localStorage.getItem("pm_aviso_guardado_visto") === "true" ||
+        localStorage.getItem("pm_aviso_dispositivo_visto") === "true"
+      );
     } catch (e) {
       return false;
     }
@@ -73,6 +76,7 @@ export default function App() {
 
   const handleCerrarAvisoDispositivo = () => {
     try {
+      localStorage.setItem("pm_aviso_guardado_visto", "true");
       localStorage.setItem("pm_aviso_dispositivo_visto", "true");
     } catch (e) {}
     setAvisoDispositivoVisto(true);
@@ -1092,7 +1096,7 @@ export default function App() {
 
       <main 
         ref={chatContainerRef}
-        className="pm-chat-container bg-slate-50"
+        className="pm-chat-container bg-slate-50 pb-32"
         style={{ 
           flex: 1, 
           overflowY: 'auto', 
@@ -1101,7 +1105,7 @@ export default function App() {
           width: '100%',
           maxWidth: '100%',
           boxSizing: 'border-box',
-          padding: '10px 10px calc(85px + env(safe-area-inset-bottom, 0px)) 10px', 
+          padding: '10px 10px calc(128px + env(safe-area-inset-bottom, 0px)) 10px', 
           background: '#f8fafc', 
           display: 'flex', 
           flexDirection: 'column', 
@@ -1177,6 +1181,7 @@ export default function App() {
           <HomeGreeting 
             user={user} 
             onSeleccionarSugerencia={(prompt) => handleAbrirTexto(prompt, "Personaliza tu planificación")} 
+            onEnviarConsulta={(texto) => enviarMensaje(texto)}
           />
         )}
 
