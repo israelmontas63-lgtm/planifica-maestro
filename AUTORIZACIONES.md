@@ -404,4 +404,13 @@
 - **Alcance Autorizado:** Creación de `client/src/components/VoiceModalInmersive.jsx`, re-exportación en `client/src/components/OrbeVozVisualizer.jsx`, compilación PWA, suite de pruebas automatizadas, sellado con `guardia.js`, commit y despliegue a producción.
 - **Estado:** APLICADA
 
+### Autorización 057
+- **Fecha:** 03/11/2026 (America/Santo_Domingo)
+- **Componentes:** `client/src/components/TextoModal.jsx`, `client/index.html`, `client/src/index.css`
+- **Motivo:** Corrección de semántica y maquetación de TextoModal: cambio de botón verde a "Enviar consulta ➤", encabezado actualizado a "¿Qué deseas consultar o preparar?", placeholder multipropósito a "Escribe una pregunta pedagógica, un tema de clase o la actividad que necesitas..."; adaptabilidad a teclado móvil con contenedor `max-h-[85dvh] flex flex-col overflow-hidden`, cuerpo `overflow-y-auto p-4 flex-1`, barra inferior fija `sticky bottom-0 bg-white pt-2 border-t border-slate-100 flex gap-2`; y meta viewport de `index.html` con `interactive-widget=resizes-content`.
+- **Frase Textual del Dueño:** `"ORDEN DE CORRECCIÓN: MODAL DE TEXTO Y AJUSTE DE TECLADO MÓVIL (PWA) ... BLOQUE 1: SEMÁNTICA DE BOTONES Y ENCABEZADOS ... BLOQUE 2: ADAPTABILIDAD AL TECLADO VIRTUAL (VIEWPORT RESIZE) ... BLOQUE 3: COMPILACIÓN Y DESPLIEGUE"`
+- **Alcance Autorizado:** Modificación de `client/src/components/TextoModal.jsx`, `client/index.html`, `client/src/index.css`, compilación PWA, ejecución de pruebas unitarias/integración, commit y despliegue a producción.
+- **Estado:** APLICADA
+
+
 

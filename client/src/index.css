@@ -4725,3 +4725,18 @@ video.visor-camara {
   z-index: 0;
 }
 
+/* ── Modal de Texto y Teclado Móvil (PWA) ── */
+.max-h-\[85dvh\] {
+  max-height: 85dvh !important;
+}
+.sticky {
+  position: sticky !important;
+}
+.bottom-0 {
+  bottom: 0 !important;
+}
+.border-slate-100 {
+  border-color: #f1f5f9 !important;
+}
+
+
