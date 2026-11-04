@@ -396,3 +396,12 @@
 - **Alcance Autorizado:** Refactorización de `client/src/components/OrbeVozVisualizer.jsx`, compilación PWA, ejecución de pruebas unitarias/integración, sellado con `guardia.js`, commit y despliegue a producción.
 - **Estado:** APLICADA
 
+### Autorización 056
+- **Fecha:** 03/11/2026 (America/Santo_Domingo)
+- **Componentes:** `client/src/components/VoiceModalInmersive.jsx`, `client/src/components/OrbeVozVisualizer.jsx`
+- **Motivo:** Integración del componente `VoiceModalInmersive` de alta definición calibrado con filamentos senoidales multicapa (deformación armónica a 72 pasos, punto de luz cenital a 135° con iluminación volumétrica superior izquierda, tres capas concéntricas esmeralda/cian/núcleo blanco puro cenital, aura atmosférica fluida con resplandor radial hasta 1.85x), cabecera con píldora translúcida "Visor IA" y botón de cierre X, tipografía neón centrada ("Te escucho, profe..." / "Hable con confianza sobre su clase..."), dock inferior en cristal con botones Cancelar, Enviar a consulta y SlidersHorizontal, y pastilla inferior de privacidad escolar en el aula.
+- **Frase Textual del Dueño:** `"// components/VoiceModalInmersive.jsx ... export default function VoiceModalInmersive({ isOpen = true, onClose, onSend, onOpenSettings, audioLevel = 0 })"`
+- **Alcance Autorizado:** Creación de `client/src/components/VoiceModalInmersive.jsx`, re-exportación en `client/src/components/OrbeVozVisualizer.jsx`, compilación PWA, suite de pruebas automatizadas, sellado con `guardia.js`, commit y despliegue a producción.
+- **Estado:** APLICADA
+
+
