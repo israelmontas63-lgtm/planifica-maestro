@@ -114,7 +114,9 @@ test('Captura de body a Gemini y verificación de grado en systemInstruction y c
 
     // Guardar en scratch para inspección
     const fs = await import('node:fs');
-    fs.writeFileSync(process.env.USERPROFILE + '/.gemini/antigravity/brain/d0178ccc-15d0-47c1-9487-238cd4f2934e/scratch/gemini_capture.json', JSON.stringify({
+    const os = await import('node:os');
+    const path = await import('node:path');
+    fs.writeFileSync(path.join(os.tmpdir(), 'gemini_capture.json'), JSON.stringify({
       systemInstruction,
       userContents
     }, null, 2));

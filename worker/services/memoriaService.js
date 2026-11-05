@@ -16,7 +16,10 @@ export async function recuperarHistorialSesion(env, sesionId, limite = 8) {
       },
       body: JSON.stringify({ p_sesion_id: sesionId, p_limite: limite })
     });
-    if (!res.ok) return [];
+    if (!res.ok) {
+      console.warn(`[Memoria] Error al recuperar historial de chat_mensajes: status ${res.status}`);
+      return [];
+    }
     const filas = await res.json();
     return filas.map(f => ({
       role: f.rol === 'model' ? 'model' : 'user',

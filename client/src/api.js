@@ -353,6 +353,7 @@ export async function generarPlanificacion({
     const decoder = new TextDecoder();
     let accumulatedText = "";
     let finalData = null;
+    let errorTerminalData = null;
 
     try {
       while (true) {
@@ -381,6 +382,8 @@ export async function generarPlanificacion({
               }
               if (parsed.final) {
                 finalData = parsed.final;
+              } else if (parsed.ok === false || parsed.isError) {
+                errorTerminalData = parsed;
               }
             } catch (e) {
               // Fragmento SSE no es un JSON completo o evento especial (ej. [DONE]); registrar si DEBUG
@@ -393,6 +396,10 @@ export async function generarPlanificacion({
       }
     } finally {
       reader.releaseLock();
+    }
+
+    if (!finalData && errorTerminalData) {
+      finalData = errorTerminalData;
     }
 
     if (finalData) {
