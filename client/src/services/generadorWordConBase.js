@@ -1155,7 +1155,7 @@ export async function construirDocumentoWordOficial({
  * Función que genera y descarga el documento Word en el navegador
  */
 export async function descargarWordConBase({
-  titulo = "Planificacion_MINERD",
+  titulo = "Planificacion_MINERD_CON_BASE",
   plan = "",
   datos = null,
   perfil = null,
@@ -1173,7 +1173,7 @@ export async function descargarWordConBase({
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  const nombreLimpio = (titulo || "Planificacion_MINERD")
+  const nombreLimpio = (titulo || "Planificacion_MINERD_CON_BASE")
     .replace(/[^\w\d\sáéíóúÁÉÍÓÚñÑ_-]/g, "")
     .trim()
     .replace(/\s+/g, "_");
