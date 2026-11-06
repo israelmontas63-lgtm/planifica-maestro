@@ -427,3 +427,13 @@
 - **Frase Textual del Dueño:** "PARADA 3 — DESPLIEGUE Y PRUEBA DE LAS TABLAS NUEVAS Autorizo el despliegue."
 - **Alcance Autorizado:** Aplicación del parche conexion_v2.patch, compilación de cliente PWA, verificación y sellado de guardia criptográfica, commit local y despliegue a producción en Cloudflare Workers.
 - **Estado:** APLICADA
+
+### Autorización 060
+- **Fecha:** 06/11/2026 (America/Santo_Domingo)
+- **Componentes y Hashes:**
+  - `client/src/api.js`: `b7bd439cdcd1db019cb3498d87ae998444b546a254e47aeb4d0706dab3965ad0`
+  - `worker/index.js`: `fe622bfd06a934c10cfdc567d929a0dc79bba65f22578d35439cafbbed3fab0a`
+- **Motivo:** Habilitar memoria conversacional persistente por sesionId (UUID v4) y lectura de caché semántica ultrarrápida (<60ms) con X-Cache-Status: HIT en streaming SSE, con aislamiento estricto de privacidad entre docentes.
+- **Frase Textual del Dueño:** "no te dentenga"
+- **Alcance Autorizado:** Modificación de `client/src/api.js` y `worker/index.js`, pruebas de integración.
+- **Estado:** APLICADA

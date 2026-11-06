@@ -3225,20 +3225,105 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
     }
 
 
-    // 1. Verificación previa en caché semántica (<60ms)
+    // Helpers de privacidad para aislamiento estricto de docentes en caché semántica
+    function sanitizarPlanParaCache(planOriginal) {
+      if (!planOriginal || typeof planOriginal !== "object") return planOriginal;
+      const copia = JSON.parse(JSON.stringify(planOriginal));
+      delete copia.docente;
+      delete copia.docente_titular;
+      delete copia.profesor;
+      delete copia.maestro;
+      delete copia.centro;
+      delete copia.centro_educativo;
+      delete copia.escuela;
+      delete copia.seccion;
+      delete copia.tanda;
+      delete copia.fecha;
+      delete copia.fecha_inicio;
+      delete copia.fecha_fin;
+      return copia;
+    }
+
+    function personalizarPlanDesdeCache(planCached, idDocente) {
+      if (!planCached || typeof planCached !== "object") return planCached;
+      const copia = sanitizarPlanParaCache(planCached);
+      if (idDocente && idDocente !== "docente_default") {
+        copia.docente = idDocente;
+      }
+      return copia;
+    }
+
+    // 1. Verificación previa en caché semántica (<60ms) tanto para Streaming SSE como JSON
     const claveCacheSem = generarClaveCache(gradoPre, areaPre, temaPre || textoParaProcesar);
-    if (claveCacheSem && !isStream) {
+    if (claveCacheSem) {
       const cacheHit = await consultarCache(env, claveCacheSem);
       if (cacheHit && cacheHit.plan_json) {
-        return new Response(JSON.stringify({
-          mensaje_chat: "¡Planificación recuperada y validada del currículo oficial!",
+        const planPersonalizado = personalizarPlanDesdeCache(cacheHit.plan_json, docenteId);
+        const respuestaChat = "¡Planificación recuperada y validada del currículo oficial!";
+        const finalPayload = {
+          mensaje_chat: respuestaChat,
           plan_completado: true,
-          datos_planificacion: cacheHit.plan_json,
+          datos_planificacion: planPersonalizado,
           confianza_curricular: {
             nivel_certeza: "alta",
             origen: "cache_semantica_validada"
+          },
+          planId: "plan_" + Date.now(),
+          nivel,
+          periodo,
+          nivelLabel: esquema?.label || nivel,
+          cuota: checkTopes?.cuota || null,
+          ...(habilitarTraza ? { traza_capas: [...trazaCapas] } : {})
+        };
+
+        if (sesionId) {
+          const promptUsuario = textoConsulta;
+          const respuestaFinal = respuestaChat;
+          if (ctx && ctx.waitUntil) {
+            ctx.waitUntil(guardarTurnoConversacion(env, sesionId, promptUsuario, respuestaFinal));
+          } else {
+            guardarTurnoConversacion(env, sesionId, promptUsuario, respuestaFinal).catch(console.error);
           }
-        }), {
+        }
+
+        if (isStream) {
+          const encoder = new TextEncoder();
+          const { readable, writable } = new TransformStream();
+          const writer = writable.getWriter();
+
+          (async () => {
+            try {
+              if (resultadoCorreccion && resultadoCorreccion.huboCambios) {
+                await writer.write(encoder.encode(`data: ${JSON.stringify({
+                  tipo: "correccion",
+                  texto_original: resultadoCorreccion.textoOriginal,
+                  texto_corregido: resultadoCorreccion.textoCorregido,
+                  correcciones_aplicadas: resultadoCorreccion.cambios || [],
+                  hubo_correcciones: true,
+                  cambio_significado: resultadoCorreccion.cambioSignificado || false
+                })}\n\n`));
+              }
+              await writer.write(encoder.encode(`data: ${JSON.stringify({ estado: "recuperando_cache", mensaje: "Planificación localizada en la base oficial..." })}\n\n`));
+              await writer.write(encoder.encode(`data: ${JSON.stringify({ final: finalPayload })}\n\n`));
+              await writer.write(encoder.encode("data: [DONE]\n\n"));
+            } finally {
+              writer.close();
+            }
+          })();
+
+          return new Response(readable, {
+            status: 200,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "text/event-stream; charset=utf-8",
+              "Cache-Control": "no-cache",
+              Connection: "keep-alive",
+              "X-Cache-Status": "HIT"
+            }
+          });
+        }
+
+        return new Response(JSON.stringify(finalPayload), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json", "X-Cache-Status": "HIT" }
         });
@@ -3805,7 +3890,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                   grado: gradoPre,
                   area: areaPre,
                   tema: temaPre || textoParaProcesar,
-                  planJson: objetoPlan.datos_planificacion,
+                  planJson: sanitizarPlanParaCache(objetoPlan.datos_planificacion),
                   fuentes: objetoPlan.confianza_curricular || null
                 });
                 if (ctx && ctx.waitUntil) {
@@ -4099,7 +4184,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
             grado: gradoPre,
             area: areaPre,
             tema: temaPre || textoParaProcesar,
-            planJson: objetoPlan.datos_planificacion,
+            planJson: sanitizarPlanParaCache(objetoPlan.datos_planificacion),
             fuentes: objetoPlan.confianza_curricular || null
           });
           if (ctx && ctx.waitUntil) {

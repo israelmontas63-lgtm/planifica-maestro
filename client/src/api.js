@@ -293,6 +293,30 @@ export async function obtenerCuotaDocente(docenteIdOverride) {
 }
 
 /**
+ * Obtiene o inicializa el identificador de sesión conversacional (UUID v4)
+ * persistido en sessionStorage. Si forzarNueva es true, genera uno nuevo.
+ */
+export function obtenerOSetearSesionId(forzarNueva = false) {
+  try {
+    if (!forzarNueva && typeof sessionStorage !== "undefined") {
+      const existente = sessionStorage.getItem("pm_sesion_id");
+      if (existente) return existente;
+    }
+    const nuevoId = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function")
+      ? crypto.randomUUID()
+      : "00000000-0000-4000-8000-" + Date.now().toString(16).padStart(12, "0");
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.setItem("pm_sesion_id", nuevoId);
+    }
+    return nuevoId;
+  } catch (e) {
+    return (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function")
+      ? crypto.randomUUID()
+      : "00000000-0000-4000-8000-" + Date.now().toString(16).padStart(12, "0");
+  }
+}
+
+/**
  * POST /api/plan/generate
  * Generación de plan curricular con IA (soporta JSON o SSE Streaming).
  */
@@ -300,12 +324,14 @@ export async function generarPlanificacion({
   messages,
   nivel,
   periodo,
+  sesionId = null,
   forzarOriginal = false,
   confirmado = false,
   signal,
   onChunk,
 }) {
   const docenteId = obtenerDocenteId();
+  const sesionIdActivo = sesionId || obtenerOSetearSesionId();
   let modeloPreferido = "gemini-3.1-flash-lite";
   try {
     modeloPreferido = localStorage.getItem("pm_modelo_ia") || "gemini-3.1-flash-lite";
@@ -317,6 +343,7 @@ export async function generarPlanificacion({
   }
 
   const payload = {
+    sesionId: sesionIdActivo,
     messages,
     nivel,
     periodo,
