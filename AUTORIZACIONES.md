@@ -437,3 +437,12 @@
 - **Frase Textual del Dueño:** "no te dentenga"
 - **Alcance Autorizado:** Modificación de `client/src/api.js` y `worker/index.js`, pruebas de integración.
 - **Estado:** APLICADA
+
+### Autorización 061
+- **Fecha:** 06/11/2026 (America/Santo_Domingo)
+- **Componentes y Hashes:**
+  - `worker/index.js`: `c044c47d986290d24cde61bf51ac6a6ec995e1e1ef5a5fae776c1fa98cec35cc`
+- **Motivo:** Integración de la ruta POST /api/planificar-clase para recepción directa de peticiones curriculares (grado, área, tema, docente, centro), consulta híbrida en Supabase y generación de matriz oficial de 45 minutos.
+- **Frase Textual del Dueño:** "ORDEN DE PRODUCCIÓN VERIFICADA: INTEGRACIÓN DE MATRIZ CURRICULAR Y DESCARGA DOCX"
+- **Alcance Autorizado:** Soporte de ruta POST /api/planificar-clase en worker/index.js, suite de pruebas y sellado con la guardia.
+- **Estado:** APLICADA

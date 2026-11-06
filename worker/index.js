@@ -1345,8 +1345,8 @@ async function handleApiRequest(request, env, ctx) {
     });
   }
 
-  // 7. POST /api/plan/generate, /api/plan y /api/planificar (Generación con Gemini y soporte SSE Streaming)
-  if ((path === "/api/plan/generate" || path === "/api/plan" || path === "/api/planificar") && method === "POST") {
+  // 7. POST /api/plan/generate, /api/plan, /api/planificar y /api/planificar-clase (Generación con Gemini y soporte SSE Streaming)
+  if ((path === "/api/plan/generate" || path === "/api/plan" || path === "/api/planificar" || path === "/api/planificar-clase") && method === "POST") {
     const auth = requerirAcceso(request, env, corsHeaders);
     if (auth.errorResponse) return auth.errorResponse;
     const isOwner = auth.isOwner;
@@ -1364,10 +1364,10 @@ async function handleApiRequest(request, env, ctx) {
     } catch {
       body = {};
     }
-    let { messages = [], nivel, periodo = "diaria", docenteId = "docente_default", stream = false } = body;
+    let { messages = [], nivel = "primario", periodo = "diaria", docenteId = (body.docente || "docente_default"), stream = false } = body;
     const sesionId = body.sesionId || body.sessionId || body.sesion_id || null;
-    if ((!messages || messages.length === 0) && (body.tema || body.prompt || body.mensaje)) {
-      const query = body.mensaje || body.prompt || `Planifica el tema: ${body.tema} (${body.grado || ""} - ${body.area || ""})`;
+    if ((!messages || messages.length === 0) && (body.tema || body.prompt || body.mensaje || (body.grado && body.area))) {
+      const query = body.mensaje || body.prompt || `Planifica el tema: ${body.tema || "Contenido curricular"} (${body.grado || ""} - ${body.area || ""})`;
       messages = [{ role: "user", text: query }];
     }
     const rawDevId = request.headers.get("x-device-id") || request.headers.get("X-Device-Id") || (docenteId && docenteId !== "docente_default" ? docenteId : null) || request.headers.get("x-docente-id") || ("dev_anon_" + clientIp);
