@@ -15,7 +15,7 @@
     "archivo": "shared/curriculoService.mjs",
     "interruptor": "CONSULTA_CURRICULAR",
     "variable_requerida": "SUPABASE_URL, SUPABASE_ANON_KEY",
-    "descripcion": "Consulta verificada sobre 8 áreas de Primaria (1.° a 6.°), citando fuente oficial, página y estado de validación sin alucinar."
+    "descripcion": "Consulta sobre 8 áreas de Primaria (1.° a 6.°), citando fuente oficial, página y estado curricular (pendiente de validación experta) sin alucinar."
   },
   {
     "id": "C3",
@@ -24,7 +24,7 @@
     "archivo": "server/ia/enrutadorIA.js",
     "interruptor": "PERMITIR_BUSQUEDA_WEB",
     "variable_requerida": "TAVILY_API_KEY",
-    "descripcion": "Investigación web verificada que solicita confirmación previa al usuario, priorizando dominios oficiales del MINERD."
+    "descripcion": "Investigación web que solicita confirmación previa al usuario, priorizando dominios oficiales del MINERD."
   },
   {
     "id": "C4",

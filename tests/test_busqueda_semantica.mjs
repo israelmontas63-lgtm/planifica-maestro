@@ -1,0 +1,14 @@
+import test from "node:test"; import assert from "node:assert/strict";
+import { generarEmbeddings, buscarCurriculoHibrido, indexarEmbeddingsLote, DIMENSION } from "../worker/services/busquedaSemantica.js";
+const J = (o, s = 200) => new Response(JSON.stringify(o), { status: s, headers: { "content-type": "application/json" } });
+const vec = () => Array.from({ length: DIMENSION }, (_, i) => i / DIMENSION);
+const AI = { run: async (m, { text }) => ({ data: text.map(vec) }) };
+const original = globalThis.fetch; let ll = [];
+const sim = (fn) => { ll = []; globalThis.fetch = async (u, o = {}) => { ll.push({ u: String(u), o }); return fn(String(u), o); }; };
+test.afterEach(() => { globalThis.fetch = original; });
+const env = { AI, SUPABASE_URL: "https://x.supabase.co/", SUPABASE_SERVICE_ROLE_KEY: "srv" };
+test("sin binding AI no hay embeddings", async () => { assert.equal(await generarEmbeddings({}, ["x"]), null); });
+test("devuelve un vector por texto y rechaza dimensión incorrecta", async () => { assert.equal((await generarEmbeddings({ AI }, ["a", "b"])).length, 2); assert.equal(await generarEmbeddings({ AI: { run: async () => ({ data: [[1, 2]] }) } }, ["a"]), null); });
+test("búsqueda híbrida llama a la función RPC con filtros", async () => { sim(() => J([{ secuencia_id: "1", score: 0.03 }])); const r = await buscarCurriculoHibrido(env, { consulta: "fracciones", grado: 3, area: "Matemática" }); assert.equal(r.length, 1); const b = JSON.parse(ll[0].o.body); assert.equal(b.filtro_grado, 3); assert.ok(b.query_embedding.startsWith("[")); assert.ok(ll[0].u.endsWith("/rest/v1/rpc/buscar_curriculo_hibrido")); });
+test("si Supabase falla devuelve null y no rompe el flujo", async () => { sim(() => J({}, 500)); assert.equal(await buscarCurriculoHibrido(env, { consulta: "x" }), null); });
+test("el indexado omite lo ya indexado", async () => { sim((u, o) => u.includes("curriculo_embeddings") && !o.method ? J([{ secuencia_id: "1" }]) : u.includes("curriculo_secuencias") ? J([{ id: 1, tema: "a" }, { id: 2, tema: "b", area: "Matemática", grado_num: 2 }, { id: 3, tema: "c" }]) : J({}, 201)); const r = await indexarEmbeddingsLote(env, { limite: 10 }); assert.equal(r.indexadas, 2); assert.deepEqual(JSON.parse(ll.at(-1).o.body).map((f) => f.secuencia_id), ["2", "3"]); });

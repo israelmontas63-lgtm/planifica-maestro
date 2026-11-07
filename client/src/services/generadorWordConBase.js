@@ -969,7 +969,7 @@ export async function construirDocumentoWordOficial({
                 spacing: { before: 0, after: 60 },
                 children: [
                   new TextRun({
-                    text: "✓ DICTAMEN OFICIAL: PLANIFICACIÓN DOCENTE VALIDADA Y APROBADA",
+                    text: "PROPUESTA DE PLANIFICACIÓN DOCENTE (BASADA EN EL CURRÍCULO OFICIAL, PENDIENTE DE REVISIÓN INSTITUCIONAL)",
                     bold: true,
                     size: 22,
                     color: COLOR_VERDE_TEXTO,
@@ -1103,7 +1103,7 @@ export async function construirDocumentoWordOficial({
   }
 
   const textoPie = estaAprobada
-    ? "Documento oficial validado institucionalmente — Formato de secuencia didáctica (CON BASE / MINERD)"
+    ? "Documento de planificación basado en el currículo oficial (pendiente de validación experta) — Formato de secuencia didáctica (CON BASE / MINERD)"
     : "Documento generado por Planifica Maestro — Formato de secuencia didáctica (CON BASE)";
 
   // Creación del Documento A4 Horizontal (Landscape) con márgenes oficiales de plantilla (1701 dxa top/bottom, 1417 dxa left/right)

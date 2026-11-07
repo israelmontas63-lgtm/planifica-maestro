@@ -446,3 +446,18 @@
 - **Frase Textual del Dueño:** "ORDEN DE PRODUCCIÓN VERIFICADA: INTEGRACIÓN DE MATRIZ CURRICULAR Y DESCARGA DOCX"
 - **Alcance Autorizado:** Soporte de ruta POST /api/planificar-clase en worker/index.js, suite de pruebas y sellado con la guardia.
 - **Estado:** APLICADA
+
+### Autorización 062
+- **Fecha:** 06/11/2026 (America/Santo_Domingo)
+- **Componentes y Hashes:**
+  - `shared/capacidades.json`: `486d6563e18d36cdf1df6e32e68e546ab32b693641971a8906ec45cb4ed687ab`
+  - `shared/capacidades.mjs`: `3f1748483f124cbf5e76d9bf31a783777f98be1218df864319aa5098ffdf3c36`
+  - `worker/index.js`: `16dbfb64132be7839353e20ec42c161ee79986ba0189073e5bf20b2f15306859`
+  - `worker/services/asistenteService.js`: `a401bf4975233cb71a249769c37331b311036e78017aad6927fff21ab64e0ebe`
+  - `client/src/services/generadorWordConBase.js`
+  - `scripts/ejecutar_sql_supabase.mjs`
+  - `scripts/cargar_paginas_supabase.mjs`
+- **Motivo:** Gestor autónomo de DDL en Supabase (Management API), dinamización de capacidades con env en shared/capacidades.mjs y worker/index.js, aplicación de honestidad curricular y carga confirmada de 500 páginas curriculares oficiales en Supabase.
+- **Frase Textual del Dueño:** "ORDEN 18-AUTOGESTION: CONFIGURACIÓN DE GESTOR DDL SUPABASE Y CARGA CURRICULAR"
+- **Alcance Autorizado:** Creación del ejecutor DDL scripts/ejecutar_sql_supabase.mjs, scripts/cargar_paginas_supabase.mjs, aplicación del parche textos_honestos.patch, dinamización de capacidades con env, ingesta de 500 páginas en Supabase, suite de tests y sellado de guardia criptográfica.
+- **Estado:** APLICADA

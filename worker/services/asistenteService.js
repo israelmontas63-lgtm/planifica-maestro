@@ -23,7 +23,7 @@ export function generarMensajeEstado(paso, { docenteNombre = "profesor(a)", grad
     case "consultando_wikipedia":
       return `Consultando un resumen conceptual en Wikipedia en español…`;
     case "investigando_web":
-      return `Buscando información oficial verificada sobre "${tema || "este tema"}" en los portales del MINERD…`;
+      return `Buscando información en portales oficiales del MINERD sobre "${tema || "este tema"}"…`;
     case "contrastando_fuentes":
       return `Comparando las fuentes encontradas para asegurar la fidelidad curricular…`;
     case "armando_plan":

@@ -19,7 +19,7 @@ export const capacidadesManifest = [
     "archivo": "shared/curriculoService.mjs",
     "interruptor": "CONSULTA_CURRICULAR",
     "variable_requerida": "SUPABASE_URL, SUPABASE_ANON_KEY",
-    "descripcion": "Consulta verificada sobre 8 áreas de Primaria (1.° a 6.°), citando fuente oficial, página y estado de validación sin alucinar."
+    "descripcion": "Consulta sobre 8 áreas de Primaria (1.° a 6.°), citando fuente oficial, página y estado curricular (pendiente de validación experta) sin alucinar."
   },
   {
     "id": "C3",
@@ -28,7 +28,7 @@ export const capacidadesManifest = [
     "archivo": "server/ia/enrutadorIA.js",
     "interruptor": "PERMITIR_BUSQUEDA_WEB",
     "variable_requerida": "TAVILY_API_KEY",
-    "descripcion": "Investigación web verificada que solicita confirmación previa al usuario, priorizando dominios oficiales del MINERD."
+    "descripcion": "Investigación web que solicita confirmación previa al usuario, priorizando dominios oficiales del MINERD."
   },
   {
     "id": "C4",
@@ -176,11 +176,21 @@ export const capacidadesManifest = [
   }
 ];
 
-export function generarRespuestaQuePuedesHacer() {
-  const encendidas = capacidadesManifest.filter(c => c.estado === "encendida");
-  const apagadas = capacidadesManifest.filter(c => c.estado === "apagada");
+export function generarRespuestaQuePuedesHacer(env = {}) {
+  const lista = capacidadesManifest.map(c => {
+    let estado = c.estado;
+    if (c.id === "C16") {
+      estado = (env && env.HERRAMIENTAS_V2 === "true") ? "encendida" : "apagada";
+    } else if (c.variable_requerida && c.variable_requerida.includes("TAVILY_API_KEY")) {
+      estado = (env && env.TAVILY_API_KEY) ? "encendida" : (env && Object.keys(env).length > 0 ? "apagada" : c.estado);
+    }
+    return { ...c, estado };
+  });
 
-  let texto = "Como colega pedagógico de Planifica Maestro, estas son mis capacidades activas y verificadas:\n\n";
+  const encendidas = lista.filter(c => c.estado === "encendida");
+  const apagadas = lista.filter(c => c.estado === "apagada");
+
+  let texto = "Como colega pedagógico de Planifica Maestro, estas son mis capacidades activas y en proceso de validación:\n\n";
   for (const c of encendidas) {
     texto += `- **${c.nombre}**: ${c.descripcion}\n`;
   }

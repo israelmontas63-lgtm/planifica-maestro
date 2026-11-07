@@ -2117,7 +2117,7 @@ async function handleApiRequest(request, env, ctx) {
     if (/(?:qu[eé]\s+puedes\s+hacer|cu[aá]les\s+son\s+tus\s+capacidades|qu[eé]\s+sabes\s+hacer)/i.test(textoParaProcesar)) {
       return responderWorker({
         data: {
-          mensaje_chat: generarRespuestaQuePuedesHacer(),
+          mensaje_chat: generarRespuestaQuePuedesHacer(env),
           plan_completado: false,
           modo: "manifiesto_capacidades",
           categoria: "charla",
@@ -2577,7 +2577,7 @@ async function handleApiRequest(request, env, ctx) {
               const fuentesStr = fuentesCitas.map(f => `\n- [${f.titulo}](${f.url})`).join("");
               return responderWorker({
                 data: {
-                  mensaje_chat: `${contenido}\n\n**Fuentes verificadas en internet:**${fuentesStr}`,
+                  mensaje_chat: `${contenido}\n\n**Fuentes consultadas en internet:**${fuentesStr}`,
                   plan_completado: false,
                   modo: "busqueda_web",
                   categoria: "busqueda_web",
@@ -3259,7 +3259,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
       const cacheHit = await consultarCache(env, claveCacheSem);
       if (cacheHit && cacheHit.plan_json) {
         const planPersonalizado = personalizarPlanDesdeCache(cacheHit.plan_json, docenteId);
-        const respuestaChat = "¡Planificación recuperada y validada del currículo oficial!";
+        const respuestaChat = "¡Planificación recuperada de la base curricular oficial (pendiente de validación experta)!";
         const finalPayload = {
           mensaje_chat: respuestaChat,
           plan_completado: true,
