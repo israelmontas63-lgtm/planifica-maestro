@@ -1,10 +1,10 @@
 {
   "version": "2.0.0",
-  "fecha_generacion": "2026-11-07T01:17:59.230Z",
-  "commit": "00fc5b0",
+  "fecha_generacion": "2026-11-08T12:40:33.963Z",
+  "commit": "62b74cf",
   "algoritmo": "sha256",
   "total_archivos": 83,
-  "resumen": "71eb081606fd22ed9b4fe02beaa0e13abbb60bee82c720546ee24965a38c2c4e",
+  "resumen": "9ba7a4e4de00f44582fe1052c1f3d31acbe0ee584b013ea8c555b0d20859a140",
   "hashes": {
     "client/src/App.jsx": "4b4a17a8ed32cdf8b9fa99249e70a350dbc57f7cdf9ca883f52aeb8f9a1f6cad",
     "client/src/api.js": "b7bd439cdcd1db019cb3498d87ae998444b546a254e47aeb4d0706dab3965ad0",
@@ -49,10 +49,10 @@
     "shared/constantsOjoDigital.js": "e7ef5b68d177da331cd92b92bef997785e53d7d02f7d7f943e93604c65f8645b",
     "shared/construirInformeSupervisionDocx.js": "47e0c1c2320c8042d0155e67d95c9a8b29ae6e090e3c538094746f5d690c9412",
     "shared/correctorTexto.js": "b8f8683992d11e8d708363c10c700ef2c8702bea960397010c4feb18eae0d665",
-    "shared/curriculoService.mjs": "c33f6a695d0a82ffaaa34b758f4ae4850d1b804151857ced745990db1b88ef8a",
+    "shared/curriculoService.mjs": "23ee6e7217bf0d90e47b126d8be5ad00994105072e9eb2dd5203bd614d56efcb",
     "shared/editorImagenLocalPuro.js": "defa09b651956a974bf6de6e305ed4b10502660eae88d1aff4100b92945c3f21",
     "shared/explicadorFallos.js": "f909e8139cb6ca215eb9e0160b4e0f2f3de9a76e4e370bba4715d797f468b448",
-    "shared/herramientas.mjs": "d8bfb928b7acdc98b03af79112f3bd21672621cd6e02de5f0419881eb5dd342a",
+    "shared/herramientas.mjs": "c4f8e18a5156159ce8df8bc1d0985bcaf534fcc9757fd47908987c45a1677b9c",
     "shared/herramientasCerebro.js": "dfde063dd9071e3a1daec5c624a8c35b065b4b2826875d5df873e0e4e576fe68",
     "shared/intencionMatematica.mjs": "e5c36db465a694f48ecfda8667acee50dc52924e580666f7d863781d25bf40df",
     "shared/matematica.mjs": "273633a9dbc1831314e6156fd616294f9a143cc4f4797f531e4be76139e4b2ef",
@@ -73,7 +73,7 @@
     "worker/editorImagenLocalPuro.js": "813662548218ababca50d0ada3dc42f6576209cb0d4e7767c5f399065e72a298",
     "worker/filtroTemas.js": "384479c5b51d39478b1eaac96c13149c76604a69b7c0c92d7dbc78debae8e41a",
     "worker/glosarioDocente.js": "0f905a0e056dfd19e30611b8b6243fe7b443994a4762ad1bbda8d429ac892d34",
-    "worker/index.js": "16dbfb646a378a8b73065286b8991f9a307fbbc3e3ffc846da8d319e4725914e",
+    "worker/index.js": "732a78440792fd382bff7f10f974ded08886ebc12c16116d96afbde983dd778c",
     "worker/levels.js": "6b07da11d3a0c17a10446209c56855e9537aa8b1945c0eeaa255ab0b53759cff",
     "worker/modoConversacional.js": "34198e46599c196c12c1fe4fe2af3b0359baf0fd163cced44bc20ea301d41dda",
     "worker/ojoDigital.js": "9af5f18f6ff56f7483e21c27cda0108b4c36e6fecdac08b25f2452d4fde8e560",
@@ -83,11 +83,11 @@
     "worker/services/aiProvider.js": "46672cdd2713282ff1b8fbb8c78f4e7495efb6df69dcfa2a3fc14d477fd461b5",
     "worker/services/asistenteService.js": "a401bf4975233cb71a249769c37331b311036e78017aad6927fff21ab64e0ebe",
     "worker/services/curriculoService.js": "3a3647c1d91bdeef07685f84507bece4de9b06748af0ac92eb070e1ffcc2c7bd",
-    "worker/services/investigadorService.js": "c2f33830d5c442c28a4b19582392afaa27561ebc5a1f2012ea4ae1166b916979",
+    "worker/services/investigadorService.js": "5f9c96a6354ec91f9866484156156b94c34a6f1ed65d3226ba2410a3abffa166",
     "worker/services/timeoutIntento.js": "1c04903acbd7df6fa6c83fdd5237c85bc4f9a209dcda964e849f38e5c25390fb",
     "worker/services/voiceProvider.js": "362fadb6c4b99aecc26b60ddb8133a0ea76bbbab4c1f7d5044600bdf37697635",
     "worker/services/wikipedia.js": "29e4935f92914797dba6d31e510028b1121493447c430ec9ae68c44735ffc3a1",
     "worker/verificadorCitas.js": "bbdc7b502b6027eb268b28d360e0af5c6b41b182e52a61f85c900fdcb19f8a81",
-    "wrangler.toml": "8b1535e30ca7f4d4aec139e348a83aaf98b7fe8689e5e6875374faa0a80eae03"
+    "wrangler.toml": "d716def284e2293cf0890fe221a7a551e67fba4f56039317fea33c918626a722"
   }
 }
