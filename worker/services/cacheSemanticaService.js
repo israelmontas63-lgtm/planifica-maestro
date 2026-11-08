@@ -34,7 +34,10 @@ export async function consultarCache(env, claveHash) {
       },
       body: JSON.stringify({ p_clave_hash: claveHash })
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn(`[Cache] Error al consultar curriculo_cache_semantica: status ${res.status}`);
+      return null;
+    }
     const data = await res.json();
     return Array.isArray(data) && data.length > 0 ? data[0] : null;
   } catch (err) {

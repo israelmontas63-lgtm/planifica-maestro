@@ -71,3 +71,89 @@ test("T10 - generarPlanificacion en SSE preserva causa devuelta en final sin sob
     globalThis.fetch = originalFetch;
   }
 });
+
+test("T10 - (i) Stream con error terminal directo sin .final devuelve el codigoError correcto", async () => {
+  const originalFetch = globalThis.fetch;
+  const sseBody = [
+    `data: ${JSON.stringify({ estado: "iniciando" })}\n\n`,
+    `data: ${JSON.stringify({ estado: "curriculo" })}\n\n`,
+    `data: ${JSON.stringify({
+      ok: false,
+      isError: true,
+      codigo: "PROVEEDOR_IA_SATURADO",
+      codigoError: "PROVEEDOR_IA_SATURADO",
+      mensaje: "El servicio de Inteligencia Artificial se encuentra temporalmente saturado por alta demanda.",
+      sugerencia: "Espera unos segundos e intenta nuevamente."
+    })}\n\n`,
+    `data: [DONE]\n\n`
+  ].join("");
+
+  globalThis.fetch = async () => {
+    return new Response(sseBody, {
+      status: 200,
+      headers: { "Content-Type": "text/event-stream" }
+    });
+  };
+
+  try {
+    let chunks = [];
+    const res = await generarPlanificacion({
+      messages: [{ role: "user", text: "planificar fracciones" }],
+      onChunk: (delta, acc) => { if (delta) chunks.push(delta); }
+    });
+
+    assert.equal(res.ok, false);
+    assert.equal(res.isError, true);
+    assert.equal(res.codigoError, "PROVEEDOR_IA_SATURADO");
+    assert.equal(res.codigo, "PROVEEDOR_IA_SATURADO");
+    assert.ok(res.mensaje_chat.includes("saturado"));
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("T10 - (ii) Evento intermedio con ok:false no pisa el resultado final exitoso", async () => {
+  const originalFetch = globalThis.fetch;
+  const planExitoso = {
+    plan_completado: true,
+    mensaje_chat: "Plan generado exitosamente.",
+    datos_planificacion: {
+      "1. Aspectos Generales": {
+        grado: "2.º",
+        area: "Matemática",
+        tema: "La suma"
+      }
+    }
+  };
+
+  const sseBody = [
+    `data: ${JSON.stringify({ estado: "iniciando" })}\n\n`,
+    `data: ${JSON.stringify({ tipo: "aviso", ok: false, mensaje: "Aviso intermedio no terminal" })}\n\n`,
+    `data: ${JSON.stringify({ estado: "razonando" })}\n\n`,
+    `data: ${JSON.stringify({ final: planExitoso })}\n\n`,
+    `data: [DONE]\n\n`
+  ].join("");
+
+  globalThis.fetch = async () => {
+    return new Response(sseBody, {
+      status: 200,
+      headers: { "Content-Type": "text/event-stream" }
+    });
+  };
+
+  try {
+    let chunks = [];
+    const res = await generarPlanificacion({
+      messages: [{ role: "user", text: "planificar suma" }],
+      onChunk: (delta, acc) => { if (delta) chunks.push(delta); }
+    });
+
+    assert.notEqual(res.ok, false);
+    assert.notEqual(res.isError, true);
+    assert.equal(res.plan_completado, true);
+    assert.equal(res.mensaje_chat, "Plan generado exitosamente.");
+    assert.deepEqual(res.datos_planificacion, planExitoso.datos_planificacion);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});

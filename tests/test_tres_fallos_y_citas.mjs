@@ -75,9 +75,30 @@ test("FALLO 2: Gemini 429 -> PROVEEDOR_IA_SATURADO separado de CUOTA_DIARIA_AGOT
     assert.strictEqual(res.status, 200);
     assert.ok(res.headers.get("content-type")?.includes("text/event-stream"), "Debe responder con text/event-stream");
     const streamText = await res.text();
-    assert.ok(streamText.includes("data:"), "Debe contener eventos SSE");
-    assert.ok(streamText.includes("HTTP_429") || streamText.includes("429"), "Debe reportar el error 429 o saturación en el stream");
-    assert.ok(streamText.includes("[DONE]"), "Debe cerrar el stream con [DONE]");
+    const lineas = streamText.split("\n");
+    let json = null;
+    for (const linea of lineas) {
+      if (linea.startsWith("data:") && !linea.includes("[DONE]")) {
+        try {
+          const parsed = JSON.parse(linea.replace(/^data:\s*/, ""));
+          if (parsed.ok === false || parsed.isError || parsed.codigo || parsed.error) {
+            json = parsed;
+          }
+        } catch (_err) {
+          // Ignorar explícitamente líneas SSE que no son JSON (ej. eventos de texto plano o fragmentos parciales)
+        }
+      }
+    }
+    assert.ok(json, "Debe contener un evento SSE de error");
+
+    // Verificaciones de lo que ve el usuario
+    assert.strictEqual(json.ok, false, "ok debe ser false");
+    assert.strictEqual(json.isError, true, "isError debe ser true");
+    assert.strictEqual(json.codigo, "PROVEEDOR_IA_SATURADO", "Código debe ser PROVEEDOR_IA_SATURADO");
+    assert.strictEqual(json.codigoError, "PROVEEDOR_IA_SATURADO", "codigoError debe ser PROVEEDOR_IA_SATURADO");
+    assert.notStrictEqual(json.codigo, "CUOTA_DIARIA_AGOTADA", "NO debe confundirse con la cuota del docente");
+    assert.ok(json.mensaje.includes("saturado") || json.mensaje.includes("cuota con el proveedor"), "Mensaje debe aludir al proveedor de IA");
+    assert.ok(json.sugerencia.includes("Reintentar") || json.sugerencia.includes("intenta nuevamente") || json.sugerencia.includes("segundos"), "Debe ofrecer sugerencia pedagógica amigable");
 
     // Verificar explicación si el docente pregunta "¿por qué no puedes?"
     const reqSeguimiento = new Request("http://localhost/api/plan/generate", {

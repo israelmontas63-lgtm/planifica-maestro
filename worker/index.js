@@ -1142,7 +1142,10 @@ async function handleApiRequest(request, env, ctx) {
         "tareas_investigacion",
         "docente_horarios",
         "docente_actividades",
-        "docente_notas"
+        "docente_notas",
+        "curriculo_cache_semantica",
+        "chat_mensajes",
+        "auditoria_calidad_ragas"
       ];
       await Promise.all(
         tablasToCheck.map(async (tabla) => {
@@ -3497,7 +3500,39 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
             }
 
             if (!geminiRes) {
-              await writer.write(encoder.encode(`data: ${JSON.stringify({ ok: false, error: ultimoError || "IA_NO_DISPONIBLE", status: ultimoStatus })}\n\n`));
+              const incidentId = "INC-" + generarCodigoSeguro(6);
+              console.error(`[AI Error ${incidentId}] Modelos agotados. Código: ${ultimoStatus} - ${ultimoError}`);
+              const codigo = (ultimoStatus === 429)
+                ? "PROVEEDOR_IA_SATURADO"
+                : (ultimoStatus === 503 || ultimoStatus === 502 || ultimoStatus === 504)
+                ? "IA_NO_DISPONIBLE"
+                : "ERROR_INTERNO";
+              const mensaje = (ultimoStatus === 429)
+                ? "Se agotó temporalmente la cuota con el proveedor de IA."
+                : (ultimoStatus === 503 || ultimoStatus === 502 || ultimoStatus === 504)
+                ? "El servidor de inteligencia artificial está ocupado en este momento."
+                : "Ocurrió un problema de configuración o conexión con el proveedor de IA.";
+              const sugerencia = (ultimoStatus === 429 || ultimoStatus === 503 || ultimoStatus === 502 || ultimoStatus === 504)
+                ? "Espera un minuto y pulsa 'Reintentar'."
+                : "Contacta a soporte indicando tu código de incidente.";
+              const exp = explicarFallo({ codigo, detalle: mensaje });
+
+              const payloadError = {
+                ok: false,
+                isError: true,
+                codigo,
+                codigoError: codigo,
+                error: ultimoError || codigo,
+                status: ultimoStatus,
+                mensaje,
+                mensaje_chat: exp.textoUsuario || `${mensaje} ${sugerencia}`,
+                sugerencia,
+                reintentable: true,
+                incidentId,
+                plan_completado: false
+              };
+              await guardarUltimoFallo(deviceId, payloadError);
+              await writer.write(encoder.encode(`data: ${JSON.stringify(payloadError)}\n\n`));
               await writer.write(encoder.encode("data: [DONE]\n\n"));
               return;
             }
