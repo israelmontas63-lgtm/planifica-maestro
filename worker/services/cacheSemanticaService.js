@@ -34,7 +34,10 @@ export async function consultarCache(env, claveHash) {
       },
       body: JSON.stringify({ p_clave_hash: claveHash })
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn(`[Cache] Error al consultar curriculo_cache_semantica: status ${res.status}`);
+      return null;
+    }
     const data = await res.json();
     return Array.isArray(data) && data.length > 0 ? data[0] : null;
   } catch (err) {
@@ -47,7 +50,7 @@ export async function guardarEnCache(env, { claveHash, grado, area, tema, planJs
   if (!claveHash || !env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return;
   const url = `${env.SUPABASE_URL.replace(/\/+$/, '')}/rest/v1/curriculo_cache_semantica?on_conflict=clave_hash`;
   try {
-    await fetch(url, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: {
         'apikey': env.SUPABASE_SERVICE_ROLE_KEY,
@@ -64,6 +67,9 @@ export async function guardarEnCache(env, { claveHash, grado, area, tema, planJs
         fuentes_utilizadas: fuentes || []
       })
     });
+    if (!res.ok) {
+      console.warn(`[Cache] Error al guardar en curriculo_cache_semantica: status ${res.status}`);
+    }
   } catch (err) {
     console.warn('[Cache] Error al guardar en cache:', err.message);
   }

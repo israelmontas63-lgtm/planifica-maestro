@@ -1655,11 +1655,15 @@ export default function App() {
               <span className="pm-thinking-label">
                 {cambiandoARespaldo
                   ? "El motor principal está lento, cambiando a respaldo…"
-                  : (modoOperacion === "charla" || modoOperacion === "conversando"
-                      ? (streamingText ? "conversando con el profe…" : "pensando…")
-                      : (modoOperacion === "curriculo"
-                          ? (streamingText || Object.keys(bloquesProgresivos).length > 0 ? "organizando la planificación curricular…" : "estoy buscando en el currículo…")
-                          : (streamingText ? "organizando la respuesta…" : "pensando…")))}
+                  : (modoOperacion === "iniciando"
+                      ? "Iniciando…"
+                      : (modoOperacion === "razonando"
+                          ? "Razonando…"
+                          : (modoOperacion === "charla" || modoOperacion === "conversando"
+                              ? (streamingText ? "conversando con el profe…" : "pensando…")
+                              : (modoOperacion === "curriculo"
+                                  ? (streamingText || Object.keys(bloquesProgresivos).length > 0 ? "organizando la planificación curricular…" : "estoy buscando en el currículo…")
+                                  : (streamingText ? "organizando la respuesta…" : "pensando…")))))}
               </span>
               <button
                 type="button"

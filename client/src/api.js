@@ -382,6 +382,9 @@ export async function generarPlanificacion({
               if (parsed.final) {
                 finalData = parsed.final;
               }
+              if (parsed.ok === false || parsed.isError) {
+                finalData = parsed;
+              }
             } catch (e) {
               // Fragmento SSE no es un JSON completo o evento especial (ej. [DONE]); registrar si DEBUG
               if (typeof process !== "undefined" && process?.env?.DEBUG) {

@@ -1,6 +1,6 @@
 import { LEVELS } from "./levels.js";
 import { obtenerContextoConBase } from "./contextoConBase.js";
-import { getAiProvider, getGeminiModels, fetchGeminiWithRetry, fetchGeminiConThinking } from "./services/aiProvider.js";
+import { getAiProvider, getGeminiModels, fetchGeminiWithRetry, fetchGeminiConThinking, construirThinkingConfig, construirMaxSalida, textoDeCandidato } from "./services/aiProvider.js";
 import { fetchConLimite } from "./services/timeoutIntento.js";
 import { generateVoice } from "./services/voiceProvider.js";
 import { clasificarIntencion, clasificarPorReglas } from "./clasificadorIntencion.js";
@@ -1142,7 +1142,10 @@ async function handleApiRequest(request, env, ctx) {
         "tareas_investigacion",
         "docente_horarios",
         "docente_actividades",
-        "docente_notas"
+        "docente_notas",
+        "curriculo_cache_semantica",
+        "chat_mensajes",
+        "auditoria_calidad_ragas"
       ];
       await Promise.all(
         tablasToCheck.map(async (tabla) => {
@@ -1503,6 +1506,15 @@ async function handleApiRequest(request, env, ctx) {
           grado: (typeof gradoPre !== "undefined" && gradoPre) ? gradoPre : (data.datos?.grado || data.grado || undefined)
         });
       }
+      if (resultadoCorreccion && resultadoCorreccion.huboCambios && !resultadoCorreccion.cambioSignificado) {
+        const normalizaciones = (resultadoCorreccion.cambios || []).filter(c => c.tipo === "grado_minerd" || c.tipo === "tilde_vocabulario" || c.tipo === "homofono");
+        if (normalizaciones.length > 0) {
+          const avisos = normalizaciones.map(c => `Interpreté «${c.antes}» como «${c.despues}».`).join("\n");
+          if (data && data.mensaje_chat && !data.mensaje_chat.includes(avisos)) {
+            data.mensaje_chat = `${avisos}\n\n${data.mensaje_chat}`;
+          }
+        }
+      }
       if (resultadoCorreccion) {
         data.texto_original = resultadoCorreccion.textoOriginal;
         data.texto_corregido = resultadoCorreccion.textoCorregido;
@@ -1729,7 +1741,7 @@ async function handleApiRequest(request, env, ctx) {
               });
               if (res && res.ok) {
                 const d = await res.json();
-                textoExtraido = d.candidates?.[0]?.content?.parts?.[0]?.text || "";
+                textoExtraido = textoDeCandidato(d.candidates?.[0]);
                 if (textoExtraido) break;
               }
             } catch (err) {
@@ -2669,7 +2681,7 @@ async function handleApiRequest(request, env, ctx) {
             msGeminiConv = performance.now() - t0GeminiFetch;
             if (res && res.ok) {
               const data = await res.json();
-              textoGenerado = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+              textoGenerado = textoDeCandidato(data.candidates?.[0]);
               textoGenerado = marcarSinRespaldo(textoGenerado);
               if (textoGenerado) break;
             }
@@ -2847,7 +2859,7 @@ async function handleApiRequest(request, env, ctx) {
 
     const t0PromptV2 = performance.now();
     const usaPromptV2 = Boolean(env && (env.PROMPT_SISTEMA_V2 === "true" || env.PROMPT_SISTEMA_V2 === true)) && !(esModoPrueba && env.DESACTIVAR_CAPA_3 === "true");
-    const basePrompt = usaPromptV2 ? (typeof construirPromptSistemaV2 === "function" ? construirPromptSistemaV2() : PROMPT_SISTEMA_V2_TEXTO) : SYSTEM_PROMPT;
+    const basePrompt = usaPromptV2 ? (typeof construirPromptSistemaV2 === "function" ? construirPromptSistemaV2({ esquemaElegido: esquema.label }) : PROMPT_SISTEMA_V2_TEXTO) : SYSTEM_PROMPT;
 
     const dynamicPrompt = `${basePrompt}
 ## ESQUEMA SELECCIONADO: ${esquema.label}
@@ -3300,212 +3312,239 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
       }
-      let promptParaStreaming = dynamicPrompt;
-      let fragmentosRecuperadosTexto = "";
-      let consultasAuditadasStreaming = [];
 
-      const usaHerramientasV2 = Boolean(env && (env.HERRAMIENTAS_V2 === "true" || env.HERRAMIENTAS_V2 === true));
-      // Bloque gobernado por los interruptores de mutación 4 (Herramientas curriculares) y 5 (Ciclo tool-calling SSE)
-      const desactivarCapa4 = Boolean(esModoPrueba && env.DESACTIVAR_CAPA_4 === "true");
-      const desactivarCapa5 = Boolean(esModoPrueba && env.DESACTIVAR_CAPA_5 === "true");
-      if (usaHerramientasV2 && !desactivarCapa5 && !desactivarCapa4) {
-        try {
-          const geminiBase = env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com";
-          const t0Tools = performance.now();
-          const modelHerramientas = models[0] || "gemini-3.1-flash-lite";
-          const cicloRes = await cicloToolCalling({
-            promptUsuario: textoParaProcesar,
-            llamadaModeloIA: async (payload) => {
-              const geminiUrl = `${geminiBase}/v1beta/models/${modelHerramientas}:generateContent`;
-              const gemRes = await fetchGeminiWithRetry(geminiUrl, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "x-goog-api-key": env.GEMINI_API_KEY,
-                },
-                body: JSON.stringify({
-                  contents: payload.contents,
-                  tools: payload.tools,
-                  systemInstruction: { parts: [{ text: basePrompt }] },
-                  generationConfig: {
-                    temperature: 0.0,
-                    maxOutputTokens: 2048,
-                  },
-                }),
-                signal: request.signal,
-              });
-              if (!gemRes || !gemRes.ok) {
-                const errTxt = gemRes ? await gemRes.text() : "No response";
-                throw new Error(`Gemini call error: ${errTxt}`);
-              }
-              return await gemRes.json();
-            },
-            env,
-            maxIteraciones: 3,
-          });
-
-          const msCicloTotal = performance.now() - t0Tools;
-          if (cicloRes && cicloRes.consultas && cicloRes.consultas.length > 0) {
-            consultasAuditadasStreaming = cicloRes.consultas;
-            const filasTodas = cicloRes.consultas.flatMap((c) => c.filas || []);
-            if (filasTodas.length > 0 && filasTodas.every(f => f.coincide_tema === undefined)) {
-              console.error("[ALERTA] La RPC no devolvió coincide_tema: todas las filas se tratan como sin coincidencia");
-            }
-            const filasCoincidentes = filasTodas.filter(esCoincidente);
-            if (filasCoincidentes.length > 0) {
-              const fragmentosReclasificados = reclasificarFragmentos(filasCoincidentes, {
-                consulta: temaPre || textoParaProcesar,
-                grado: gradoPre,
-                area: areaPre
-              }, { umbralMinimo: 0.35 });
-              const filasFinales = fragmentosReclasificados.length > 0 ? fragmentosReclasificados : filasCoincidentes;
-              const filasVerificadas = filasFinales.filter(f => f.estado_validacion === "validado");
-              if (filasVerificadas.length > 0) {
-                huboFragmentosInyectados = true;
-              }
-              fragmentosRecuperadosTexto = filasFinales
-                .map((f) => {
-                  const docNombre = (f.fuente_documento || f.fuente || f.documento_titulo || "MINERD")
-                    .replace(/\s*\(pág\..*$/i, "")
-                    .replace(/[,.]\s*$/, "")
-                    .trim();
-                  const pag = f.pagina || f.pág || "N/A";
-                  const compRaw = (f.competencias_especificas || f.competencia_especifica || "").trim();
-                  const esCompPlantilla = compRaw.includes("Desarrolla el pensamiento crítico, resolución de problemas");
-                  const comp = (!esCompPlantilla && compRaw) ? compRaw : "";
-
-                  const contRaw = (f.contenidos_texto_original || "").trim();
-                  const esContPlantilla = contRaw.includes("Contenidos conceptuales, procedimentales y actitudinales de");
-                  const cont = (!esContPlantilla && contRaw) ? contRaw : "";
-
-                  const indRaw = f.indicadores_logro || f.indicador_logro || null;
-                  let indTexto = "";
-                  if (indRaw) {
-                    if (Array.isArray(indRaw)) {
-                      const indLimpia = indRaw.map(s => String(s).trim()).filter(Boolean);
-                      if (indLimpia.length > 0) {
-                        if (indLimpia.length <= 8) {
-                          indTexto = indLimpia.join("; ");
-                        } else {
-                          indTexto = indLimpia.slice(0, 8).join("; ") + ` ... y ${indLimpia.length - 8} más`;
-                        }
-                      }
-                    } else if (typeof indRaw === "string" && indRaw.trim()) {
-                      indTexto = indRaw.trim();
-                    }
-                  }
-
-                  const partes = [];
-                  if (f.tema) partes.push(`Tema: ${f.tema.trim()}`);
-                  if (comp) partes.push(`Competencia: ${comp}`);
-                  if (cont) partes.push(`Contenidos: ${cont}`);
-                  if (indTexto) partes.push(`Indicadores: ${indTexto}`);
-
-                  let frag = `[Fuente: ${docNombre} | Pág: ${pag}] ${partes.join(" | ")}`;
-                  if (frag.length > 1500) {
-                    frag = frag.slice(0, 1497) + "...";
-                  }
-                  return frag;
-                })
-                .join("\n");
-              promptParaStreaming += `\n=== FRAGMENTOS CURRICULARES OFICIALES RECUPERADOS ===\n<DATO>\n${fragmentosRecuperadosTexto}\n</DATO>\n`;
-            } else {
-              promptParaStreaming += `\n=== AVISO CURRICULAR ===\nNo se encontraron fragmentos curriculares con coincidencia exacta para este tema en la base oficial. Comunica con transparencia pedagógica que no hay coincidencia exacta oficial, no inventes contenido curricular y NO cites páginas ni documentos oficiales para este tema.\n`;
-            }
-            registrarCapa(4, "Herramientas curriculares", "consultar_base_datos ejecutada", `secuencia didáctica obtenida: ${filasCoincidentes.length} filas`, msCicloTotal);
-            registrarCapa(5, "Ciclo tool-calling antes de streaming", "resolución herramientas antes de SSE", `llamadas: ${cicloRes.consultas.length}`, msCicloTotal);
-          }
-        } catch (errCicloStreaming) {
-          console.warn("[Herramientas V2 Streaming] Falló ciclo de herramientas, procediendo con degradación pedagógica:", errCicloStreaming.message);
-        }
-      }
-
-      let geminiRes = null;
-      let ultimoError = null;
-      let ultimoStatus = 500;
-      const geminiBase = env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com";
-
-      for (const model of models) {
-        const geminiStreamUrl = `${geminiBase}/v1beta/models/${model}:streamGenerateContent?alt=sse`;
-        try {
-          const t0StreamFetch = performance.now();
-          const res = await fetchGeminiWithRetry(geminiStreamUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-goog-api-key": env.GEMINI_API_KEY,
-            },
-            timeoutMs: 45000,
-            body: JSON.stringify({
-              contents,
-              systemInstruction: { parts: [{ text: promptParaStreaming }] },
-              generationConfig: {
-                temperature: 0.1,
-                responseMimeType: "application/json",
-                maxOutputTokens: 4096,
-                thinkingConfig: {
-                  thinkingBudget: 0,
-                },
-              },
-            }),
-            signal: request.signal,
-          });
-
-          if (res && res.ok) {
-            geminiRes = res;
-            registrarCapa(6, "Gemini", `streamGenerateContent con ${model}`, "generación completada", performance.now() - t0StreamFetch);
-            break;
-          } else if (res) {
-            ultimoStatus = res.status;
-            ultimoError = `HTTP_${res.status}`;
-            console.warn(`[AI Warn] Modelo ${model} falló con status ${res.status}`);
-          }
-        } catch (e) {
-          ultimoError = "FETCH_EXCEPTION";
-          console.warn(`[AI Warn] Excepción en modelo ${model}`);
-        }
-      }
-
-      if (!geminiRes) {
-        const incidentId = "INC-" + generarCodigoSeguro(6);
-        console.error(`[AI Error ${incidentId}] Modelos agotados. Código: ${ultimoStatus} - ${ultimoError}`);
-        const codigo = (ultimoStatus === 429)
-          ? "PROVEEDOR_IA_SATURADO"
-          : (ultimoStatus === 503 || ultimoStatus === 502 || ultimoStatus === 504)
-          ? "IA_NO_DISPONIBLE"
-          : "ERROR_INTERNO";
-        const mensaje = (ultimoStatus === 429)
-          ? "Se agotó temporalmente la cuota con el proveedor de IA."
-          : (ultimoStatus === 503 || ultimoStatus === 502 || ultimoStatus === 504)
-          ? "El servidor de inteligencia artificial está ocupado en este momento."
-          : "Ocurrió un problema de configuración o conexión con el proveedor de IA.";
-        const sugerencia = (ultimoStatus === 429 || ultimoStatus === 503 || ultimoStatus === 502 || ultimoStatus === 504)
-          ? "Espera un minuto y pulsa 'Reintentar'."
-          : "Contacta a soporte indicando tu código de incidente.";
-        return generarErrorPlanificacion(codigo, mensaje, sugerencia, true, 200);
-      }
-
-      // Transformar el stream de Gemini a SSE limpio para el cliente
+      // 3.3 SSE Inmediato: Creamos TransformStream antes de cicloToolCalling
       const { readable, writable } = new TransformStream();
       const writer = writable.getWriter();
-      const reader = geminiRes.body.getReader();
-      const decoder = new TextDecoder();
       const encoder = new TextEncoder();
+      const decoder = new TextDecoder();
       const runWaitUntil = (ctx && typeof ctx.waitUntil === "function")
         ? ctx.waitUntil.bind(ctx)
         : (promise => { promise.catch?.(e => console.warn("[Worker Streaming Async Error]:", e?.message || e)); });
 
       runWaitUntil(
         (async () => {
-          let fullText = "";
-          let corteOcurrio = null;
-          const bloquesEmitidos = new Set();
-          const streamingProgresivo = (env && env.STREAMING_PROGRESIVO !== undefined)
-            ? (env.STREAMING_PROGRESIVO === "true" || env.STREAMING_PROGRESIVO === true)
-            : true;
-
           try {
+            // Primer evento inmediato: iniciando
+            await writer.write(encoder.encode(`data: ${JSON.stringify({ estado: "iniciando" })}\n\n`));
+
+            let promptParaStreaming = dynamicPrompt;
+            let fragmentosRecuperadosTexto = "";
+            let consultasAuditadasStreaming = [];
+
+            const usaHerramientasV2 = Boolean(env && (env.HERRAMIENTAS_V2 === "true" || env.HERRAMIENTAS_V2 === true));
+            const desactivarCapa4 = Boolean(esModoPrueba && env.DESACTIVAR_CAPA_4 === "true");
+            const desactivarCapa5 = Boolean(esModoPrueba && env.DESACTIVAR_CAPA_5 === "true");
+            if (usaHerramientasV2 && !desactivarCapa5 && !desactivarCapa4) {
+              try {
+                const geminiBase = env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com";
+                const t0Tools = performance.now();
+                const modelHerramientas = models[0] || "gemini-3.1-flash-lite";
+                const cicloRes = await cicloToolCalling({
+                  promptUsuario: textoParaProcesar,
+                  llamadaModeloIA: async (payload) => {
+                    const geminiUrl = `${geminiBase}/v1beta/models/${modelHerramientas}:generateContent`;
+                    const gemRes = await fetchGeminiWithRetry(geminiUrl, {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        "x-goog-api-key": env.GEMINI_API_KEY,
+                      },
+                      body: JSON.stringify({
+                        contents: payload.contents,
+                        tools: payload.tools,
+                        systemInstruction: { parts: [{ text: basePrompt }] },
+                        generationConfig: {
+                          temperature: 0.0,
+                          maxOutputTokens: 2048,
+                        },
+                      }),
+                      signal: request.signal,
+                    });
+                    if (!gemRes || !gemRes.ok) {
+                      const errTxt = gemRes ? await gemRes.text() : "No response";
+                      throw new Error(`Gemini call error: ${errTxt}`);
+                    }
+                    return await gemRes.json();
+                  },
+                  env,
+                  maxIteraciones: 3,
+                });
+
+                const msCicloTotal = performance.now() - t0Tools;
+                if (cicloRes && cicloRes.consultas && cicloRes.consultas.length > 0) {
+                  consultasAuditadasStreaming = cicloRes.consultas;
+                  const filasTodas = cicloRes.consultas.flatMap((c) => c.filas || []);
+                  if (filasTodas.length > 0 && filasTodas.every(f => f.coincide_tema === undefined)) {
+                    console.error("[ALERTA] La RPC no devolvió coincide_tema: todas las filas se tratan como sin coincidencia");
+                  }
+                  const filasCoincidentes = filasTodas.filter(esCoincidente);
+                  if (filasCoincidentes.length > 0) {
+                    const fragmentosReclasificados = reclasificarFragmentos(filasCoincidentes, {
+                      consulta: temaPre || textoParaProcesar,
+                      grado: gradoPre,
+                      area: areaPre
+                    }, { umbralMinimo: 0.35 });
+                    const filasFinales = fragmentosReclasificados.length > 0 ? fragmentosReclasificados : filasCoincidentes;
+                    const filasVerificadas = filasFinales.filter(f => f.estado_validacion === "validado");
+                    if (filasVerificadas.length > 0) {
+                      huboFragmentosInyectados = true;
+                    }
+                    fragmentosRecuperadosTexto = filasFinales
+                      .map((f) => {
+                        const docNombre = (f.fuente_documento || f.fuente || f.documento_titulo || "MINERD")
+                          .replace(/\s*\(pág\..*$/i, "")
+                          .replace(/[,.]\s*$/, "")
+                          .trim();
+                        const pag = f.pagina || f.pág || "N/A";
+                        const compRaw = (f.competencias_especificas || f.competencia_especifica || "").trim();
+                        const esCompPlantilla = compRaw.includes("Desarrolla el pensamiento crítico, resolución de problemas");
+                        const comp = (!esCompPlantilla && compRaw) ? compRaw : "";
+
+                        const contRaw = (f.contenidos_texto_original || "").trim();
+                        const esContPlantilla = contRaw.includes("Contenidos conceptuales, procedimentales y actitudinales de");
+                        const cont = (!esContPlantilla && contRaw) ? contRaw : "";
+
+                        const indRaw = f.indicadores_logro || f.indicador_logro || null;
+                        let indTexto = "";
+                        if (indRaw) {
+                          if (Array.isArray(indRaw)) {
+                            const indLimpia = indRaw.map(s => String(s).trim()).filter(Boolean);
+                            if (indLimpia.length > 0) {
+                              if (indLimpia.length <= 8) {
+                                indTexto = indLimpia.join("; ");
+                              } else {
+                                indTexto = indLimpia.slice(0, 8).join("; ") + ` ... y ${indLimpia.length - 8} más`;
+                              }
+                            }
+                          } else if (typeof indRaw === "string" && indRaw.trim()) {
+                            indTexto = indRaw.trim();
+                          }
+                        }
+
+                        const partes = [];
+                        if (f.tema) partes.push(`Tema: ${f.tema.trim()}`);
+                        if (comp) partes.push(`Competencia: ${comp}`);
+                        if (cont) partes.push(`Contenidos: ${cont}`);
+                        if (indTexto) partes.push(`Indicadores: ${indTexto}`);
+
+                        let frag = `[Fuente: ${docNombre} | Pág: ${pag}] ${partes.join(" | ")}`;
+                        if (frag.length > 1500) {
+                          frag = frag.slice(0, 1497) + "...";
+                        }
+                        return frag;
+                      })
+                      .join("\n");
+                  }
+                  registrarCapa(4, "Herramientas de investigación V2", `consultas realizadas: ${cicloRes.consultas.length}`, `filas totales: ${filasTodas.length}, coincidentes: ${filasCoincidentes.length}`, msCicloTotal);
+                  registrarCapa(5, "Ciclo tool-calling antes de streaming", "resolución herramientas antes de SSE", `llamadas: ${cicloRes.consultas.length}`, msCicloTotal);
+                }
+              } catch (errCicloStreaming) {
+                console.warn("[Herramientas V2 Streaming] Falló ciclo de herramientas, procediendo con degradación pedagógica:", errCicloStreaming.message);
+              }
+            }
+
+            if (fragmentosRecuperadosTexto) {
+              promptParaStreaming += `\n=== FRAGMENTOS CURRICULARES OFICIALES RECUPERADOS ===\n<DATO>\n${fragmentosRecuperadosTexto}\n</DATO>\n`;
+            } else {
+              promptParaStreaming += `\n=== AVISO CURRICULAR ===\nNo se encontraron fragmentos curriculares con coincidencia exacta para este tema en la base oficial. Comunica con transparencia pedagógica que no hay coincidencia exacta oficial, no inventes contenido curricular y NO cites páginas ni documentos oficiales para este tema.\n`;
+            }
+
+            // Segundo evento de progreso: curriculo
             await writer.write(encoder.encode(`data: ${JSON.stringify({ estado: "curriculo" })}\n\n`));
+
+            let geminiRes = null;
+            let ultimoError = null;
+            let ultimoStatus = 500;
+            const geminiBase = env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com";
+
+            for (const model of models) {
+              const geminiStreamUrl = `${geminiBase}/v1beta/models/${model}:streamGenerateContent?alt=sse`;
+              try {
+                const t0StreamFetch = performance.now();
+                const res = await fetchGeminiWithRetry(geminiStreamUrl, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": env.GEMINI_API_KEY,
+                  },
+                  timeoutMs: 45000,
+                  body: JSON.stringify({
+                    contents,
+                    systemInstruction: { parts: [{ text: promptParaStreaming }] },
+                    generationConfig: {
+                      temperature: 0.1,
+                      responseMimeType: "application/json",
+                      maxOutputTokens: construirMaxSalida(env),
+                      ...construirThinkingConfig(env)
+                    },
+                  }),
+                  signal: request.signal,
+                });
+
+                if (res && res.ok) {
+                  geminiRes = res;
+                  registrarCapa(6, "Gemini", `streamGenerateContent con ${model}`, "generación completada", performance.now() - t0StreamFetch);
+                  break;
+                } else if (res) {
+                  ultimoStatus = res.status;
+                  ultimoError = `HTTP_${res.status}`;
+                  console.warn(`[AI Warn] Modelo ${model} falló con status ${res.status}`);
+                }
+              } catch (e) {
+                ultimoError = "FETCH_EXCEPTION";
+                console.warn(`[AI Warn] Excepción en modelo ${model}`);
+              }
+            }
+
+            if (!geminiRes) {
+              const incidentId = "INC-" + generarCodigoSeguro(6);
+              console.error(`[AI Error ${incidentId}] Modelos agotados. Código: ${ultimoStatus} - ${ultimoError}`);
+              const codigo = (ultimoStatus === 429)
+                ? "PROVEEDOR_IA_SATURADO"
+                : (ultimoStatus === 503 || ultimoStatus === 502 || ultimoStatus === 504)
+                ? "IA_NO_DISPONIBLE"
+                : "ERROR_INTERNO";
+              const mensaje = (ultimoStatus === 429)
+                ? "Se agotó temporalmente la cuota con el proveedor de IA."
+                : (ultimoStatus === 503 || ultimoStatus === 502 || ultimoStatus === 504)
+                ? "El servidor de inteligencia artificial está ocupado en este momento."
+                : "Ocurrió un problema de configuración o conexión con el proveedor de IA.";
+              const sugerencia = (ultimoStatus === 429 || ultimoStatus === 503 || ultimoStatus === 502 || ultimoStatus === 504)
+                ? "Espera un minuto y pulsa 'Reintentar'."
+                : "Contacta a soporte indicando tu código de incidente.";
+
+              const payloadError = {
+                ok: false,
+                isError: true,
+                error: ultimoError || codigo,
+                codigo,
+                codigoError: codigo,
+                status: ultimoStatus,
+                mensaje,
+                mensaje_chat: `${mensaje} ${sugerencia}`,
+                sugerencia,
+                reintentable: true,
+                incidentId,
+                plan_completado: false
+              };
+              await guardarUltimoFallo(deviceId, payloadError);
+              await writer.write(encoder.encode(`data: ${JSON.stringify(payloadError)}\n\n`));
+              await writer.write(encoder.encode("data: [DONE]\n\n"));
+              return;
+            }
+
+            // Tercer evento de progreso: razonando (justo antes de leer el primer chunk de Gemini)
+            await writer.write(encoder.encode(`data: ${JSON.stringify({ estado: "razonando" })}\n\n`));
+
+            const reader = geminiRes.body.getReader();
+            let fullText = "";
+            let corteOcurrio = null;
+            const bloquesEmitidos = new Set();
+            const streamingProgresivo = (env && env.STREAMING_PROGRESIVO !== undefined)
+              ? (env.STREAMING_PROGRESIVO === "true" || env.STREAMING_PROGRESIVO === true)
+              : true;
+
             while (true) {
               const { done, value } = await reader.read();
               if (done) break;
@@ -3522,103 +3561,55 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                       if (cand?.finishReason && cand.finishReason !== "STOP") {
                         corteOcurrio = cand.finishReason;
                       }
-                      const part = cand?.content?.parts?.[0]?.text;
+                      const part = textoDeCandidato(cand);
                       if (part) {
                         fullText += part;
+
                         if (streamingProgresivo) {
-                          const nuevosBloques = extraerBloquesCompletados(fullText, bloquesEmitidos);
-                          for (const b of nuevosBloques) {
-                            await writer.write(encoder.encode(`data: ${JSON.stringify(b)}\n\n`));
+                          const bloquesEncontrados = extraerBloquesCompletados(fullText);
+                          for (const b of bloquesEncontrados) {
+                            if (!bloquesEmitidos.has(b.bloque)) {
+                              bloquesEmitidos.add(b.bloque);
+                              await writer.write(
+                                encoder.encode(
+                                  `data: ${JSON.stringify({
+                                    tipo: "bloque",
+                                    bloque: b.bloque,
+                                    contenido: b.contenido,
+                                    estado: "generando",
+                                  })}\n\n`
+                                )
+                              );
+                            }
                           }
                         }
                       }
                     } catch (e) {
-                      console.warn("[SSE Parser] Error procesando trozo SSE:", e?.message || e);
+                      // Chunk parcial
                     }
                   }
                 }
               }
             }
 
-            // 1. Procesar con parseador seguro
+            // Procesar fullText final
             let parsedFinal = extraerJson(fullText);
+            let esValido = Boolean(parsedFinal && validarCamposPlanificacion(parsedFinal));
 
-            // 2. Si no es válido o hubo corte, intentar reparación sintáctica inteligente de corchetes/llaves
-            if (!parsedFinal || !validarCamposPlanificacion(parsedFinal)) {
+            if (!esValido && fullText) {
               const reparado = repararJsonTruncado(fullText);
-              if (reparado && typeof reparado === "object") {
-                if (planEsRecuperable(reparado)) {
-                  if (!reparado.mensaje_chat) {
-                    reparado.mensaje_chat = "He organizado la planificación docente para tu clase.";
-                  }
-                  reparado.plan_completado = true;
-                  if (!reparado.confianza_curricular) {
-                    reparado.confianza_curricular = {
-                      nivel_certeza: "alta",
-                      bloques_aproximados: [],
-                      nota_revision: "Estructura recuperada exitosamente mediante reparación sintáctica segura."
-                    };
-                  }
-                  parsedFinal = reparado;
-                } else {
-                  parsedFinal = reparado;
-                }
+              if (reparado && validarCamposPlanificacion(reparado)) {
+                parsedFinal = reparado;
+                esValido = true;
+                corteOcurrio = corteOcurrio || "JSON_REPARADO";
               }
             }
 
-            let esValido = Boolean(parsedFinal && validarCamposPlanificacion(parsedFinal) && !corteOcurrio);
+            if (!esValido && corteOcurrio && corteOcurrio !== "STOP") {
+              const modeloRecuperacion = models[1] || models[0] || "gemini-3.5-flash";
+              const retryUrl = `${geminiBase}/v1beta/models/${modeloRecuperacion}:generateContent`;
 
-            // 3. Si se recuperaron bloques esenciales (datos_generales + momentos/actividades), armar el plan con lo que hay sin reintentar llamada completa
-            if (!esValido && parsedFinal && planEsRecuperable(parsedFinal)) {
-              parsedFinal.plan_completado = true;
-              esValido = true;
-            } else if (!esValido && env.GEMINI_API_KEY && parsedFinal && parsedFinal.datos_planificacion) {
-              // 4. Reparación enfocada: solo si faltan bloques críticos, pedir ÚNICAMENTE los bloques faltantes
-              const claves = Object.keys(parsedFinal.datos_planificacion).map((k) => k.toLowerCase());
-              const faltaSecuencia = !claves.some((k) => k.includes("momento") || k.includes("actividad") || k.includes("secuencia"));
-              if (faltaSecuencia) {
-                try {
-                  const promptEnfocado = `Genera ÚNICAMENTE las actividades didácticas (Inicio, Desarrollo, Cierre) para una clase de grado ${body.grado || "3ro"} área ${body.area || "Ciencias Sociales"} tema ${textoConsulta || "clase"}. Devuelve SOLO un objeto JSON con la clave "momentos": {"inicio": "...", "desarrollo": "...", "cierre": "..."}.`;
-                  const retryModel = models[0] || "gemini-3.1-flash-lite";
-                  const retryUrl = `https://generativelanguage.googleapis.com/v1beta/models/${retryModel}:generateContent`;
-                  const resSec = await fetchGeminiWithRetry(retryUrl, {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      "x-goog-api-key": env.GEMINI_API_KEY,
-                    },
-                    body: JSON.stringify({
-                      contents: [{ role: "user", parts: [{ text: promptEnfocado }] }],
-                      generationConfig: {
-                        temperature: 0.0,
-                        responseMimeType: "application/json",
-                        maxOutputTokens: 1024,
-                      },
-                    }),
-                    signal: request.signal,
-                  });
-                  if (resSec && resSec.ok) {
-                    const dSec = await resSec.json();
-                    const tSec = dSec.candidates?.[0]?.content?.parts?.[0]?.text;
-                    const pSec = extraerJson(tSec);
-                    if (pSec && (pSec.momentos || pSec.actividades)) {
-                      parsedFinal.datos_planificacion["6. Actividades: Inicio - Desarrollo - Cierre"] = pSec.momentos || pSec.actividades;
-                      parsedFinal.plan_completado = true;
-                      esValido = true;
-                    }
-                  }
-                } catch (eFocado) {
-                  console.error("[Worker Error] Reparación enfocada de actividades falló:", eFocado.message);
-                }
-              }
-            }
-
-            // 5. Reintento único completo sólo si los pasos anteriores de recuperación fallaron
-            if (!esValido && env.GEMINI_API_KEY) {
               try {
-                const promptReintento = `${dynamicPrompt}\n\nINSTRUCCIÓN CRÍTICA DE REINTENTO: En el intento previo la respuesta quedó incompleta o con JSON inválido. Por favor, genera la planificación completa en formato JSON estricto pero de manera más breve y sintetizada, asegurando que todos los campos requeridos estén presentes y el JSON cierre perfectamente con '}'.`;
-                const retryModel = models[0] || "gemini-3.1-flash-lite";
-                const retryUrl = `https://generativelanguage.googleapis.com/v1beta/models/${retryModel}:generateContent`;
                 const retryRes = await fetchGeminiWithRetry(retryUrl, {
                   method: "POST",
                   headers: {
@@ -3628,7 +3619,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                   timeoutMs: 45000,
                   body: JSON.stringify({
                     contents,
-                    systemInstruction: { parts: [{ text: promptReintento }] },
+                    systemInstruction: { parts: [{ text: promptParaStreaming }] },
                     generationConfig: {
                       temperature: 0.0,
                       responseMimeType: "application/json",
@@ -3641,7 +3632,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                   const retryData = await retryRes.json();
                   const retryCand = retryData.candidates?.[0];
                   if (!retryCand?.finishReason || retryCand.finishReason === "STOP") {
-                    const retryRaw = retryCand?.content?.parts?.[0]?.text || "";
+                    const retryRaw = textoDeCandidato(retryCand);
                     const retryParsed = extraerJson(retryRaw);
                     if (retryParsed && validarCamposPlanificacion(retryParsed)) {
                       parsedFinal = retryParsed;
@@ -3751,6 +3742,17 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                 const t0Citas = performance.now();
                 parsedFinal.mensaje_chat = verificarYSanearCitas(parsedFinal.mensaje_chat, fragsParaCitas);
                 registrarCapa(7, "Verificador de citas", "validación pág. N contra fragmentos", "citas verificadas", performance.now() - t0Citas);
+              }
+            }
+
+            // Inyectar aviso de normalización si hubo corrección sin cambio de significado
+            if (resultadoCorreccion && resultadoCorreccion.huboCambios && !resultadoCorreccion.cambioSignificado) {
+              const normalizaciones = (resultadoCorreccion.cambios || []).filter(c => c.tipo === "grado_minerd" || c.tipo === "tilde_vocabulario" || c.tipo === "homofono");
+              if (normalizaciones.length > 0) {
+                const avisos = normalizaciones.map(c => `Interpreté «${c.antes}» como «${c.despues}».`).join("\n");
+                if (parsedFinal.mensaje_chat && !parsedFinal.mensaje_chat.includes(avisos)) {
+                  parsedFinal.mensaje_chat = `${avisos}\n\n${parsedFinal.mensaje_chat}`;
+                }
               }
             }
 
@@ -3970,7 +3972,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
 
     if (geminiData) {
       const cand = geminiData.candidates?.[0];
-      const rawText = cand?.content?.parts?.[0]?.text || "";
+      const rawText = textoDeCandidato(cand);
       const finishReason = cand?.finishReason;
       let parsed = (finishReason && finishReason !== "STOP") ? null : extraerJson(rawText);
       let esValido = Boolean(parsed && validarCamposPlanificacion(parsed));
@@ -4002,7 +4004,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
             const retryData = await retryRes.json();
             const retryCand = retryData.candidates?.[0];
             if (!retryCand?.finishReason || retryCand.finishReason === "STOP") {
-              const retryRaw = retryCand?.content?.parts?.[0]?.text || "";
+              const retryRaw = textoDeCandidato(retryCand);
               const retryParsed = extraerJson(retryRaw);
               if (retryParsed && validarCamposPlanificacion(retryParsed)) {
                 parsed = retryParsed;
@@ -4245,7 +4247,7 @@ Genera un JSON estricto con:
     }
 
     if (curricularData) {
-      const text = curricularData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      const text = textoDeCandidato(curricularData.candidates?.[0]);
       const parsed = extraerJsonValido(text);
       if (parsed) {
         if (cacheConsultasCurriculares.size > 200) {
@@ -4723,7 +4725,7 @@ Genera un JSON estricto con:
           }, 30000);
           if (gRes.ok) {
             const gData = await gRes.json();
-            const texto = gData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
+            const texto = textoDeCandidato(gData.candidates?.[0]).trim();
             if (texto) {
               return new Response(JSON.stringify({
                 ok: true,

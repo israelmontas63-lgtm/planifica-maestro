@@ -94,7 +94,7 @@ export async function registrarMetricasRagas(env, { sesionId, grado, area, tema,
   const gradoNum = typeof grado === 'number' ? grado : (parseInt(String(grado || '').match(/\d+/)?.[0], 10) || null);
 
   try {
-    await fetch(url, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: {
         'apikey': env.SUPABASE_SERVICE_ROLE_KEY,
@@ -119,6 +119,9 @@ export async function registrarMetricasRagas(env, { sesionId, grado, area, tema,
         }
       })
     });
+    if (!res.ok) {
+      console.warn(`[RAGAS] Error al registrar métricas en auditoria_calidad_ragas: status ${res.status}`);
+    }
   } catch (err) {
     console.warn('[RAGAS] Error al registrar métricas:', err.message);
   }

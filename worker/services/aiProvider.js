@@ -62,6 +62,25 @@ export function getGeminiModels(env, modeloPreferido = null) {
  * Para respuestas JSON estructuradas, un nivel bajo reduce mucho la latencia
  * hasta el primer token sin pérdida apreciable de calidad.
  */
+
+export function construirThinkingConfig(env) {
+  const nivel = env && env.GEMINI_THINKING_LEVEL ? String(env.GEMINI_THINKING_LEVEL).trim() : "";
+  if (nivel) return { thinkingConfig: { thinkingLevel: nivel } };
+  const crudo = env && env.GEMINI_THINKING_BUDGET !== undefined && env.GEMINI_THINKING_BUDGET !== "" ? Number(env.GEMINI_THINKING_BUDGET) : NaN;
+  if (Number.isInteger(crudo) && crudo >= -1) return { thinkingConfig: { thinkingBudget: crudo } };
+  return {}; // por defecto: el modelo razona con su presupuesto predeterminado
+}
+
+export function construirMaxSalida(env, porDefecto = 16384) {
+  const n = env && env.GEMINI_MAX_OUTPUT_TOKENS !== undefined ? Number(env.GEMINI_MAX_OUTPUT_TOKENS) : NaN;
+  return Number.isInteger(n) && n >= 1024 && n <= 65536 ? n : porDefecto;
+}
+
+export function textoDeCandidato(cand) {
+  const partes = cand && cand.content && Array.isArray(cand.content.parts) ? cand.content.parts : [];
+  return partes.filter((p) => p && typeof p.text === "string" && p.thought !== true).map((p) => p.text).join("");
+}
+
 export const GEMINI_THINKING_LEVEL = "low";
 
 /**
@@ -153,7 +172,7 @@ export async function fetchGeminiWithRetry(url, options = {}, maxAttempts = 2) {
 }
 
 export class GeminiProvider extends AiProvider {
-  constructor(apiKey, models = [DEFAULT_GEMINI_MODEL, FALLBACK_GEMINI_MODEL]) {
+  constructor(apiKey, models = [DEFAULT_GEMINI_MODEL, FALLBACK_GEMINI_MODEL], env = {}) {
     super();
     if (!apiKey) {
       throw new Error("GEMINI_API_KEY no está configurada.");
@@ -161,6 +180,7 @@ export class GeminiProvider extends AiProvider {
     this.apiKey = apiKey;
     this.models = Array.isArray(models) ? models : [models];
     this.model = this.models[0] || DEFAULT_GEMINI_MODEL;
+    this.env = env;
   }
 
   async generateChat({ messages, tools, systemInstruction, stream = false, responseMimeType = "text/plain" }) {
@@ -284,7 +304,7 @@ INSTRUCCIÓN DE SEGURIDAD ESTRICTA:
 
         if (res && res.ok) {
           const data = await res.json();
-          const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          const candidateText = textoDeCandidato(data.candidates?.[0]);
           if (candidateText) {
             try {
               return JSON.parse(candidateText);
@@ -316,7 +336,7 @@ INSTRUCCIÓN DE SEGURIDAD ESTRICTA:
 export function getAiProvider(env) {
   const provider = env.AI_PROVIDER || "gemini";
   if (provider === "gemini") {
-    return new GeminiProvider(env.GEMINI_API_KEY, getGeminiModels(env));
+    return new GeminiProvider(env.GEMINI_API_KEY, getGeminiModels(env), env);
   }
   throw new Error(`Proveedor de IA '${provider}' no soportado.`);
 }

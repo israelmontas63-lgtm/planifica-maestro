@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tests/test_tres_fallos_y_citas.mjs
  * 
  * Pruebas automatizadas de los 3 fallos reales y verificación de citas V2:
@@ -72,7 +72,25 @@ test("FALLO 2: Gemini 429 -> PROVEEDOR_IA_SATURADO separado de CUOTA_DIARIA_AGOT
     };
 
     const res = await worker.fetch(req, envTest, { waitUntil: () => {} });
-    const json = await res.json();
+    assert.strictEqual(res.status, 200);
+    assert.ok(res.headers.get("content-type")?.includes("text/event-stream"), "Debe responder con text/event-stream");
+
+    const streamText = await res.text();
+    const lineas = streamText.split("\n");
+    let json = null;
+    for (const linea of lineas) {
+      if (linea.startsWith("data:") && !linea.includes("[DONE]")) {
+        try {
+          const parsed = JSON.parse(linea.replace(/^data:\s*/, ""));
+          if (parsed.ok === false || parsed.isError || parsed.codigo || parsed.error) {
+            json = parsed;
+          }
+        } catch (_err) {
+          // Ignorar explícitamente líneas SSE que no son JSON (ej. eventos de texto plano o fragmentos parciales)
+        }
+      }
+    }
+    assert.ok(json, "Debe contener un evento SSE de error");
 
     // Verificaciones de lo que ve el usuario
     assert.strictEqual(json.ok, false, "ok debe ser false");
