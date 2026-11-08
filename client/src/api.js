@@ -37,6 +37,25 @@ export function obtenerOwnerKey() {
   }
 }
 
+export function obtenerSesionId(forzarNueva = false) {
+  try {
+    let sId = !forzarNueva ? sessionStorage.getItem("pm_sesion_id") : null;
+    if (!sId) {
+      sId = (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function")
+        ? crypto.randomUUID()
+        : "sesion_" + Date.now() + "_" + Math.random().toString(36).slice(2, 11);
+      sessionStorage.setItem("pm_sesion_id", sId);
+    }
+    return sId;
+  } catch (e) {
+    return (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : "sesion_" + Date.now();
+  }
+}
+
+export function reiniciarSesionId() {
+  return obtenerSesionId(true);
+}
+
 function getAuthHeaders(customHeaders = {}) {
   const headers = { ...customHeaders };
   try {
@@ -316,6 +335,10 @@ export async function generarPlanificacion({
     }
   }
 
+  const sesionId = (Array.isArray(messages) && messages.length <= 1)
+    ? reiniciarSesionId()
+    : obtenerSesionId();
+
   const payload = {
     messages,
     nivel,
@@ -326,6 +349,7 @@ export async function generarPlanificacion({
     confirmado: Boolean(confirmado),
     permitirBusquedaWeb: true,
     stream: Boolean(onChunk),
+    sesionId,
   };
 
   const headers = {

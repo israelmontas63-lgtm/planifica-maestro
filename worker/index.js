@@ -1345,6 +1345,34 @@ async function handleApiRequest(request, env, ctx) {
     });
   }
 
+function sanearPlanParaDocente(planJson, contextoDocente = {}) {
+  if (!planJson || typeof planJson !== "object") return planJson;
+  const copia = JSON.parse(JSON.stringify(planJson));
+  const claves = Object.keys(copia);
+  for (const k of claves) {
+    const kLower = k.toLowerCase();
+    if (kLower.includes("datos generales") || kLower === "encabezado" || kLower === "identificacion") {
+      if (copia[k] && typeof copia[k] === "object") {
+        if ("docente" in copia[k]) copia[k].docente = contextoDocente.docente || "";
+        if ("profesor" in copia[k]) copia[k].profesor = contextoDocente.docente || "";
+        if ("nombre_docente" in copia[k]) copia[k].nombre_docente = contextoDocente.docente || "";
+        if ("centro_educativo" in copia[k]) copia[k].centro_educativo = contextoDocente.centroEducativo || "";
+        if ("escuela" in copia[k]) copia[k].escuela = contextoDocente.centroEducativo || "";
+        if ("seccion" in copia[k]) copia[k].seccion = contextoDocente.seccion || "";
+        if ("fecha" in copia[k] && contextoDocente.fecha) copia[k].fecha = contextoDocente.fecha;
+      }
+    }
+  }
+  if ("docente" in copia) copia.docente = contextoDocente.docente || "";
+  if ("centro_educativo" in copia) copia.centro_educativo = contextoDocente.centroEducativo || "";
+  if ("fecha" in copia && contextoDocente.fecha) copia.fecha = contextoDocente.fecha;
+  return copia;
+}
+
+function limpiarPlanParaCache(planJson) {
+  return sanearPlanParaDocente(planJson, { docente: "", centroEducativo: "", seccion: "", fecha: "" });
+}
+
   // 7. POST /api/plan/generate, /api/plan y /api/planificar (Generación con Gemini y soporte SSE Streaming)
   if ((path === "/api/plan/generate" || path === "/api/plan" || path === "/api/planificar") && method === "POST") {
     const auth = requerirAcceso(request, env, corsHeaders);
@@ -2846,7 +2874,7 @@ async function handleApiRequest(request, env, ctx) {
     // Poda curricular relevante de ciclos y áreas
     let ciclosTexto = esquema.ciclos.join(", ");
     if (body.grado) {
-      const gNorm = body.grado.toLowerCase();
+      const gNorm = typeof body.grado === "string" ? body.grado.toLowerCase() : String(body.grado || "").toLowerCase();
       const ciclosFiltrados = esquema.ciclos.filter(c => c.toLowerCase().includes(gNorm.slice(0, 3)));
       if (ciclosFiltrados.length > 0) ciclosTexto = ciclosFiltrados.join(", ");
     }
@@ -3227,18 +3255,73 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
 
     // 1. Verificación previa en caché semántica (<60ms)
     const claveCacheSem = generarClaveCache(gradoPre, areaPre, temaPre || textoParaProcesar);
-    if (claveCacheSem && !isStream) {
+    if (claveCacheSem) {
       const cacheHit = await consultarCache(env, claveCacheSem);
       if (cacheHit && cacheHit.plan_json) {
-        return new Response(JSON.stringify({
-          mensaje_chat: "¡Planificación recuperada y validada del currículo oficial!",
+        // Privacidad (2.3): Quitar datos personales de caché y rellenar con docente y fecha actuales
+        const planSaneado = sanearPlanParaDocente(cacheHit.plan_json, {
+          docente: (resolvedDocenteId && resolvedDocenteId !== "docente_default") ? resolvedDocenteId : "",
+          fecha: fechaPlanificacion
+        });
+
+        const respuestaChatCache = "¡Planificación recuperada y validada del currículo oficial!";
+        const confianzaCurricularCache = cacheHit.fuentes_utilizadas || {
+          nivel_certeza: "alta",
+          origen: "cache_semantica_validada"
+        };
+
+        const finalPayloadCache = {
+          mensaje_chat: respuestaChatCache,
           plan_completado: true,
-          datos_planificacion: cacheHit.plan_json,
-          confianza_curricular: {
-            nivel_certeza: "alta",
-            origen: "cache_semantica_validada"
+          datos_planificacion: planSaneado,
+          confianza_curricular: confianzaCurricularCache,
+          confianzaCurricular: confianzaCurricularCache,
+          planId: "plan_" + Date.now(),
+          nivel,
+          periodo,
+          nivelLabel: esquema.label,
+          cuota: cheqCuota,
+          ...(habilitarTraza ? { traza_capas: [...trazaCapas] } : {})
+        };
+
+        if (sesionId) {
+          const tareaMemoria = guardarTurnoConversacion(env, sesionId, textoConsulta, respuestaChatCache);
+          if (ctx && ctx.waitUntil) {
+            ctx.waitUntil(tareaMemoria);
+          } else {
+            tareaMemoria.catch?.(console.error);
           }
-        }), {
+        }
+
+        if (isStream) {
+          const { readable, writable } = new TransformStream();
+          const writer = writable.getWriter();
+          const encoder = new TextEncoder();
+
+          (async () => {
+            try {
+              await writer.write(encoder.encode(`data: ${JSON.stringify({ estado: "iniciando" })}\n\n`));
+              await writer.write(encoder.encode(`data: ${JSON.stringify({ estado: "completado" })}\n\n`));
+              await writer.write(encoder.encode(`data: ${JSON.stringify({ final: finalPayloadCache })}\n\n`));
+              await writer.write(encoder.encode("data: [DONE]\n\n"));
+            } finally {
+              writer.close();
+            }
+          })();
+
+          return new Response(readable, {
+            status: 200,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "text/event-stream; charset=utf-8",
+              "Cache-Control": "no-cache",
+              Connection: "keep-alive",
+              "X-Cache-Status": "HIT"
+            }
+          });
+        }
+
+        return new Response(JSON.stringify(finalPayloadCache), {
           status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json", "X-Cache-Status": "HIT" }
         });
@@ -3765,7 +3848,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
               nivel,
               periodo,
               nivelLabel: esquema.label,
-              cuota: estadoActualizado,
+              cuota: cheqCuota,
               ...(habilitarTraza ? { traza_capas: [...trazaCapas] } : {})
             };
 
@@ -3805,7 +3888,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                   grado: gradoPre,
                   area: areaPre,
                   tema: temaPre || textoParaProcesar,
-                  planJson: objetoPlan.datos_planificacion,
+                  planJson: limpiarPlanParaCache(objetoPlan.datos_planificacion),
                   fuentes: objetoPlan.confianza_curricular || null
                 });
                 if (ctx && ctx.waitUntil) {
@@ -4099,7 +4182,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
             grado: gradoPre,
             area: areaPre,
             tema: temaPre || textoParaProcesar,
-            planJson: objetoPlan.datos_planificacion,
+            planJson: limpiarPlanParaCache(objetoPlan.datos_planificacion),
             fuentes: objetoPlan.confianza_curricular || null
           });
           if (ctx && ctx.waitUntil) {

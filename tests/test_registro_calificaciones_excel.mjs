@@ -137,7 +137,7 @@ test("Registro Calificaciones MINERD - 6. Generación de XML SpreadsheetML de Mi
 
 test("Registro Calificaciones MINERD - 7. Verificación de Contratos UI y Exportaciones", () => {
   const cwd = process.cwd();
-  const root = cwd.endsWith("planifica-maestro") ? cwd : path.join(cwd, "planifica-maestro");
+  const root = fs.existsSync(path.join(cwd, "client/src/api.js")) ? cwd : (cwd.endsWith("planifica-maestro") ? cwd : path.join(cwd, "planifica-maestro"));
 
   // api.js exporta exportarRegistroExcel
   const apiCode = fs.readFileSync(path.join(root, "client/src/api.js"), "utf-8");
