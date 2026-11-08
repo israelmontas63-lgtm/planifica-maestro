@@ -73,7 +73,43 @@ export async function ejecutarInvestigacionWeb(env, { consulta, nivel, grado, ar
     paginas_consultadas: paginasExaminadas.length,
   };
 
+  if (fuentesEncontradas.length > 0) {
+    await guardarEnCacheInvestigacion(env, hashConsulta, resultadoInvestigacion, fuentesEncontradas, resultadoInvestigacion.nivel_confianza);
+  }
+
   return resultadoInvestigacion;
+}
+
+/**
+ * Guarda un hallazgo del investigador en la caché de investigación sanitizada
+ */
+export async function guardarEnCacheInvestigacion(env, hashConsulta, resultado, fuentes = [], nivelConfianza = "media", ttlHoras = 24) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return;
+  const expiraAt = new Date(Date.now() + ttlHoras * 3600 * 1000).toISOString();
+  const endpoint = `${env.SUPABASE_URL.replace(/\/+$/, "")}/rest/v1/cache_investigacion?on_conflict=hash_consulta`;
+  try {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "apikey": env.SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates,return=minimal",
+      },
+      body: JSON.stringify({
+        hash_consulta: hashConsulta,
+        resultado: resultado,
+        fuentes: fuentes,
+        nivel_confianza: nivelConfianza,
+        expira_at: expiraAt,
+      }),
+    });
+    if (!res.ok) {
+      console.warn("[CacheInvestigacion] HTTP", res.status);
+    }
+  } catch (e) {
+    console.warn("[CacheInvestigacion] Error guardando:", e?.message || e);
+  }
 }
 
 /**
@@ -152,10 +188,19 @@ export async function ejecutarBusquedaWeb(consulta, env = {}) {
       };
     }
   } catch (err) {
-    console.warn("[ejecutarBusquedaWeb] Advertencia:", err.message);
+    console.warn("[ejecutarBusquedaWeb] Error:", err.message);
+    return {
+      consulta,
+      error: true,
+      sin_resultados: true,
+      resumen: "La búsqueda en fuentes oficiales falló por un error técnico; no pude verificar. No inventes datos.",
+      fuentes: []
+    };
   }
   return {
     consulta,
-    resumen: `Búsqueda contextual externa sobre "${consulta}" completada bajo marco normativo del MINERD.`
+    sin_resultados: true,
+    resumen: `No se encontraron fuentes oficiales en los dominios autorizados del MINERD para "${consulta}".`,
+    fuentes: []
   };
 }

@@ -461,3 +461,16 @@
 - **Frase Textual del Dueño:** "ORDEN 18-AUTOGESTION: CONFIGURACIÓN DE GESTOR DDL SUPABASE Y CARGA CURRICULAR"
 - **Alcance Autorizado:** Creación del ejecutor DDL scripts/ejecutar_sql_supabase.mjs, scripts/cargar_paginas_supabase.mjs, aplicación del parche textos_honestos.patch, dinamización de capacidades con env, ingesta de 500 páginas en Supabase, suite de tests y sellado de guardia criptográfica.
 - **Estado:** APLICADA
+
+### Autorización 063
+- **Fecha:** 08/11/2026 (America/Santo_Domingo)
+- **Componentes y Hashes:**
+  - `shared/curriculoService.mjs`: `23ee6e7217bf0d90e47b126d8be5ad00994105072e9eb2dd5203bd614d56efcb`
+  - `shared/herramientas.mjs`: `c4f8e18a5156159ce8df8bc1d0985bcaf534fcc9757fd47908987c45a1677b9c`
+  - `worker/index.js`: `732a78440792fd382bff7f10f974ded08886ebc12c16116d96afbde983dd778c`
+  - `worker/services/investigadorService.js`: `5f9c96a6354ec91f9866484156156b94c34a6f1ed65d3226ba2410a3abffa166`
+  - `wrangler.toml`: `d716def284e2293cf0890fe221a7a551e67fba4f56039317fea33c918626a722`
+- **Motivo:** Activación del cerebro: búsqueda semántica híbrida con embeddings (binding Workers AI `[ai]` en producción y staging), herramienta de búsqueda en currículo oficial, investigador con caché y cola de revisión (migración 20261107020000), scripts de indexación/medición y nuevas pruebas.
+- **Frase Textual del Dueño:** "todo lo pendiente y esplegar el punto 1,2 y el punto 3" / "autorizaciones .md para todo seco con esta palabras"
+- **Alcance Autorizado:** Sellado de guardia criptográfica, commit de todo lo pendiente (planifica-maestro y worktrees), push de todas las ramas a origin y despliegue a producción en Cloudflare Workers.
+- **Estado:** APLICADA

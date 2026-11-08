@@ -1,4 +1,6 @@
 import { LEVELS } from "./levels.js";
+import { indexarEmbeddingsLote, buscarCurriculoHibrido } from "./services/busquedaSemantica.js";
+import { UMBRAL_HIBRIDO } from "../shared/herramientas.mjs";
 import { obtenerContextoConBase } from "./contextoConBase.js";
 import { getAiProvider, getGeminiModels, fetchGeminiWithRetry, fetchGeminiConThinking, construirThinkingConfig, construirMaxSalida, textoDeCandidato } from "./services/aiProvider.js";
 import { fetchConLimite } from "./services/timeoutIntento.js";
@@ -1016,6 +1018,48 @@ async function handleApiRequest(request, env, ctx) {
 
   if (method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  if (path === "/api/owner/indexar-embeddings" && method === "POST") {
+    const ownerKey = request.headers.get("x-owner-key");
+    const esDueno = Boolean(env.OWNER_MASTER_KEY && ownerKey && timingSafeEqualStr(ownerKey.trim(), env.OWNER_MASTER_KEY.trim()));
+    if (!esDueno) return new Response(JSON.stringify({ error: "No autorizado" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    try {
+      const r = await indexarEmbeddingsLote(env, { limite: 40 });
+      return new Response(JSON.stringify(r), { status: r.ok ? 200 : 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    } catch (e) {
+      console.error("[indexar-embeddings]", e && e.message);
+      return new Response(JSON.stringify({ ok: false, motivo: "ERROR_INTERNO", detalle: String((e && e.message) || e).slice(0, 200) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+  }
+
+  if (path === "/api/owner/probar-hibrido" && method === "GET") {
+    const ownerKey = request.headers.get("x-owner-key");
+    const esDueno = Boolean(env.OWNER_MASTER_KEY && ownerKey && timingSafeEqualStr(ownerKey.trim(), env.OWNER_MASTER_KEY.trim()));
+    if (!esDueno) return new Response(JSON.stringify({ error: "No autorizado" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    try {
+      const q = url.searchParams.get("q") || "";
+      const gradoNum = gradoANumero(url.searchParams.get("grado") || "");
+      let area = null;
+      try { area = normalizarArea(url.searchParams.get("area") || ""); } catch (e) { console.warn("[probar-hibrido] área inválida:", e && e.message); }
+      const hits = await buscarCurriculoHibrido(env, { consulta: q, grado: gradoNum, area, limite: 5 });
+      const respuesta = {
+        q,
+        grado: gradoNum,
+        area,
+        umbral: UMBRAL_HIBRIDO,
+        hits: hits === null ? null : hits.map(h => ({
+          secuencia_id: h.secuencia_id,
+          score: h.score,
+          pasa: Number(h.score) >= UMBRAL_HIBRIDO,
+          inicio: String(h.contenido || "").slice(0, 80)
+        }))
+      };
+      return new Response(JSON.stringify(respuesta), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    } catch (e) {
+      console.error("[probar-hibrido]", e && e.message);
+      return new Response(JSON.stringify({ ok: false, motivo: "ERROR_INTERNO", detalle: String((e && e.message) || e).slice(0, 200) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
   }
 
   // 1. GET /api/health

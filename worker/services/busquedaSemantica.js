@@ -60,7 +60,20 @@ export async function indexarEmbeddingsLote(env, { limite = 40 } = {}) {
   if (!secRes.ok) return { ok: false, motivo: `HTTP_${secRes.status}` };
   const pendientes = (await secRes.json()).filter((s) => !ya.has(String(s.id))).slice(0, lim);
   if (!pendientes.length) return { ok: true, indexadas: 0, pendientes: 0 };
-  const textoDe = (s) => [s.area, s.grado_num != null ? `${s.grado_num}.° grado` : "", s.tema, s.titulo, s.competencias, s.indicadores, s.contenido].filter((x) => typeof x === "string" && x.trim()).join(" | ").slice(0, 1800);
+  const textoDe = (s) => {
+    const ind = Array.isArray(s.indicadores_logro)
+      ? s.indicadores_logro.join(" ")
+      : (typeof s.indicadores_logro === "string" ? s.indicadores_logro : "");
+    return [
+      s.area,
+      s.grado_num != null ? `${s.grado_num}.° grado` : "",
+      s.tema,
+      s.bloque_guia,
+      s.competencias_especificas,
+      s.contenidos_texto_original,
+      ind
+    ].filter((x) => typeof x === "string" && x.trim()).join(" | ").slice(0, 1800);
+  };
   const textos = pendientes.map(textoDe);
   const vecs = await generarEmbeddings(env, textos);
   if (!vecs) return { ok: false, motivo: "EMBEDDINGS_NO_DISPONIBLES" };

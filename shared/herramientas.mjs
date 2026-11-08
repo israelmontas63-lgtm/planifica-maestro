@@ -6,6 +6,10 @@
 
 import { consultarCurriculoMINERD, buscarCurriculoOficial, ErrorCurricular } from './curriculoService.mjs';
 import { ejecutarBusquedaWeb } from '../worker/services/investigadorService.js';
+import { buscarCurriculoHibrido } from '../worker/services/busquedaSemantica.js';
+import { gradoANumero, normalizarArea } from './catalogoCurricular.mjs';
+
+export const UMBRAL_HIBRIDO = 0.017; // RRF k=60: exige coincidencia en texto y en vector
 
 export const NIVELES = ['Inicial', 'Primario', 'Secundario'];
 export const REQUERIDOS = ['nivel', 'grado', 'area', 'tema_o_concepto'];
@@ -58,7 +62,13 @@ export const HANDLERS = {
     }
 
     const filas = await consultarCurriculoMINERD(args, env, { signal, timeoutMs: TIMEOUT_MS });
-    return formatearRespuestaCurricular(filas);
+    const base = formatearRespuestaCurricular(filas);
+    if (base.resultado.length > 0 || !(env && env.AI && env.SUPABASE_SERVICE_ROLE_KEY)) return base;
+    const extra = await recuperarPorHibrida(args, env, signal);
+    if (!extra.length) return base;
+    const semantica = formatearRespuestaCurricular(extra);
+    semantica.aviso_semantico = 'Coincidencias por similitud semántica, no por tema exacto. Dile al docente que son aproximadas y no las presentes como el tema pedido.';
+    return semantica;
   },
 
   consultar_fuente_curricular: async (args, env) => {
@@ -116,4 +126,32 @@ export async function responderLlamadas(calls, env, opciones = {}) {
   const opts = typeof opciones === 'function' ? { ejecutor: opciones } : opciones;
   const parts = await Promise.all(calls.map(c => ejecutarUna(c, env, opts)));
   return { role: 'user', parts };
+}
+
+export async function recuperarPorHibrida(args, env, signal) {
+  try {
+    const gradoNum = gradoANumero(args.grado);
+    const area = normalizarArea(args.area);
+    const hits = await buscarCurriculoHibrido(env, { consulta: args.tema_o_concepto, grado: gradoNum, area, limite: 5, signal });
+    if (!Array.isArray(hits) || !hits.length) return [];
+    const buenos = hits.filter((h) => Number(h.score) >= UMBRAL_HIBRIDO);
+    if (!buenos.length) return [];
+    const ids = buenos.map((h) => encodeURIComponent(h.secuencia_id)).join(",");
+    const res = await fetch(`${String(env.SUPABASE_URL).replace(/\/+$/, "")}/rest/v1/curriculo_secuencias?id=in.(${ids})&select=*`, {
+      headers: {
+        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`
+      },
+      signal
+    });
+    if (!res.ok) {
+      console.warn("[Hibrida] HTTP", res.status);
+      return [];
+    }
+    const filas = await res.json();
+    return Array.isArray(filas) ? filas : [];
+  } catch (e) {
+    console.warn("[Hibrida] fallo:", String((e && e.message) || e).slice(0, 160));
+    return [];
+  }
 }

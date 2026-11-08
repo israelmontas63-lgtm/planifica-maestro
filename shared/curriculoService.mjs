@@ -249,29 +249,24 @@ export async function consultarCurriculoMINERD(args, env = {}, opciones = {}) {
 
 /**
  * Búsqueda curricular oficial adaptada para el agente investigador (despacho de consultar_fuente_curricular)
+ * No inventa valores por defecto ni etiquetas de fuentes o páginas no presentes en la base de datos oficial.
  */
-export async function buscarCurriculoOficial(env, { texto, grado, area, fuenteFiltro } = {}) {
+export async function buscarCurriculoOficial(env, { texto, grado, area, fuenteFiltro, nivel = "Primario" } = {}) {
+  if (!texto || !grado || !area) return [];
   try {
-    const nivel = "Primario";
-    const gradoNormalizado = String(grado || "1");
     const filas = await consultarCurriculoMINERD({
       nivel,
-      grado: gradoNormalizado,
-      area: area || "Lengua Española",
-      tema_o_concepto: texto || "",
+      grado: String(grado),
+      area: String(area),
+      tema_o_concepto: String(texto),
       limite: 5
     }, env);
 
     if (Array.isArray(filas) && filas.length > 0) {
-      let docNombre = "Adecuación Curricular 2023";
-      if (fuenteFiltro === "guia_con_base_lengua") docNombre = "Guía Didáctica Con Base (Lengua Española)";
-      else if (fuenteFiltro === "guia_con_base_matematica") docNombre = "Guía Didáctica Con Base (Matemática)";
-      else if (fuenteFiltro === "diseno_curricular_base") docNombre = "Diseño Curricular Base MINERD";
-
       return filas.map(f => ({
-        fuente_documento: f.fuente_documento || f.fuente || docNombre,
-        pagina: f.pagina || f.pág || "1",
-        texto: [f.tema, f.competencia_especifica, f.contenidos_texto_original, Array.isArray(f.indicadores_logro) ? f.indicadores_logro.join("; ") : f.indicadores_logro].filter(Boolean).join(" | ")
+        fuente_documento: f.fuente_documento || f.fuente || "Currículo oficial MINERD (base de datos curricular)",
+        pagina: f.pagina || f.numero_pagina || null,
+        texto: [f.tema, f.competencias_especificas || f.competencia_especifica, f.contenidos_texto_original, Array.isArray(f.indicadores_logro) ? f.indicadores_logro.join("; ") : f.indicadores_logro].filter(Boolean).join(" | ")
       }));
     }
   } catch (err) {
