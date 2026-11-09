@@ -1,10 +1,10 @@
 {
   "version": "2.0.0",
-  "fecha_generacion": "2026-11-08T12:40:33.963Z",
-  "commit": "62b74cf",
+  "fecha_generacion": "2026-11-09T21:40:13.166Z",
+  "commit": "c0076b9",
   "algoritmo": "sha256",
   "total_archivos": 83,
-  "resumen": "9ba7a4e4de00f44582fe1052c1f3d31acbe0ee584b013ea8c555b0d20859a140",
+  "resumen": "497b4976e5a007cbfc6bea970e0543861664e782d08936969dad637477e40cd6",
   "hashes": {
     "client/src/App.jsx": "4b4a17a8ed32cdf8b9fa99249e70a350dbc57f7cdf9ca883f52aeb8f9a1f6cad",
     "client/src/api.js": "b7bd439cdcd1db019cb3498d87ae998444b546a254e47aeb4d0706dab3965ad0",
@@ -15,7 +15,7 @@
     "client/src/components/RubricaModal.jsx": "3489d0181488f815cafb4cfeb72e911a758210c57e40211ae5d4cd0547630699",
     "client/src/main.jsx": "7dab66459cc53446234bf9a03a85bdcec54e9ee5c238e699fe63df598ffd9227",
     "client/src/utils/parseadorJsonSeguro.js": "5013ce292127d436b98bcda5500b9840a41627d1b716c8326a485f254026ce34",
-    "client/vite.config.js": "b3e3aafbfa8be71a2fd9080658e5bac8e081cfde892d5880c3fe33210a43a35d",
+    "client/vite.config.js": "226329c751e30b10faa6ef25c4b2457bd5d12687750be9bfa98e14ceac4a054f",
     "plantillas/Esquema de planificacion con guias.docx": "f7797e6e30640886f67370264c11a2c07a3b6d0d5e2e1cd20fee949aa937c0ba",
     "plantillas/Plan Guia Matematica.docx": "f5eb0d88fff24dabc9d3275d61bce08ef07397156bcd147461cddf5559fd099e",
     "plantillas/Planificacion_con_guias_Lengua_Española.docx": "0c5dbb9b37bbdc7ddf6963d6bd6f4ba36a202dcffee738ed97ae3704fcf50c18",
@@ -89,5 +89,6 @@
     "worker/services/wikipedia.js": "29e4935f92914797dba6d31e510028b1121493447c430ec9ae68c44735ffc3a1",
     "worker/verificadorCitas.js": "bbdc7b502b6027eb268b28d360e0af5c6b41b182e52a61f85c900fdcb19f8a81",
     "wrangler.toml": "d716def284e2293cf0890fe221a7a551e67fba4f56039317fea33c918626a722"
-  }
+  },
+  "resumen_criptografico": "497b4976e5a007cbfc6bea970e0543861664e782d08936969dad637477e40cd6"
 }

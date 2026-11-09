@@ -25,7 +25,7 @@ describe("ARQUITECTURA PWA: Ciclo de Vida del Service Worker, Caché y Actualiza
     assert.ok(content.includes("max-age=31536000, immutable"), "Debe tener max-age de 1 año e immutable");
   });
 
-  it("2. vite.config.js tiene autoUpdate, bypass de espera, y NetworkOnly en /api/*", () => {
+  it("2. vite.config.js tiene autoUpdate, bypass de espera, y NetworkFirst excluyendo /api/*", () => {
     assert.ok(fs.existsSync(viteConfigPath), "Debe existir client/vite.config.js");
     const content = fs.readFileSync(viteConfigPath, "utf-8");
 
@@ -33,8 +33,7 @@ describe("ARQUITECTURA PWA: Ciclo de Vida del Service Worker, Caché y Actualiza
     assert.ok(content.includes("skipWaiting: true"), "Debe incluir skipWaiting: true");
     assert.ok(content.includes("clientsClaim: true"), "Debe incluir clientsClaim: true");
     assert.ok(content.includes("cleanupOutdatedCaches: true"), "Debe incluir cleanupOutdatedCaches: true");
-    assert.ok(content.includes("navigateFallbackDenylist"), "Debe incluir navigateFallbackDenylist");
-    assert.ok(content.includes("handler: \"NetworkOnly\""), "Rutas API deben ser NetworkOnly");
+    assert.ok(content.includes("!url.pathname.startsWith(\"/api/\")") || content.includes("!url.pathname.startsWith('/api/')"), "Navegación debe excluir /api/");
   });
 
   it("3. Lógica de PWA Manager: Primera instalación vs Deploy con recarga segura", () => {

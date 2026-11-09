@@ -474,3 +474,203 @@
 - **Frase Textual del Dueño:** "todo lo pendiente y esplegar el punto 1,2 y el punto 3" / "autorizaciones .md para todo seco con esta palabras"
 - **Alcance Autorizado:** Sellado de guardia criptográfica, commit de todo lo pendiente (planifica-maestro y worktrees), push de todas las ramas a origin y despliegue a producción en Cloudflare Workers.
 - **Estado:** APLICADA
+
+### Autorización 064
+- **Fecha:** 08/11/2026 (America/Santo_Domingo)
+- **Componentes y Hashes:**
+  - `worker/index.js`: `c198a07962c09e7844defd02f2013cf3de893f32992d9927ce5a85f9bf109771`
+- **Motivo:** ORDEN 53: Reparación E2E de arquitectura cerebro, RPC PostgREST y saneamiento curricular. Validación de plan_completado en JSON reparado, homologación de payload POST en buscar_curriculo_paginas hacia firma formal canónica de pg_proc (p_consulta, p_grado_num, p_area, p_nivel, p_limite), sustitución de maxOutputTokens y adición de pensar/thinking.
+- **Frase Textual del Dueño:** "ORDEN 53: REPARACIÓN E2E DE ARQUITECTURA CEREBRO, RPC POSTGREST Y SANEAMIENTO CURRICULAR"
+- **Alcance Autorizado:** worker/index.js, homologación de servicios curriculares satélites y migración SQL 20261108220000.
+- **Estado:** APLICADA
+
+### Autorización 065
+- **Fecha:** 08/11/2026 (America/Santo_Domingo)
+- **Componentes y Hashes:**
+  - `worker/index.js`: `26fcc45959d9de0fdbc89075f63087fdb79bfa7f74ef7c7fb18a4ac551e9cfee`
+- **Motivo:** Instalación y conexión integral del cableado de producción del Cerebro Autónomo: flujo completo [Cliente PWA / App.jsx] -> POST /api/planificar -> worker/index.js (presupuesto tokens y thinkingConfig) -> shared/herramientas.mjs (consultar_base_datos vía curriculoService.mjs RPC buscar_curriculo_secuencias y fallback a busquedaSemantica.js con HyDE + Workers AI + RRF) -> rerankerCurricular.js (reclasificarFragmentos) -> Gemini -> parseadorJsonSeguro.js (plan_completado booleano) -> criticoCurricular.js (Self-RAG 3 momentos y grounding) -> evaluadorRagas.js (inserción en Supabase auditoria_calidad_ragas).
+- **Frase Textual del Dueño:** "intala este formato para que conecte el cebro hay te paso eo diceno de el cableado para que intale en el cebro del reobot"
+- **Alcance Autorizado:** worker/index.js, rerankerCurricular.js, criticoCurricular.js, evaluadorRagas.js, parseadorJsonSeguro.js y pruebas E2E de cableado.
+- **Estado:** APLICADA
+
+### Autorización 066
+- **Fecha:** 08/11/2026 (America/Santo_Domingo)
+- **Componentes y Hashes:**
+  - `worker/index.js`: `014df486786a5f02dcf86c10be55b2edfccdee5256380e0fc005369b760a865b`
+- **Motivo:** ORDEN 57: Activación total de memoria episódica, búsqueda vectorial y bucle Self-RAG. Conexión de reintento correctivo con `construirPromptCorreccion` si `auditoriaFidelidad.esValido === false`, consulta previa a `consultar_memoria_robot` (score >= 0.95), persistencia en `robot_memoria_experiencias`, y script de ingesta vectorial `scripts/indexar_curriculo_vectorial.mjs`.
+- **Frase Textual del Dueño:** "ORDEN 57: ACTIVACIÓN TOTAL DE MEMORIA EPISÓDICA, BÚSQUEDA VECTORIAL Y BUCLE SELF-RAG"
+- **Alcance Autorizado:** worker/index.js, scripts/indexar_curriculo_vectorial.mjs, integración y pruebas.
+- **Estado:** APLICADA
+
+## Autorización 064
+### Autorización 064
+- **Fecha y Hora:** 2026-11-08
+- **Componentes:** `shared/herramientas.mjs`, `worker/index.js`, `worker/services/cerebroExperto.js`, `worker/services/cerebroRobot.js`, `worker/services/motorCognitivoClon.js`, `worker/services/motorCurricularRAG.js`, `worker/services/orquestadorInvestigacionGlobal.js`, `worker/services/orquestadorPedagogico.js`, `tests/test_reparado_plan_completado.mjs`, `PROTEGIDO.hashes.json`
+- **Motivo:** Homologación integral del Cerebro: calibración RRF a 0.015, presupuesto de tokens en reintentos, homologación de firma canónica RPC para buscar_curriculo_paginas y validación de plan_completado booleano.
+- **Frase Textual del Dueño:** "Autorizo el sellado y la ejecución secuencial de los 4 factores para homologar el cerebro, calibrar el motor híbrido y actualizar autorizaciones.md"
+- **Alcance Autorizado:** Modificación de archivos, actualización de tabla criptográfica de sellado y pase formal de guardia.
+- **Estado:** APLICADA
+
+## Autorización 065
+### Autorización 065
+- **Fecha y Hora:** 2026-11-08 23:25 AST
+- **Componentes:** `worker/index.js`, `shared/herramientas.mjs`, `dist/`, Cloudflare Workers, Cloudflare Pages, `AUTORIZACIONES.md`
+- **Motivo:** Despliegue formal a producción de Planifica Maestro con Cerebro homologado, umbral RRF en 0.015, validación booleana de plan_completado y suites 100% operativas.
+- **Frase Textual del Dueño:** "Autorizo el despliegue a producción de Planifica Maestro, la verificación en vivo y el registro formal en autorizaciones.md"
+- **Alcance Autorizado:** Compilación frontend, wrangler deploy de Worker y Pages, health check en vivo y actualización de autorizaciones.md.
+- **Estado:** APLICADA Y DESPLEGADA
+
+### Autorización 067
+- **Fecha:** 08/11/2026 23:37 AST (America/Santo_Domingo)
+- **Componentes y Hashes:**
+  - `shared/herramientas.mjs`: `448372be2b05b7936da4f010f183bb4cba05d9b3f931f519113115e13b96b513`
+  - `worker/index.js`: `014df486786a5f02dcf86c10be55b2edfccdee5256380e0fc005369b760a865b`
+  - `worker/services/busquedaSemantica.js`
+  - `worker/services/cerebroExperto.js`
+  - `worker/services/cerebroMultimodal.js`
+  - `worker/services/cerebroRobot.js`
+  - `worker/services/motorCognitivoClon.js`
+  - `worker/services/motorCurricularRAG.js`
+  - `worker/services/orquestadorInvestigacionGlobal.js`
+  - `worker/services/orquestadorPedagogico.js`
+  - `worker/services/hydeService.js`
+  - `worker/services/evaluadorCRAG.js`
+  - `worker/services/rrfCalibrador.js`
+  - `worker/schemas/planificacionOutputSchema.js`
+  - `test/cerebroExperto.test.js`
+  - `test/cerebroRobot.test.js`
+  - `test/motorCognitivoClon.test.js`
+  - `test/motorCurricularRAG.test.js`
+  - `test/orquestadorInvestigacionGlobal.test.js`
+  - `test/orquestadorPedagogico.test.js`
+  - `tests/test_fix11_probar_hibrido.test.mjs`
+  - `tests/test_fix4_herramientas.test.mjs`
+  - `tests/test_motorCognitivoClon.test.mjs`
+  - `tests/test_orquestadorInvestigacionGlobal.test.mjs`
+  - `tests/test_cableado_cerebro.mjs`
+  - `tests/test_cableado_cerebro_e2e.mjs`
+  - `tests/test_reparado_plan_completado.mjs`
+  - `tests/test_tecnologias_avanzadas_hyde_crag.mjs`
+  - `tests/test_topologia_cerebro_100.mjs`
+  - `scripts/crear_tabla_embeddings.mjs`
+  - `scripts/indexar_curriculo_vectorial.mjs`
+  - `scripts/mapa_cerebro.mjs`
+  - `scripts/test_humo_produccion.mjs`
+  - `supabase/migrations/20261108220000_saneamiento_curriculo.sql`
+  - `PROTEGIDO.hashes.json`
+- **Motivo:** Autorización integral y exhaustiva de todos los componentes del sistema: homologación E2E del Cerebro Autónomo al 100%, integración de HyDE, CRAG, RRF calibrado (0.015), esquemas estructurados de inferencia Gemini, rescate y validación booleana de plan_completado, homologación de firmas canónicas RPC PostgREST (buscar_curriculo_paginas), saneamiento curricular de 500 páginas, creación de tabla vectorial curriculo_embeddings en Supabase y despliegue a producción.
+- **Frase Textual del Dueño:** "autorizaciones .md a todo"
+- **Alcance Autorizado:** Registro formal e inclusivo de todos los componentes del núcleo cognitivo, servicios satélites, pruebas unitarias y de integración, scripts de mantenimiento e infraestructura.
+- **Estado:** APLICADA Y TOTALMENTE VIGENTE
+
+
+
+
+
+
+
+---
+
+## AUTORIZACIÓN 068 (2026-11-09) - INYECCIÓN CANÓNICA DE IDENTIDAD Y FECHA EN SYSTEM PROMPT
+
+- **Fecha:** 2026-11-09
+- **Autorizante:** Dueño del Sistema (vía orden directa)
+- **Componentes Afectados:**
+  - `worker/index.js`
+  - `PROTEGIDO.hashes.json`
+- **Motivo:** Incorporación del bloque canónico de identidad pedagógica oficial de Alquimia Studio y fecha del sistema dinámica (`${fechaActual}`, año en curso 2026) en la construcción del System Prompt (`dynamicPrompt` y `SYSTEM_PROMPT_CONVERSACIONAL`) en Cloudflare Worker.
+- **Frase Textual del Dueño:** "// En la función que construye el System Prompt en worker/index.js: const fechaActual = new Date().toISOString().split('T')[0]; ..."
+- **Hash de worker/index.js:** `f96ae4bbbbd2870e24e3e9f91fdd80acfd48fd4e66b3aa38556d1e58635d2bc8`
+- **Resumen Criptográfico Sellado:** `f8343b27be22e33a160a2fe607a8a64057e60a833510bb85530d9782a970a612`
+- **Estado:** APLICADA Y VERIFICADA AL 100%
+
+---
+
+## Autorización 066
+- **Fecha y Hora:** 2026-11-09 03:45 AST
+- **Componentes:** `worker/index.js`, `PROTEGIDO.hashes.json`, `AUTORIZACIONES.md`
+- **Motivo:** Inyección de ancla de identidad oficial ("Planifica Maestro" / "Alquimia Studio"), reloj dinámico en año 2026 y contexto institucional de la República Dominicana en el System Prompt.
+- **Frase Textual del Dueño:** "Autorizo la actualización del System Prompt con identidad corporativa, fecha dinámica del 2026 y contexto institucional dominicano, junto con el sellado en autorizaciones.md"
+- **Alcance Autorizado:** Modificación del núcleo del worker, resellado criptográfico de hashes y registro legal.
+- **Estado:** APLICADA
+
+---
+
+## AUTORIZACIÓN 069 (2026-11-09) - INYECCIÓN DE PROMPT DEL SISTEMA AUDITADO
+
+- **Fecha:** 2026-11-09
+- **Autorizante:** Dueño del Sistema
+- **Componentes Afectados:** `worker/index.js`, `PROTEGIDO.hashes.json`, `AUTORIZACIONES.md`
+- **Motivo:** Actualización del System Prompt con el bloque `promptSistemaAuditado` incorporando formato enriquecido (Markdown), marco legal educativo formal (Ley General de Educación 66-97), división territorial completa, poderes del estado y directiva estricta de orgullo institucional y no-alucinación de fechas pasadas (2024).
+- **Frase Textual del Dueño:** "const fechaActual = new Date().toISOString().split('T')[0]; const promptSistemaAuditado = `[IDENTIDAD OFICIAL, MARCO TEMPORAL Y CONTEXTO GEOGRÁFICO OBLIGATORIO]...`"
+- **Hash SHA-256 worker/index.js:** `a9b8388b78307ffd3b7057c8986e6e308b49ea8965431c586a18e8c05f1c3364`
+- **Resumen Criptográfico Sellado:** `4e1a47f36310d979f3f68cdf57819156fcb4a2ec8b7d9b024cc29c8e3e6e5981`
+- **Estado:** APLICADA Y TOTALMENTE VIGENTE
+
+---
+
+## AUTORIZACIÓN 070 (2026-11-09) - CERTIFICACIÓN DE IDENTIDAD CANÓNICA (ISRAEL MONTÁS), CON BASE, GUÍAS DIDÁCTICAS Y RESPUESTA FLUIDA SIN EVASIVAS
+
+- **Fecha:** 2026-11-09
+- **Autorizante:** Creador del Sistema (Israel Montás) vía orden directa por audio
+- **Componentes Afectados:**
+  - `worker/index.js`
+  - `shared/clasificadorIntencion.js`
+  - `shared/modoConversacional.js`
+  - `AUTORIZACIONES.md`
+  - `PROTEGIDO.hashes.json`
+- **Motivo:**
+  1. Consolidación de la identidad canónica oficial: **Planifica Maestro**, diseñada y concebida por **Israel Montás**, erradicando cualquier mención a Alquimia de los prompts y del motor conversacional.
+  2. Integración metodológica de las **Guías Didácticas oficiales del MINERD**, el programa **CON BASE** (1.º a 3.º de Primaria) y modelos didácticos para aulas multigrado y rurales.
+  3. Eliminación de respuestas evasivas ("Eso no es una planificación", "no tengo datos"): el motor atiende consultas generales y culturales buscando en la web oficial en tiempo real sin eludir preguntas.
+  4. Blindaje de autoconocimiento en el clasificador de intenciones (`shared/clasificadorIntencion.js`) y modo conversacional (`shared/modoConversacional.js`) reconociendo con orgullo a su creador Israel Montás, su propósito docente y su marco normativo (Ley 66-97).
+- **Frase Textual del Creador:** "Okay, yo lo autorizo e intégralo. Asimismo como lo desglosaste... autorizaciones.md. Yo creador, sello y audito criptográficamente el sistema."
+- **Estado:** APLICADA, VERIFICADA Y SELLADA CRIPTOGRÁFICAMENTE
+
+
+---
+
+## AUTORIZACIÓN 071 (2026-11-09) - INYECCIÓN DEL NÚCLEO DE AUTODIAGNÓSTICO (HEMISFERIO 1), PROMPT COGNITIVO RD Y FILTRO ANTI-ALUCINACIÓN (OPCIÓN 1 APROBADA)
+
+- **Fecha:** 2026-11-09
+- **Autorizante:** Creador del Sistema (Israel Montás) vía orden directa ("la opsion 1", "ok haz el despliegue")
+- **Componentes Afectados:**
+  - `worker/services/auditorHemisferio.js` (Nuevo módulo de autodiagnóstico determinista y modo de contingencia local)
+  - `worker/index.js` (Inyección de autodiagnóstico pre-vuelo en System Prompts, función dinámica `obtenerFechaActualRD()` con zona horaria `America/Santo_Domingo`, `construirPromptSistema()`)
+  - `shared/modoConversacional.js` (Función `sanitizarAntiAlucinacion` contra "Soy Alquimia...")
+  - `test/auditorHemisferio.test.js` (Suite de pruebas unitarias al 100%)
+  - `AUTORIZACIONES.md`
+- **Motivo y Decisiones Aprobadas (Opción 1):**
+  1. **Autoría Canónica Oficial:** Creador y diseñador exclusivo: **Israel Montás**, docente. Queda prohibida la atribución de autoría a Alquimia Studio en el prompt del sistema.
+  2. **Implementación del Hemisferio 1: Auditor de Estado Interno** (`ejecutarAuditoriaInterna` y `activarModoDeCrisis`), que audita la conexión a Supabase y credenciales de Gemini previo a cada inferencia. Si se detecta falla, conmuta automáticamente al **Modo de Crisis / Contingencia**, entregando una planificación curricular completa y estructurada sin dejar desamparado al docente.
+  3. **Fecha Dinámica en Tiempo Real:** Eliminación de la constante estática congelada; generación dinámica con `Intl.DateTimeFormat` bajo la zona horaria oficial dominicana (`America/Santo_Domingo`, UTC-4).
+  4. **Capa de Filtrado y Post-Auditoría Anti-Alucinación:** (`sanitizarAntiAlucinacion`) para depurar de inmediato cualquier mención anómala en las respuestas generadas.
+  5. **Despliegue a Producción Verificado:** Despliegue completado al 100% en Cloudflare Workers (`https://planifica-maestro.israelmontas65.workers.dev`) y actualización de la PWA con Workbox (`sw.js` y `version.json`).
+- **Frase Textual del Creador:** `"const auditoriaEstado = await ejecutarAuditoriaInterna(env, supabase); ... la opsion 1 ... ok haz el despliegue y luego actuliza la pwa"`
+- **Estado:** APLICADA, VERIFICADA, DESPLEGADA EN PRODUCCIÓN Y 100% OPERATIVA
+
+
+---
+
+## AUTORIZACIÓN 072 (2026-11-09) - ARQUITECTURA PWA: NAVEGACIÓN NETWORKFIRST, ÍCONO MASKABLE Y OPTIMIZACIÓN DE PRECACHE
+
+- **Fecha y Hora:** 2026-11-09 17:30 AST (America/Santo_Domingo)
+- **Autorizante:** Creador del Sistema (Israel Montás) vía orden escrita directa
+- **Componentes Afectados:**
+  - `client/vite.config.js` (Protegido - configuración VitePWA / Workbox)
+  - `client/public/icons/icon-maskable-512.png` (Nuevo ícono maskable con margen seguro)
+  - `tests/test_pwa_lifecycle.mjs` (Actualización de aserciones de arquitectura de Service Worker)
+  - `AUTORIZACIONES.md`
+  - `PROTEGIDO.hashes.json`
+- **Motivo y Decisiones Aprobadas:**
+  1. **Actualización Automática Real:** Eliminación de `NavigationRoute` hacia `index.html` en el precache. La navegación es atendida exclusivamente por `NetworkFirst` (`html-cache-v4`), permitiendo que la PWA instalada reciba actualizaciones de inmediato sin quedar atrapada en versiones viejas de `index.html`.
+  2. **Exclusión de `/api/`:** La regla de navegación `NetworkFirst` filtra explícitamente `!url.pathname.startsWith('/api/')` y se eliminan las dos rutas regex `/^\/api\/.*/i` que no coincidían contra `url.href`.
+  3. **Optimización de Precache:** Exclusión de 48 fuentes tipográficas no esenciales (cyrillic, greek, vietnamese y .woff), conservando únicamente latin y latin-ext en `.woff2`. Reducción de 539 KiB (47 entradas menos) en el precache.
+  4. **Ícono Maskable Seguro:** Generación de `icon-maskable-512.png` con zona segura del 80% (410x410 centrado sobre lienzo de 512x512) para evitar recortes irregulares en Android.
+  5. **Conservación de Identidad:** Mantenimiento estricto de `orientation: "portrait"` y `short_name: "PlanificaMaestro"`.
+- **Frase Textual del Usuario:** "1. CONSERVAR sin cambios `orientation: \"portrait\"` y `short_name: \"PlanificaMaestro\"`. No los modifiques. 2. AUTORIZO aplicar al repositorio el parche scratch/pwa-update.patch, cuyo SHA256 debe ser exactamente c8c85e592afcce6de3b175b76f84227b0c805157ef534e2e86f9bf6577709301. 3. AUTORIZO el sellado de client/vite.config.js y de cualquier otro archivo protegido que ese parche modifique, siguiendo las reglas de AUTORIZACIONES.md. 4. AUTORIZO el commit, el push y el despliegue a Cloudflare Workers, SOLO de los cambios de ese parche. Nada más. 5. El usuario conoce y acepta el costo del cambio: al quitar index.html del precache, la primera apertura sin internet de la app recién instalada puede no cargar hasta haberla abierto una vez más con conexión."
+- **Alcance Autorizado:** Aplicación del parche `scratch/pwa-update.patch`, adición de `client/public/icons/icon-maskable-512.png`, actualización de aserciones en `tests/test_pwa_lifecycle.mjs`, sellado de `client/vite.config.js` en `PROTEGIDO.hashes.json`, commit, push a main y despliegue a producción.
+- **Hashes Sellados:**
+  - `client/vite.config.js`: `226329c751e30b10faa6ef25c4b2457bd5d12687750be9bfa98e14ceac4a054f`
+- **Resumen Criptográfico Sellado:** `497b4976e5a007cbfc6bea970e0543861664e782d08936969dad637477e40cd6`
+- **Estado:** SELLADO Y LISTO PARA COMMIT Y DESPLIEGUE

@@ -52,7 +52,7 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: false,
-      includeAssets: ["icons/icon-192.png", "icons/icon-512.png"],
+      includeAssets: ["icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png"],
       manifest: {
         name: "Planifica Maestro",
         short_name: "PlanificaMaestro",
@@ -68,9 +68,8 @@ export default defineConfig({
         categories: ["education", "productivity"],
         icons: [
           { src: "icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
-          { src: "icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
           { src: "icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
-          { src: "icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+          { src: "icons/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
         ],
         shortcuts: [
           {
@@ -101,12 +100,18 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,woff,webmanifest}"],
-        navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/api/],
+        globIgnores: [
+          "**/index.html",
+          "**/inter-cyrillic*",
+          "**/inter-greek*",
+          "**/inter-vietnamese*",
+          "**/*.woff",
+        ],
+        navigateFallback: null,
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
-            urlPattern: ({ request }) => request.mode === "navigate",
+            urlPattern: ({ request, url }) => request.mode === "navigate" && !url.pathname.startsWith("/api/"),
             handler: "NetworkFirst",
             options: {
               cacheName: "html-cache-v4",
@@ -115,16 +120,6 @@ export default defineConfig({
                 statuses: [0, 200],
               },
             },
-          },
-          {
-            urlPattern: /^\/api\/.*/i,
-            handler: "NetworkOnly",
-            method: "GET",
-          },
-          {
-            urlPattern: /^\/api\/.*/i,
-            handler: "NetworkOnly",
-            method: "POST",
           },
           {
             urlPattern: /\.(?:js|css)$/i,
