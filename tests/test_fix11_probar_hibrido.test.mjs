@@ -50,7 +50,7 @@ describe('FIX 11 — Ruta /api/owner/probar-hibrido', () => {
       if (u.includes('/rpc/buscar_curriculo_hibrido')) {
         return new Response(JSON.stringify([
           { secuencia_id: 'sec-dual', contenido: 'Contenido oficial verificado en ambas listas', score: 0.0195 },
-          { secuencia_id: 'sec-single', contenido: 'Contenido en una sola lista léxica', score: 0.0163 }
+          { secuencia_id: 'sec-single', contenido: 'Contenido en una sola lista léxica', score: 0.014 }
         ]), { status: 200, headers: { 'Content-Type': 'application/json' } });
       }
       return new Response('Not found', { status: 404 });
@@ -75,15 +75,15 @@ describe('FIX 11 — Ruta /api/owner/probar-hibrido', () => {
       assert.equal(Array.isArray(data.hits), true);
       assert.equal(data.hits.length, 2);
 
-      // Primer hit supera el umbral (0.0195 >= 0.017)
+      // Primer hit supera el umbral (0.0195 >= 0.015)
       assert.equal(data.hits[0].secuencia_id, 'sec-dual');
       assert.equal(data.hits[0].score, 0.0195);
       assert.equal(data.hits[0].pasa, true);
       assert.ok(data.hits[0].inicio.includes('Contenido oficial'));
 
-      // Segundo hit no supera el umbral (0.0163 < 0.017)
+      // Segundo hit no supera el umbral (0.014 < 0.015)
       assert.equal(data.hits[1].secuencia_id, 'sec-single');
-      assert.equal(data.hits[1].score, 0.0163);
+      assert.equal(data.hits[1].score, 0.014);
       assert.equal(data.hits[1].pasa, false);
     } finally {
       globalThis.fetch = originalFetch;

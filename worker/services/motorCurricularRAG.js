@@ -14,19 +14,22 @@ export class MotorCurricularRAG {
 
   /**
    * Tarea 1: Conexión con Supabase RPC buscar_curriculo_paginas
-   * Envía: query_text, p_grado (1 o 2), p_limite (mínimo 3 páginas relevantes)
+   * Envía firma canónica: p_consulta, p_grado_num, p_area, p_nivel, p_limite
    * Extrae: texto, número de página y fuente documental para inyectar en el contexto del LLM.
    */
-  async consultarCurriculoPaginas({ termino, grado = 1, limite = 3 }) {
-    if (!termino) {
+  async consultarCurriculoPaginas({ termino, consulta, grado = 1, area, limite = 5 }) {
+    const consultaTermino = termino || consulta;
+    if (!consultaTermino) {
       return { ok: false, error: 'Se requiere un término de búsqueda curricular.', fragmentos: [] };
     }
 
     const endpoint = `${this.supabaseUrl}/rest/v1/rpc/buscar_curriculo_paginas`;
     const payload = {
-      query_text: termino,
-      p_grado: Number(grado) || 1,
-      p_limite: Math.max(3, Number(limite) || 3)
+      p_consulta: consultaTermino || null,
+      p_grado_num: Number(grado) || null,
+      p_area: area || null,
+      p_nivel: 'Primario',
+      p_limite: limite || 5
     };
 
     const res = await this.fetchFn(endpoint, {

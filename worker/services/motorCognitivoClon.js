@@ -38,23 +38,25 @@ export class MotorCognitivoClon {
   }
 
   // 2. Ejecución de Búsqueda Curricular con Bucle de Autorreparación (Self-Healing)
-  async ejecutarConsultaCurricular(termino, grado) {
+  async ejecutarConsultaCurricular(termino, grado, limite, area) {
     const endpoint = `${this.supabaseUrl}/rest/v1/rpc/buscar_curriculo_paginas`;
     
     // Intento 1: Búsqueda exacta
-    let resultados = await this.realizarPeticionRPC(endpoint, termino, grado);
+    let resultados = await this.realizarPeticionRPC(endpoint, termino, grado, limite, area);
     
     // Intento 2 (Autorreparación): Si devuelve vacío, amplía a la familia conceptual
     if (!resultados || resultados.length === 0) {
-      const terminoAmpliado = grado <= 2 ? 'alfabetizacion numeracion basica' : 'lengua espanola matematica general';
-      resultados = await this.realizarPeticionRPC(endpoint, terminoAmpliado, grado);
+      const terminoAmpliado = Number(grado) <= 2 ? 'alfabetizacion numeracion basica' : 'lengua espanola matematica general';
+      resultados = await this.realizarPeticionRPC(endpoint, terminoAmpliado, grado, limite, area);
     }
 
     return resultados || [];
   }
 
-  async realizarPeticionRPC(endpoint, texto, grado) {
+  async realizarPeticionRPC(endpoint, texto, grado, limite, area) {
     try {
+      const termino = texto;
+      const consulta = texto;
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: {
@@ -63,9 +65,11 @@ export class MotorCognitivoClon {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          query_text: texto,
-          p_grado: grado,
-          p_limite: 3
+          p_consulta: termino || consulta || null,
+          p_grado_num: Number(grado) || null,
+          p_area: area || null,
+          p_nivel: 'Primario',
+          p_limite: limite || 5
         })
       });
       return res.ok ? await res.json() : [];

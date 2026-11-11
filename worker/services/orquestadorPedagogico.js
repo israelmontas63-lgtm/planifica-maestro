@@ -106,12 +106,15 @@ export class OrquestadorPedagogico {
    * 2. consultarFundamentacionCurricular(termino, grado):
    * Conexión con Supabase RPC buscar_curriculo_paginas con resiliencia ante caídas
    */
-  async consultarFundamentacionCurricular(termino, grado = 1, limite = 3) {
+  async consultarFundamentacionCurricular(termino, grado = 1, limite = 5, area = null) {
     const endpoint = `${this.supabaseUrl}/rest/v1/rpc/buscar_curriculo_paginas`;
+    const consulta = termino;
     const payload = {
-      query_text: termino || 'contenidos e indicadores',
-      p_grado: Number(grado) || 1,
-      p_limite: Math.max(3, Number(limite) || 3)
+      p_consulta: termino || consulta || null,
+      p_grado_num: Number(grado) || null,
+      p_area: area || null,
+      p_nivel: 'Primario',
+      p_limite: limite || 5
     };
 
     try {

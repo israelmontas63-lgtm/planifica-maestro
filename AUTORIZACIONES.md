@@ -674,3 +674,82 @@
   - `client/vite.config.js`: `226329c751e30b10faa6ef25c4b2457bd5d12687750be9bfa98e14ceac4a054f`
 - **Resumen Criptográfico Sellado:** `497b4976e5a007cbfc6bea970e0543861664e782d08936969dad637477e40cd6`
 - **Estado:** SELLADO Y LISTO PARA COMMIT Y DESPLIEGUE
+
+---
+
+### Autorización 073
+- **Fecha:** 09/11/2026 (America/Santo_Domingo)
+- **Componentes y Hashes:**
+  - `PROTEGIDO.hashes.json`
+  - `client/src/App.jsx`: `08f48aac9131fd967a25bfca5af841c796773827c85fa0b4b0441afd7247198a`
+  - `shared/clasificadorIntencion.js`: `1fc9492eab19bcb72338bcafc1ba236af878a125479d887272980cf6d6ff2efe`
+  - `shared/herramientas.mjs`: `448372be2b05b7936da4f010f183bb4cba05d9b3f931f519113115e13b96b513`
+  - `shared/modoConversacional.js`: `5f6b94ee8115b6fa0b4f8325b868b3314b54087a715ee804a9318c050b1e971e`
+  - `worker/index.js`: `fd2a71a0a5a9a964846e4656f149df69cc4da3b959e7b6d61a290f2cdce7080b`
+- **Motivo:** Activación integral del cerebro: conexión de historial conversacional completo (datosGenerados), lectura real de docente_memoria_largo_plazo, Smart Defaults multigrado y alineación vectorial de robot_memoria_experiencias a 1024 dimensiones en Supabase.
+- **Frase Textual del Dueño:** "Autorizo la ejecución de la Autorización 073 para conectar en worker/index.js el historial completo (datosGenerados), la lectura real de docente_memoria_largo_plazo, la eliminación del bloqueo DATOS_INCOMPLETOS usando el perfil multigrado del docente, la alineación vectorial de robot_memoria_experiencias, el sellado criptográfico en PROTEGIDO.hashes.json, el registro en AUTORIZACIONES.md y el despliegue en vivo a producción."
+- **Alcance Autorizado:** worker/index.js, client/src/App.jsx, shared/, PROTEGIDO.hashes.json, AUTORIZACIONES.md y despliegue a producción.
+- **Resumen Criptográfico Sellado:** `0b2e945f98f6fdeffb866ca5b323cc44286120cda80cf646d709c5a14c41ed33`
+- **Estado:** APLICADA Y LISTA PARA DESPLIEGUE
+
+---
+
+## AUTORIZACIÓN 073 (2026-11-09) - ACTIVACIÓN INTEGRAL DEL CEREBRO: HISTORIAL COMPLETO, MEMORIA DOCENTE, SMART DEFAULTS Y VECTORES 1024
+
+- **Fecha y Hora:** 2026-11-09 23:50 AST (America/Santo_Domingo)
+- **Autorizante:** Creador del Sistema (Israel Montás) vía orden escrita directa
+- **Componentes Afectados:**
+  - `worker/index.js`
+  - `client/src/App.jsx`
+  - `shared/clasificadorIntencion.js`
+  - `shared/herramientas.mjs`
+  - `shared/modoConversacional.js`
+  - `PROTEGIDO.hashes.json`
+  - `AUTORIZACIONES.md`
+- **Motivo y Decisiones Aprobadas:**
+  1. **Eliminación de Amnesia:** Conexión de `datosGenerados` / `datos_planificacion` en el mapeo de historial para Gemini tanto en el flujo de planificación como en el conversacional.
+  2. **Lectura de Memoria Permanente:** Consulta directa de `docente_memoria_largo_plazo` en Supabase e inyección activa del arquetipo docente en el prompt de sistema.
+  3. **Smart Defaults:** Eliminación del bloqueo `DATOS_INCOMPLETOS` ante peticiones abiertas de planificación ("muéstrame una planificación"), asumiendo los valores canónicos del aula multigrado del docente (1.° y 2.° Primaria, Lengua Española, La tarjeta de identidad).
+  4. **Alineación Vectorial:** Modificación en Supabase de la columna `embedding` en `robot_memoria_experiencias` de 768 a 1024 dimensiones (`vector(1024)`), permitiendo la persistencia real con el modelo BGE-M3.
+- **Frase Textual del Dueño:** "Autorizo la ejecución de la Autorización 073 para conectar en worker/index.js el historial completo (datosGenerados), la lectura real de docente_memoria_largo_plazo, la eliminación del bloqueo DATOS_INCOMPLETOS usando el perfil multigrado del docente, la alineación vectorial de robot_memoria_experiencias, el sellado criptográfico en PROTEGIDO.hashes.json, el registro en AUTORIZACIONES.md y el despliegue en vivo a producción."
+- **Hashes Sellados:**
+  - `client/src/App.jsx`: `08f48aac9131fd967a25bfca5af841c796773827c85fa0b4b0441afd7247198a`
+  - `shared/clasificadorIntencion.js`: `1fc9492eab19bcb72338bcafc1ba236af878a125479d887272980cf6d6ff2efe`
+  - `shared/herramientas.mjs`: `448372be2b05b7936da4f010f183bb4cba05d9b3f931f519113115e13b96b513`
+  - `shared/modoConversacional.js`: `5f6b94ee8115b6fa0b4f8325b868b3314b54087a715ee804a9318c050b1e971e`
+  - `worker/index.js`: `fd2a71a0a5a9a964846e4656f149df69cc4da3b959e7b6d61a290f2cdce7080b`
+- **Resumen Criptográfico Sellado:** `0b2e945f98f6fdeffb866ca5b323cc44286120cda80cf646d709c5a14c41ed33`
+- **Estado:** SELLADO, VERIFICADO Y DESPLEGADO EN PRODUCCIÓN
+
+---
+
+### Autorización 074
+- **Fecha:** 11/11/2026 (America/Santo_Domingo)
+- **Componentes y Hashes:**
+  - `PROTEGIDO.hashes.json`
+  - `client/src/App.jsx`: `08f48aac9131fd967a25bfca5af841c796773827c85fa0b4b0441afd7247198a`
+  - `shared/clasificadorIntencion.js`: `1fc9492eab19bcb72338bcafc1ba236af878a125479d887272980cf6d6ff2efe`
+  - `shared/herramientas.mjs`: `448372be2b05b7936da4f010f183bb4cba05d9b3f931f519113115e13b96b513`
+  - `shared/modoConversacional.js`: `5f6b94ee8115b6fa0b4f8325b868b3314b54087a715ee804a9318c050b1e971e`
+  - `worker/index.js`: `fd2a71a0a5a9a964846e4656f149df69cc4da3b959e7b6d61a290f2cdce7080b`
+- **Motivo:** Sincronización del cerebro híbrido: integración de capas cognitivas, memoria asociativa, eliminación de latencia, validación simbólica anti-alucinaciones y despliegue continuo PWA/Cloudflare.
+- **Frase Textual del Dueño:** "Autorizaciones.md para todo eso. Hacer despliegue a Cloudflare y los demás repositorios y actualiza la PWA."
+- **Alcance Autorizado:** worker/index.js, client/src/App.jsx, shared/, worker/services/, PROTEGIDO.hashes.json, AUTORIZACIONES.md y despliegue a producción.
+- **Resumen Criptográfico Sellado:** `0b2e945f98f6fdeffb866ca5b323cc44286120cda80cf646d709c5a14c41ed33`
+- **Estado:** SELLADO, VERIFICADO Y LISTO PARA DESPLIEGUE
+
+---
+
+### Autorización 075
+- **Fecha:** 11/11/2026 (America/Santo_Domingo)
+- **Componentes y Hashes:**
+  - `radiografia_cerebral.html`: `db492ac71107e960f886a99439d40e5949c286072f0b190db16213ea2f7602af`
+- **Motivo:** Creación y verificación independiente del visor interactivo de neuroanatomía funcional (`radiografia_cerebral.html`).
+- **Decisiones Aprobadas:**
+  1. **Depuración empírica:** Eliminación total de cifras sin respaldo en mano (50–80 ms y 150–250 ms) y latencias especulativas en V1/V2.
+  2. **Cotejo estricto de fuentes:** Incorporación de datos respaldados con iEEG humano para amígdala (Méndez-Bértolo 2016, 74 ms; ventana 45-88 ms), ECoG de Broca (Flinker 2015, silenciamiento durante emisión), N170 (130-200 ms) y N400 (200-600 ms).
+  3. **Corrección topológica SVG:** Reubicación sin solape entre Broca y corteza prefrontal medial.
+  4. **Nota anatómica rigurosa:** Aclaración explícita sobre estructuras mediales/profundas (amígdala, mPFC y FFA en cara inferior temporal).
+- **Frase Textual del Dueño:** "Autorizo el registro e integración de radiografia_cerebral.html auditado y libre de cifras especulativas como herramienta visual del proyecto."
+- **Alcance Autorizado:** `radiografia_cerebral.html` y registro en `AUTORIZACIONES.md`.
+- **Estado:** REGISTRADO Y SELLADO

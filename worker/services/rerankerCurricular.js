@@ -18,10 +18,20 @@
  * @returns {number} Score normalizado entre 0.0 y 1.0
  */
 export function calcularPuntajeRelevancia({ consulta, grado, area, fragmento }) {
-  if (!fragmento || !fragmento.texto) return 0.0;
+  if (!fragmento) return 0.0;
+
+  const texto = fragmento.texto || fragmento.contenido || [
+    fragmento.tema,
+    fragmento.bloque_guia,
+    fragmento.competencias_especificas,
+    fragmento.contenidos_texto_original,
+    Array.isArray(fragmento.indicadores_logro) ? fragmento.indicadores_logro.join(" ") : fragmento.indicadores_logro
+  ].filter(Boolean).join(" | ");
+
+  if (!texto) return 0.0;
 
   let score = 0.0;
-  const textoMin = fragmento.texto.toLowerCase();
+  const textoMin = texto.toLowerCase();
   const consultaMin = (consulta || '').toLowerCase();
 
   // 1. Penalización/Bonificación estricta por correspondencia de Grado (Peso: 0.35)

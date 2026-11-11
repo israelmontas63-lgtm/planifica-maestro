@@ -34,8 +34,8 @@ describe('Auditoría del Cerebro Multimodal Edge (CerebroExperto)', () => {
     global.fetch = async (url, opts) => {
       if (url.includes('buscar_curriculo_paginas')) {
         const body = JSON.parse(opts.body);
-        assert.equal(body.query_text, 'fracciones');
-        assert.equal(body.p_grado, 2);
+        assert.equal(body.p_consulta || body.query_text, 'fracciones');
+        assert.equal(body.p_grado_num || body.p_grado, 2);
         return {
           ok: true,
           json: async () => [{ pagina: 120, texto: 'Contenido curricular', fuente_documento: 'adecuacion' }]
@@ -75,8 +75,8 @@ describe('Auditoría del Cerebro Multimodal Edge (CerebroExperto)', () => {
     });
 
     assert.equal(urlCapturada, 'https://obcjdxearmmvtihfmtaa.supabase.co/rest/v1/rpc/buscar_curriculo_paginas');
-    assert.equal(bodyCapturado.query_text, 'adición');
-    assert.equal(bodyCapturado.p_grado, 1);
+    assert.equal(bodyCapturado.p_consulta || bodyCapturado.query_text, 'adición');
+    assert.equal(bodyCapturado.p_grado_num || bodyCapturado.p_grado, 1);
     assert.equal(res.length, 1);
     assert.equal(res[0].pagina, 115);
 
@@ -386,15 +386,16 @@ describe('Auditoría del Cerebro Multimodal Edge (CerebroExperto)', () => {
       if (url.includes('buscar_curriculo_paginas')) {
         intentos++;
         const body = JSON.parse(opts.body);
-        terminosBuscados.push(body.query_text);
+        const consulta = body.p_consulta || body.query_text;
+        terminosBuscados.push(consulta);
 
         // Primer intento con término ultra-específico devuelve 0 registros
-        if (body.query_text === 'suma con reagrupación') {
+        if (consulta === 'suma con reagrupación') {
           return { ok: true, json: async () => [] };
         }
 
         // Segundo intento con término troncal reformulado ('adición') devuelve registros
-        if (body.query_text === 'adición') {
+        if (consulta === 'adición') {
           return {
             ok: true,
             json: async () => [

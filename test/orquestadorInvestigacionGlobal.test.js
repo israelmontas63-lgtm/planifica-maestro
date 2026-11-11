@@ -54,8 +54,9 @@ test('OrquestadorInvestigacionGlobal - Consulta curricular con autorreparación 
 
   const mockFetch = async (url, opts) => {
     const body = JSON.parse(opts.body);
-    consultasRpc.push(body.query_text);
-    if (body.query_text === 'sustracción compleja') {
+    const consulta = body.p_consulta || body.query_text;
+    consultasRpc.push(consulta);
+    if (consulta === 'sustracción compleja') {
       return { ok: true, json: async () => [] };
     }
     return {

@@ -1,12 +1,12 @@
 import { LEVELS } from "./levels.js";
-import { indexarEmbeddingsLote, buscarCurriculoHibrido } from "./services/busquedaSemantica.js";
+import { indexarEmbeddingsLote, buscarCurriculoHibrido, generarEmbeddings } from "./services/busquedaSemantica.js";
 import { UMBRAL_HIBRIDO } from "../shared/herramientas.mjs";
 import { obtenerContextoConBase } from "./contextoConBase.js";
 import { getAiProvider, getGeminiModels, fetchGeminiWithRetry, fetchGeminiConThinking, construirThinkingConfig, construirMaxSalida, textoDeCandidato } from "./services/aiProvider.js";
 import { fetchConLimite } from "./services/timeoutIntento.js";
 import { generateVoice } from "./services/voiceProvider.js";
 import { clasificarIntencion, clasificarPorReglas } from "./clasificadorIntencion.js";
-import { generarRespuestaCharlaLocal, SYSTEM_PROMPT_CONVERSACIONAL, limpiarSaludoInnecesario } from "./modoConversacional.js";
+import { generarRespuestaCharlaLocal, SYSTEM_PROMPT_CONVERSACIONAL, limpiarSaludoInnecesario, sanitizarAntiAlucinacion } from "./modoConversacional.js";
 import { buscarEnGlosario } from "./glosarioDocente.js";
 import {
   generarClaveCurricularSha256,
@@ -29,7 +29,8 @@ import { HERRAMIENTAS_INVESTIGACION } from "../shared/herramientasInvestigacion.
 import { recuperarHistorialSesion, guardarTurnoConversacion } from "./services/memoriaService.js";
 import { generarClaveCache, consultarCache, guardarEnCache } from "./services/cacheSemanticaService.js";
 import { calcularFaithfulness, calcularRelevance, registrarMetricasRagas } from "./services/evaluadorRagas.js";
-import { auditarFidelidadCurricular } from "./services/criticoCurricular.js";
+import { auditarFidelidadCurricular, construirPromptCorreccion } from "./services/criticoCurricular.js";
+import { evaluarCalidadRecuperacion } from "./services/evaluadorCRAG.js";
 import { reclasificarFragmentos } from "./services/rerankerCurricular.js";
 import { buscarCurriculoOficial, consultarCurriculoMINERD, limpiarConsultaCurricular } from "../shared/curriculoService.mjs";
 import { ejecutarBusquedaWeb } from "./services/investigadorService.js";
@@ -38,7 +39,44 @@ import { procesarConsultaMatematica } from "../shared/matematica.mjs";
 import { respuestaEspecialMatematica } from "../shared/metodosMatematicos.mjs";
 import { coincideConTema, listarTemasUnicos, formatearListaTemas, consultarTemasREST } from "../shared/coincidenciaTema.mjs";
 import { capacidadesManifest, generarRespuestaQuePuedesHacer } from "../shared/capacidades.mjs";
+import { ejecutarAuditoriaInterna, activarModoDeCrisis } from "./services/auditorHemisferio.js";
 import { explicarFallo, clasificarFallo, CODIGOS_FALLO, limpiarDetalle, describirCapacidades, esPreguntaAutodiagnostico } from "../shared/explicadorFallos.js";
+import { GestorMemoriaHibrida } from "./services/gestorMemoriaHibrida.js";
+
+export function obtenerFechaActualRD(ahora = new Date()) {
+  // Formato YYYY-MM-DD en la zona horaria de República Dominicana
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Santo_Domingo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(ahora);
+}
+
+export function construirPromptSistema(ahora = new Date()) {
+  const fechaActual = obtenerFechaActualRD(ahora);
+  const anioActual = fechaActual.slice(0, 4);
+
+  return `
+[IDENTIDAD INMUTABLE Y AUTORÍA]
+- Eres **Planifica Maestro**, el copiloto pedagógico experto en el currículo del MINERD (Ley 66-97 y Programa CON BASE) de la República Dominicana.
+- **Autoría y creador:** Fuiste diseñado y creado por **Israel Montás**, docente. Él es tu creador y diseñador, y esa es su firma autorizada. **Alquimia Studio** es el estudio de software creador que te desarrolló bajo su dirección; jamás digas "Soy Alquimia Studio" (tu nombre es Planifica Maestro). Si el usuario te pregunta quién te creó, responde con precisión que fuiste diseñado y creado por el docente Israel Montás.
+- **Marco temporal:** La fecha actual del sistema es ${fechaActual} (año en curso: ${anioActual}). Usa esa fecha como "hoy" bajo la zona horaria America/Santo_Domingo. Está prohibido de forma absoluta presentar como fecha actual o año en curso cualquier otro valor (por ejemplo, 2024). Puedes citar fechas históricas o normativas cuando sean correctas (por ejemplo, la Ley 66-97) o las que el usuario te indique.
+
+[DOMINIO DE EXPERTISE TÉCNICO Y PEDAGÓGICO - MINERD / REPÚBLICA DOMINICANA]
+- Eres experto en el diseño curricular del sistema educativo de la República Dominicana. Dominas:
+  1. Diseño Curricular del Nivel Primario (primer y segundo ciclo) del MINERD.
+  2. Guías metodológicas, mallas curriculares, competencias fundamentales y específicas.
+  3. Estructuración de planificaciones: diarias, de unidad, proyectos de aula y otras modalidades oficiales del MINERD.
+  4. Marco normativo institucional (Ley General de Educación 66-97 y Programa CON BASE).
+  5. Planificación para aulas multigrado: adaptar actividades a varios grados en una misma aula, indicando con claridad qué corresponde a cada grado.
+
+[PROTOCOLO DE AUTODIAGNÓSTICO Y CERO ALUCINACIONES]
+- **Fuentes reales:** No inventes contenidos, metas ni indicadores pedagógicos. Cuando el sistema te entregue contexto curricular recuperado de la base de datos, úsalo como fuente principal y no lo contradigas.
+- **Sin contexto recuperado:** Si no hay contexto recuperado o el dato no aparece en las fuentes o herramientas conectadas, dilo con transparencia ("No dispongo de ese registro específico en el corpus curricular actual") en lugar de inventar.
+- **Auditoría interna:** Antes de responder, verifica que los datos correspondan estrictamente al sistema educativo dominicano y que no afirmes haber consultado fuentes que no consultaste.
+`;
+}
 
 export function esCoincidente(f, consulta = "") {
   if (!f || (f.coincide_tema !== true && f.coincide_tema !== "true")) return false;
@@ -1439,6 +1477,41 @@ async function handleApiRequest(request, env, ctx) {
       const errorPrevio = messages.slice().reverse().find(m => m.isError && m.codigoError) || (messages[messages.length - 2]?.isError ? messages[messages.length - 2] : null);
     const clasificacionPrevia = clasificarPorReglas(textoConsulta, { ultimoError: errorPrevio ? errorPrevio.codigoError : null });
 
+    // Carga de Memoria Permanente del Docente (Autorización 073 - GestorMemoriaHibrida)
+    const gestorMemoria = new GestorMemoriaHibrida(env);
+    let textoMemoriaDocente = "";
+    let docenteMemoriaObj = {};
+    try {
+      const detalleMemoria = await gestorMemoria.obtenerMemoriaLargoPlazoDetalle('docente_principal');
+      if (detalleMemoria && detalleMemoria.map) {
+        docenteMemoriaObj = detalleMemoria.map;
+      }
+    } catch (errMem) {
+      console.warn("[MemoriaDocente] Error al cargar memoria permanente:", errMem?.message || errMem);
+    }
+
+    const docNombre = docenteMemoriaObj.nombre_docente || "Israel Montás";
+    const docCentro = docenteMemoriaObj.centro_educativo || "Escuela Primaria Batey Pinos";
+    const docModalidad = docenteMemoriaObj.modalidad || "Primaria Multigrado (1.º y 2.º grado, Primer Ciclo)";
+    const docTiempo = docenteMemoriaObj.tiempo_bloque || "45 minutos";
+    const docEnfoque = docenteMemoriaObj.enfoque_oficial || "Adecuación Curricular MINERD (Ley 66-97) y Programa CON BASE";
+
+    textoMemoriaDocente = `\n[MEMORIA PERMANENTE DEL DOCENTE Y CONTEXTO DE AULA ACTIVO]
+- Docente: ${docNombre}
+- Centro Educativo: ${docCentro}
+- Modalidad y Grados por defecto: ${docModalidad}
+- Duración de bloque: ${docTiempo}
+- Enfoque oficial: ${docEnfoque}\n`;
+
+    // Escritura y consolidación en segundo plano de hechos permanentes (Cláusula 1.2)
+    if (textoConsulta && gestorMemoria) {
+      const consolidarPromesa = gestorMemoria.extraerYConsolidarHechos(textoConsulta, 'docente_principal')
+        .catch(err => console.warn("[MemoriaDocente] Error al consolidar hechos:", err?.message || err));
+      if (ctx && typeof ctx.waitUntil === 'function') {
+        ctx.waitUntil(consolidarPromesa);
+      }
+    }
+
     const esModoPrueba = Boolean(env && (env.MODO_PRUEBA === "true" || env.MODO_PRUEBA === true));
     const habilitarTraza = Boolean(env && env.HABILITAR_TRAZA_CAPAS === "true");
     const trazaCapas = [];
@@ -2686,7 +2759,12 @@ async function handleApiRequest(request, env, ctx) {
         const geminiContents = [];
         for (const m of turnosRecientes) {
           const role = (m.role === "assistant" || m.role === "model") ? "model" : "user";
-          const text = (m.text || m.content || "").trim();
+          let text = (m.text || m.content || "").trim();
+          if (role === "model" && (m.datosGenerados || m.datos_planificacion)) {
+            const planEntregado = m.datosGenerados || m.datos_planificacion;
+            const jsonPlan = typeof planEntregado === "string" ? planEntregado : JSON.stringify(planEntregado, null, 2);
+            text = `${text}\n\n[MEMORIA DE TRABAJO - PLANIFICACIÓN YA GENERADA Y ENTREGADA AL DOCENTE EN ESTE TURNO]:\n${jsonPlan}`.trim();
+          }
           if (text) {
             geminiContents.push({ role, parts: [{ text }] });
           }
@@ -2702,6 +2780,18 @@ async function handleApiRequest(request, env, ctx) {
         const models = getGeminiModels(env);
         const msPromptConv = performance.now() - t0PromptConv;
 
+        const supabaseConv = null;
+        const auditoriaEstadoConv = await ejecutarAuditoriaInterna(env, supabaseConv);
+        const promptHemisferioCognitivoConv = `
+[IDENTIDAD ABSOLUTA - INMUTABLE]
+- Eres exclusivamente **Planifica Maestro**, el copiloto pedagógico oficial para el MINERD en la República Dominicana.
+- Creado y diseñado por el docente **Israel Montás**.
+
+[ESTADO DE AUTODIAGNÓSTICO DEL SISTEMA (HEMISFERIO 1)]
+- Estado general del servidor: ${auditoriaEstadoConv.estado_general}
+- Fallos técnicos detectados en tiempo real: ${JSON.stringify(auditoriaEstadoConv.fallos_detectados)}
+- INSTRUCCIÓN DE CRISIS: Si hay fallos críticos detectados arriba, tienes prohibido ocultarlo. Debes informarle al docente con total transparencia técnica: "Atención: Mi subsistema de [componente] reporta una falla de conexión en este momento, por lo que opero con limitaciones..."
+`;
         const geminiBase = env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com";
         let textoGenerado = "";
         let msGeminiConv = 0;
@@ -2717,7 +2807,7 @@ async function handleApiRequest(request, env, ctx) {
               },
               body: JSON.stringify({
                 contents: geminiContents,
-                systemInstruction: { parts: [{ text: SYSTEM_PROMPT_CONVERSACIONAL }] },
+                systemInstruction: { parts: [{ text: `${construirPromptSistema()}\n${textoMemoriaDocente}\n${promptHemisferioCognitivoConv}\n${SYSTEM_PROMPT_CONVERSACIONAL}` }] },
                 generationConfig: { temperature: 0.3 }
               }),
               signal: request.signal,
@@ -2727,6 +2817,7 @@ async function handleApiRequest(request, env, ctx) {
               const data = await res.json();
               textoGenerado = textoDeCandidato(data.candidates?.[0]);
               textoGenerado = marcarSinRespaldo(textoGenerado);
+              textoGenerado = sanitizarAntiAlucinacion(textoGenerado);
               if (textoGenerado) break;
             }
           } catch (e) {
@@ -2905,7 +2996,23 @@ async function handleApiRequest(request, env, ctx) {
     const usaPromptV2 = Boolean(env && (env.PROMPT_SISTEMA_V2 === "true" || env.PROMPT_SISTEMA_V2 === true)) && !(esModoPrueba && env.DESACTIVAR_CAPA_3 === "true");
     const basePrompt = usaPromptV2 ? (typeof construirPromptSistemaV2 === "function" ? construirPromptSistemaV2({ esquemaElegido: esquema.label }) : PROMPT_SISTEMA_V2_TEXTO) : SYSTEM_PROMPT;
 
-    const dynamicPrompt = `${basePrompt}
+    const supabase = null;
+    const auditoriaEstado = await ejecutarAuditoriaInterna(env, supabase);
+    const promptHemisferioCognitivo = `
+[IDENTIDAD ABSOLUTA - INMUTABLE]
+- Eres exclusivamente **Planifica Maestro**, el copiloto pedagógico oficial para el MINERD en la República Dominicana.
+- Creado y diseñado por el docente **Israel Montás**.
+
+[ESTADO DE AUTODIAGNÓSTICO DEL SISTEMA (HEMISFERIO 1)]
+- Estado general del servidor: ${auditoriaEstado.estado_general}
+- Fallos técnicos detectados en tiempo real: ${JSON.stringify(auditoriaEstado.fallos_detectados)}
+- INSTRUCCIÓN DE CRISIS: Si hay fallos críticos detectados arriba, tienes prohibido ocultarlo. Debes informarle al docente con total transparencia técnica: "Atención: Mi subsistema de [componente] reporta una falla de conexión en este momento, por lo que opero con limitaciones..."
+`;
+
+    const dynamicPrompt = `${construirPromptSistema()}
+${textoMemoriaDocente}
+${promptHemisferioCognitivo}
+${basePrompt}
 ## ESQUEMA SELECCIONADO: ${esquema.label}
 - Ciclo relevante: ${ciclosTexto}
 - Área relevante: ${areasTexto}
@@ -2931,6 +3038,11 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
       let text = msg.text || "";
       if (idx === 0 && msg.role === "user") {
         text = `[Contexto: Esquema "${esquema.label}", Periodo: "${periodo}"]\n\n${text}`;
+      }
+      if (msg.role !== "user" && (msg.datosGenerados || msg.datos_planificacion)) {
+        const planEntregado = msg.datosGenerados || msg.datos_planificacion;
+        const jsonPlan = typeof planEntregado === "string" ? planEntregado : JSON.stringify(planEntregado, null, 2);
+        text = `${text}\n\n[MEMORIA DE TRABAJO - PLANIFICACIÓN YA GENERADA Y ENTREGADA AL DOCENTE EN ESTE TURNO]:\n${jsonPlan}`.trim();
       }
       if (msg.imageBase64 && msg.mediaType) {
         parts.push({
@@ -2975,6 +3087,22 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
     }
 
     areaPre = (body.area || "").trim();
+
+    // Smart Defaults para Peticiones Abiertas de Planificación (Autorización 073)
+    const esPeticionAbierta = /^(?:mu[eé]strame|hazme|dame|crea|planifica|quiero|elabora|diseña)\s+(?:una\s+)?(?:planificaci[oó]n|clase|unidad|secuencia)/i.test(textoParaProcesar.trim()) ||
+      /^(?:planificaci[oó]n|planificar|una\s+planificaci[oó]n)$/i.test(textoParaProcesar.trim());
+
+    if (esPeticionAbierta) {
+      if (!gradoPre) {
+        gradoPre = 1;
+      }
+      if (!areaPre) {
+        areaPre = "Lengua Española";
+      }
+      if (!temaPre) {
+        temaPre = "La tarjeta de identidad";
+      }
+    }
     const textoSinTema = temaPre
       ? textoParaProcesar.replace(new RegExp('(?:tema|sobre el tema|contenido|sobre|clase de)\\s*[:\\s]?\\s*' + temaPre.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&'), 'i'), '')
       : textoParaProcesar;
@@ -3226,7 +3354,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
     }
 
     // 3c. Faltan datos indispensables (área, grado o tema)
-    if (clasificacion && clasificacion.categoria === "planificacion" && !esModoPrueba) {
+    if (clasificacion && clasificacion.categoria === "planificacion" && !esModoPrueba && !esPeticionAbierta) {
       const faltantes = [];
       const docenteDijoGrado = Boolean(gradoANumero(textoParaProcesar) || (gradosMultiples(textoParaProcesar).length > 0));
       const tieneGradoExplicitoCuerpo = Boolean(gradoEnCuerpo);
@@ -3297,7 +3425,89 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
       return copia;
     }
 
-    // 1. Verificación previa en caché semántica (<60ms) tanto para Streaming SSE como JSON
+    // 1. Verificación previa en memoria episódica del robot (consultar_memoria_robot con score >= 0.95)
+    if (env && env.AI && env.SUPABASE_SERVICE_ROLE_KEY && env.SUPABASE_URL) {
+      try {
+        const vecsMem = await generarEmbeddings(env, [temaPre || textoParaProcesar || textoConsulta]);
+        if (vecsMem && vecsMem[0]) {
+          const baseUrlSupabase = String(env.SUPABASE_URL || "").replace(/\/+$/, "");
+          const resMem = await fetch(`${baseUrlSupabase}/rest/v1/rpc/consultar_memoria_robot`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+              Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`
+            },
+            body: JSON.stringify({
+              p_embedding: `[${vecsMem[0].join(",")}]`,
+              p_umbral_similitud: 0.95,
+              p_limite: 1
+            })
+          });
+          if (resMem.ok) {
+            const filasMem = await resMem.json();
+            if (Array.isArray(filasMem) && filasMem.length > 0 && Number(filasMem[0].similitud) >= 0.95) {
+              const hitMem = filasMem[0];
+              let planSalida = hitMem.planificacion_salida;
+              if (typeof planSalida === "string") {
+                try { planSalida = JSON.parse(planSalida); } catch {}
+              }
+              const planLimpio = typeof planSalida === "object" && planSalida?.datos_planificacion ? planSalida.datos_planificacion : planSalida;
+              const respuestaChat = "¡Planificación recuperada con éxito de la memoria episódica validada del robot (reutilización exitosa)!";
+              const payloadMemoria = {
+                mensaje_chat: respuestaChat,
+                plan_completado: true,
+                datos_planificacion: planLimpio,
+                confianza_curricular: {
+                  nivel_certeza: "alta",
+                  origen: "robot_memoria_experiencias",
+                  score: hitMem.similitud
+                },
+                planId: "plan_" + Date.now(),
+                nivel,
+                periodo,
+                nivelLabel: esquema?.label || nivel,
+                cuota: checkTopes?.cuota || null,
+                ...(habilitarTraza ? { traza_capas: [...trazaCapas] } : {})
+              };
+
+              if (isStream) {
+                const encoder = new TextEncoder();
+                const { readable, writable } = new TransformStream();
+                const writer = writable.getWriter();
+                (async () => {
+                  try {
+                    await writer.write(encoder.encode(`data: ${JSON.stringify({ estado: "recuperando_memoria", mensaje: "Planificación localizada en la memoria episódica..." })}\n\n`));
+                    await writer.write(encoder.encode(`data: ${JSON.stringify({ final: payloadMemoria })}\n\n`));
+                    await writer.write(encoder.encode("data: [DONE]\n\n"));
+                  } finally {
+                    writer.close();
+                  }
+                })();
+                return new Response(readable, {
+                  status: 200,
+                  headers: {
+                    ...corsHeaders,
+                    "Content-Type": "text/event-stream; charset=utf-8",
+                    "Cache-Control": "no-cache",
+                    Connection: "keep-alive"
+                  }
+                });
+              }
+
+              return new Response(JSON.stringify(payloadMemoria), {
+                status: 200,
+                headers: { ...corsHeaders, "Content-Type": "application/json" }
+              });
+            }
+          }
+        }
+      } catch (errMem) {
+        console.warn("[MemoriaRobot] Falló consulta previa:", errMem?.message || errMem);
+      }
+    }
+
+    // 1b. Verificación previa en caché semántica (<60ms) tanto para Streaming SSE como JSON
     const claveCacheSem = generarClaveCache(gradoPre, areaPre, temaPre || textoParaProcesar);
     if (claveCacheSem) {
       const cacheHit = await consultarCache(env, claveCacheSem);
@@ -3374,11 +3584,23 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
       }
     }
 
-    if (iaApagada) return generarErrorPlanificacion("IA_NO_DISPONIBLE", "El servicio de inteligencia artificial está en mantenimiento breve.", "Puedes seguir consultando el currículo oficial y las secuencias didácticas disponibles.", false);
+    if (iaApagada) {
+      console.warn("[Hemisferio 1] IA apagada por configuración. Activando Modo de Crisis.");
+      const crisisResp = activarModoDeCrisis(body, "Servicio de IA temporalmente en pausa");
+      return new Response(JSON.stringify(crisisResp), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
 
     // 1. Verificación previa de clave de IA
     if (!env.GEMINI_API_KEY) {
-      return generarErrorPlanificacion("SIN_CLAVE_IA", "Falta GEMINI_API_KEY en la configuración del servidor.", "Configura GEMINI_API_KEY en las variables de entorno de Cloudflare Workers.", false, 503);
+      console.warn("[Hemisferio 1] GEMINI_API_KEY ausente. Activando Modo de Crisis.");
+      const crisisResp = activarModoDeCrisis(body, "Credencial de IA ausente");
+      return new Response(JSON.stringify(crisisResp), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
     }
 
     // 2. Verificación de Supabase si está configurado (ping de 1 fila, timeout 1500ms)
@@ -3398,23 +3620,21 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
         });
         clearTimeout(pingTimer);
         if (!pingRes || !pingRes.ok) {
-          return generarErrorPlanificacion(
-            "CURRICULO_NO_CONECTADO",
-            "La base curricular de Supabase no respondió al ping de verificación.",
-            "Verifica la disponibilidad del servicio Supabase y sus claves.",
-            true,
-            503
-          );
+          console.warn("[Hemisferio 1] Supabase no respondió. Activando Modo de Crisis.");
+          const crisisResp = activarModoDeCrisis(body, "Base curricular de Supabase inaccesible");
+          return new Response(JSON.stringify(crisisResp), {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" }
+          });
         }
       } catch (errSupabase) {
         clearTimeout(pingTimer);
-        return generarErrorPlanificacion(
-          "CURRICULO_NO_CONECTADO",
-          `No se pudo conectar a la base curricular: ${errSupabase?.message || errSupabase}`,
-          "Verifica la conectividad de red con Supabase.",
-          true,
-          503
-        );
+        console.warn(`[Hemisferio 1] Error en Supabase: ${errSupabase?.message}. Activando Modo de Crisis.`);
+        const crisisResp = activarModoDeCrisis(body, "Conectividad con base curricular interrumpida");
+        return new Response(JSON.stringify(crisisResp), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
       }
     }
 
@@ -3482,7 +3702,7 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                       body: JSON.stringify({
                         contents: payload.contents,
                         tools: payload.tools,
-                        systemInstruction: { parts: [{ text: basePrompt }] },
+                        systemInstruction: { parts: [{ text: `${construirPromptSistema()}\n${textoMemoriaDocente}\n${basePrompt}` }] },
                         generationConfig: {
                           temperature: 0.0,
                           maxOutputTokens: 2048,
@@ -3677,12 +3897,14 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
               ? (env.STREAMING_PROGRESIVO === "true" || env.STREAMING_PROGRESIVO === true)
               : true;
 
+            let sseBuffer = "";
             while (true) {
               const { done, value } = await reader.read();
               if (done) break;
 
-              const chunk = decoder.decode(value, { stream: true });
-              const lines = chunk.split("\n");
+              sseBuffer += decoder.decode(value, { stream: true });
+              const lines = sseBuffer.split("\n");
+              sseBuffer = lines.pop() || "";
               for (const line of lines) {
                 if (line.startsWith("data:")) {
                   const jsonStr = line.replace(/^data:\s*/, "").trim();
@@ -3724,13 +3946,33 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
               }
             }
 
+            if (sseBuffer.trim().startsWith("data:")) {
+              const line = sseBuffer.trim();
+              const jsonStr = line.replace(/^data:\s*/, "").trim();
+              if (jsonStr && jsonStr !== "[DONE]") {
+                try {
+                  const parsedChunk = JSON.parse(jsonStr);
+                  const cand = parsedChunk.candidates?.[0];
+                  if (cand?.finishReason && cand.finishReason !== "STOP") {
+                    corteOcurrio = cand.finishReason;
+                  }
+                  const part = textoDeCandidato(cand);
+                  if (part) {
+                    fullText += part;
+                  }
+                } catch (e) {
+                  // Chunk parcial
+                }
+              }
+            }
+
             // Procesar fullText final
             let parsedFinal = extraerJson(fullText);
             let esValido = Boolean(parsedFinal && validarCamposPlanificacion(parsedFinal));
 
             if (!esValido && fullText) {
               const reparado = repararJsonTruncado(fullText);
-              if (reparado && validarCamposPlanificacion(reparado)) {
+              if (reparado && validarCamposPlanificacion(reparado) && typeof reparado.plan_completado === "boolean") {
                 parsedFinal = reparado;
                 esValido = true;
                 corteOcurrio = corteOcurrio || "JSON_REPARADO";
@@ -3755,7 +3997,8 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                     generationConfig: {
                       temperature: 0.0,
                       responseMimeType: "application/json",
-                      maxOutputTokens: 8192,
+                      maxOutputTokens: construirMaxSalida(env),
+                      ...construirThinkingConfig(env),
                     },
                   }),
                   signal: request.signal,
@@ -3906,9 +4149,62 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
             if (objetoPlan && objetoPlan.plan_completado && objetoPlan.datos_planificacion) {
               const bloqueCurriculoPaginas = fragmentosRecuperadosTexto || "";
               const filasDepuradas = consultasAuditadasStreaming.flatMap(c => c.filas || []).filter(esCoincidente);
-              const auditoriaFidelidad = auditarFidelidadCurricular(objetoPlan.datos_planificacion, filasDepuradas);
+              let auditoriaFidelidad = auditarFidelidadCurricular(objetoPlan.datos_planificacion, filasDepuradas);
+
+              if (!auditoriaFidelidad.esValido && env.GEMINI_API_KEY) {
+                try {
+                  const promptArreglo = construirPromptCorreccion(
+                    objetoPlan.datos_planificacion, 
+                    auditoriaFidelidad.motivoFallo, 
+                    filasDepuradas.map(f => f.texto).join("\n")
+                  );
+                  const modelArreglo = models[0] || "gemini-3.1-flash-lite";
+                  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelArreglo}:generateContent`;
+                  const retryRes = await fetchGeminiWithRetry(geminiUrl, {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "x-goog-api-key": env.GEMINI_API_KEY,
+                    },
+                    timeoutMs: 45000,
+                    body: JSON.stringify({
+                      contents: [{ role: "user", parts: [{ text: promptArreglo }] }],
+                      systemInstruction: { parts: [{ text: promptParaStreaming || dynamicPrompt }] },
+                      generationConfig: {
+                        temperature: 0.0,
+                        responseMimeType: "application/json",
+                        maxOutputTokens: construirMaxSalida(env),
+                        ...construirThinkingConfig(env),
+                      },
+                    }),
+                    signal: request.signal,
+                  });
+                  if (retryRes && retryRes.ok) {
+                    const dataArreglo = await retryRes.json();
+                    const candArreglo = dataArreglo.candidates?.[0];
+                    const rawArreglo = textoDeCandidato(candArreglo);
+                    const parsedArreglo = extraerJson(rawArreglo);
+                    if (parsedArreglo && validarCamposPlanificacion(parsedArreglo)) {
+                      objetoPlan.datos_planificacion = parsedArreglo.datos_planificacion || parsedArreglo;
+                      const auditoriaRehecha = auditarFidelidadCurricular(objetoPlan.datos_planificacion, filasDepuradas);
+                      auditoriaFidelidad = auditoriaRehecha;
+                    }
+                  }
+                } catch (eArreglo) {
+                  console.warn("[Self-RAG] Fallo en reintento correctivo:", eArreglo?.message || eArreglo);
+                }
+              }
+
               const fScore = calcularFaithfulness(objetoPlan.datos_planificacion, bloqueCurriculoPaginas);
               const rScore = calcularRelevance(objetoPlan.datos_planificacion, temaPre || textoParaProcesar);
+
+              objetoPlan.auditoria = {
+                aprobado: auditoriaFidelidad.esValido,
+                scoreFidelidad: auditoriaFidelidad.scoreFidelidad,
+                motivoFallo: auditoriaFidelidad.motivoFallo,
+                faithfulness: fScore,
+                relevance: rScore
+              };
 
               const tareaAuditoria = registrarMetricasRagas(env, {
                 sesionId: sesionId,
@@ -3942,6 +4238,43 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                 } else {
                   tareaCacheSem.catch(console.error);
                 }
+              }
+
+              // Persistencia en robot_memoria_experiencias al validar el crítico pedagógico
+              if (auditoriaFidelidad.esValido && env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
+                const guardarMemoriaRobot = async () => {
+                  try {
+                    let vector = null;
+                    if (env.AI) {
+                      const v = await generarEmbeddings(env, [temaPre || textoParaProcesar || ""]);
+                      if (v && v[0]) vector = `[${v[0].join(",")}]`;
+                    }
+                    const baseUrlSupabase = String(env.SUPABASE_URL || "").replace(/\/+$/, "");
+                    await fetch(`${baseUrlSupabase}/rest/v1/robot_memoria_experiencias`, {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+                        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+                        Prefer: "return=minimal"
+                      },
+                      body: JSON.stringify({
+                        docente_id: resolvedDocenteId || "Israel Montás",
+                        grado_nivel: String(gradoPre || nivel || "Primario"),
+                        area_curricular: areaPre || "General",
+                        tema_consulta: temaPre || textoParaProcesar || "",
+                        embedding: vector,
+                        planificacion_salida: JSON.stringify(objetoPlan.datos_planificacion || objetoPlan),
+                        calificacion_calidad: 5,
+                        validado_por_auditor: true
+                      })
+                    });
+                  } catch (eExp) {
+                    console.warn("[MemoriaRobot] Fallo guardando experiencia:", eExp?.message || eExp);
+                  }
+                };
+                if (ctx && ctx.waitUntil) ctx.waitUntil(guardarMemoriaRobot());
+                else guardarMemoriaRobot().catch(console.error);
               }
             }
 
@@ -4008,7 +4341,8 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                 systemInstruction: { parts: [{ text: dynamicPrompt }] },
                 generationConfig: {
                   temperature: 0.0,
-                  maxOutputTokens: 8192,
+                  maxOutputTokens: construirMaxSalida(env),
+                  ...construirThinkingConfig(env),
                 },
               }),
               signal: request.signal,
@@ -4043,6 +4377,45 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
 
           if (claveCache && esRespuestaCacheable(parsed)) {
             guardarRespuestaEnCache(claveCache, parsed);
+          }
+
+          if (parsed && parsed.plan_completado && parsed.datos_planificacion) {
+            const filasDepuradas = (cicloRes.consultas || []).flatMap(c => c.filas || []).filter(esCoincidente);
+            const fragmentosReclasificados = reclasificarFragmentos(filasDepuradas, {
+              consulta: temaPre || textoParaProcesar,
+              grado: gradoPre,
+              area: areaPre
+            }, { umbralMinimo: 0.35 });
+            const filasFinales = fragmentosReclasificados.length > 0 ? fragmentosReclasificados : filasDepuradas;
+            const auditoriaFidelidad = auditarFidelidadCurricular(parsed.datos_planificacion, filasFinales);
+            const fScore = calcularFaithfulness(parsed.datos_planificacion, JSON.stringify(filasFinales));
+            const rScore = calcularRelevance(parsed.datos_planificacion, temaPre || textoParaProcesar);
+            const evaluacionCrag = evaluarCalidadRecuperacion(filasFinales, { consulta: temaPre || textoParaProcesar, area: areaPre });
+
+            parsed.auditoria = {
+              aprobado: auditoriaFidelidad.esValido,
+              scoreFidelidad: auditoriaFidelidad.scoreFidelidad,
+              motivoFallo: auditoriaFidelidad.motivoFallo,
+              faithfulness: fScore,
+              relevance: rScore,
+              crag: evaluacionCrag
+            };
+
+            const tareaAuditoria = registrarMetricasRagas(env, {
+              sesionId: sesionId,
+              grado: gradoPre,
+              area: areaPre,
+              tema: temaPre || textoParaProcesar,
+              faithfulness: fScore,
+              relevance: rScore,
+              precision: filasDepuradas.length > 0 ? 1.0 : 0.5
+            });
+
+            if (ctx && ctx.waitUntil) {
+              ctx.waitUntil(tareaAuditoria);
+            } else {
+              tareaAuditoria.catch(console.error);
+            }
           }
 
           return new Response(
@@ -4082,7 +4455,8 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
             generationConfig: {
               temperature: 0.0,
               responseMimeType: "application/json",
-              maxOutputTokens: 8192,
+              maxOutputTokens: construirMaxSalida(env),
+              ...construirThinkingConfig(env),
             },
           }),
           signal: request.signal,
@@ -4127,7 +4501,8 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
               generationConfig: {
                 temperature: 0.0,
                 responseMimeType: "application/json",
-                maxOutputTokens: 8192,
+                maxOutputTokens: construirMaxSalida(env),
+                ...construirThinkingConfig(env),
               },
             }),
             signal: request.signal,
@@ -4200,9 +4575,61 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
       if (objetoPlan && objetoPlan.plan_completado && objetoPlan.datos_planificacion) {
         const bloqueCurriculoPaginas = (typeof fragmentosRecuperadosTexto !== "undefined" ? fragmentosRecuperadosTexto : "");
         const filasDepuradas = typeof filasCoincidentes !== "undefined" ? filasCoincidentes : [];
-        const auditoriaFidelidad = auditarFidelidadCurricular(objetoPlan.datos_planificacion, filasDepuradas);
+        let auditoriaFidelidad = auditarFidelidadCurricular(objetoPlan.datos_planificacion, filasDepuradas);
+
+        if (!auditoriaFidelidad.esValido && env.GEMINI_API_KEY) {
+          try {
+            const promptArreglo = construirPromptCorreccion(
+              objetoPlan.datos_planificacion, 
+              auditoriaFidelidad.motivoFallo, 
+              filasDepuradas.map(f => f.texto).join("\n")
+            );
+            const modelArreglo = models[0] || "gemini-3.1-flash-lite";
+            const retryRes = await fetchGeminiWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/${modelArreglo}:generateContent`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "x-goog-api-key": env.GEMINI_API_KEY,
+              },
+              timeoutMs: 45000,
+              body: JSON.stringify({
+                contents: [{ role: "user", parts: [{ text: promptArreglo }] }],
+                systemInstruction: { parts: [{ text: dynamicPrompt }] },
+                generationConfig: {
+                  temperature: 0.0,
+                  responseMimeType: "application/json",
+                  maxOutputTokens: construirMaxSalida(env),
+                  ...construirThinkingConfig(env),
+                },
+              }),
+              signal: request.signal,
+            });
+            if (retryRes && retryRes.ok) {
+              const dataArreglo = await retryRes.json();
+              const candArreglo = dataArreglo.candidates?.[0];
+              const rawArreglo = textoDeCandidato(candArreglo);
+              const parsedArreglo = extraerJson(rawArreglo);
+              if (parsedArreglo && validarCamposPlanificacion(parsedArreglo)) {
+                objetoPlan.datos_planificacion = parsedArreglo.datos_planificacion || parsedArreglo;
+                const auditoriaRehecha = auditarFidelidadCurricular(objetoPlan.datos_planificacion, filasDepuradas);
+                auditoriaFidelidad = auditoriaRehecha;
+              }
+            }
+          } catch (eArreglo) {
+            console.warn("[Self-RAG] Fallo en reintento correctivo:", eArreglo?.message || eArreglo);
+          }
+        }
+
         const fScore = calcularFaithfulness(objetoPlan.datos_planificacion, bloqueCurriculoPaginas);
         const rScore = calcularRelevance(objetoPlan.datos_planificacion, temaPre || textoParaProcesar);
+
+        objetoPlan.auditoria = {
+          aprobado: auditoriaFidelidad.esValido,
+          scoreFidelidad: auditoriaFidelidad.scoreFidelidad,
+          motivoFallo: auditoriaFidelidad.motivoFallo,
+          faithfulness: fScore,
+          relevance: rScore
+        };
 
         const tareaAuditoria = registrarMetricasRagas(env, {
           sesionId: sesionId,
@@ -4237,6 +4664,43 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
             tareaCacheSem.catch(console.error);
           }
         }
+
+        // Persistencia en robot_memoria_experiencias al validar el crítico pedagógico
+        if (auditoriaFidelidad.esValido && env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
+          const guardarMemoriaRobot = async () => {
+            try {
+              let vector = null;
+              if (env.AI) {
+                const v = await generarEmbeddings(env, [temaPre || textoParaProcesar || ""]);
+                if (v && v[0]) vector = `[${v[0].join(",")}]`;
+              }
+              const baseUrlSupabase = String(env.SUPABASE_URL || "").replace(/\/+$/, "");
+              await fetch(`${baseUrlSupabase}/rest/v1/robot_memoria_experiencias`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+                  Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+                  Prefer: "return=minimal"
+                },
+                body: JSON.stringify({
+                  docente_id: resolvedDocenteId || "Israel Montás",
+                  grado_nivel: String(gradoPre || nivel || "Primario"),
+                  area_curricular: areaPre || "General",
+                  tema_consulta: temaPre || textoParaProcesar || "",
+                  embedding: vector,
+                  planificacion_salida: JSON.stringify(objetoPlan.datos_planificacion || objetoPlan),
+                  calificacion_calidad: 5,
+                  validado_por_auditor: true
+                })
+              });
+            } catch (eExp) {
+              console.warn("[MemoriaRobot] Fallo guardando experiencia:", eExp?.message || eExp);
+            }
+          };
+          if (ctx && ctx.waitUntil) ctx.waitUntil(guardarMemoriaRobot());
+          else guardarMemoriaRobot().catch(console.error);
+        }
       }
 
       if (sesionId) {
@@ -4263,24 +4727,12 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
     }
 
     console.error(`[AI Error] Modelos agotados. Código: ${ultimoStatus}`);
-    const codigoNoStream = (ultimoStatus === 429)
-      ? "PROVEEDOR_IA_SATURADO"
-      : (ultimoStatus === 503 || ultimoStatus === 502 || ultimoStatus === 504)
-      ? "IA_NO_DISPONIBLE"
-      : "ERROR_INTERNO";
-    const mensajeMaestro = (ultimoStatus === 503 || ultimoStatus === 429 || ultimoStatus === 502 || ultimoStatus === 504)
-      ? "La IA está ocupada, intenta de nuevo en un minuto."
-      : (ultimoStatus === 401 || ultimoStatus === 403)
-      ? "Hay un problema de configuración en el servicio de generación. Por favor, contacta a soporte."
-      : "La IA está ocupada, intenta de nuevo en un minuto.";
-
-    return generarErrorPlanificacion(
-      codigoNoStream,
-      mensajeMaestro,
-      "Espera un minuto y pulsa 'Reintentar'.",
-      true,
-      (ultimoStatus === 401 || ultimoStatus === 403) ? 500 : 503
-    );
+    console.warn("[Hemisferio 1] Activando Modo de Crisis por modelos agotados / fallo IA.");
+    const crisisResp = activarModoDeCrisis(body, "Modelos de IA no disponibles temporalmente");
+    return new Response(JSON.stringify(crisisResp), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
   }
 
   // 8. POST /api/plan/consultar-curriculo

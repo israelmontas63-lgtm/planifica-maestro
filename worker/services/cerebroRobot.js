@@ -89,6 +89,11 @@ export class CerebroRobot {
     switch (nombre) {
       case 'consultar_curriculo_minerd': {
         const url = `${this.env.SUPABASE_URL}/rest/v1/rpc/buscar_curriculo_paginas`;
+        const termino = args.termino || args.consulta || null;
+        const consulta = args.consulta;
+        const grado = args.grado;
+        const area = args.area;
+        const limite = args.limite;
         let res = await fetch(url, {
           method: 'POST',
           headers: {
@@ -96,14 +101,20 @@ export class CerebroRobot {
             'Authorization': `Bearer ${this.env.SUPABASE_SERVICE_ROLE_KEY}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ query_text: args.termino, p_grado: args.grado || null })
+          body: JSON.stringify({
+            p_consulta: termino || consulta || null,
+            p_grado_num: Number(grado) || null,
+            p_area: area || null,
+            p_nivel: 'Primario',
+            p_limite: limite || 5
+          })
         });
         let datos = res.ok ? await res.json() : [];
 
         // Bucle de autorreparación semántica si no hay filas exactas
         if (!datos || datos.length === 0) {
-          const grado = args.grado || 1;
-          const fallback = grado <= 2 ? 'alfabetización inicial numeración' : 'lengua española matemática';
+          const gradoNum = Number(grado) || 1;
+          const fallback = gradoNum <= 2 ? 'alfabetización inicial numeración' : 'lengua española matemática';
           res = await fetch(url, {
             method: 'POST',
             headers: {
@@ -111,7 +122,13 @@ export class CerebroRobot {
               'Authorization': `Bearer ${this.env.SUPABASE_SERVICE_ROLE_KEY}`,
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ query_text: fallback, p_grado: grado })
+            body: JSON.stringify({
+              p_consulta: fallback,
+              p_grado_num: Number(grado) || null,
+              p_area: area || null,
+              p_nivel: 'Primario',
+              p_limite: limite || 5
+            })
           });
           datos = res.ok ? await res.json() : [];
         }

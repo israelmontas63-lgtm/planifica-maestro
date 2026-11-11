@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { HANDLERS, recuperarPorHibrida, UMBRAL_HIBRIDO } from '../shared/herramientas.mjs';
 
 describe('FIX 4 — Búsqueda Híbrida y Compuerta de Score', () => {
-  it('UMBRAL_HIBRIDO está fijado en 0.017 (RRF dual)', () => {
-    assert.equal(UMBRAL_HIBRIDO, 0.017);
+  it('UMBRAL_HIBRIDO está fijado en 0.015 (RRF calibrado)', () => {
+    assert.equal(UMBRAL_HIBRIDO, 0.015);
   });
 
-  it('Score 0.0164 (coincidencia en una sola lista) se descarta', async () => {
+  it('Score 0.014 (por debajo de umbral calibrado 0.015) se descarta', async () => {
     const mockEnv = {
       AI: {
         run: async () => ({ data: [new Array(1024).fill(0.1)] })
@@ -25,7 +25,7 @@ describe('FIX 4 — Búsqueda Híbrida y Compuerta de Score', () => {
       if (u.includes('/rpc/buscar_curriculo_hibrido')) {
         rpcCalled = true;
         return new Response(JSON.stringify([
-          { secuencia_id: 'sec-1', contenido: 'Prueba', score: 0.0164 }
+          { secuencia_id: 'sec-1', contenido: 'Prueba', score: 0.014 }
         ]), { status: 200, headers: { 'Content-Type': 'application/json' } });
       }
       if (u.includes('/rest/v1/curriculo_secuencias')) {
@@ -43,7 +43,7 @@ describe('FIX 4 — Búsqueda Híbrida y Compuerta de Score', () => {
       }, mockEnv);
 
       assert.equal(rpcCalled, true);
-      assert.equal(secuenciasCalled, false, 'No debió consultar secuencias porque score 0.0164 < 0.017');
+      assert.equal(secuenciasCalled, false, 'No debió consultar secuencias porque score 0.014 < 0.015');
       assert.deepEqual(res, []);
     } finally {
       globalThis.fetch = originalFetch;

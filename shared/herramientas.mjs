@@ -9,7 +9,7 @@ import { ejecutarBusquedaWeb } from '../worker/services/investigadorService.js';
 import { buscarCurriculoHibrido } from '../worker/services/busquedaSemantica.js';
 import { gradoANumero, normalizarArea } from './catalogoCurricular.mjs';
 
-export const UMBRAL_HIBRIDO = 0.017; // RRF k=60: exige coincidencia en texto y en vector
+export const UMBRAL_HIBRIDO = 0.015; // RRF k=60: permite capturar rango 1 (1/(60+1) = 0.01639)
 
 export const NIVELES = ['Inicial', 'Primario', 'Secundario'];
 export const REQUERIDOS = ['nivel', 'grado', 'area', 'tema_o_concepto'];
@@ -61,12 +61,20 @@ export const HANDLERS = {
       return formatearRespuestaCurricular(filas);
     }
 
+    const normalizarResultado = (lista) => (Array.isArray(lista) ? lista : []).map(f => ({
+      ...f,
+      fuente_documento: f.fuente_documento || "Adecuación Curricular 2023",
+      pagina: f.pagina || "S/P"
+    }));
+
     const filas = await consultarCurriculoMINERD(args, env, { signal, timeoutMs: TIMEOUT_MS });
     const base = formatearRespuestaCurricular(filas);
+    base.resultado = normalizarResultado(base.resultado);
     if (base.resultado.length > 0 || !(env && env.AI && env.SUPABASE_SERVICE_ROLE_KEY)) return base;
     const extra = await recuperarPorHibrida(args, env, signal);
     if (!extra.length) return base;
     const semantica = formatearRespuestaCurricular(extra);
+    semantica.resultado = normalizarResultado(semantica.resultado);
     semantica.aviso_semantico = 'Coincidencias por similitud semántica, no por tema exacto. Dile al docente que son aproximadas y no las presentes como el tema pedido.';
     return semantica;
   },

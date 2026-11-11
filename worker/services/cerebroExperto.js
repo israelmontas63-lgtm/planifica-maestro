@@ -320,6 +320,11 @@ export class CerebroExperto {
     if (nombre === 'buscar_curriculo_oficial') {
       const endpoint = `${this.supabaseUrl}/rest/v1/rpc/buscar_curriculo_paginas`;
       try {
+        const termino = args.termino || args.consulta || null;
+        const consulta = args.consulta;
+        const grado = args.grado;
+        const area = args.area;
+        const limite = args.limite;
         const res = await this.fetchFn(endpoint, {
           method: 'POST',
           headers: {
@@ -328,9 +333,11 @@ export class CerebroExperto {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            query_text: args.termino,
-            p_grado: Number(args.grado) || 1,
-            p_limite: 3
+            p_consulta: termino || consulta || null,
+            p_grado_num: Number(grado) || null,
+            p_area: area || null,
+            p_nivel: 'Primario',
+            p_limite: limite || 5
           })
         });
         if (!res.ok) return [];

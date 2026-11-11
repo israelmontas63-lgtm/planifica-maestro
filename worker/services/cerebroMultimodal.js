@@ -101,8 +101,11 @@ export class CerebroMultimodal {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            p_consulta: termino,
-            p_grado_num: grado,
+            p_consulta: termino || null,
+            p_grado_num: Number(grado) || null,
+            p_area: args.area || null,
+            p_nivel: 'Primario',
+            p_limite: args.limite || 5,
             query_text: termino,
             p_grado: grado
           })

@@ -34,8 +34,8 @@ describe('MotorCurricularRAG - Consultas Curriculares y Secuencias Multigrado', 
     });
 
     assert.ok(endpointLlamado.includes('/rest/v1/rpc/buscar_curriculo_paginas'));
-    assert.equal(bodyCapturado.query_text, 'adición');
-    assert.equal(bodyCapturado.p_grado, 1);
+    assert.equal(bodyCapturado.p_consulta || bodyCapturado.query_text, 'adición');
+    assert.equal(bodyCapturado.p_grado_num || bodyCapturado.p_grado, 1);
     assert.equal(bodyCapturado.p_limite, 3);
 
     assert.equal(res.ok, true);

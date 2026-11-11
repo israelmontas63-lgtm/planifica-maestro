@@ -85,9 +85,10 @@ export class OrquestadorInvestigacionGlobal {
   }
 
   // 3. Ejecutor Curricular Supabase con Bucle de Autorreparación
-  async ejecutarConsultaCurricular(termino, grado) {
+  async ejecutarConsultaCurricular(termino, grado, limite, area) {
     const endpoint = `${this.supabaseUrl}/rest/v1/rpc/buscar_curriculo_paginas`;
     const fetcher = this.fetchFn || globalThis.fetch;
+    const consulta = termino;
     try {
       let res = await fetcher(endpoint, {
         method: 'POST',
@@ -96,14 +97,20 @@ export class OrquestadorInvestigacionGlobal {
           'Authorization': `Bearer ${this.serviceKey}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ query_text: termino, p_grado: grado, p_limite: 3 })
+        body: JSON.stringify({
+          p_consulta: termino || consulta || null,
+          p_grado_num: Number(grado) || null,
+          p_area: area || null,
+          p_nivel: 'Primario',
+          p_limite: limite || 5
+        })
       });
 
       let datos = res.ok ? await res.json() : [];
 
       // Autorreparación semántica inmediata si no hay coincidencia exacta
       if (!datos || datos.length === 0) {
-        const fallback = grado <= 2 ? 'alfabetización inicial numeración' : 'lengua española matemática';
+        const fallback = Number(grado) <= 2 ? 'alfabetización inicial numeración' : 'lengua española matemática';
         res = await fetcher(endpoint, {
           method: 'POST',
           headers: {
@@ -111,7 +118,13 @@ export class OrquestadorInvestigacionGlobal {
             'Authorization': `Bearer ${this.serviceKey}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ query_text: fallback, p_grado: grado, p_limite: 3 })
+          body: JSON.stringify({
+            p_consulta: fallback,
+            p_grado_num: Number(grado) || null,
+            p_area: area || null,
+            p_nivel: 'Primario',
+            p_limite: limite || 5
+          })
         });
         datos = res.ok ? await res.json() : [];
       }

@@ -106,8 +106,8 @@ describe('OrquestadorPedagogico - Smart Defaults y Mapeo de Esquemas', () => {
     const res = await orquestador.consultarFundamentacionCurricular('la fábula', 3, 3);
 
     assert.ok(urlLlamada.includes('buscar_curriculo_paginas'));
-    assert.equal(bodyLlamado.query_text, 'la fábula');
-    assert.equal(bodyLlamado.p_grado, 3);
+    assert.equal(bodyLlamado.p_consulta || bodyLlamado.query_text, 'la fábula');
+    assert.equal(bodyLlamado.p_grado_num || bodyLlamado.p_grado, 3);
     assert.equal(res.ok, true);
     assert.equal(res.fragmentos[0].pagina, 118);
 

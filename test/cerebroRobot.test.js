@@ -175,8 +175,9 @@ describe('Pruebas del Motor Autónomo CerebroRobot', () => {
     global.fetch = async (url, opts) => {
       if (url.includes('buscar_curriculo_paginas')) {
         const body = JSON.parse(opts.body);
-        llamadas.push(body.query_text);
-        if (body.query_text === 'termino_inexistente_xyz') {
+        const consulta = body.p_consulta || body.query_text;
+        llamadas.push(consulta);
+        if (consulta === 'termino_inexistente_xyz') {
           return { ok: true, json: async () => [] };
         }
         return {

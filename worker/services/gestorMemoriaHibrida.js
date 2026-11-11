@@ -45,9 +45,46 @@ export class GestorMemoriaHibrida {
     return `### MEMORIA PERMANENTE DEL DOCENTE:
 - [perfil] nombre_docente: Israel Montás
 - [aula] centro_educativo: Escuela Primaria Batey Pinos
-- [aula] modalidad: Multigrado (1.º y 2.º de Primaria)
+- [aula] modalidad: Primaria Multigrado (1.º y 2.º de Primaria)
 - [regla_planificacion] tiempo_bloque: 45 minutos por sesión
-- [regla_planificacion] enfoque_oficial: Adecuación Curricular MINERD y CON BASE\n`;
+- [regla_planificacion] enfoque_oficial: Adecuación Curricular MINERD (Ley 66-97) y Programa CON BASE\n`;
+  }
+
+  async obtenerMemoriaLargoPlazoDetalle(usuarioId = 'docente_principal') {
+    const endpoint = `${this.url}/rest/v1/docente_memoria_largo_plazo?usuario_id=eq.${encodeURIComponent(usuarioId)}&select=categoria,clave,valor`;
+    try {
+      const res = await this.fetchFn(endpoint, {
+        headers: {
+          'apikey': this.key,
+          'Authorization': `Bearer ${this.key}`
+        }
+      });
+      if (!res.ok) return this._fallbackDetalle();
+
+      const hechos = await res.json();
+      if (!hechos || hechos.length === 0) return this._fallbackDetalle();
+
+      const map = {};
+      for (const h of hechos) {
+        map[h.clave] = h.valor;
+      }
+      return { hechos, map };
+    } catch {
+      return this._fallbackDetalle();
+    }
+  }
+
+  _fallbackDetalle() {
+    return {
+      hechos: [],
+      map: {
+        nombre_docente: "Israel Montás",
+        centro_educativo: "Escuela Primaria Batey Pinos",
+        modalidad: "Primaria Multigrado (1.º y 2.º grado, Primer Ciclo)",
+        tiempo_bloque: "45 minutos",
+        enfoque_oficial: "Adecuación Curricular MINERD (Ley 66-97) y Programa CON BASE"
+      }
+    };
   }
 
   // 2. Guardar o actualizar un hecho a largo plazo

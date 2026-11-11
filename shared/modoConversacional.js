@@ -112,6 +112,30 @@ export function generarRespuestaCharlaLocal({ texto = "", nombreDocente = null, 
     };
   }
 
+  // Identidad oficial, autoría y propósito de Planifica Maestro (Israel Montás)
+  if (/(quien eres|quien te creo|quien te diseno|como te llamas|cual es tu nombre|que es planifica maestro|quien es israel montas)/.test(norm)) {
+    const nombreSaneado = sanearNombreDocente(nombreDocente);
+    let prefijoDocente = "";
+    if (nombreSaneado) {
+      const sinPrefijo = nombreSaneado.replace(/^(profe|prof\.|profesor|profesora|maestro|maestra|colega)\s+/i, "");
+      const primerNombre = sinPrefijo.split(/\s+/)[0];
+      prefijoDocente = `¡Hola, Profe ${primerNombre}! `;
+    }
+    return {
+      mensaje_chat: `${prefijoDocente}Soy **Planifica Maestro**, la planificadora experta y colega docente oficial diseñada y concebida por **Israel Montás** para los maestros de la República Dominicana.\n\nMi propósito es facilitarte el trabajo diario en el aula, estructurando planificaciones de alta calidad fundamentadas estrictamente en el currículo oficial del **MINERD**, la Adecuación Curricular vigente y las **Guías Didácticas** (incluyendo el programa **CON BASE** para 1.º a 3.º y estrategias para aulas multigrado). ¿Qué área o grado te gustaría que organicemos hoy?`,
+      plan_completado: false,
+      modo: "charla",
+      categoria: "charla",
+      datos_planificacion: null,
+      opciones: [
+        "Planificar una clase",
+        "Consultar el currículo MINERD",
+        "Estructurar con guías CON BASE",
+        "Estrategias para multigrado"
+      ]
+    };
+  }
+
   // Autorización 015: desahogo o carga laboral docente
   if (/(estoy (agotad|cansad|estresad|abrumad)[oa]|no me da tiempo|no me alcanza el tiempo|no doy abasto|grados en una? aula)/.test(norm)) {
     const nombreApoyo = sanearNombreDocente(nombreDocente);
@@ -183,12 +207,22 @@ export function generarRespuestaCharlaLocal({ texto = "", nombreDocente = null, 
   };
 }
 
+export function sanitizarAntiAlucinacion(texto) {
+  if (!texto || typeof texto !== "string") return texto;
+  return texto
+    .replace(/\b(?:Soy\s+Alquimia(?:\s+Studio)?|Como\s+(?:IA|modelo)\s+de\s+Alquimia)\b/gi, "Soy Planifica Maestro")
+    .replace(/\bAlquimia\s+Studio\b/gi, "Planifica Maestro")
+    .replace(/\bAlquimia\b/gi, "Planifica Maestro");
+}
+
 export function limpiarSaludoInnecesario(texto, debePermitirSaludo = false) {
-  if (debePermitirSaludo || !texto || typeof texto !== "string") return texto;
-  let limpio = texto.trim();
-  limpio = limpio.replace(/^(?:¡?(?:hola\b|buen(?:os)?\s*días\b|buenas\s*tardes\b|buenas\s*noches\b|saludos\b)(?:,\s*(?:profe|profesor[a]?|colega|maestro[a]?))?[!.]?\s*)+/i, "");
-  limpio = limpio.replace(/^(?:(?:es\s+un\s+|qué\s+)?gusto\s+(?:en\s+)?saludar(?:te|le)?(?:,\s*(?:profe|profesor[a]?|colega|maestro[a]?))?[!.]?\s*|(?:es\s+un\s+|qué\s+)?placer\s+(?:en\s+)?saludar(?:te|le)?(?:,\s*(?:profe|profesor[a]?|colega|maestro[a]?))?[!.]?\s*|(?:un\s+placer|con\s+gusto\s+te\s+apoyo)[!.]?\s*)+/i, "");
-  limpio = limpio.trim();
+  if (!texto || typeof texto !== "string") return texto;
+  let limpio = sanitizarAntiAlucinacion(texto).trim();
+  if (!debePermitirSaludo) {
+    limpio = limpio.replace(/^(?:¡?(?:hola\b|buen(?:os)?\s*días\b|buenas\s*tardes\b|buenas\s*noches\b|saludos\b)(?:,\s*(?:profe|profesor[a]?|colega|maestro[a]?))?[!.]?\s*)+/i, "");
+    limpio = limpio.replace(/^(?:(?:es\s+un\s+|qué\s+)?gusto\s+(?:en\s+)?saludar(?:te|le)?(?:,\s*(?:profe|profesor[a]?|colega|maestro[a]?))?[!.]?\s*|(?:es\s+un\s+|qué\s+)?placer\s+(?:en\s+)?saludar(?:te|le)?(?:,\s*(?:profe|profesor[a]?|colega|maestro[a]?))?[!.]?\s*|(?:un\s+placer|con\s+gusto\s+te\s+apoyo)[!.]?\s*)+/i, "");
+    limpio = limpio.trim();
+  }
   return limpio || texto;
 }
 

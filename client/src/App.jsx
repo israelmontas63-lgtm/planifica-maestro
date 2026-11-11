@@ -547,6 +547,7 @@ export default function App() {
         role: "assistant",
         text: chatText,
         datosGenerados: planCompleto ? planDatos : null,
+        datos_planificacion: planCompleto ? planDatos : null,
         confianzaCurricular: data.confianzaCurricular || null,
         planId: data.planId || null,
         distintivo: data.distintivo || null,

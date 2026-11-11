@@ -3,6 +3,8 @@
 // Un solo modelo de embeddings para todo (mezclar modelos rompe la comparación). Si falla, devuelve null
 // y el flujo curricular actual (consultarCurriculoMINERD) sigue como siempre.
 import { fetchConLimite } from "./timeoutIntento.js";
+import { generarDocumentoHipotetico } from "./hydeService.js";
+import { CONSTANTE_K_RRF, obtenerPesosArea, calibrarYFusionarRRF } from "./rrfCalibrador.js";
 
 export const MODELO_EMBEDDING = "@cf/baai/bge-m3"; // 1024 dimensiones: debe coincidir con vector(1024) del SQL
 export const DIMENSION = 1024;
@@ -31,7 +33,22 @@ export async function buscarCurriculoHibrido(env, { consulta, grado = null, area
   if (!env || !env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return null;
   const q = String(consulta || "").trim();
   if (!q) return null;
-  const vecs = await generarEmbeddings(env, [q]);
+
+  // HyDE (Gao et al.): Para consultas concisas (< 15 palabras), expandir a pasaje curricular hipotético
+  let textoParaEmbedding = q;
+  const palabras = q.split(/\s+/).filter(Boolean);
+  if (palabras.length < 15) {
+    try {
+      const docHipotetico = await generarDocumentoHipotetico(env, q, grado, area);
+      if (docHipotetico && typeof docHipotetico === "string" && docHipotetico.trim()) {
+        textoParaEmbedding = docHipotetico.trim();
+      }
+    } catch {
+      textoParaEmbedding = q;
+    }
+  }
+
+  const vecs = await generarEmbeddings(env, [textoParaEmbedding]);
   if (!vecs) return null;
   try {
     const res = await fetchConLimite(`${baseUrl(env)}/rest/v1/rpc/buscar_curriculo_hibrido`, {

@@ -36,8 +36,9 @@ test('MotorCognitivoClon - Ejecución curricular con bucle de autorreparación',
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url, opts) => {
     const body = JSON.parse(opts.body);
-    llamadas.push(body.query_text);
-    if (body.query_text === 'sustracción avanzada') {
+    const consulta = body.p_consulta || body.query_text;
+    llamadas.push(consulta);
+    if (consulta === 'sustracción avanzada') {
       return { ok: true, json: async () => [] };
     }
     return {

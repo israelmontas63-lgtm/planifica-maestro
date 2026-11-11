@@ -322,6 +322,20 @@ export function clasificarPorReglas(texto, contexto = {}) {
     };
   }
 
+  // 0.4 Detección de Pregunta sobre Identidad, Creador o Propósito (Israel Montás)
+  const esPreguntaIdentidad = /\b(?:qui[eé]n\s+(?:eres|te\s+(?:cre[oó]|dise[nñ][oó]|hizo))|c[oó]mo\s+te\s+llamas|cu[aá]l\s+es\s+tu\s+nombre|qu[eé]\s+es\s+planifica\s+maestro|qui[eé]n\s+es\s+israel\s+mont[aá]s)\b/i.test(texto);
+  if (esPreguntaIdentidad) {
+    return {
+      categoria: "charla",
+      tipo: "charla",
+      categoria_6: CATEGORIAS_6.B_PEDAGOGIA_GENERAL,
+      codigo_categoria: "B",
+      confianza: 0.99,
+      motivo: "Pregunta sobre identidad, autoría o propósito de Planifica Maestro.",
+      esMixtoConSaludo: false
+    };
+  }
+
   // 0. Detección de Término Ajeno (Categoría E)
   for (const m of MAPEO_TERMINOS_AJENOS) {
     if (m.patrones.some(p => contienePalabraOFrase(norm, p))) {

@@ -39,7 +39,15 @@ export function auditarFidelidadCurricular(planData, fragmentosCurriculares = []
 
   // 3. Verificación de anclaje fáctico (Grounding Check)
   // Extrae términos del indicador de logro de la planificación y busca correspondencia textual en la evidencia
-  const textoEvidencia = fragmentosCurriculares.map(f => (f.texto || '').toLowerCase()).join(' ');
+  const textoEvidencia = fragmentosCurriculares.map(f => (
+    f.texto || f.contenido || [
+      f.tema,
+      f.bloque_guia,
+      f.competencias_especificas,
+      f.contenidos_texto_original,
+      Array.isArray(f.indicadores_logro) ? f.indicadores_logro.join(" ") : f.indicadores_logro
+    ].filter(Boolean).join(" ") || ""
+  ).toLowerCase()).join(' ');
   const indicadoresPlan = JSON.stringify(
     planData.indicadores_logro || 
     planData.evaluacion || 

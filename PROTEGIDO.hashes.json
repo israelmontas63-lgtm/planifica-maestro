@@ -1,12 +1,12 @@
 {
   "version": "2.0.0",
-  "fecha_generacion": "2026-11-09T21:40:13.166Z",
-  "commit": "c0076b9",
+  "fecha_generacion": "2026-11-11T20:45:15.096Z",
+  "commit": "4a9cbad",
   "algoritmo": "sha256",
   "total_archivos": 83,
-  "resumen": "497b4976e5a007cbfc6bea970e0543861664e782d08936969dad637477e40cd6",
+  "resumen": "0b2e945f98f6fdeffb866ca5b323cc44286120cda80cf646d709c5a14c41ed33",
   "hashes": {
-    "client/src/App.jsx": "4b4a17a8ed32cdf8b9fa99249e70a350dbc57f7cdf9ca883f52aeb8f9a1f6cad",
+    "client/src/App.jsx": "08f48aac9131fd967a25bfca5af841c796773827c85fa0b4b0441afd7247198a",
     "client/src/api.js": "b7bd439cdcd1db019cb3498d87ae998444b546a254e47aeb4d0706dab3965ad0",
     "client/src/components/EditorImagenModal.jsx": "381369355f719d19ec46fe455bf3f13c1e3706367cdf3dfc4ff099d03b8afbd5",
     "client/src/components/MisPlanificaciones.jsx": "a7303fde51b6eac64382aef88758f68c81a7db0536da6b44a69f5992d5272de0",
@@ -44,7 +44,7 @@
     "shared/catalogoCurricular.mjs": "fb421fcd7a2f13de0b8932bf15213fe458ba74f912d95acea399eb51902e6652",
     "shared/catalogoEdicionImagen.js": "16e5e58f051ddfa79bc56b426bbc3a698c074d01517a8247e19961ec0e2b751f",
     "shared/ciclo.js": "fd0dda3a01570c2ea34119cc86eb300ca966da16706e6ebbf98a3eb9840e6a1d",
-    "shared/clasificadorIntencion.js": "657bc3a1f57a2f0263903c32dc758583603ca387d26065fc4e87dfe27ab07d61",
+    "shared/clasificadorIntencion.js": "1fc9492eab19bcb72338bcafc1ba236af878a125479d887272980cf6d6ff2efe",
     "shared/coincidenciaTema.mjs": "8c324c4166be17f369639d50612b7ae3d397c8acb6236f05e3f21405764b1f4f",
     "shared/constantsOjoDigital.js": "e7ef5b68d177da331cd92b92bef997785e53d7d02f7d7f943e93604c65f8645b",
     "shared/construirInformeSupervisionDocx.js": "47e0c1c2320c8042d0155e67d95c9a8b29ae6e090e3c538094746f5d690c9412",
@@ -52,12 +52,12 @@
     "shared/curriculoService.mjs": "23ee6e7217bf0d90e47b126d8be5ad00994105072e9eb2dd5203bd614d56efcb",
     "shared/editorImagenLocalPuro.js": "defa09b651956a974bf6de6e305ed4b10502660eae88d1aff4100b92945c3f21",
     "shared/explicadorFallos.js": "f909e8139cb6ca215eb9e0160b4e0f2f3de9a76e4e370bba4715d797f468b448",
-    "shared/herramientas.mjs": "c4f8e18a5156159ce8df8bc1d0985bcaf534fcc9757fd47908987c45a1677b9c",
+    "shared/herramientas.mjs": "448372be2b05b7936da4f010f183bb4cba05d9b3f931f519113115e13b96b513",
     "shared/herramientasCerebro.js": "dfde063dd9071e3a1daec5c624a8c35b065b4b2826875d5df873e0e4e576fe68",
     "shared/intencionMatematica.mjs": "e5c36db465a694f48ecfda8667acee50dc52924e580666f7d863781d25bf40df",
     "shared/matematica.mjs": "273633a9dbc1831314e6156fd616294f9a143cc4f4797f531e4be76139e4b2ef",
     "shared/metodosMatematicos.mjs": "b55a08ffb216d6a367687cda3afdbcc904c88c1409ddbff1152d04f7cfc37822",
-    "shared/modoConversacional.js": "0c8aea81314d9cf4d006b8b3994721c533c97a77966b86f395c0bbc411066fdd",
+    "shared/modoConversacional.js": "5f6b94ee8115b6fa0b4f8325b868b3314b54087a715ee804a9318c050b1e971e",
     "shared/numeroLetras.mjs": "146a448a1297d3ab1985b62d5510c1f1a9745dfc60d42b516299cb01ff750ab7",
     "shared/parseadorJsonSeguro.js": "002aea87f76757ebae32c0f612d659c8de2dc5dc830331302863452c9b9818e8",
     "shared/politicaDignidadImagen.js": "d0b41d350d96b07ca3c1a22e829d1916cce1fba4dddfc85a1cfb8ee06376725a",
@@ -73,7 +73,7 @@
     "worker/editorImagenLocalPuro.js": "813662548218ababca50d0ada3dc42f6576209cb0d4e7767c5f399065e72a298",
     "worker/filtroTemas.js": "384479c5b51d39478b1eaac96c13149c76604a69b7c0c92d7dbc78debae8e41a",
     "worker/glosarioDocente.js": "0f905a0e056dfd19e30611b8b6243fe7b443994a4762ad1bbda8d429ac892d34",
-    "worker/index.js": "732a78440792fd382bff7f10f974ded08886ebc12c16116d96afbde983dd778c",
+    "worker/index.js": "fd2a71a0a5a9a964846e4656f149df69cc4da3b959e7b6d61a290f2cdce7080b",
     "worker/levels.js": "6b07da11d3a0c17a10446209c56855e9537aa8b1945c0eeaa255ab0b53759cff",
     "worker/modoConversacional.js": "34198e46599c196c12c1fe4fe2af3b0359baf0fd163cced44bc20ea301d41dda",
     "worker/ojoDigital.js": "9af5f18f6ff56f7483e21c27cda0108b4c36e6fecdac08b25f2452d4fde8e560",
@@ -90,5 +90,5 @@
     "worker/verificadorCitas.js": "bbdc7b502b6027eb268b28d360e0af5c6b41b182e52a61f85c900fdcb19f8a81",
     "wrangler.toml": "d716def284e2293cf0890fe221a7a551e67fba4f56039317fea33c918626a722"
   },
-  "resumen_criptografico": "497b4976e5a007cbfc6bea970e0543861664e782d08936969dad637477e40cd6"
+  "resumen_criptografico": "0b2e945f98f6fdeffb866ca5b323cc44286120cda80cf646d709c5a14c41ed33"
 }
