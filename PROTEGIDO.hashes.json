@@ -1,13 +1,13 @@
 {
   "version": "2.0.0",
-  "fecha_generacion": "2026-11-11T20:45:15.096Z",
-  "commit": "4a9cbad",
+  "fecha_generacion": "2026-11-12T22:59:12.111Z",
+  "commit": "8d9b0df",
   "algoritmo": "sha256",
   "total_archivos": 83,
-  "resumen": "59ce14f9419bafec0aca51bace2df06fdbe46f3d1ede199cd2f6ffe0c7728a75",
+  "resumen": "17133ad742d121d25ba9ba1b744fb8e80484b065261e378a05c9fd7eef9c7e04",
   "hashes": {
     "client/src/App.jsx": "08f48aac9131fd967a25bfca5af841c796773827c85fa0b4b0441afd7247198a",
-    "client/src/api.js": "b7bd439cdcd1db019cb3498d87ae998444b546a254e47aeb4d0706dab3965ad0",
+    "client/src/api.js": "a69d3943721546cf6518011add4a1676f33f1d334a0e0f5b1514022bfe491848",
     "client/src/components/EditorImagenModal.jsx": "381369355f719d19ec46fe455bf3f13c1e3706367cdf3dfc4ff099d03b8afbd5",
     "client/src/components/MisPlanificaciones.jsx": "a7303fde51b6eac64382aef88758f68c81a7db0536da6b44a69f5992d5272de0",
     "client/src/components/OjoVisorCamara.jsx": "dcd32c57b128408aa7da316d916d90e5d816ecec2a1d0d780df03cd49d84992d",
@@ -43,7 +43,7 @@
     "shared/capacidades.mjs": "3f17484838fba96dd4bdaf51d266a3d6b5674267dcb0836a12b3b8f4538a5ac0",
     "shared/catalogoCurricular.mjs": "fb421fcd7a2f13de0b8932bf15213fe458ba74f912d95acea399eb51902e6652",
     "shared/catalogoEdicionImagen.js": "16e5e58f051ddfa79bc56b426bbc3a698c074d01517a8247e19961ec0e2b751f",
-    "shared/ciclo.js": "fd0dda3a01570c2ea34119cc86eb300ca966da16706e6ebbf98a3eb9840e6a1d",
+    "shared/ciclo.js": "9f6c6f1893ee547510038d09ec148428ee0c7da5f493c844e6e8ad6266f6110c",
     "shared/clasificadorIntencion.js": "1fc9492eab19bcb72338bcafc1ba236af878a125479d887272980cf6d6ff2efe",
     "shared/coincidenciaTema.mjs": "8c324c4166be17f369639d50612b7ae3d397c8acb6236f05e3f21405764b1f4f",
     "shared/constantsOjoDigital.js": "e7ef5b68d177da331cd92b92bef997785e53d7d02f7d7f943e93604c65f8645b",
@@ -64,7 +64,7 @@
     "shared/promptSistemaV2.js": "76ccde8602ee216c1280d797a2976a1ca599f40e8019be95110696da01b4ac42",
     "tests/test_orden_041.mjs": "ea189095e7bfe80f992917397e8fd81b2e8c8ea8ea300a51bb56a2517e1091fc",
     "tests/test_transcribir_audio.mjs": "bf1a606265a2e9137c649abbb9d46aebf11260c4dfb3a13732de1638ee0b4c77",
-    "worker/cacheRespuestas.js": "a2eaebc30f061c49e7741eb822d8012538e60df4c004ca69d96e142847da3ef7",
+    "worker/cacheRespuestas.js": "21b039fe1b33fc428140b8a66df8c976ccb1767eb3405d9a30328bdafb39b7bb",
     "worker/catalogoEdicionImagen.js": "08e042a00798f094a2120bf99aa5bc2c963483284c8d53e9e864529eee27e51c",
     "worker/clasificadorIntencion.js": "b847b13edc36b175b30111831a2b84de019ad9c10b4a303f3d8544f9ccd78e7e",
     "worker/constantsOjoDigital.js": "133d4a31a9861571e7092dbfbe667eea3f74adb7184739cf796673312a5eff2c",
@@ -73,7 +73,7 @@
     "worker/editorImagenLocalPuro.js": "813662548218ababca50d0ada3dc42f6576209cb0d4e7767c5f399065e72a298",
     "worker/filtroTemas.js": "384479c5b51d39478b1eaac96c13149c76604a69b7c0c92d7dbc78debae8e41a",
     "worker/glosarioDocente.js": "0f905a0e056dfd19e30611b8b6243fe7b443994a4762ad1bbda8d429ac892d34",
-    "worker/index.js": "3131d67313aa5064b5c646d45f2a720278a31ec3a29b434d39b6898f153661c5",
+    "worker/index.js": "bc3967d6384100114c3dc1c5cb21f94a963106cc8fdb821b651123f2a766e1fd",
     "worker/levels.js": "6b07da11d3a0c17a10446209c56855e9537aa8b1945c0eeaa255ab0b53759cff",
     "worker/modoConversacional.js": "34198e46599c196c12c1fe4fe2af3b0359baf0fd163cced44bc20ea301d41dda",
     "worker/ojoDigital.js": "9af5f18f6ff56f7483e21c27cda0108b4c36e6fecdac08b25f2452d4fde8e560",
@@ -89,6 +89,5 @@
     "worker/services/wikipedia.js": "29e4935f92914797dba6d31e510028b1121493447c430ec9ae68c44735ffc3a1",
     "worker/verificadorCitas.js": "bbdc7b502b6027eb268b28d360e0af5c6b41b182e52a61f85c900fdcb19f8a81",
     "wrangler.toml": "d716def284e2293cf0890fe221a7a551e67fba4f56039317fea33c918626a722"
-  },
-  "resumen_criptografico": "0b2e945f98f6fdeffb866ca5b323cc44286120cda80cf646d709c5a14c41ed33"
+  }
 }
