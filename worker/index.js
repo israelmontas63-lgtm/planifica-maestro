@@ -1,5 +1,12 @@
 import { LEVELS } from "./levels.js";
 import { indexarEmbeddingsLote, buscarCurriculoHibrido, generarEmbeddings } from "./services/busquedaSemantica.js";
+import { consultarMemoriaEpisodica, guardarExperienciaEpisodica } from "./services/memoriaEpisodica.js";
+import { ejecutarValidacionYCorreccionFinal } from "./services/validadorFinalPlan.js";
+import {
+  crearRegistroHerramientasProductivo,
+  resolverPermisosServidor,
+  ejecutarOrquestacionCognitivaSiAplica,
+} from "./services/adaptadorCognitivo.js";
 import { UMBRAL_HIBRIDO } from "../shared/herramientas.mjs";
 import { obtenerContextoConBase } from "./contextoConBase.js";
 import { getAiProvider, getGeminiModels, fetchGeminiWithRetry, fetchGeminiConThinking, construirThinkingConfig, construirMaxSalida, textoDeCandidato } from "./services/aiProvider.js";
@@ -2074,6 +2081,70 @@ async function handleApiRequest(request, env, ctx) {
     const clasificacion = await clasificarIntencion({ texto: textoParaProcesar, env });
     registrarCapa(1, "Enrutador de intención", `longitud_caracteres: ${textoParaProcesar.length}`, `modo: ${clasificacion.categoria}`, performance.now() - t0Clasif);
 
+    // Orquestación cognitiva selectiva (Bloques 4, 5 y 6): evita que charla local intercepte tareas operativas/multipaso/dispositivo
+    let resultadoOrquestacionCognitiva = null;
+    if (!(esModoPrueba && env?.DESACTIVAR_ORQUESTACION_COGNITIVA === "true") && !imageBase64) {
+      resultadoOrquestacionCognitiva = await ejecutarOrquestacionCognitivaSiAplica({
+        solicitud: textoParaProcesar,
+        env,
+        body,
+        isOwner,
+        docenteId: resolvedDocenteId,
+        dispositivoId: resolvedDocenteId,
+        grado: body?.grado || "1ro",
+        area: body?.area || "General",
+        nivel,
+      });
+
+      if (resultadoOrquestacionCognitiva.activado) {
+        const cicloCog = resultadoOrquestacionCognitiva.resultadoCiclo;
+        if (cicloCog.requiereAutorizacion) {
+          return new Response(
+            JSON.stringify({
+              ok: false,
+              plan_completado: false,
+              requiereAutorizacion: true,
+              estadoOperativo: cicloCog.estadoOperativo,
+              detalleAutorizacion: cicloCog.detalleAutorizacion,
+              mensaje_chat: cicloCog.detalleAutorizacion?.mensaje || "Esta operación requiere autorización explícita del usuario.",
+              trazabilidad_cognitiva: cicloCog.trazabilidad,
+              auditoria_herramientas: resultadoOrquestacionCognitiva.auditoriaHerramientas,
+            }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        if (!cicloCog.ok && (resultadoOrquestacionCognitiva.intencion.tipo === "ACCION_DISPOSITIVO" || Array.isArray(body?.tareasPlan) || body?.exigirOrquestacionExitosa)) {
+          return new Response(
+            JSON.stringify({
+              ok: false,
+              plan_completado: false,
+              estadoOperativo: cicloCog.estadoOperativo,
+              mensaje_chat: cicloCog.trazabilidad?.limitaciones?.[0] || "La tarea operativa no pudo completarse.",
+              trazabilidad_cognitiva: cicloCog.trazabilidad,
+              auditoria_herramientas: resultadoOrquestacionCognitiva.auditoriaHerramientas,
+            }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        if (cicloCog.ok && (resultadoOrquestacionCognitiva.intencion.tipo === "ACCION_DISPOSITIVO" || Array.isArray(body?.tareasPlan))) {
+          return new Response(
+            JSON.stringify({
+              ok: true,
+              plan_completado: false,
+              estadoOperativo: cicloCog.estadoOperativo,
+              mensaje_chat: cicloCog.trazabilidad?.resultadoConseguido || "Tarea operativa completada.",
+              trazabilidad_cognitiva: cicloCog.trazabilidad,
+              tareas: cicloCog.tareas,
+              auditoria_herramientas: resultadoOrquestacionCognitiva.auditoriaHerramientas,
+            }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+    }
+
     // 1. MODO CHARLA (Saludos, cortesías) -> Resolución local inmediata < 50ms ($0)
     if (clasificacion.categoria === "charla") {
       if (esModoPrueba && env.DESACTIVAR_CAPA_2 === "true") {
@@ -2910,7 +2981,7 @@ async function handleApiRequest(request, env, ctx) {
       if (!respCache && env && (env.CACHE_KV || env.CURRICULO_KV)) {
         respCache = await obtenerRespuestaDeKv(claveCache, env);
       }
-      if (respCache) {
+      if (respCache && (!respCache.auditoria?.estadoValidacion || respCache.auditoria.estadoValidacion === "APROBADO")) {
         registrarCapa(8, "Caché versionada", claveCache, "acierto (hit)", performance.now() - t0Cache);
         return responderWorker({
           data: {
@@ -3434,26 +3505,9 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
     // 1. Verificación previa en memoria episódica del robot (consultar_memoria_robot con score >= 0.95)
     if (env && env.AI && env.SUPABASE_SERVICE_ROLE_KEY && env.SUPABASE_URL) {
       try {
-        const vecsMem = await generarEmbeddings(env, [temaPre || textoParaProcesar || textoConsulta]);
-        if (vecsMem && vecsMem[0]) {
-          const baseUrlSupabase = String(env.SUPABASE_URL || "").replace(/\/+$/, "");
-          const resMem = await fetch(`${baseUrlSupabase}/rest/v1/rpc/consultar_memoria_robot`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-              Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`
-            },
-            body: JSON.stringify({
-              p_embedding: `[${vecsMem[0].join(",")}]`,
-              p_umbral_similitud: 0.95,
-              p_limite: 1
-            })
-          });
-          if (resMem.ok) {
-            const filasMem = await resMem.json();
-            if (Array.isArray(filasMem) && filasMem.length > 0 && Number(filasMem[0].similitud) >= 0.95) {
-              const hitMem = filasMem[0];
+        const resConsultaMem = await consultarMemoriaEpisodica(env, temaPre || textoParaProcesar || textoConsulta, { umbral: 0.95, limite: 1 });
+        if (resConsultaMem.ok && Array.isArray(resConsultaMem.filas) && resConsultaMem.filas.length > 0 && Number(resConsultaMem.filas[0].similitud) >= 0.95) {
+            const hitMem = resConsultaMem.filas[0];
               let planSalida = hitMem.planificacion_salida;
               if (typeof planSalida === "string") {
                 try { planSalida = JSON.parse(planSalida); } catch {}
@@ -3505,8 +3559,6 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                 status: 200,
                 headers: { ...corsHeaders, "Content-Type": "application/json" }
               });
-            }
-          }
         }
       } catch (errMem) {
         console.warn("[MemoriaRobot] Falló consulta previa:", errMem?.message || errMem);
@@ -3659,6 +3711,16 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
       }
     }
 
+    if (resultadoOrquestacionCognitiva?.activado && resultadoOrquestacionCognitiva.resultadoCiclo?.ok) {
+      const resumenTareas = (resultadoOrquestacionCognitiva.resultadoCiclo.tareas || [])
+        .filter((t) => t.resultado)
+        .map((t) => `[${t.id}] ${t.objetivo}: ${JSON.stringify(t.resultado).slice(0, 1200)}`)
+        .join("\n");
+      if (resumenTareas) {
+        dynamicPrompt = `${dynamicPrompt}\n\n<CONTEXTO_COGNITIVO_VERIFICADO>\n${resumenTareas}\n</CONTEXTO_COGNITIVO_VERIFICADO>`;
+      }
+    }
+
     // Modo Streaming SSE
     if (isStream) {
       if (esModoPrueba && env.DESACTIVAR_CAPA_6 === "true") {
@@ -3724,6 +3786,16 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
                   },
                   env,
                   maxIteraciones: 3,
+                  registroHerramientas: crearRegistroHerramientasProductivo({ env }),
+                  contextoHerramientas: {
+                    usuarioId: resolvedDocenteId,
+                    usuarioAutenticado: Boolean(resolvedDocenteId && !String(resolvedDocenteId).startsWith("dev_anon_")),
+                    dispositivoId: resolvedDocenteId,
+                    permisosUsuario: resolverPermisosServidor({ isOwner, docenteId: resolvedDocenteId, env }),
+                    origenFuente: String(body?.origenFuente || "usuario"),
+                    autorizacionExplicitaUsuario: body?.autorizacionExplicitaUsuario === true,
+                    claveIdempotencia: body?.claveIdempotencia || `sse_${Date.now()}`,
+                  },
                 });
 
                 const msCicloTotal = performance.now() - t0Tools;
@@ -4137,6 +4209,39 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
               }
             }
 
+            const objetoPlan = parsedFinal;
+            if (objetoPlan && objetoPlan.plan_completado && objetoPlan.datos_planificacion) {
+              const bloqueCurriculoPaginas = fragmentosRecuperadosTexto || "";
+              const filasDepuradas = consultasAuditadasStreaming.flatMap(c => c.filas || []).filter(esCoincidente);
+              await ejecutarValidacionYCorreccionFinal({
+                objetoPlan,
+                filasRecuperadas: filasDepuradas,
+                bloqueCurriculoTexto: bloqueCurriculoPaginas,
+                temaConsulta: temaPre || textoParaProcesar,
+                grado: gradoPre,
+                area: areaPre,
+                nivel,
+                docenteId: resolvedDocenteId || "Israel Montás",
+                sesionId,
+                env,
+                ctx,
+                systemPrompt: promptParaStreaming || dynamicPrompt,
+                modelArreglo: models[0] || "gemini-3.1-flash-lite",
+                fetchGeminiWithRetry,
+                textoDeCandidato,
+                extraerJson,
+                validarCamposPlanificacion,
+                construirMaxSalida,
+                construirThinkingConfig,
+                sanitizarPlanParaCache,
+                signal: request.signal,
+              });
+            }
+
+            if (claveCache && esRespuestaCacheable(parsedFinal)) {
+              await guardarRespuestaEnCache(claveCache, parsedFinal, undefined, env, ctx);
+            }
+
             const finalPayload = {
               ...parsedFinal,
               planId: "plan_" + Date.now(),
@@ -4146,143 +4251,6 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
               cuota: estadoActualizado,
               ...(habilitarTraza ? { traza_capas: [...trazaCapas] } : {})
             };
-
-            if (claveCache && esRespuestaCacheable(parsedFinal)) {
-              await guardarRespuestaEnCache(claveCache, parsedFinal, undefined, env, ctx);
-            }
-
-            const objetoPlan = parsedFinal;
-            if (objetoPlan && objetoPlan.plan_completado && objetoPlan.datos_planificacion) {
-              const bloqueCurriculoPaginas = fragmentosRecuperadosTexto || "";
-              const filasDepuradas = consultasAuditadasStreaming.flatMap(c => c.filas || []).filter(esCoincidente);
-              let auditoriaFidelidad = auditarFidelidadCurricular(objetoPlan.datos_planificacion, filasDepuradas);
-
-              if (!auditoriaFidelidad.esValido && env.GEMINI_API_KEY) {
-                try {
-                  const promptArreglo = construirPromptCorreccion(
-                    objetoPlan.datos_planificacion, 
-                    auditoriaFidelidad.motivoFallo, 
-                    filasDepuradas.map(f => f.texto).join("\n")
-                  );
-                  const modelArreglo = models[0] || "gemini-3.1-flash-lite";
-                  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelArreglo}:generateContent`;
-                  const retryRes = await fetchGeminiWithRetry(geminiUrl, {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      "x-goog-api-key": env.GEMINI_API_KEY,
-                    },
-                    timeoutMs: 45000,
-                    body: JSON.stringify({
-                      contents: [{ role: "user", parts: [{ text: promptArreglo }] }],
-                      systemInstruction: { parts: [{ text: promptParaStreaming || dynamicPrompt }] },
-                      generationConfig: {
-                        temperature: 0.0,
-                        responseMimeType: "application/json",
-                        maxOutputTokens: construirMaxSalida(env),
-                        ...construirThinkingConfig(env),
-                      },
-                    }),
-                    signal: request.signal,
-                  });
-                  if (retryRes && retryRes.ok) {
-                    const dataArreglo = await retryRes.json();
-                    const candArreglo = dataArreglo.candidates?.[0];
-                    const rawArreglo = textoDeCandidato(candArreglo);
-                    const parsedArreglo = extraerJson(rawArreglo);
-                    if (parsedArreglo && validarCamposPlanificacion(parsedArreglo)) {
-                      objetoPlan.datos_planificacion = parsedArreglo.datos_planificacion || parsedArreglo;
-                      const auditoriaRehecha = auditarFidelidadCurricular(objetoPlan.datos_planificacion, filasDepuradas);
-                      auditoriaFidelidad = auditoriaRehecha;
-                    }
-                  }
-                } catch (eArreglo) {
-                  console.warn("[Self-RAG] Fallo en reintento correctivo:", eArreglo?.message || eArreglo);
-                }
-              }
-
-              const fScore = calcularFaithfulness(objetoPlan.datos_planificacion, bloqueCurriculoPaginas);
-              const rScore = calcularRelevance(objetoPlan.datos_planificacion, temaPre || textoParaProcesar);
-
-              objetoPlan.auditoria = {
-                aprobado: auditoriaFidelidad.esValido,
-                scoreFidelidad: auditoriaFidelidad.scoreFidelidad,
-                motivoFallo: auditoriaFidelidad.motivoFallo,
-                faithfulness: fScore,
-                relevance: rScore
-              };
-
-              const tareaAuditoria = registrarMetricasRagas(env, {
-                sesionId: sesionId,
-                grado: gradoPre,
-                area: areaPre,
-                tema: temaPre || textoParaProcesar,
-                faithfulness: fScore,
-                relevance: rScore,
-                precision: filasDepuradas.length > 0 ? 1.0 : 0.5
-              });
-
-              if (ctx && ctx.waitUntil) {
-                ctx.waitUntil(tareaAuditoria);
-              } else {
-                tareaAuditoria.catch(console.error);
-              }
-
-              // Guardado en caché semántica (<60ms) si cumple umbral de fidelidad
-              const claveCacheSem = generarClaveCache(gradoPre, areaPre, temaPre || textoParaProcesar);
-              if (claveCacheSem && fScore >= 0.70) {
-                const tareaCacheSem = guardarEnCache(env, {
-                  claveHash: claveCacheSem,
-                  grado: gradoPre,
-                  area: areaPre,
-                  tema: temaPre || textoParaProcesar,
-                  planJson: sanitizarPlanParaCache(objetoPlan.datos_planificacion),
-                  fuentes: objetoPlan.confianza_curricular || null
-                });
-                if (ctx && ctx.waitUntil) {
-                  ctx.waitUntil(tareaCacheSem);
-                } else {
-                  tareaCacheSem.catch(console.error);
-                }
-              }
-
-              // Persistencia en robot_memoria_experiencias al validar el crítico pedagógico
-              if (auditoriaFidelidad.esValido && env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
-                const guardarMemoriaRobot = async () => {
-                  try {
-                    let vector = null;
-                    if (env.AI) {
-                      const v = await generarEmbeddings(env, [temaPre || textoParaProcesar || ""]);
-                      if (v && v[0]) vector = `[${v[0].join(",")}]`;
-                    }
-                    const baseUrlSupabase = String(env.SUPABASE_URL || "").replace(/\/+$/, "");
-                    await fetch(`${baseUrlSupabase}/rest/v1/robot_memoria_experiencias`, {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-                        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
-                        Prefer: "return=minimal"
-                      },
-                      body: JSON.stringify({
-                        docente_id: resolvedDocenteId || "Israel Montás",
-                        grado_nivel: String(gradoPre || nivel || "Primario"),
-                        area_curricular: areaPre || "General",
-                        tema_consulta: temaPre || textoParaProcesar || "",
-                        embedding: vector,
-                        planificacion_salida: JSON.stringify(objetoPlan.datos_planificacion || objetoPlan),
-                        calificacion_calidad: 5,
-                        validado_por_auditor: true
-                      })
-                    });
-                  } catch (eExp) {
-                    console.warn("[MemoriaRobot] Fallo guardando experiencia:", eExp?.message || eExp);
-                  }
-                };
-                if (ctx && ctx.waitUntil) ctx.waitUntil(guardarMemoriaRobot());
-                else guardarMemoriaRobot().catch(console.error);
-              }
-            }
 
             if (sesionId) {
               const promptUsuario = textoConsulta;
@@ -4361,6 +4329,16 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
           },
           env,
           maxIteraciones: 3,
+          registroHerramientas: crearRegistroHerramientasProductivo({ env }),
+          contextoHerramientas: {
+            usuarioId: resolvedDocenteId,
+            usuarioAutenticado: Boolean(resolvedDocenteId && !String(resolvedDocenteId).startsWith("dev_anon_")),
+            dispositivoId: resolvedDocenteId,
+            permisosUsuario: resolverPermisosServidor({ isOwner, docenteId: resolvedDocenteId, env }),
+            origenFuente: String(body?.origenFuente || "usuario"),
+            autorizacionExplicitaUsuario: body?.autorizacionExplicitaUsuario === true,
+            claveIdempotencia: body?.claveIdempotencia || `v2_${Date.now()}`,
+          },
         });
 
         if (cicloRes.tipo === "tool_calling_completado" || cicloRes.tipo === "directa") {
@@ -4376,13 +4354,28 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
             parsed.consultas_curriculo = cicloRes.consultas || [];
           }
 
+          if (parsed.plan_completado && !validarCamposPlanificacion(parsed)) {
+            parsed = {
+              ok: false,
+              isError: true,
+              codigo: "IA_RESPUESTA_INVALIDA",
+              codigoError: "IA_RESPUESTA_INVALIDA",
+              mensaje: "La respuesta generada por el modelo de IA no tiene la estructura requerida.",
+              mensaje_chat: "No pude armar la planificación con el formato oficial requerido. ¿Intentamos otra vez con términos más específicos?",
+              sugerencia: "Intenta solicitarla nuevamente indicando el grado, área y tema específico.",
+              plan_completado: false,
+              reintentable: true,
+              auditoria: {
+                aprobado: false,
+                estadoValidacion: "ERROR_DE_VALIDACION",
+                motivoFallo: "La estructura JSON no cumple los campos obligatorios.",
+              },
+            };
+          }
+
           let cuotaActualizada = cheqCuota;
           if (parsed.plan_completado) {
             cuotaActualizada = await consumirCuota(env, resolvedDocenteId, isOwner, clientIp);
-          }
-
-          if (claveCache && esRespuestaCacheable(parsed)) {
-            guardarRespuestaEnCache(claveCache, parsed);
           }
 
           if (parsed && parsed.plan_completado && parsed.datos_planificacion) {
@@ -4393,35 +4386,33 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
               area: areaPre
             }, { umbralMinimo: 0.35 });
             const filasFinales = fragmentosReclasificados.length > 0 ? fragmentosReclasificados : filasDepuradas;
-            const auditoriaFidelidad = auditarFidelidadCurricular(parsed.datos_planificacion, filasFinales);
-            const fScore = calcularFaithfulness(parsed.datos_planificacion, JSON.stringify(filasFinales));
-            const rScore = calcularRelevance(parsed.datos_planificacion, temaPre || textoParaProcesar);
-            const evaluacionCrag = evaluarCalidadRecuperacion(filasFinales, { consulta: temaPre || textoParaProcesar, area: areaPre });
-
-            parsed.auditoria = {
-              aprobado: auditoriaFidelidad.esValido,
-              scoreFidelidad: auditoriaFidelidad.scoreFidelidad,
-              motivoFallo: auditoriaFidelidad.motivoFallo,
-              faithfulness: fScore,
-              relevance: rScore,
-              crag: evaluacionCrag
-            };
-
-            const tareaAuditoria = registrarMetricasRagas(env, {
-              sesionId: sesionId,
+            await ejecutarValidacionYCorreccionFinal({
+              objetoPlan: parsed,
+              filasRecuperadas: filasFinales,
+              bloqueCurriculoTexto: filasFinales.length > 0 ? JSON.stringify(filasFinales) : "",
+              temaConsulta: temaPre || textoParaProcesar,
               grado: gradoPre,
               area: areaPre,
-              tema: temaPre || textoParaProcesar,
-              faithfulness: fScore,
-              relevance: rScore,
-              precision: filasDepuradas.length > 0 ? 1.0 : 0.5
+              nivel,
+              docenteId: resolvedDocenteId || "Israel Montás",
+              sesionId,
+              env,
+              ctx,
+              systemPrompt: dynamicPrompt,
+              modelArreglo: modelHerramientas,
+              fetchGeminiWithRetry,
+              textoDeCandidato,
+              extraerJson,
+              validarCamposPlanificacion,
+              construirMaxSalida,
+              construirThinkingConfig,
+              sanitizarPlanParaCache,
+              signal: request.signal,
             });
+          }
 
-            if (ctx && ctx.waitUntil) {
-              ctx.waitUntil(tareaAuditoria);
-            } else {
-              tareaAuditoria.catch(console.error);
-            }
+          if (claveCache && esRespuestaCacheable(parsed)) {
+            guardarRespuestaEnCache(claveCache, parsed, undefined, env, ctx);
           }
 
           return new Response(
@@ -4573,140 +4564,37 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
         }
       }
 
-      if (claveCache && esRespuestaCacheable(parsed)) {
-        guardarRespuestaEnCache(claveCache, parsed);
-      }
-
       const objetoPlan = parsed;
       if (objetoPlan && objetoPlan.plan_completado && objetoPlan.datos_planificacion) {
         const bloqueCurriculoPaginas = (typeof fragmentosRecuperadosTexto !== "undefined" ? fragmentosRecuperadosTexto : "");
         const filasDepuradas = typeof filasCoincidentes !== "undefined" ? filasCoincidentes : [];
-        let auditoriaFidelidad = auditarFidelidadCurricular(objetoPlan.datos_planificacion, filasDepuradas);
-
-        if (!auditoriaFidelidad.esValido && env.GEMINI_API_KEY) {
-          try {
-            const promptArreglo = construirPromptCorreccion(
-              objetoPlan.datos_planificacion, 
-              auditoriaFidelidad.motivoFallo, 
-              filasDepuradas.map(f => f.texto).join("\n")
-            );
-            const modelArreglo = models[0] || "gemini-3.1-flash-lite";
-            const retryRes = await fetchGeminiWithRetry(`https://generativelanguage.googleapis.com/v1beta/models/${modelArreglo}:generateContent`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "x-goog-api-key": env.GEMINI_API_KEY,
-              },
-              timeoutMs: 45000,
-              body: JSON.stringify({
-                contents: [{ role: "user", parts: [{ text: promptArreglo }] }],
-                systemInstruction: { parts: [{ text: dynamicPrompt }] },
-                generationConfig: {
-                  temperature: 0.0,
-                  responseMimeType: "application/json",
-                  maxOutputTokens: construirMaxSalida(env),
-                  ...construirThinkingConfig(env),
-                },
-              }),
-              signal: request.signal,
-            });
-            if (retryRes && retryRes.ok) {
-              const dataArreglo = await retryRes.json();
-              const candArreglo = dataArreglo.candidates?.[0];
-              const rawArreglo = textoDeCandidato(candArreglo);
-              const parsedArreglo = extraerJson(rawArreglo);
-              if (parsedArreglo && validarCamposPlanificacion(parsedArreglo)) {
-                objetoPlan.datos_planificacion = parsedArreglo.datos_planificacion || parsedArreglo;
-                const auditoriaRehecha = auditarFidelidadCurricular(objetoPlan.datos_planificacion, filasDepuradas);
-                auditoriaFidelidad = auditoriaRehecha;
-              }
-            }
-          } catch (eArreglo) {
-            console.warn("[Self-RAG] Fallo en reintento correctivo:", eArreglo?.message || eArreglo);
-          }
-        }
-
-        const fScore = calcularFaithfulness(objetoPlan.datos_planificacion, bloqueCurriculoPaginas);
-        const rScore = calcularRelevance(objetoPlan.datos_planificacion, temaPre || textoParaProcesar);
-
-        objetoPlan.auditoria = {
-          aprobado: auditoriaFidelidad.esValido,
-          scoreFidelidad: auditoriaFidelidad.scoreFidelidad,
-          motivoFallo: auditoriaFidelidad.motivoFallo,
-          faithfulness: fScore,
-          relevance: rScore
-        };
-
-        const tareaAuditoria = registrarMetricasRagas(env, {
-          sesionId: sesionId,
+        await ejecutarValidacionYCorreccionFinal({
+          objetoPlan,
+          filasRecuperadas: filasDepuradas,
+          bloqueCurriculoTexto: bloqueCurriculoPaginas,
+          temaConsulta: temaPre || textoParaProcesar,
           grado: gradoPre,
           area: areaPre,
-          tema: temaPre || textoParaProcesar,
-          faithfulness: fScore,
-          relevance: rScore,
-          precision: filasDepuradas.length > 0 ? 1.0 : 0.5
+          nivel,
+          docenteId: resolvedDocenteId || "Israel Montás",
+          sesionId,
+          env,
+          ctx,
+          systemPrompt: dynamicPrompt,
+          modelArreglo: models[0] || "gemini-3.1-flash-lite",
+          fetchGeminiWithRetry,
+          textoDeCandidato,
+          extraerJson,
+          validarCamposPlanificacion,
+          construirMaxSalida,
+          construirThinkingConfig,
+          sanitizarPlanParaCache,
+          signal: request.signal,
         });
+      }
 
-        if (ctx && ctx.waitUntil) {
-          ctx.waitUntil(tareaAuditoria);
-        } else {
-          tareaAuditoria.catch(console.error);
-        }
-
-        // Guardado en caché semántica si supera el umbral
-        const claveCacheSem = generarClaveCache(gradoPre, areaPre, temaPre || textoParaProcesar);
-        if (claveCacheSem && fScore >= 0.70) {
-          const tareaCacheSem = guardarEnCache(env, {
-            claveHash: claveCacheSem,
-            grado: gradoPre,
-            area: areaPre,
-            tema: temaPre || textoParaProcesar,
-            planJson: sanitizarPlanParaCache(objetoPlan.datos_planificacion),
-            fuentes: objetoPlan.confianza_curricular || null
-          });
-          if (ctx && ctx.waitUntil) {
-            ctx.waitUntil(tareaCacheSem);
-          } else {
-            tareaCacheSem.catch(console.error);
-          }
-        }
-
-        // Persistencia en robot_memoria_experiencias al validar el crítico pedagógico
-        if (auditoriaFidelidad.esValido && env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
-          const guardarMemoriaRobot = async () => {
-            try {
-              let vector = null;
-              if (env.AI) {
-                const v = await generarEmbeddings(env, [temaPre || textoParaProcesar || ""]);
-                if (v && v[0]) vector = `[${v[0].join(",")}]`;
-              }
-              const baseUrlSupabase = String(env.SUPABASE_URL || "").replace(/\/+$/, "");
-              await fetch(`${baseUrlSupabase}/rest/v1/robot_memoria_experiencias`, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-                  Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
-                  Prefer: "return=minimal"
-                },
-                body: JSON.stringify({
-                  docente_id: resolvedDocenteId || "Israel Montás",
-                  grado_nivel: String(gradoPre || nivel || "Primario"),
-                  area_curricular: areaPre || "General",
-                  tema_consulta: temaPre || textoParaProcesar || "",
-                  embedding: vector,
-                  planificacion_salida: JSON.stringify(objetoPlan.datos_planificacion || objetoPlan),
-                  calificacion_calidad: 5,
-                  validado_por_auditor: true
-                })
-              });
-            } catch (eExp) {
-              console.warn("[MemoriaRobot] Fallo guardando experiencia:", eExp?.message || eExp);
-            }
-          };
-          if (ctx && ctx.waitUntil) ctx.waitUntil(guardarMemoriaRobot());
-          else guardarMemoriaRobot().catch(console.error);
-        }
+      if (claveCache && esRespuestaCacheable(parsed)) {
+        guardarRespuestaEnCache(claveCache, parsed, undefined, env, ctx);
       }
 
       if (sesionId) {

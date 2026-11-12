@@ -1,8 +1,9 @@
 import { GoogleGenAI } from '@google/genai';
 
 /**
- * Servicio de Memoria a Largo Plazo y Caché Semántica
- * Runtime: Cloudflare Workers Edge / Node.js
+ * @deprecated Servicio legado (text-embedding-004, 768 dimensiones) sin llamadores activos.
+ * La ruta productiva de memoria episódica usa @cf/baai/bge-m3 (1024 dimensiones) en
+ * worker/services/memoriaEpisodica.js para coincidir con robot_memoria_experiencias vector(1024).
  */
 export class MemoriaCognitivaService {
   constructor(env) {

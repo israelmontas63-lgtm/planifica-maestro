@@ -55,7 +55,15 @@ export async function generarClaveCurricularSha256(params) {
 export function esRespuestaCacheable(datos) {
   if (!datos || typeof datos !== "object") return false;
   if (datos.error || datos.requiereAclaracion || datos.requiereDesambiguacion) return false;
-  return Boolean(datos.plan_completado && datos.datos_planificacion);
+  if (!datos.plan_completado || !datos.datos_planificacion) return false;
+
+  if (datos.auditoria && typeof datos.auditoria === "object") {
+    if (datos.auditoria.aprobado === false) return false;
+    if (datos.auditoria.estadoValidacion && datos.auditoria.estadoValidacion !== "APROBADO") {
+      return false;
+    }
+  }
+  return true;
 }
 
 export function obtenerRespuestaDeCache(clave) {
@@ -103,6 +111,7 @@ export function guardarRespuestaEnCache(clave, datos, ttlMs = TTL_DEFAULT_MS, en
     plan_completado: true,
     datos_planificacion: datos.datos_planificacion,
     confianza_curricular: datos.confianza_curricular || null,
+    auditoria: datos.auditoria || null,
     proveedor_utilizado: datos.proveedor_utilizado || "Caché de Currículo Oficial",
     origen: datos.origen || "cache_en_memoria"
   };

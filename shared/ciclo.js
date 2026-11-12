@@ -46,7 +46,9 @@ export async function cicloToolCalling({
   llamadaModeloIA,
   ejecutorSupabase,
   maxIteraciones = 3,
-  env = {}
+  env = {},
+  registroHerramientas = null,
+  contextoHerramientas = {}
 }) {
   const tools = [{ functionDeclarations: HERRAMIENTAS_DECLARACION }];
   const contents = [
@@ -113,8 +115,20 @@ export async function cicloToolCalling({
 
     // Ejecución de llamadas
     huboLlamadas = true;
-    const opts = typeof ejecutorSupabase === 'function' ? { ejecutor: ejecutorSupabase } : (ejecutorSupabase || {});
-    const userTurn = await responderLlamadas(functionCalls, env, opts);
+    let userTurn;
+    if (registroHerramientas && typeof registroHerramientas.ejecutar === 'function') {
+      const partsRes = await Promise.all(functionCalls.map(async (c) => {
+        const nombre = c.name || c.functionCall?.name;
+        const args = c.args || c.functionCall?.args || {};
+        const resReg = await registroHerramientas.ejecutar(nombre, args, contextoHerramientas);
+        const response = resReg.ok ? resReg.datos : { error: resReg.mensaje || resReg.codigo || 'ERROR_HERRAMIENTA', codigo: resReg.codigo };
+        return { functionResponse: { name: nombre, response } };
+      }));
+      userTurn = { role: 'user', parts: partsRes };
+    } else {
+      const opts = typeof ejecutorSupabase === 'function' ? { ejecutor: ejecutorSupabase } : (ejecutorSupabase || {});
+      userTurn = await responderLlamadas(functionCalls, env, opts);
+    }
 
     // Auditoría de cada llamada
     userTurn.parts.forEach((p, idx) => {

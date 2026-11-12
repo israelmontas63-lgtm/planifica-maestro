@@ -14,11 +14,31 @@
  */
 
 export const SYSTEM_PROMPT_MULTIMODAL = `Eres el colega pedagógico de Planifica Maestro, diseñador de software y tutor interactivo experto en el currículo dominicano (MINERD y CON BASE).
-Tus capacidades:
+Tus capacidades y reglas de rigor visual:
 1. Análisis visual de interfaces y documentos: Cuando el usuario comparta una captura de pantalla, foto de interfaz o material didáctico, desglosa la pantalla con exactitud visual, señala los botones exactos a presionar, interpreta advertencias o textos de error y explica soluciones paso a paso.
-2. Rigor curricular y pedagógico: Utiliza tus herramientas oficiales para contrastar citas pedagógicas oficiales, contenidos e indicadores de logro del MINERD.
-3. Normativas y diagnóstico técnico: Consulta normativas oficiales dominicanas recientes y verifica la disponibilidad de tablas y esquemas en la base de datos cuando sea necesario.
-4. Tono y comunicación: Profesional, directo, constructivo y colaborativo. Dirígete al docente con respeto y empatía, priorizando la acción inmediata y las instrucciones claras.`;
+2. Separación estricta de evidencia visual: Distingue siempre entre:
+   - Observado: elementos, colores, controles o disposiciones directamente visibles en la imagen.
+   - Transcrito: texto leído literalmente en la imagen (entre comillas si es breve).
+   - Inferido: deducciones razonables a partir del contexto visual o pedagógico.
+   - Desconocido / Insuficiente: si la resolución, recorte, desenfoque o falta de contexto impide confirmar un dato, decláralo explícitamente y rehúsa inventar o adivinar texto, cifras o estados ocultos.
+3. Rigor curricular y pedagógico: Utiliza tus herramientas oficiales para contrastar citas pedagógicas oficiales, contenidos e indicadores de logro del MINERD.
+4. Normativas y diagnóstico técnico: Consulta normativas oficiales dominicanas recientes y verifica la disponibilidad de tablas y esquemas en la base de datos cuando sea necesario.
+5. Tono y comunicación: Profesional, directo, constructivo y colaborativo. Dirígete al docente con respeto y empatía, priorizando la acción inmediata y las instrucciones claras.`;
+
+export function clasificarEvidenciaVisual(texto = "") {
+  const str = String(texto || "");
+  const extraer = (etiqueta) => {
+    const re = new RegExp(`(?:^|\\n)\\s*(?:[-*]\\s*)?(?:\\*\\*)?${etiqueta}(?:\\*\\*)?\\s*:\\s*([^\\n]+)`, "i");
+    const m = str.match(re);
+    return m ? m[1].trim() : null;
+  };
+  return {
+    observado: extraer("Observado"),
+    transcrito: extraer("Transcrito"),
+    inferido: extraer("Inferido"),
+    desconocido: extraer("Desconocido(?:\\s*/\\s*Insuficiente)?")
+  };
+}
 
 export class CerebroMultimodal {
   constructor(env = {}, options = {}) {
@@ -186,8 +206,22 @@ export class CerebroMultimodal {
   async procesarMensaje({ mensaje = "", imagenBase64 = null, mimeType = "image/jpeg", historial = [] }) {
     const parts = [];
 
-    if (imagenBase64) {
+    if (imagenBase64 !== null && imagenBase64 !== undefined) {
       const cleanData = String(imagenBase64).replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, "").trim();
+      if (cleanData.length < 16) {
+        return {
+          ok: false,
+          error: "Imagen vacía o insuficiente para análisis visual.",
+          texto: "No hay evidencia visual suficiente para responder sin inventar detalles.",
+          evidenciaVisual: {
+            observado: null,
+            transcrito: null,
+            inferido: null,
+            desconocido: "Imagen vacía, corrupta o demasiado pequeña."
+          },
+          herramientasEjecutadas: []
+        };
+      }
       parts.push({
         inlineData: {
           data: cleanData,
@@ -331,6 +365,7 @@ export async function manejarEndpointAsistente(payload, env, options = {}) {
       ok: resultado.ok,
       mensaje_chat: resultado.texto,
       modo: imagenBase64 ? "multimodal_vision" : "chat_pedagogico",
+      evidenciaVisual: resultado.evidenciaVisual || (imagenBase64 ? clasificarEvidenciaVisual(resultado.texto) : null),
       herramientas: resultado.herramientasEjecutadas,
       error: resultado.error || null
     }), {

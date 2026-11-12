@@ -1,9 +1,7 @@
 /**
- * Gestor de Memoria Episódica y Experiencias Curriculares
- * Runtime: Cloudflare Workers (V8 JavaScript) / Node.js
- * 
- * Gestiona la persistencia y recuperación semántica de experiencias docentes
- * exitosas utilizando pgvector en Supabase y embeddings de text-embedding-004.
+ * @deprecated Servicio legado sin llamadores activos en producción.
+ * La ruta productiva usa worker/services/memoriaEpisodica.js con @cf/baai/bge-m3 (1024 dimensiones).
+ * Se mantiene compatibilidad validando que cualquier vector recibido sea de 1024 dimensiones.
  */
 
 export class GestorMemoriaExperiencias {
@@ -19,6 +17,10 @@ export class GestorMemoriaExperiencias {
    */
   async consultarExperiencias({ embedding, umbralSimilitud = 0.92, limite = 1 }) {
     if (!this.supabaseUrl || !this.supabaseKey || !embedding) {
+      return [];
+    }
+    if (Array.isArray(embedding) && embedding.length !== 1024) {
+      console.warn(`[MemoriaExperiencias] Vector rechazado: se esperaban 1024 dimensiones, recibidas ${embedding.length}.`);
       return [];
     }
 

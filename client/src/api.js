@@ -378,46 +378,60 @@ export async function generarPlanificacion({
   if (contentType.includes("text/event-stream") && onChunk && res.body) {
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
+    let sseBuffer = "";
     let accumulatedText = "";
     let finalData = null;
     let errorTerminalData = null;
 
+    const procesarLineaSSE = (line) => {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith("data:")) return;
+      const jsonStr = trimmed.replace(/^data:\s*/, "");
+      if (jsonStr === "[DONE]") return;
+      try {
+        const parsed = JSON.parse(jsonStr);
+        if (parsed.estado) {
+          onChunk("", accumulatedText, parsed.estado);
+        }
+        if (parsed.delta) {
+          accumulatedText += parsed.delta;
+          onChunk(parsed.delta, accumulatedText, null);
+        }
+        if (parsed.tipo === "bloque") {
+          onChunk(null, accumulatedText, null, parsed);
+        }
+        if (parsed.final) {
+          finalData = parsed.final;
+        } else if (parsed.ok === false || parsed.isError) {
+          errorTerminalData = parsed;
+        }
+      } catch (e) {
+        if (typeof process !== "undefined" && process?.env?.DEBUG) {
+          console.warn("[api:SSE] Evento SSE no parseable:", jsonStr, e?.message || e);
+        }
+      }
+    };
+
     try {
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (trimmed.startsWith("data:")) {
-            const jsonStr = trimmed.replace(/^data:\s*/, "");
-            if (jsonStr === "[DONE]") continue;
-            try {
-              const parsed = JSON.parse(jsonStr);
-              if (parsed.estado) {
-                onChunk("", accumulatedText, parsed.estado);
-              }
-              if (parsed.delta) {
-                accumulatedText += parsed.delta;
-                onChunk(parsed.delta, accumulatedText, null);
-              }
-              if (parsed.tipo === "bloque") {
-                onChunk(null, accumulatedText, null, parsed);
-              }
-              if (parsed.final) {
-                finalData = parsed.final;
-              } else if (parsed.ok === false || parsed.isError) {
-                errorTerminalData = parsed;
-              }
-            } catch (e) {
-              // Fragmento SSE no es un JSON completo o evento especial (ej. [DONE]); registrar si DEBUG
-              if (typeof process !== "undefined" && process?.env?.DEBUG) {
-                console.warn("[api:SSE] Evento SSE no parseable:", jsonStr, e?.message || e);
-              }
+        if (done) {
+          sseBuffer += decoder.decode();
+          if (sseBuffer.trim()) {
+            for (const remLine of sseBuffer.split("\n")) {
+              procesarLineaSSE(remLine);
             }
+          }
+          break;
+        }
+
+        sseBuffer += decoder.decode(value, { stream: true });
+        const lastNewline = sseBuffer.lastIndexOf("\n");
+        if (lastNewline !== -1) {
+          const bloqueCompleto = sseBuffer.slice(0, lastNewline);
+          sseBuffer = sseBuffer.slice(lastNewline + 1);
+          for (const line of bloqueCompleto.split("\n")) {
+            procesarLineaSSE(line);
           }
         }
       }

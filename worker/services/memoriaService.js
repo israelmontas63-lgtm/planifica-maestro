@@ -41,7 +41,7 @@ export async function guardarTurnoConversacion(env, sesionId, userText, modelTex
     { sesion_id: sesionId, rol: 'model', contenido: modelText }
   ];
   try {
-    await fetch(url, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: {
         'apikey': env.SUPABASE_SERVICE_ROLE_KEY,
@@ -51,6 +51,9 @@ export async function guardarTurnoConversacion(env, sesionId, userText, modelTex
       },
       body: JSON.stringify(payloads)
     });
+    if (!res.ok) {
+      console.warn(`[Memoria] Error HTTP al persistir turno en chat_mensajes: status ${res.status}`);
+    }
   } catch (err) {
     console.warn('[Memoria] Error al persistir turno:', err.message);
   }
@@ -61,7 +64,7 @@ export async function guardarMensaje(env, { sesionId, rol, contenido, metadatos 
   if (!sesionId || !env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return;
   const url = `${env.SUPABASE_URL.replace(/\/+$/, '')}/rest/v1/chat_mensajes`;
   try {
-    await fetch(url, {
+    const res = await fetch(url, {
       method: 'POST',
       headers: {
         'apikey': env.SUPABASE_SERVICE_ROLE_KEY,
@@ -76,6 +79,9 @@ export async function guardarMensaje(env, { sesionId, rol, contenido, metadatos 
         metadatos: metadatos
       })
     });
+    if (!res.ok) {
+      console.warn(`[Memoria] Error HTTP al persistir mensaje en chat_mensajes: status ${res.status}`);
+    }
   } catch (err) {
     console.warn('[Memoria] No se pudo persistir el mensaje:', err.message);
   }
