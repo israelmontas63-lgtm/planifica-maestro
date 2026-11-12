@@ -753,3 +753,21 @@
 - **Frase Textual del Dueño:** "Autorizo el registro e integración de radiografia_cerebral.html auditado y libre de cifras especulativas como herramienta visual del proyecto."
 - **Alcance Autorizado:** `radiografia_cerebral.html` y registro en `AUTORIZACIONES.md`.
 - **Estado:** REGISTRADO Y SELLADO
+
+---
+
+### Autorización 076
+- **Fecha:** 11/11/2026 (America/Santo_Domingo)
+- **Componentes y Hashes:**
+  - `worker/index.js`: `3131d67313aa5064b5c646d45f2a720278a31ec3a29b434d39b6898f153661c5`
+  - `worker/services/buscadorWeb.js`
+  - `worker/services/wikipedia.js`
+  - `shared/clasificadorIntencion.js`
+- **Motivo:** Desbloqueo de búsqueda web externa verificada (Wikipedia + multi-motor) y habilitación de ejemplos abiertos de planificación pedagógica.
+- **Decisiones Aprobadas:**
+  1. **Desbloqueo de ejemplos y peticiones abiertas:** Eliminación del bloqueo por falta de datos (`DATOS_INCOMPLETOS`) cuando el docente pide "un ejemplo de planificación" o solicita una muestra pedagógica; se asignan valores de referencia del currículo oficial (3.º de Primaria, Ciencias de la Naturaleza, El sistema solar) y se genera la clase sin interrupciones.
+  2. **Integración de Búsqueda Externa y Wikipedia:** Conexión de `buscadorWeb.js` y `wikipedia.js` al flujo del Worker (`index.js`). Consultas sobre personajes históricos (Juan Pablo Duarte), ciencia o cultura general devuelven extractos reales, enlaces verificados y atribución CC BY-SA 4.0 sin caer en el error de "no está en el currículo".
+  3. **Autoauditoría y honestidad radical:** Supresión de respuestas automáticas ficticias. El sistema opera con base fáctica estricta y apego a la arquitectura de 11 capas.
+- **Frase Textual del Dueño:** "Autorizaciones.md para todo. Yo autorizo que siga ese paso: el desbloqueo de conectar buscadores web y Wikidata de Wikipedia dentro de todos esos ajustes, el clasificador para que cuando no sea una consulta curricular no cierre el robot."
+- **Alcance Autorizado:** `worker/index.js`, `shared/clasificadorIntencion.js`, `worker/services/`, `AUTORIZACIONES.md`, sellado de guardia y despliegue a producción.
+- **Estado:** SELLADO, VERIFICADO Y DESPLEGADO

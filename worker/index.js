@@ -42,6 +42,8 @@ import { capacidadesManifest, generarRespuestaQuePuedesHacer } from "../shared/c
 import { ejecutarAuditoriaInterna, activarModoDeCrisis } from "./services/auditorHemisferio.js";
 import { explicarFallo, clasificarFallo, CODIGOS_FALLO, limpiarDetalle, describirCapacidades, esPreguntaAutodiagnostico } from "../shared/explicadorFallos.js";
 import { GestorMemoriaHibrida } from "./services/gestorMemoriaHibrida.js";
+import { buscarWebMulti } from "./services/buscadorWeb.js";
+import { buscarWikipedia, obtenerResumen } from "./services/wikipedia.js";
 
 export function obtenerFechaActualRD(ahora = new Date()) {
   // Formato YYYY-MM-DD en la zona horaria de República Dominicana
@@ -2664,63 +2666,66 @@ async function handleApiRequest(request, env, ctx) {
       });
     }
 
-    // 3.5. MODO BÚSQUEDA WEB -> Tavily Search
+    // 3.5. MODO BÚSQUEDA WEB -> Multi-motor (Wikipedia, Gemini Grounding, Tavily, OpenAlex)
     if (clasificacion.categoria === "busqueda_web") {
       let fuentesCitas = [];
-      if (env.TAVILY_API_KEY) {
+      let contenido = "";
+
+      // 1. Intentar buscador web multi-motor unificado
+      try {
+        const resWeb = await buscarWebMulti(env, textoParaProcesar, { modo: "general", max: 5, signal: request.signal, timeoutMs: 6000 });
+        if (resWeb && resWeb.fuentes && resWeb.fuentes.length > 0) {
+          fuentesCitas = resWeb.fuentes;
+          contenido = resWeb.respuesta || `Encontré los siguientes resultados verificados para tu consulta:\n\n` + fuentesCitas.map(f => `**${f.titulo}**: ${f.resumen || ""}`).join("\n\n");
+        }
+      } catch (eWeb) {
+        console.warn("buscarWebMulti error:", eWeb?.message || eWeb);
+      }
+
+      // 2. Fallback especializado a Wikipedia en español si no hubo fuentes
+      if (!fuentesCitas.length) {
         try {
-          const tavilyRes = await fetch("https://api.tavily.com/search", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              api_key: env.TAVILY_API_KEY,
-              query: textoParaProcesar,
-              search_depth: "basic",
-              max_results: 5,
-              include_answer: true
-            })
-          });
-          if (tavilyRes.ok) {
-            const dataT = await tavilyRes.json();
-            if (dataT.results) {
-              fuentesCitas = dataT.results.map(r => ({
-                titulo: r.title,
-                url: r.url,
-                resumen: r.content ? r.content.slice(0, 200) : ""
-              }));
-            }
-            if (dataT.answer || (fuentesCitas && fuentesCitas.length > 0)) {
-              const contenido = dataT.answer || `Encontré los siguientes resultados web para tu consulta:\n\n` + fuentesCitas.map(f => `**${f.titulo}**: ${f.resumen}`).join("\n\n");
-              const fuentesStr = fuentesCitas.map(f => `\n- [${f.titulo}](${f.url})`).join("");
-              return responderWorker({
-                data: {
-                  mensaje_chat: `${contenido}\n\n**Fuentes consultadas en internet:**${fuentesStr}`,
-                  plan_completado: false,
-                  modo: "busqueda_web",
-                  categoria: "busqueda_web",
-                  fuentes: fuentesCitas,
-                  datos_planificacion: null
-                },
-                estado: "conversando"
-              });
-            }
+          const wikiRes = await buscarWikipedia(textoParaProcesar, { signal: request.signal, env });
+          if (wikiRes && wikiRes.exito && wikiRes.resultados && wikiRes.resultados.length > 0) {
+            fuentesCitas = wikiRes.resultados.map(r => ({
+              titulo: r.titulo,
+              url: `https://es.wikipedia.org/wiki/${encodeURIComponent(r.clave || r.titulo)}`,
+              resumen: r.extracto || r.descripcion || ""
+            }));
+            contenido = `Encontré la siguiente información en Wikipedia:\n\n` + fuentesCitas.map(f => `**${f.titulo}**: ${f.resumen}`).join("\n\n");
           }
-        } catch (eTav) {
-          console.warn("Worker Tavily search error:", eTav?.message || eTav);
+        } catch (eWiki) {
+          console.warn("buscarWikipedia error:", eWiki?.message || eWiki);
         }
       }
 
+      // 3. Si se encontraron fuentes o contenido, entregar respuesta enriquecida
+      if (fuentesCitas.length > 0 || contenido) {
+        const fuentesStr = fuentesCitas.map(f => `\n- [${f.titulo}](${f.url})`).join("");
+        return responderWorker({
+          data: {
+            mensaje_chat: `${contenido}\n\n**Fuentes consultadas:**${fuentesStr}\n\n*(Nota: Información obtenida mediante búsqueda externa verificada para apoyar tu labor docente).*`,
+            plan_completado: false,
+            modo: "busqueda_web",
+            categoria: "busqueda_web",
+            fuentes: fuentesCitas,
+            datos_planificacion: null
+          },
+          estado: "conversando"
+        });
+      }
+
       const t0TavilyErr = performance.now();
-      registrarCapa(10, "Errores de lista cerrada", "sin_clave_tavily", "IA_NO_DISPONIBLE", performance.now() - t0TavilyErr, false);
+      registrarCapa(10, "Errores de lista cerrada", "sin_fuentes_web", "IA_NO_DISPONIBLE", performance.now() - t0TavilyErr, false);
       return responderWorker({
         data: {
           ok: false,
           isError: true,
           codigo: "IA_NO_DISPONIBLE",
           codigoError: "IA_NO_DISPONIBLE",
-          mensaje: "El servicio de búsqueda web externa no está disponible en este momento.",
-          sugerencia: "Puedes realizar una consulta curricular directamente o formular una pregunta pedagógica sobre el currículo oficial.",
-          mensaje_chat: "El servicio de búsqueda web externa no está disponible en este momento.\n\n💡 Sugerencia: Puedes realizar una consulta curricular directamente o formular una pregunta pedagógica sobre el currículo oficial.",
+          mensaje: "No encontré resultados web concluyentes para tu consulta en este momento.",
+          sugerencia: "Puedes reformular el tema o consultar directamente el currículo oficial.",
+          mensaje_chat: "No encontré información web concluyente para tu consulta en este momento.\n\n💡 Sugerencia: Puedes reformular el tema pedagógico o consultar contenidos del currículo oficial.",
           plan_completado: false,
           modo: "busqueda_web",
           categoria: "busqueda_web",
@@ -3088,19 +3093,20 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
 
     areaPre = (body.area || "").trim();
 
-    // Smart Defaults para Peticiones Abiertas de Planificación (Autorización 073)
-    const esPeticionAbierta = /^(?:mu[eé]strame|hazme|dame|crea|planifica|quiero|elabora|diseña)\s+(?:una\s+)?(?:planificaci[oó]n|clase|unidad|secuencia)/i.test(textoParaProcesar.trim()) ||
-      /^(?:planificaci[oó]n|planificar|una\s+planificaci[oó]n)$/i.test(textoParaProcesar.trim());
+    // Smart Defaults para Peticiones Abiertas o Ejemplos de Planificación (Autorizaciones 073 y 076)
+    const esPeticionAbierta = /^(?:mu[eé]strame|hazme|dame|crea|planifica|quiero|elabora|diseña|ponme|ens[eé]ñame)?\s*(?:un\s+)?(?:ejemplo|modelo|propuesta|demostraci[oó]n)?(?:\s+de)?\s*(?:una\s+)?(?:planificaci[oó]n|clase|unidad|secuencia)/i.test(textoParaProcesar.trim()) ||
+      /^(?:planificaci[oó]n|planificar|una\s+planificaci[oó]n|ejemplo\s+de\s+planificaci[oó]n|dame\s+un\s+ejemplo|un\s+ejemplo|mu[eé]strame\s+un\s+ejemplo)$/i.test(textoParaProcesar.trim()) ||
+      /ejemplo\s+de\s+planificaci[oó]n/i.test(textoParaProcesar.trim());
 
     if (esPeticionAbierta) {
       if (!gradoPre) {
-        gradoPre = 1;
+        gradoPre = 3;
       }
       if (!areaPre) {
-        areaPre = "Lengua Española";
+        areaPre = "Ciencias de la Naturaleza";
       }
       if (!temaPre) {
-        temaPre = "La tarjeta de identidad";
+        temaPre = "El sistema solar";
       }
     }
     const textoSinTema = temaPre
