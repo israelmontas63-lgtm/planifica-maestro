@@ -68,7 +68,7 @@ RETURNS TABLE (
 )
 LANGUAGE plpgsql
 SECURITY INVOKER
-SET search_path = ''
+SET search_path = public, extensions
 AS $$
 BEGIN
     RETURN QUERY
@@ -149,7 +149,7 @@ CREATE OR REPLACE FUNCTION public.consultar_cache_planificacion(p_clave_hash TEX
 RETURNS TABLE (plan_json JSONB, fuentes_utilizadas JSONB)
 LANGUAGE plpgsql
 SECURITY INVOKER
-SET search_path = ''
+SET search_path = public, extensions
 AS $$
 BEGIN
     RETURN QUERY
