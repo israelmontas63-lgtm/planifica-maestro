@@ -3085,7 +3085,7 @@ async function handleApiRequest(request, env, ctx) {
 - INSTRUCCIÓN DE CRISIS: Si hay fallos críticos detectados arriba, tienes prohibido ocultarlo. Debes informarle al docente con total transparencia técnica: "Atención: Mi subsistema de [componente] reporta una falla de conexión en este momento, por lo que opero con limitaciones..."
 `;
 
-    const dynamicPrompt = `${construirPromptSistema()}
+    let dynamicPrompt = `${construirPromptSistema()}
 ${textoMemoriaDocente}
 ${promptHemisferioCognitivo}
 ${basePrompt}
