@@ -771,3 +771,18 @@
 - **Frase Textual del Dueño:** "Autorizaciones.md para todo. Yo autorizo que siga ese paso: el desbloqueo de conectar buscadores web y Wikidata de Wikipedia dentro de todos esos ajustes, el clasificador para que cuando no sea una consulta curricular no cierre el robot."
 - **Alcance Autorizado:** `worker/index.js`, `shared/clasificadorIntencion.js`, `worker/services/`, `AUTORIZACIONES.md`, sellado de guardia y despliegue a producción.
 - **Estado:** SELLADO, VERIFICADO Y DESPLEGADO
+
+---
+
+### Autorización 077
+- **Fecha:** 14/11/2026 (America/Santo_Domingo)
+- **Componentes y Hashes:**
+  - `AUTORIZACIONES.md`
+- **Motivo:** Error del propietario: la Autorización 075 registró radiografia_cerebral.html (visor de neuroanatomía), que no forma parte del software. Se anula; el archivo no está en el repositorio.
+- **Decisiones Aprobadas:**
+  1. La Autorización 075 queda ANULADA; su texto original se conserva sin cambios.
+  2. `radiografia_cerebral.html` no forma parte del proyecto ni debe volver a integrarse.
+  3. Las copias verificadas fuera del repositorio se eliminan con respaldo (1 copia: `C:\Users\Win10\Desktop\planifica maestro\radiografia_cerebral.html`, SHA256 `db492ac71107e960f886a99439d40e5949c286072f0b190db16213ea2f7602af`).
+- **Frase Textual del Dueño:** "Autorizo la anulación de la Autorización 075 y de radiografia_cerebral.html por haber sido un error mío, sin borrar el registro histórico."
+- **Alcance Autorizado:** `AUTORIZACIONES.md` (solo la entrada nueva al final) y las copias verificadas de `radiografia_cerebral.html` fuera del repositorio.
+- **Estado:** REGISTRADO

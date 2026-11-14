@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
+const { fechaLocalRD, inicioDiaSiguienteRD, inicioMesSiguienteRD } = require("../utils/fechaRD");
 
 function resolverDirectorioData() {
   if (process.env.PM_DATA_DIR) return process.env.PM_DATA_DIR;
@@ -65,14 +66,11 @@ let lockEscritura = false;
  * - Diario: "YYYY-MM-DD" (ej: "2026-09-15")
  */
 function obtenerClavePeriodoActual(periodo = PLAN_LIMIT_PERIOD) {
-  const ahora = new Date();
-  const yyyy = ahora.getFullYear();
-  const mm = String(ahora.getMonth() + 1).padStart(2, "0");
+  const hoyRD = fechaLocalRD();
   if (periodo === "dia") {
-    const dd = String(ahora.getDate()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd}`;
+    return hoyRD;
   }
-  return `${yyyy}-${mm}`;
+  return hoyRD.substring(0, 7);
 }
 
 /**
@@ -80,13 +78,7 @@ function obtenerClavePeriodoActual(periodo = PLAN_LIMIT_PERIOD) {
  */
 function calcularFechaReinicio(periodo = PLAN_LIMIT_PERIOD) {
   const ahora = new Date();
-  if (periodo === "dia") {
-    const manana = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + 1);
-    return manana.toISOString();
-  }
-  // Próximo primer día del mes siguiente
-  const proxMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 1);
-  return proxMes.toISOString();
+  return periodo === "dia" ? inicioDiaSiguienteRD(ahora) : inicioMesSiguienteRD(ahora);
 }
 
 /**

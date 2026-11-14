@@ -8,13 +8,14 @@
  */
 
 const { cargarEstadoGasto, guardarEstadoGasto } = require("./persistenciaEstado.js");
+const { fechaLocalRD } = require("../utils/fechaRD");
 
 const estadoInicial = cargarEstadoGasto();
 let consultasHoy = typeof estadoInicial.consultasHoy === "number" ? estadoInicial.consultasHoy : (typeof estadoInicial.consultasRealizadas === "number" ? estadoInicial.consultasRealizadas : 0);
-let fechaActual = estadoInicial.fecha || new Date().toISOString().substring(0, 10);
+let fechaActual = estadoInicial.fecha || fechaLocalRD();
 
 function comprobarYResetearDia() {
-  const hoy = new Date().toISOString().substring(0, 10);
+  const hoy = fechaLocalRD();
   if (hoy !== fechaActual) {
     fechaActual = hoy;
     consultasHoy = 0;
@@ -48,7 +49,7 @@ function obtenerEstadoGasto(limiteDiario = 500) {
 
 function reiniciarContadorParaPruebas(cantidad = 0) {
   consultasHoy = Number(cantidad) || 0;
-  fechaActual = new Date().toISOString().substring(0, 10);
+  fechaActual = fechaLocalRD();
   guardarEstadoGasto({ fecha: fechaActual, consultasHoy });
 }
 

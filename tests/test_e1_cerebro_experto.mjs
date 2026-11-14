@@ -101,6 +101,14 @@ test("E1.3 - En streaming, filas con coincide_tema=false son filtradas de <DATO>
   globalThis.fetch = async (url, options) => {
     const urlStr = String(url);
 
+    // Mock Supabase memoria y verificación de tablas (Autorizaciones 073-076)
+    if (urlStr.includes("/rest/v1/docente_memoria_largo_plazo") ||
+        urlStr.includes("/rest/v1/curriculo_fragmentos?select=id") ||
+        urlStr.includes("/rest/v1/curriculo_secuencias?select=id") ||
+        urlStr.includes("/rest/v1/curriculo_paginas?select=id")) {
+      return new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } });
+    }
+
     // Mock Gemini inicial para disparar function call en cicloToolCalling
     if (urlStr.includes("generateContent") && !urlStr.includes("streamGenerateContent")) {
       return new Response(JSON.stringify({
@@ -234,6 +242,13 @@ test("E1.4 - verificarYSanearCitas no conserva citas de filas con coincide_tema=
   globalThis.fetch = async (url, options) => {
     const urlStr = String(url);
 
+    if (urlStr.includes("/rest/v1/docente_memoria_largo_plazo") ||
+        urlStr.includes("/rest/v1/curriculo_fragmentos?select=id") ||
+        urlStr.includes("/rest/v1/curriculo_secuencias?select=id") ||
+        urlStr.includes("/rest/v1/curriculo_paginas?select=id")) {
+      return new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } });
+    }
+
     if (urlStr.includes("generateContent") && !urlStr.includes("streamGenerateContent")) {
       return new Response(JSON.stringify({
         candidates: [{
@@ -365,6 +380,9 @@ test("E1.5 - Traza de consulta curricular directa registra Capas 5 y 6 como 'no 
 
   globalThis.fetch = async (url, options) => {
     const urlStr = String(url);
+    if (urlStr.includes("/rest/v1/docente_memoria_largo_plazo")) {
+      return new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } });
+    }
     if (urlStr.includes("/rest/v1/rpc/buscar_curriculo_secuencias")) {
       return new Response(JSON.stringify([
         {

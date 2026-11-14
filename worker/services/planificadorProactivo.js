@@ -2,7 +2,9 @@
 // Gestión de tareas periódicas autorizadas con zona horaria America/Santo_Domingo (UTC-4)
 // y control idempotente de ejecuciones. No permite auto-modificar código ni políticas.
 
-export const ZONA_HORARIA_DEFAULT = "America/Santo_Domingo"; // UTC-4 permanente (sin DST)
+import { ZONA_HORARIA } from "../../shared/resolvedorFechas.mjs";
+
+export const ZONA_HORARIA_DEFAULT = ZONA_HORARIA; // UTC-4 permanente (sin DST)
 
 export function santoDomingoAUtcIso(fechaLocalIsoSinOffset) {
   // Convierte "YYYY-MM-DDTHH:mm:ss" en America/Santo_Domingo (UTC-4) a ISO UTC.

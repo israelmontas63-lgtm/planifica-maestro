@@ -196,7 +196,11 @@ describe("CerebroMultimodal - Visión Interactiva y Tool Calling", () => {
 
     // Test JSON
     const resJson = await manejarEndpointAsistente(
-      { mensaje: "Revisa esto", imagenBase64: "abc1234", stream: false },
+      {
+        mensaje: "Revisa esto",
+        imagenBase64: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+        stream: false
+      },
       envMock,
       { fetchFn: mockFetch }
     );

@@ -1,4 +1,4 @@
-﻿import test from "node:test";
+import test from "node:test";
 import assert from "node:assert/strict";
 import worker from "../worker/index.js";
 
@@ -32,7 +32,7 @@ test("T3 - Búsqueda web sin clave devuelve error cerrado IA_NO_DISPONIBLE sin p
   assert.equal(data.isError, true);
   assert.equal(data.codigoError, "IA_NO_DISPONIBLE");
   assert.equal(data.plan_completado, false);
-  assert.match(data.mensaje, /búsqueda web/i);
+  assert.match(data.mensaje, /resultados web/i);
 });
 
 test("T3 - Búsqueda web con fallo de red en Tavily devuelve error cerrado IA_NO_DISPONIBLE", async () => {

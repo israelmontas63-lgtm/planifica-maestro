@@ -3164,22 +3164,6 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
 
     areaPre = (body.area || "").trim();
 
-    // Smart Defaults para Peticiones Abiertas o Ejemplos de Planificación (Autorizaciones 073 y 076)
-    const esPeticionAbierta = /^(?:mu[eé]strame|hazme|dame|crea|planifica|quiero|elabora|diseña|ponme|ens[eé]ñame)?\s*(?:un\s+)?(?:ejemplo|modelo|propuesta|demostraci[oó]n)?(?:\s+de)?\s*(?:una\s+)?(?:planificaci[oó]n|clase|unidad|secuencia)/i.test(textoParaProcesar.trim()) ||
-      /^(?:planificaci[oó]n|planificar|una\s+planificaci[oó]n|ejemplo\s+de\s+planificaci[oó]n|dame\s+un\s+ejemplo|un\s+ejemplo|mu[eé]strame\s+un\s+ejemplo)$/i.test(textoParaProcesar.trim()) ||
-      /ejemplo\s+de\s+planificaci[oó]n/i.test(textoParaProcesar.trim());
-
-    if (esPeticionAbierta) {
-      if (!gradoPre) {
-        gradoPre = 3;
-      }
-      if (!areaPre) {
-        areaPre = "Ciencias de la Naturaleza";
-      }
-      if (!temaPre) {
-        temaPre = "El sistema solar";
-      }
-    }
     const textoSinTema = temaPre
       ? textoParaProcesar.replace(new RegExp('(?:tema|sobre el tema|contenido|sobre|clase de)\\s*[:\\s]?\\s*' + temaPre.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&'), 'i'), '')
       : textoParaProcesar;
@@ -3212,6 +3196,21 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
         else if (/formacion|humana|religiosa/i.test(textoSinTema)) areaPre = "Formación Integral Humana y Religiosa";
         else if (/ingles/i.test(textoSinTema)) areaPre = "Lenguas Extranjeras - Inglés";
       }
+    }
+
+    // Smart Defaults para Peticiones Abiertas o Ejemplos de Planificación (Autorizaciones 073 y 076)
+    const esPeticionAbierta = (!areaPre && !temaPre) && (
+      /^(?:mu[eé]strame|hazme|dame|crea|planifica|quiero|elabora|diseña|ponme|ens[eé]ñame)?\s*(?:un\s+)?(?:ejemplo|modelo|propuesta|demostraci[oó]n)?(?:\s+de)?\s*(?:una\s+)?(?:planificaci[oó]n|clase|unidad|secuencia)/i.test(textoParaProcesar.trim()) ||
+      /^(?:planificaci[oó]n|planificar|una\s+planificaci[oó]n|ejemplo\s+de\s+planificaci[oó]n|dame\s+un\s+ejemplo|un\s+ejemplo|mu[eé]strame\s+un\s+ejemplo)$/i.test(textoParaProcesar.trim()) ||
+      /ejemplo\s+de\s+planificaci[oó]n/i.test(textoParaProcesar.trim())
+    );
+
+    if (esPeticionAbierta) {
+      if (!gradoPre) {
+        gradoPre = 3;
+      }
+      areaPre = "Ciencias de la Naturaleza";
+      temaPre = "El sistema solar";
     }
 
     let areaDelTema = null;
