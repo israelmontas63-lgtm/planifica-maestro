@@ -786,3 +786,26 @@
 - **Frase Textual del Dueño:** "Autorizo la anulación de la Autorización 075 y de radiografia_cerebral.html por haber sido un error mío, sin borrar el registro histórico."
 - **Alcance Autorizado:** `AUTORIZACIONES.md` (solo la entrada nueva al final) y las copias verificadas de `radiografia_cerebral.html` fuera del repositorio.
 - **Estado:** REGISTRADO
+
+---
+
+### Autorización 078
+- **Fecha:** 16/11/2026 (America/Santo_Domingo)
+- **Componentes y Hashes:**
+  - `shared/clasificadorIntencion.js`: `ac03c31b0b749a3cb25136bbe4bb89b0898f879ce80b813ee2e59f5668b49586`
+  - `shared/modoConversacional.js`: `48086b5a6ba88f672f04e734191ffdbfd649449cf8b8a4a6de402e6e9dbcf961`
+  - `worker/index.js`: `2ecf54a2f0e0464ff61c332209958f16e94aebb6f53bf645f2439ffb48e017f2`
+  - `worker/services/wikipedia.js`: `5355f8af0fc450cec5140cd1b4a341d3543ee821f7e988ec95e0916043052dac`
+  - `worker/services/buscadorWeb.js`
+  - `PROTEGIDO.hashes.json`
+  - `AUTORIZACIONES.md`
+- **Motivo:** Perfeccionamiento de búsqueda comunicativa natural (voz y escritura), desbloqueo de actualidad/normativa sin exigir grado escolar, lectura y depuración profunda de páginas web y respuesta sobre satisfacción desarrollativa de la IA.
+- **Decisiones Aprobadas:**
+  1. **Desbloqueo de actualidad, normativa y búsqueda abierta:** Las consultas con intención de búsqueda o actualidad (`requiere_tavily`) se enrutan al buscador web sin quedar atrapadas pidiendo grado escolar (1.° a 6.°) ni rechazadas por el filtro doméstico.
+  2. **Búsqueda comunicativa por voz y texto:** Reconocimiento de expresiones naturales como `búscame`, `quiero saber`, `necesito información`, `averigua`, `consulta en la web`, tanto de hechos pasados como actualizados.
+  3. **Limpieza y depuración profunda de páginas (`depurarContenidoPagina`):** Limpieza de muletillas en la consulta y extracción limpia del contenido HTML de las páginas encontradas (eliminando scripts, menús y ruido).
+  4. **Comunicación fluida y satisfacción desarrollativa:** Registro en el clasificador y modo conversacional de la respuesta sobre la naturaleza de la IA y su satisfacción desarrollativa al resolver retos y apoyar al docente.
+- **Frase Textual del Dueño:** "Procede... debes realizar búsqueda actualizada, búsqueda pasada y cualquier información con búscame, quiero, la palabra necesito... registra esos patrones también en el software de comunicación... autorizaciones .md"
+- **Alcance Autorizado:** `shared/clasificadorIntencion.js`, `shared/modoConversacional.js`, `worker/services/buscadorWeb.js`, `worker/services/wikipedia.js`, `worker/index.js`, `AUTORIZACIONES.md`, sellado en `PROTEGIDO.hashes.json` y despliegue a producción.
+- **Estado:** SELLADO, VERIFICADO Y DESPLEGADO
+

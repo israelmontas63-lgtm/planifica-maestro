@@ -106,11 +106,15 @@ export const PATRONES_TEMAS_CURRICULARES = [
 
 export const PATRONES_BUSQUEDA_WEB = [
   "busca en internet", "buscar en internet", "busca en la web", "buscar en la web",
-  "busca en google", "buscar en google", "noticias de hoy", "noticias recientes",
+  "busca en google", "buscar en google", "busca en wikipedia", "buscar en wikipedia",
+  "consulta en internet", "consulta en la web", "consultar en internet", "consultar en la web",
+  "busca informacion", "buscar informacion", "buscame informacion", "busca datos", "buscame datos",
+  "noticias de hoy", "noticias recientes",
   "informacion reciente", "acontecimientos recientes", "en tiempo real", "busca online",
-  "investiga", "investigar", "busca una imagen", "buscame una imagen", "buscar una imagen",
+  "investiga", "investigar", "averigua", "averiguar", "averiguame",
+  "busca una imagen", "buscame una imagen", "buscar una imagen",
   "imagen de una ", "imagen de un ", "imagen del ", "imagen de la ",
-  "abre la pagina", "entra a la pagina", "lee la pagina"
+  "abre la pagina", "entra a la pagina", "lee la pagina", "entra a la web", "lee la web"
 ];
 
 export const PATRONES_CONOCIMIENTO_GENERAL = [
@@ -326,8 +330,8 @@ export function clasificarPorReglas(texto, contexto = {}) {
     };
   }
 
-  // 0.4 Detección de Pregunta sobre Identidad, Creador o Propósito (Israel Montás)
-  const esPreguntaIdentidad = /\b(?:qui[eé]n\s+(?:eres|te\s+(?:cre[oó]|dise[nñ][oó]|hizo))|c[oó]mo\s+te\s+llamas|cu[aá]l\s+es\s+tu\s+nombre|qu[eé]\s+es\s+planifica\s+maestro|qui[eé]n\s+es\s+israel\s+mont[aá]s)\b/i.test(texto);
+  // 0.4 Detección de Pregunta sobre Identidad, Creador, Propósito (Israel Montás) o Naturaleza/Satisfacción de la IA
+  const esPreguntaIdentidad = /\b(?:qui[eé]n\s+(?:eres|te\s+(?:cre[oó]|dise[nñ][oó]|hizo))|c[oó]mo\s+te\s+llamas|cu[aá]l\s+es\s+tu\s+nombre|qu[eé]\s+es\s+planifica\s+maestro|qui[eé]n\s+es\s+israel\s+mont[aá]s|una\s+ia\s+puede\s+divertirse|qu[eé]\s+(?:divierte|le\s+divierte)\s+a\s+una\s+ia|te\s+(?:diviertes|causa\s+satisfacci[oó]n)|sientes\s+satisfacci[oó]n)\b/i.test(texto);
   if (esPreguntaIdentidad) {
     return {
       categoria: "charla",
@@ -335,7 +339,7 @@ export function clasificarPorReglas(texto, contexto = {}) {
       categoria_6: CATEGORIAS_6.B_PEDAGOGIA_GENERAL,
       codigo_categoria: "B",
       confianza: 0.99,
-      motivo: "Pregunta sobre identidad, autoría o propósito de Planifica Maestro.",
+      motivo: "Pregunta sobre identidad, autoría o naturaleza de Planifica Maestro.",
       esMixtoConSaludo: false
     };
   }
@@ -357,9 +361,11 @@ export function clasificarPorReglas(texto, contexto = {}) {
   }
 
   // 1. Detectar patrones no educativos o domésticos evidentes (Categoría F)
+  const tieneComandoBusqueda = PATRONES_BUSQUEDA_WEB.some(p => contienePalabraOFrase(norm, p)) ||
+    /^(?:por favor\s+)?(?:busca|buscar|buscame|investiga|investigar|averigua|averiguar|averiguame|quiero\s+(?:saber|buscar|informacion|que\s+busques|que\s+investigues)|necesito\s+(?:saber|buscar|informacion|que\s+busques|que\s+investigues))\b/.test(norm);
   const esNoEducativo = PATRONES_NO_EDUCATIVOS.some(p => contienePalabraOFrase(norm, p));
   const pidePlanReceta = contienePalabraOFrase(norm, "plan") && (contienePalabraOFrase(norm, "grado") || contienePalabraOFrase(norm, "lengua") || contienePalabraOFrase(norm, "texto instructivo"));
-  if (esNoEducativo && !pidePlanReceta) {
+  if (esNoEducativo && !pidePlanReceta && !tieneComandoBusqueda) {
     return {
       categoria: "ambigua",
       tipo: "ambigua",
@@ -432,7 +438,7 @@ export function clasificarPorReglas(texto, contexto = {}) {
     if (p === "resolucion" && esResolucionProblemas) return false;
     return contienePalabraOFrase(norm, p);
   });
-  if (tieneNormativaActualidad && !tienePlanificacion) {
+  if (tieneNormativaActualidad && !tienePlanificacion && !tieneComandoBusqueda) {
     return {
       categoria: "consulta_curricular",
       tipo: "web",
@@ -487,12 +493,12 @@ export function clasificarPorReglas(texto, contexto = {}) {
     };
   }
 
-  // Detección de Búsqueda Web explícita
-  const pideBusquedaWeb = PATRONES_BUSQUEDA_WEB.some(p => contienePalabraOFrase(norm, p)) ||
-    ((norm.startsWith("busca ") || norm.startsWith("buscar ") || norm.startsWith("investiga ")) && !tienePlanificacion && !tieneTemaCurricular);
+  // Detección de Búsqueda Web explícita (actualizada, pasada o con búscame/quiero/necesito)
+  const pideBusquedaWeb = tieneComandoBusqueda ||
+    ((norm.startsWith("busca ") || norm.startsWith("buscar ") || norm.startsWith("buscame ") || norm.startsWith("investiga ") || norm.startsWith("averigua ")) && !tienePlanificacion && !tieneConsultaCurricular);
 
   if (pideBusquedaWeb && !tienePlanificacion) {
-    const esActualidad = contienePalabraOFrase(norm, "noticias") || contienePalabraOFrase(norm, "hoy") || contienePalabraOFrase(norm, "recientes");
+    const esActualidad = contienePalabraOFrase(norm, "noticias") || contienePalabraOFrase(norm, "hoy") || contienePalabraOFrase(norm, "recientes") || tieneNormativaActualidad;
     return {
       categoria: "busqueda_web",
       tipo: "web",

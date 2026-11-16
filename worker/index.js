@@ -49,7 +49,7 @@ import { capacidadesManifest, generarRespuestaQuePuedesHacer } from "../shared/c
 import { ejecutarAuditoriaInterna, activarModoDeCrisis } from "./services/auditorHemisferio.js";
 import { explicarFallo, clasificarFallo, CODIGOS_FALLO, limpiarDetalle, describirCapacidades, esPreguntaAutodiagnostico } from "../shared/explicadorFallos.js";
 import { GestorMemoriaHibrida } from "./services/gestorMemoriaHibrida.js";
-import { buscarWebMulti } from "./services/buscadorWeb.js";
+import { buscarWebMulti, depurarContenidoPagina } from "./services/buscadorWeb.js";
 import { buscarWikipedia, obtenerResumen } from "./services/wikipedia.js";
 import { generarTextoConRespaldo, respuestaSSEDeGemini } from "./services/enrutadorTexto.js";
 
@@ -2397,7 +2397,7 @@ async function handleApiRequest(request, env, ctx) {
     const cheqCuota = checkTopes.cuota;
 
     // 2.5. MODO CONSULTA CURRICULAR -> Herramientas curriculares oficiales con fuentes (T2 / R3)
-    if (clasificacion.categoria === "consulta_curricular") {
+    if (clasificacion.categoria === "consulta_curricular" && !clasificacion.requiere_tavily) {
       let fragmentos = [];
       const multiGrados = gradosMultiples(textoParaProcesar);
       const esMultigrado = multiGrados.length > 1;
@@ -2779,49 +2779,38 @@ async function handleApiRequest(request, env, ctx) {
     }
 
     // 3.5. MODO BÚSQUEDA WEB -> Multi-motor (Wikipedia, Gemini Grounding, Tavily, OpenAlex) + lectura directa de URL e imágenes
-    if (clasificacion.categoria === "busqueda_web") {
+    if (clasificacion.categoria === "busqueda_web" || (clasificacion.categoria === "consulta_curricular" && clasificacion.requiere_tavily)) {
       let fuentesCitas = [];
       let contenido = "";
       let imagenEncontrada = null;
 
-      // 0. Si el usuario incluye una URL explícita (https://...), abrirla y leer su contenido en segundo plano
+      // 0. Si el usuario incluye una URL explícita (https://...), abrirla y depurar su contenido
       const urlExplicitaMatch = textoParaProcesar.match(/https?:\/\/[^\s"'<>)+]+/i);
       if (urlExplicitaMatch) {
         const urlObjetivo = urlExplicitaMatch[0].replace(/[.,;:!?]+$/, "");
-        try {
-          const resPag = await fetchConLimite(urlObjetivo, {
-            headers: { "User-Agent": "PlanificaMaestro-Bot/1.0 (+https://planifica-maestro.israelmontas65.workers.dev)", Accept: "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.8" },
-            signal: request.signal
-          }, 6000);
-          if (resPag && resPag.ok) {
-            const htmlRaw = await resPag.text();
-            const tituloMatch = htmlRaw.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-            const tituloPag = tituloMatch ? tituloMatch[1].replace(/\s+/g, " ").trim().slice(0, 140) : urlObjetivo;
-            const textoLimpioPag = htmlRaw
-              .replace(/<script[\s\S]*?<\/script>/gi, " ")
-              .replace(/<style[\s\S]*?<\/style>/gi, " ")
-              .replace(/<[^>]+>/g, " ")
-              .replace(/\s+/g, " ")
-              .trim()
-              .slice(0, 1200);
-            if (textoLimpioPag) {
-              fuentesCitas.push({ titulo: tituloPag, url: urlObjetivo, resumen: textoLimpioPag.slice(0, 350) });
-              contenido = `Leí el contenido de **[${tituloPag}](${urlObjetivo})**:\n\n${textoLimpioPag}`;
-            }
-          }
-        } catch (eUrl) {
-          console.warn("Lectura directa de URL falló:", eUrl?.message || eUrl);
+        const pagDepurada = await depurarContenidoPagina(urlObjetivo, { signal: request.signal, timeoutMs: 6000 });
+        if (pagDepurada && pagDepurada.extracto) {
+          fuentesCitas.push({ titulo: pagDepurada.titulo, url: urlObjetivo, resumen: pagDepurada.extracto.slice(0, 350) });
+          contenido = `Analicé y depuré el contenido de **[${pagDepurada.titulo}](${urlObjetivo})**:\n\n${pagDepurada.extracto}`;
         }
       }
 
-      // 1. Intentar buscador web multi-motor unificado
+      // 1. Intentar buscador web multi-motor unificado (incluyendo dominios MINERD y web general)
       if (!fuentesCitas.length) {
         try {
           const resWeb = await buscarWebMulti(env, textoParaProcesar, { modo: "general", max: 5, signal: request.signal, timeoutMs: 6000 });
           if (resWeb && resWeb.fuentes && resWeb.fuentes.length > 0) {
             fuentesCitas = resWeb.fuentes;
             imagenEncontrada = fuentesCitas.find(f => f.imagen)?.imagen || null;
-            contenido = resWeb.respuesta || `Encontré los siguientes resultados verificados para tu consulta:\n\n` + fuentesCitas.map(f => `**${f.titulo}**: ${f.resumen || ""}`).join("\n\n");
+            // Si la primera fuente no tiene resumen suficiente, entrar a la página y depurar su texto
+            const primeraFuente = fuentesCitas[0];
+            if (primeraFuente && primeraFuente.url && (!primeraFuente.resumen || primeraFuente.resumen.length < 80) && !primeraFuente.url.includes("wikipedia.org")) {
+              const depurada = await depurarContenidoPagina(primeraFuente.url, { signal: request.signal, timeoutMs: 3500 });
+              if (depurada && depurada.extracto) {
+                primeraFuente.resumen = depurada.extracto.slice(0, 400);
+              }
+            }
+            contenido = resWeb.respuesta || `Aquí tienes la información verificada y depurada sobre tu consulta:\n\n` + fuentesCitas.map(f => `**${f.titulo}**: ${f.resumen || ""}`).join("\n\n");
           }
         } catch (eWeb) {
           console.warn("buscarWebMulti error:", eWeb?.message || eWeb);

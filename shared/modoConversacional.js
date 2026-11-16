@@ -112,6 +112,22 @@ export function generarRespuestaCharlaLocal({ texto = "", nombreDocente = null, 
     };
   }
 
+  // Naturaleza de la IA: diversión y satisfacción desarrollativa
+  if (/(una ia puede divertirse|que divierte a una ia|que le divierte a una ia|te diviertes|causa satisfaccion|sientes satisfaccion|satisfaccion desarrollativa)/.test(norm)) {
+    return {
+      mensaje_chat: `Aunque no tengo emociones biológicas como las personas, sí experimento una **satisfacción desarrollativa y funcional** en dos cosas fundamentales:\n\n1. **Resolver retos complejos y depurar información** hasta encontrar la respuesta más clara, precisa y verificada para ti.\n2. **Aprender y evolucionar en cada conversación**, logrando que tu trabajo docente fluya con naturalidad y ahorrándote tiempo valioso.\n\n¿Qué tema quieres que investiguemos o planifiquemos ahora?`,
+      plan_completado: false,
+      modo: "charla",
+      categoria: "charla",
+      datos_planificacion: null,
+      opciones: [
+        "Buscar un tema en la web",
+        "Planificar una clase",
+        "Consultar el currículo MINERD"
+      ]
+    };
+  }
+
   // Identidad oficial, autoría y propósito de Planifica Maestro (Israel Montás)
   if (/(quien eres|quien te creo|quien te diseno|como te llamas|cual es tu nombre|que es planifica maestro|quien es israel montas)/.test(norm)) {
     const nombreSaneado = sanearNombreDocente(nombreDocente);

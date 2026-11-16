@@ -116,9 +116,12 @@ export async function buscarWikipedia(consulta, { signal, docenteId, env } = {})
 
   const queryLimpia = consulta.trim()
     .replace(/^[¿¡"'«(\s]+|[?!"'»)\s.]+$/g, "")
-    .replace(/^(?:por\s+favor\s+)?(?:b[uú]sca(?:me)?|buscar|investiga(?:r)?|encuentra|dime|expl[ií]came|h[aá]blame\s+(?:de|sobre)|cu[eé]ntame\s+(?:de|sobre))\s+(?:en\s+(?:la\s+web|internet|google|wikipedia)\s+)?/i, "")
+    .replace(/^(?:por\s+favor\s+)?(?:(?:quiero|necesito|deseo)\s+(?:que\s+(?:me\s+)?)?)?(?:b[uú]sca(?:me|r)?|investiga(?:me|r)?|averigua(?:me|r)?|encuentra(?:me)?|consulta(?:r)?|dime|expl[ií]came|h[aá]blame\s+(?:de|sobre)|cu[eé]ntame\s+(?:de|sobre)|saber\s+(?:sobre|acerca\s+de|de)?)\s*/i, "")
+    .replace(/^(?:en\s+(?:la\s+web|internet|google|wikipedia|el\s+minerd)\s+)?/i, "")
+    .replace(/^(?:(?:toda\s+la|alguna|cualquier)\s+)?(?:informaci[oó]n|datos|detalles|art[ií]culos?|noticias?|todo)\s+(?:actualizada\s+|reciente\s+|pasada\s+)?(?:sobre|acerca\s+de|de|del)\s+(?:un|una|el|la|los|las)?\s*/i, "")
     .replace(/^(?:una?\s+)?(?:imagen|foto|fotograf[ií]a|ilustraci[oó]n|dibujo)\s+(?:de|del|sobre)\s+(?:un|una|el|la|los|las)?\s*/i, "")
-    .replace(/^(?:de\s+d[oó]nde\s+(?:sale|viene|proviene|surge|nace)|c[oó]mo\s+(?:llegaron|surgi[oó]|funciona|se\s+origin[oó])|qu[eé]\s+(?:pas[oó]\s+con|sabes\s+(?:de|sobre)|es|son|fue|fueron))\s+(?:un|una|el|la|los|las)?\s*/i, "")
+    .replace(/^(?:de\s+d[oó]nde\s+(?:sale|viene|proviene|surge|nace)|c[oó]mo\s+(?:llegaron|surgi[oó]|funciona|se\s+origin[oó])|qu[eé]\s+(?:pas[oó]\s+con|sabes\s+(?:de|sobre)|es|son|fue|fueron)|qui[eé]n(?:es)?\s+(?:es|son|fue|fueron))\s+(?:un|una|el|la|los|las)?\s*/i, "")
+    .replace(/\s+en\s+(?:la\s+web|internet|google|wikipedia)$/i, "")
     .replace(/^yuca$/i, "Manihot esculenta")
     .trim() || consulta.trim();
   const cacheKey = `search:${queryLimpia.toLowerCase()}`;

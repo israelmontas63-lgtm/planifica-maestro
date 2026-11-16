@@ -9,14 +9,40 @@ const pausas = new Map();
 export function reiniciarEstadoBusqueda() { pausas.clear(); }
 
 const limpiar = (t, n = 300) => String(t == null ? "" : t).replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim().slice(0, n);
-const limpiarTermino = (q) => String(q || "")
+export const limpiarTermino = (q) => String(q || "")
   .trim()
   .replace(/^[¿¡"'«(\s]+|[?!"'»)\s.]+$/g, "")
-  .replace(/^(?:por\s+favor\s+)?(?:b[uú]sca(?:me)?|buscar|investiga(?:r)?|encuentra|dime|expl[ií]came|h[aá]blame\s+(?:de|sobre)|cu[eé]ntame\s+(?:de|sobre))\s+(?:en\s+(?:la\s+web|internet|google|wikipedia)\s+)?/i, "")
+  .replace(/^(?:por\s+favor\s+)?(?:(?:quiero|necesito|deseo)\s+(?:que\s+(?:me\s+)?)?)?(?:b[uú]sca(?:me|r)?|investiga(?:me|r)?|averigua(?:me|r)?|encuentra(?:me)?|consulta(?:r)?|dime|expl[ií]came|h[aá]blame\s+(?:de|sobre)|cu[eé]ntame\s+(?:de|sobre)|saber\s+(?:sobre|acerca\s+de|de)?)\s*/i, "")
+  .replace(/^(?:en\s+(?:la\s+web|internet|google|wikipedia|el\s+minerd)\s+)?/i, "")
+  .replace(/^(?:(?:toda\s+la|alguna|cualquier)\s+)?(?:informaci[oó]n|datos|detalles|art[ií]culos?|noticias?|todo)\s+(?:actualizada\s+|reciente\s+|pasada\s+)?(?:sobre|acerca\s+de|de|del)\s+(?:un|una|el|la|los|las)?\s*/i, "")
   .replace(/^(?:una?\s+)?(?:imagen|foto|fotograf[ií]a|ilustraci[oó]n|dibujo)\s+(?:de|del|sobre)\s+(?:un|una|el|la|los|las)?\s*/i, "")
-  .replace(/^(?:de\s+d[oó]nde\s+(?:sale|viene|proviene|surge|nace)|c[oó]mo\s+(?:llegaron|surgi[oó]|funciona|se\s+origin[oó])|qu[eé]\s+(?:pas[oó]\s+con|sabes\s+(?:de|sobre)|es|son|fue|fueron))\s+(?:un|una|el|la|los|las)?\s*/i, "")
+  .replace(/^(?:de\s+d[oó]nde\s+(?:sale|viene|proviene|surge|nace)|c[oó]mo\s+(?:llegaron|surgi[oó]|funciona|se\s+origin[oó])|qu[eé]\s+(?:pas[oó]\s+con|sabes\s+(?:de|sobre)|es|son|fue|fueron)|qui[eé]n(?:es)?\s+(?:es|son|fue|fueron))\s+(?:un|una|el|la|los|las)?\s*/i, "")
+  .replace(/\s+en\s+(?:la\s+web|internet|google|wikipedia)$/i, "")
   .replace(/^yuca$/i, "Manihot esculenta")
   .trim() || String(q || "").trim();
+
+export async function depurarContenidoPagina(url, { signal, timeoutMs = 4500 } = {}) {
+  try {
+    const res = await fetchConLimite(url, {
+      headers: { "User-Agent": UA, Accept: "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.8" },
+      signal
+    }, timeoutMs);
+    if (!res || !res.ok) return null;
+    const html = await res.text();
+    const tituloMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    const titulo = tituloMatch ? limpiar(tituloMatch[1], 160) : url;
+    const cuerpo = html
+      .replace(/<(?:script|style|nav|header|footer|aside|noscript|svg|form)[\s\S]*?<\/(?:script|style|nav|header|footer|aside|noscript|svg|form)>/gi, " ")
+      .replace(/<!--[\s\S]*?-->/g, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 1200);
+    return cuerpo ? { titulo, url, extracto: cuerpo } : null;
+  } catch {
+    return null;
+  }
+}
 
 async function tavily(env, q, { max, oficial, signal, timeoutMs }) {
   if (!env.TAVILY_API_KEY) return { sinConfig: true };
