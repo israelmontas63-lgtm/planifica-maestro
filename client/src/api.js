@@ -511,27 +511,39 @@ export async function generarPlanificacion({
 
 /**
  * POST /api/chat
- * Asistente conversacional con memoria de los últimos 8 mensajes, Gemini 2.5 Flash,
- * consulta a curriculo_fragmentos y caché en CACHE_KV.
+ * Asistente multimodal Plani Maestra con memoria de los últimos 8 turnos, Gemini 2.5 Flash,
+ * consulta a curriculo_fragmentos, soporte de canal ("texto" | "voz" | "imagen") y caché en CACHE_KV.
  */
 export async function enviarMensajeChat({
+  mensaje = "",
+  historial = [],
   messages = [],
   texto = "",
+  canal = "texto",
+  imagenBase64 = null,
+  mimeType = "image/jpeg",
   grado = "",
   area = "",
   sesionId = null,
   signal,
 } = {}) {
   const sesionIdActivo = sesionId || obtenerOSetearSesionId();
-  const historial8 = Array.isArray(messages) ? messages.slice(-8) : [];
+  const baseHist = Array.isArray(historial) && historial.length > 0 ? historial : (Array.isArray(messages) ? messages : []);
+  const historial8 = baseHist.slice(-8);
+  const textoFinal = mensaje || texto || "";
   const res = await request(
     "/api/chat",
     {
       method: "POST",
       body: JSON.stringify({
         sesionId: sesionIdActivo,
+        mensaje: textoFinal,
+        message: textoFinal,
+        historial: historial8,
         messages: historial8,
-        message: texto,
+        canal,
+        imagenBase64,
+        mimeType,
         grado,
         area,
       }),

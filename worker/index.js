@@ -14,6 +14,7 @@ import { fetchConLimite } from "./services/timeoutIntento.js";
 import { generateVoice } from "./services/voiceProvider.js";
 import { clasificarIntencion, clasificarPorReglas } from "./clasificadorIntencion.js";
 import { generarRespuestaCharlaLocal, SYSTEM_PROMPT_CONVERSACIONAL, SYSTEM_INSTRUCTION_CHAT_MINERD, limpiarSaludoInnecesario, sanitizarAntiAlucinacion } from "./modoConversacional.js";
+import { SYSTEM_INSTRUCTION_IDENTIDAD, IDENTIDAD_VERSION, FIRMA_AUTORIA_HEADER, construirSystemInstructionIdentidad } from "./identidad.js";
 import { buscarEnGlosario } from "./glosarioDocente.js";
 import {
   generarClaveCurricularSha256,
@@ -1477,54 +1478,72 @@ async function handleApiRequest(request, env, ctx) {
     });
   }
 
-  // 6.5. POST /api/chat (Asistente conversacional con memoria de 8 mensajes, Gemini 2.5 Flash, curriculo_fragmentos y CACHE_KV)
+  // 6.5. POST /api/chat (Asistente multimodal Plani Maestra con memoria de 8 turnos, Gemini 2.5 Flash, curriculo_fragmentos y CACHE_KV)
   if (path === "/api/chat" && method === "POST") {
-    const auth = requerirAcceso(request, env, corsHeaders);
+    const chatHeaders = {
+      ...corsHeaders,
+      "Content-Type": "application/json",
+      "X-App-Author": FIRMA_AUTORIA_HEADER
+    };
+    const auth = requerirAcceso(request, env, chatHeaders);
     if (auth.errorResponse) return auth.errorResponse;
 
     const body = await request.json().catch(() => ({}));
-    const rawMessages = Array.isArray(body.messages) ? body.messages : [];
-    const textoDirecto = (body.message || body.texto || body.prompt || "").trim();
-    const historial8 = (rawMessages.length > 0
-      ? rawMessages
-      : (textoDirecto ? [{ role: "user", text: textoDirecto }] : [])
-    ).slice(-8);
+    const rawHistorial = Array.isArray(body.historial)
+      ? body.historial
+      : (Array.isArray(body.messages) ? body.messages : []);
+    const textoDirecto = (body.mensaje || body.message || body.texto || body.prompt || "").trim();
+    const rawImagen = body.imagenBase64 || body.imageBase64 || null;
+    const cleanImagenBase64 = rawImagen
+      ? String(rawImagen).replace(/^data:[^;]+;base64,/, "").trim()
+      : null;
+    const mimeTypeImg = body.mimeType || body.mediaType || "image/jpeg";
+    const canalActivo = ["texto", "voz", "imagen"].includes(String(body.canal || "").toLowerCase())
+      ? String(body.canal).toLowerCase()
+      : (cleanImagenBase64 ? "imagen" : "texto");
 
-    if (historial8.length === 0) {
-      return new Response(JSON.stringify({ ok: false, error: "Falta el mensaje de consulta en /api/chat." }), {
+    let historial8 = rawHistorial.slice(-8);
+    if (textoDirecto && (historial8.length === 0 || (historial8[historial8.length - 1]?.text || historial8[historial8.length - 1]?.content || "").trim() !== textoDirecto)) {
+      historial8 = [...historial8, { role: "user", text: textoDirecto }].slice(-8);
+    } else if (!historial8.length && cleanImagenBase64) {
+      historial8 = [{ role: "user", text: "Analiza esta imagen pedagógica y vincúlala con el currículo MINERD y CON BASE." }];
+    }
+
+    if (historial8.length === 0 && !cleanImagenBase64) {
+      return new Response(JSON.stringify({ ok: false, error: "Falta el mensaje o imagen de consulta en /api/chat." }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+        headers: chatHeaders
       });
     }
 
-    const ultimoMensaje = (historial8[historial8.length - 1]?.text || historial8[historial8.length - 1]?.content || textoDirecto || "").trim();
+    const ultimoMensaje = (textoDirecto || historial8[historial8.length - 1]?.text || historial8[historial8.length - 1]?.content || "").trim();
     const gradoFiltro = body.grado || "";
     const areaFiltro = body.area || "";
 
-    // 1. Verificar caché de respuestas frecuentes en CACHE_KV (cache-kv)
+    // 1. Verificar caché en CACHE_KV (cache-kv) ÚNICAMENTE cuando no hay imagen adjunta
     const kvCache = env.CACHE_KV || env["cache-kv"] || null;
     const claveHash = await generarClaveCurricularSha256({
       grado: String(gradoFiltro || "1-2"),
       area: String(areaFiltro || "general"),
-      tema: ultimoMensaje.toLowerCase(),
-      nivel: "chat_minerd_conbase",
+      tema: `${canalActivo}:${ultimoMensaje.toLowerCase()}`,
+      nivel: `chat_minerd_${IDENTIDAD_VERSION}`,
       periodo: String(historial8.length)
     });
-    const kvKey = `chat_kv:${claveHash}`;
+    const kvKey = `chat_kv:${IDENTIDAD_VERSION}:${claveHash}`;
 
-    if (kvCache && typeof kvCache.get === "function") {
+    if (!cleanImagenBase64 && kvCache && typeof kvCache.get === "function") {
       try {
         const cachedRaw = await kvCache.get(kvKey);
         if (cachedRaw) {
           const cachedObj = JSON.parse(cachedRaw);
-          if (cachedObj && cachedObj.respuesta) {
+          if (cachedObj && cachedObj.respuesta && cachedObj.identidad_version === IDENTIDAD_VERSION) {
             return new Response(JSON.stringify({
               ...cachedObj,
               ok: true,
               desdeCache: true
             }), {
               status: 200,
-              headers: { ...corsHeaders, "Content-Type": "application/json" }
+              headers: chatHeaders
             });
           }
         }
@@ -1536,7 +1555,7 @@ async function handleApiRequest(request, env, ctx) {
     // 2. Consultar tabla curriculo_fragmentos en Supabase (priorizando 1.º y 2.º grado MINERD / CON BASE)
     let fragmentosCurriculo = [];
     const supaKey = env.SUPABASE_ANON_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
-    if (env.SUPABASE_URL && supaKey && ultimoMensaje) {
+    if (env.SUPABASE_URL && supaKey && (ultimoMensaje || cleanImagenBase64)) {
       try {
         const terminoLimpio = ultimoMensaje.replace(/[^\p{L}\p{N}\s]/gu, " ").trim().split(/\s+/).filter(w => w.length > 3).slice(0, 4).join(" ");
         const baseSupa = env.SUPABASE_URL.replace(/\/+$/, "");
@@ -1562,26 +1581,41 @@ async function handleApiRequest(request, env, ctx) {
       }
     }
 
-    // 3. Construir systemInstruction especializado en MINERD y CON BASE (1.º y 2.º grado) con pregunta final obligatoria
+    // 3. Vincular módulo de identidad oficial (Plani Maestra) según el canal ("texto" | "voz" | "imagen")
     const contextoFragmentosTexto = fragmentosCurriculo.length > 0
-      ? `\n\n[FRAGMENTOS OFICIALES DE curriculo_fragmentos (SUPABASE)]:\n` +
+      ? `\n[FRAGMENTOS OFICIALES DE curriculo_fragmentos (SUPABASE)]:\n` +
         fragmentosCurriculo.map((f, idx) =>
           `${idx + 1}. [${f.grado || "1.º-2.º"} | ${f.area || "General"} | ${f.tema || "Currículo"}${f.pagina ? ` | pág. ${f.pagina}` : ""}]: ${(f.contenido || f.competencias_especificas || "").slice(0, 500)}`
         ).join("\n")
-      : "";
+      : `\n[ESTADO DE curriculo_fragmentos]: No se recuperaron fragmentos exactos para esta consulta; si falta información oficial, indícalo con transparencia sin inventar indicadores.`;
 
-    const systemInstructionChat = `${SYSTEM_INSTRUCTION_CHAT_MINERD}${contextoFragmentosTexto}`;
+    const systemInstructionChat = `${construirSystemInstructionIdentidad({ canal: canalActivo, fragmentosTexto: contextoFragmentosTexto })}\n\n${SYSTEM_INSTRUCTION_CHAT_MINERD}`;
 
     const contentsChat = historial8
-      .map((m) => ({
-        role: (m.role === "assistant" || m.role === "model") ? "model" : "user",
-        parts: [{ text: String(m.text || m.content || "").trim() || "..." }]
-      }));
+      .map((m, idx) => {
+        const isLast = idx === historial8.length - 1;
+        const role = (m.role === "assistant" || m.role === "model") ? "model" : "user";
+        const textoTurno = String(m.text || m.content || m.mensaje || "").trim() || (cleanImagenBase64 && isLast ? "Analiza esta imagen pedagógica y vincúlala con las competencias e indicadores del MINERD y CON BASE." : "...");
+        const parts = [{ text: textoTurno }];
+        if (isLast && role === "user" && cleanImagenBase64) {
+          parts.push({
+            inlineData: {
+              mimeType: mimeTypeImg,
+              data: cleanImagenBase64
+            }
+          });
+        }
+        return { role, parts };
+      });
     while (contentsChat.length > 0 && contentsChat[0].role !== "user") {
       contentsChat.shift();
     }
     if (contentsChat.length === 0) {
-      contentsChat.push({ role: "user", parts: [{ text: ultimoMensaje }] });
+      const fallbackParts = [{ text: ultimoMensaje || "Analiza esta imagen curricular." }];
+      if (cleanImagenBase64) {
+        fallbackParts.push({ inlineData: { mimeType: mimeTypeImg, data: cleanImagenBase64 } });
+      }
+      contentsChat.push({ role: "user", parts: fallbackParts });
     }
 
     if (!env.GEMINI_API_KEY) {
@@ -1591,7 +1625,7 @@ async function handleApiRequest(request, env, ctx) {
         mensaje_chat: "El servicio de chat requiere GEMINI_API_KEY configurada en el Worker."
       }), {
         status: 503,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+        headers: chatHeaders
       });
     }
 
@@ -1624,7 +1658,9 @@ async function handleApiRequest(request, env, ctx) {
           const dataGem = await resGem.json();
           const textoExtraido = textoDeCandidato(dataGem.candidates?.[0]);
           if (textoExtraido) {
-            respuestaTexto = sanitizarAntiAlucinacion(textoExtraido.trim());
+            respuestaTexto = sanitizarAntiAlucinacion(textoExtraido.trim())
+              .replace(/\b(?:como\s+modelo\s+de\s+(?:ia|inteligencia\s+artificial)|aqu[ií]\s+tienes)\b[,:\s]*/gi, "")
+              .trim();
             modeloUsado = mod;
             break;
           }
@@ -1641,11 +1677,11 @@ async function handleApiRequest(request, env, ctx) {
         mensaje_chat: "En este momento el modelo Gemini no pudo responder. ¿Deseas intentarlo con otra consulta curricular de 1.º o 2.º grado?"
       }), {
         status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+        headers: chatHeaders
       });
     }
 
-    // Garantizar regla: cerrar siempre con una única pregunta breve de seguimiento
+    // Garantizar regla: cerrar siempre con una única pregunta breve y ligera de seguimiento
     if (!/\?\s*$/.test(respuestaTexto)) {
       respuestaTexto = `${respuestaTexto}\n\n¿Te gustaría enfocar esta actividad para 1.º o para 2.º grado?`;
     }
@@ -1654,13 +1690,17 @@ async function handleApiRequest(request, env, ctx) {
       ok: true,
       respuesta: respuestaTexto,
       mensaje_chat: respuestaTexto,
+      canal: canalActivo,
       modelo: modeloUsado,
+      identidad_version: IDENTIDAD_VERSION,
+      autor: FIRMA_AUTORIA_HEADER,
       historial_usado: historial8.length,
       fragmentos: fragmentosCurriculo,
       desdeCache: false
     };
 
-    if (kvCache && typeof kvCache.put === "function") {
+    // Guardar en CACHE_KV únicamente cuando no hay imagen adjunta
+    if (!cleanImagenBase64 && kvCache && typeof kvCache.put === "function") {
       try {
         await kvCache.put(kvKey, JSON.stringify(payloadRespuesta), { expirationTtl: 86400 });
       } catch (ePut) {
@@ -1670,7 +1710,7 @@ async function handleApiRequest(request, env, ctx) {
 
     return new Response(JSON.stringify(payloadRespuesta), {
       status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
+      headers: chatHeaders
     });
   }
 

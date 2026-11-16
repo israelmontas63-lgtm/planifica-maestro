@@ -111,19 +111,30 @@ export default function HomeGreeting({ user, onSeleccionarSugerencia, onEnviarCo
         </div>
       </div>
 
-      {/* 2. Pregunta central */}
+      {/* 2. Pregunta central y saludo cálido de Plani Maestra */}
       <h1 
         style={{
           color: '#0f172a',
           fontWeight: 800,
-          fontSize: '22px',
+          fontSize: '21px',
           letterSpacing: '-0.025em',
           lineHeight: '1.25',
-          margin: '0 0 16px 0'
+          margin: '0 0 6px 0'
         }}
       >
-        ¿Qué vamos a hacer, maestro?
+        ¡Hola! Soy Plani Maestra, ¿qué vamos a hacer hoy?
       </h1>
+      <p
+        style={{
+          color: '#475569',
+          fontSize: '13px',
+          lineHeight: '1.4',
+          margin: '0 0 14px 0',
+          maxWidth: '340px'
+        }}
+      >
+        Tu colega pedagógica de 1.º y 2.º grado (MINERD y CON BASE). Escríbeme, háblame por micrófono o envíame una foto de tu guía.
+      </p>
 
       {/* 3. Cápsula de búsqueda unificada */}
       <form onSubmit={handleSubmit} style={{ width: '100%', marginBottom: '20px' }}>

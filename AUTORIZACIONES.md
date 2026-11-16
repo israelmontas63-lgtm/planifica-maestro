@@ -812,6 +812,31 @@
 
 ---
 
+### Autorización 080
+- **Fecha:** 16/11/2026 (America/Santo_Domingo)
+- **Componentes y Hashes:**
+  - `client/src/App.jsx`: `533ad50efff7e600ddb71ab29bcb39ee1ca7287bcac337c485bea4b9661a55d2`
+  - `client/src/api.js`: `8b077af91e9a36bbd805d8d9b035aa8ee6be02134c2423f8b061b3cc7fa44506`
+  - `client/src/components/HomeGreeting.jsx`
+  - `shared/modoConversacional.js`: `c0359a2fc498842243f9d2dd643329c0423fff3d42544b5f773e3202069d0985`
+  - `worker/index.js`: `835358068ec43655ec92b981b7d76434facf3f37ce42fa4de22c07aed39b9be2`
+  - `worker/identidad.js`
+  - `src/identidad.js`
+  - `tests/test_api_chat_conversacional.mjs`
+  - `tests/test_api_chat_multimodal.mjs`
+  - `PROTEGIDO.hashes.json`
+  - `AUTORIZACIONES.md`
+- **Motivo:** Implementación de la asistente multimodal "Planifica Maestro" ("Plani" / "Plani Maestra") con soporte para texto, micrófono (`SpeechRecognition` / `speechSynthesis`) e imagen en Cloudflare Worker y cliente React.
+- **Decisiones Aprobadas:**
+  1. **Módulo de identidad oficial (`worker/identidad.js` y `src/identidad.js`):** Blindaje de identidad de Plani Maestra (creada en RD por Israel Montás para 1.º y 2.º grado MINERD y CON BASE), tono cero estrés, cierre obligado con una sola pregunta breve, y encabezado `X-App-Author: Israel Montas - Planifica Maestro`.
+  2. **Endpoint `/api/chat` multimodal (`worker/index.js`):** Soporte de payload `{ mensaje, historial, canal, imagenBase64, mimeType }`, omisión de caché en canal imagen, consulta a `curriculo_fragmentos` y despacho a `gemini-2.5-flash` con `inlineData`.
+  3. **Interfaz React multimodal (`client/src/App.jsx`, `client/src/api.js`, `client/src/components/HomeGreeting.jsx`):** Saludo oficial, barra con triple control (texto, micrófono y cámara/imagen con compresión ligera a 1024px) y síntesis de voz automática.
+- **Frase Textual del Dueño:** "Implementa el asistente multimodal 'Planifica Maestro' ('Plani' / 'Plani Maestra') con soporte para texto, micrófono e imagen... autualisacion .md para todo el sello"
+- **Alcance Autorizado:** `worker/index.js`, `worker/identidad.js`, `src/identidad.js`, `shared/modoConversacional.js`, `client/src/api.js`, `client/src/App.jsx`, `client/src/components/HomeGreeting.jsx`, `tests/test_api_chat_conversacional.mjs`, `tests/test_api_chat_multimodal.mjs`, `AUTORIZACIONES.md`, sellado en `PROTEGIDO.hashes.json`, push a GitHub y despliegue a Cloudflare Workers.
+- **Estado:** PENDIENTE DE AUTORIZACIÓN EXPLÍCITA PARA SELLADO Y DESPLIEGUE
+
+---
+
 ### Autorización 079
 - **Fecha:** 16/11/2026 (America/Santo_Domingo)
 - **Componentes y Hashes:**

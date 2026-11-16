@@ -9,7 +9,7 @@ import { useSpeechRecognition } from "./hooks/useSpeechRecognition.js";
 import { useSpeechSynthesis } from "./hooks/useSpeechSynthesis.js";
 import { useTrialStatus } from "./hooks/useTrialStatus.js";
 import { useAuth } from "./hooks/useAuth.js";
-import { generarPlanificacion, exportarWord, generarVoz, guardarAjustesPlan, obtenerCuotaDocente, obtenerOwnerKey, transcribirAudio } from "./services/api.js";
+import { generarPlanificacion, enviarMensajeChat, exportarWord, generarVoz, guardarAjustesPlan, obtenerCuotaDocente, obtenerOwnerKey, transcribirAudio } from "./services/api.js";
 import { iniciarGrabacionRespaldo, detenerGrabacionRespaldo } from "./services/audioBackupRecorder.js";
 import { registrarAjusteConRespaldoOffline, sincronizarAjustesPendientes } from "./services/offlineSync.js";
 import { guardarPlanEnBiblioteca } from "./services/bibliotecaStorage.js";
@@ -182,6 +182,8 @@ export default function App() {
     return [];
   });
   const [chatInputRapido, setChatInputRapido] = useState("");
+  const [chatImagenAdjunta, setChatImagenAdjunta] = useState(null);
+  const chatImageInputRef = useRef(null);
   useEffect(() => {
     try {
       sessionStorage.setItem("pm_historial_chat_8", JSON.stringify(messages.slice(-8)));
@@ -766,6 +768,33 @@ export default function App() {
         enviado: true
       });
       const textToSend = textoNormalizado;
+      const pidePlanPorVoz = /\b(?:planifica|planificar|planificaci[oó]n|secuencia\s+did[aá]ctica|unidad\s+de\s+aprendizaje|hazme\s+un\s+plan)\b/i.test(textToSend);
+      if (!pidePlanPorVoz) {
+        const userMsgVoz = { role: "user", text: textToSend, canal: "voz" };
+        const hist8Voz = [...messages, userMsgVoz].slice(-MAX_HISTORIAL_CHAT);
+        setMessages(hist8Voz);
+        setCargando(true);
+        setModoOperacion("conversando");
+        enviarMensajeChat({
+          mensaje: textToSend,
+          historial: hist8Voz,
+          canal: "voz"
+        }).then((resChat) => {
+          const textoResp = resChat?.respuesta || resChat?.mensaje_chat || "";
+          if (textoResp) {
+            setMessages([...hist8Voz, { role: "assistant", text: textoResp, modo: "chat_conversacional", canal: "voz" }].slice(-MAX_HISTORIAL_CHAT));
+            speak(textoResp);
+          } else {
+            enviarMensaje(textToSend);
+          }
+        }).catch(() => {
+          enviarMensaje(textToSend);
+        }).finally(() => {
+          setCargando(false);
+          fuePorVozRef.current = false;
+        });
+        return;
+      }
       enviarMensaje(textToSend);
       return;
     }
@@ -1854,15 +1883,115 @@ export default function App() {
           procesando={procesandoImagen}
         />
 
-        {/* Barra de asistente conversacional con memoria de 8 mensajes, micrófono (Web Speech API) y altavoz */}
+        {/* Barra de asistente multimodal Plani Maestra (texto, micrófono es-DO/es-419 y cámara comprimida a max 1024px) */}
+        <input
+          ref={chatImageInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+            if (!file) return;
+            try {
+              const optimizada = await comprimirYRedimensionarImagen(file, 1024, 0.8);
+              const base64Clean = optimizada.dataUrl.split(",")[1] || "";
+              setChatImagenAdjunta({
+                dataUrl: optimizada.dataUrl,
+                base64: base64Clean,
+                mimeType: optimizada.mediaType || "image/jpeg"
+              });
+            } catch (errImg) {
+              const reader = new FileReader();
+              reader.onload = () => {
+                const dUrl = String(reader.result || "");
+                setChatImagenAdjunta({
+                  dataUrl: dUrl,
+                  base64: dUrl.split(",")[1] || "",
+                  mimeType: file.type || "image/jpeg"
+                });
+              };
+              reader.readAsDataURL(file);
+            }
+          }}
+        />
+        {chatImagenAdjunta && (
+          <div
+            className="no-print"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "8px",
+              padding: "6px 10px",
+              margin: "0 2px",
+              background: "#f0fdfa",
+              border: "1px solid #99f6e4",
+              borderRadius: "10px",
+              fontSize: "12px",
+              color: "#0f766e"
+            }}
+          >
+            <span>📷 Imagen lista para Plani Maestra (máx. 1024px)</span>
+            <button
+              type="button"
+              onClick={() => setChatImagenAdjunta(null)}
+              style={{ background: "none", border: "none", color: "#0f766e", cursor: "pointer", fontWeight: "700" }}
+            >
+              ✕ Quitar
+            </button>
+          </div>
+        )}
         <form
           className="pm-chat-quickbar no-print"
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
             const txt = chatInputRapido.trim();
-            if (!txt || cargando) return;
+            const imgAdj = chatImagenAdjunta;
+            if ((!txt && !imgAdj) || cargando) return;
             setChatInputRapido("");
-            enviarMensaje(txt);
+            setChatImagenAdjunta(null);
+            const pidePlanCompleto = !imgAdj && /\b(?:planifica|planificar|planificaci[oó]n|secuencia\s+did[aá]ctica|unidad\s+de\s+aprendizaje|hazme\s+un\s+plan)\b/i.test(txt);
+            if (pidePlanCompleto) {
+              enviarMensaje(txt);
+              return;
+            }
+            const canalEnvio = imgAdj ? "imagen" : "texto";
+            const userMsg = {
+              role: "user",
+              text: txt || "Analiza esta imagen pedagógica para 1.º y 2.º grado.",
+              ...(imgAdj ? { imageBase64: imgAdj.base64, mediaType: imgAdj.mimeType } : {}),
+              canal: canalEnvio
+            };
+            const hist8 = [...messages, userMsg].slice(-MAX_HISTORIAL_CHAT);
+            setMessages(hist8);
+            setCargando(true);
+            setModoOperacion("conversando");
+            try {
+              const resChat = await enviarMensajeChat({
+                mensaje: userMsg.text,
+                historial: hist8,
+                canal: canalEnvio,
+                imagenBase64: imgAdj ? imgAdj.base64 : null,
+                mimeType: imgAdj ? imgAdj.mimeType : "image/jpeg"
+              });
+              const textoResp = resChat?.respuesta || resChat?.mensaje_chat || "¿En qué contenido de 1.º o 2.º grado te apoyo hoy?";
+              const assistantMsg = {
+                role: "assistant",
+                text: textoResp,
+                fragmentos: resChat?.fragmentos || [],
+                modo: "chat_conversacional",
+                canal: canalEnvio
+              };
+              setMessages([...hist8, assistantMsg].slice(-MAX_HISTORIAL_CHAT));
+              if (hablarRespuestas && textoResp) {
+                speak(textoResp);
+              }
+            } catch (errChat) {
+              enviarMensaje(txt, imgAdj?.base64, imgAdj?.mimeType);
+            } finally {
+              setCargando(false);
+            }
           }}
           style={{
             display: "flex",
@@ -1879,7 +2008,7 @@ export default function App() {
           <button
             type="button"
             onClick={handleDictadoClick}
-            title={listening ? "Detener micrófono (Web Speech API)" : "Hablar por micrófono (Web Speech API)"}
+            title={listening ? "Detener micrófono (SpeechRecognition es-DO)" : "Hablar con Plani por micrófono (es-DO / es-419)"}
             aria-label="Micrófono por voz"
             style={{
               background: listening ? "#dc2626" : "#f1f5f9",
@@ -1895,12 +2024,31 @@ export default function App() {
           >
             {listening ? "⏹️" : "🎙️"}
           </button>
+          <button
+            type="button"
+            onClick={() => chatImageInputRef.current?.click()}
+            title="Adjuntar foto o captura curricular (compresión máx. 1024px)"
+            aria-label="Adjuntar imagen para Plani"
+            style={{
+              background: chatImagenAdjunta ? "#ccfbf1" : "#f1f5f9",
+              color: "#0f766e",
+              border: "1px solid #cbd5e1",
+              borderRadius: "8px",
+              padding: "7px 10px",
+              fontSize: "14px",
+              cursor: "pointer",
+              fontWeight: "600",
+              flexShrink: 0
+            }}
+          >
+            📷
+          </button>
           <input
             type="text"
             value={chatInputRapido}
             onChange={(e) => setChatInputRapido(e.target.value)}
-            placeholder="Pregunta o planifica (1.º y 2.º MINERD / CON BASE)…"
-            aria-label="Mensaje para el asistente conversacional"
+            placeholder="Habla con Plani (1.º y 2.º MINERD / CON BASE)…"
+            aria-label="Mensaje para Plani Maestra"
             style={{
               flex: 1,
               minWidth: 0,
@@ -1918,9 +2066,9 @@ export default function App() {
                 const ultimaResp = [...messages].reverse().find((m) => m.role === "assistant" && m.text);
                 if (!ultimaResp) return;
                 if (isSpeaking) stopSpeaking();
-                else handleEscuchar(ultimaResp.text);
+                else speak(ultimaResp.text);
               }}
-              title="Leer última respuesta en voz alta (Altavoz)"
+              title="Leer última respuesta de Plani en voz alta (Altavoz)"
               aria-label="Altavoz para leer respuesta en voz alta"
               style={{
                 background: isSpeaking ? "#fef3c7" : "#f1f5f9",
@@ -1938,17 +2086,17 @@ export default function App() {
           )}
           <button
             type="submit"
-            disabled={!chatInputRapido.trim() || cargando}
-            title="Enviar mensaje"
+            disabled={(!chatInputRapido.trim() && !chatImagenAdjunta) || cargando}
+            title="Enviar a Plani Maestra"
             style={{
-              background: chatInputRapido.trim() && !cargando ? "#0d9488" : "#cbd5e1",
+              background: (chatInputRapido.trim() || chatImagenAdjunta) && !cargando ? "#0d9488" : "#cbd5e1",
               color: "#ffffff",
               border: "none",
               borderRadius: "8px",
               padding: "7px 12px",
               fontSize: "13px",
               fontWeight: "700",
-              cursor: chatInputRapido.trim() && !cargando ? "pointer" : "default",
+              cursor: (chatInputRapido.trim() || chatImagenAdjunta) && !cargando ? "pointer" : "default",
               flexShrink: 0
             }}
           >
