@@ -831,7 +831,8 @@
   3. **Blindaje de Captura de Errores en `App.jsx`:** Verificación explícita de `resChat && resChat.ok !== false` en los despachos por voz y cámara/imagen, evitando que mensajes de fallo de IA se agreguen como respuestas del asistente o se reproduzcan por el sintetizador de voz.
 - **Frase Textual del Dueño:** "Sí, autorizo aplicar las 3 correcciones (unificar a gemini-3.8-flash, corregir las columnas reales de curriculo_fragmentos en Supabase y validar resChat.ok en App.jsx para no leer errores en voz alta). Ejecútalas ahora, corre npm.cmd run guardia y muéstrame el resumen antes del sellado y deploy."
 - **Alcance Autorizado:** `worker/index.js`, `worker/services/aiProvider.js`, `wrangler.toml`, `client/src/App.jsx`, `client/src/api.js`, `client/src/components/ConfiguracionModal.jsx`, `tests/test_api_chat_conversacional.mjs`, `AUTORIZACIONES.md`, sellado en `PROTEGIDO.hashes.json` y despliegue a producción.
-- **Estado:** EN PROCESO DE AUDITORÍA Y VERIFICACIÓN
+- **Resumen Criptográfico Sellado:** `40dcd38399eaf71d96528e82dfd54a0bd77f562ab7d59e6ed025a91de4f086ef`
+- **Estado:** SELLADO Y LISTO PARA DESPLIEGUE
 
 ---
 
