@@ -41,7 +41,7 @@ export async function ejecutarAuditoriaInterna(env = {}, supabaseClient = null) 
       // Respaldo de compatibilidad si curriculo_fragmentos es referenciado como curriculo_secuencias o curriculo_paginas
       if ((res.error || !res.data) && (!supabaseClient || typeof cliente.from === 'function')) {
         try {
-          const alt = await cliente.from('curriculo_secuencias').select('id').limit(1);
+          const alt = await cliente.from('curriculo_secuencias').select('source_id').limit(1);
           if (alt && alt.data && !alt.error) {
             res = alt;
           } else {

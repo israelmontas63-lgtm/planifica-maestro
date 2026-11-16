@@ -114,7 +114,13 @@ export async function buscarWikipedia(consulta, { signal, docenteId, env } = {})
     return { exito: false, error: "Límite de consultas a Wikipedia superado por este minuto.", tipo: "rate_limit" };
   }
 
-  const queryLimpia = consulta.trim();
+  const queryLimpia = consulta.trim()
+    .replace(/^[¿¡"'«(\s]+|[?!"'»)\s.]+$/g, "")
+    .replace(/^(?:por\s+favor\s+)?(?:b[uú]sca(?:me)?|buscar|investiga(?:r)?|encuentra|dime|expl[ií]came|h[aá]blame\s+(?:de|sobre)|cu[eé]ntame\s+(?:de|sobre))\s+(?:en\s+(?:la\s+web|internet|google|wikipedia)\s+)?/i, "")
+    .replace(/^(?:una?\s+)?(?:imagen|foto|fotograf[ií]a|ilustraci[oó]n|dibujo)\s+(?:de|del|sobre)\s+(?:un|una|el|la|los|las)?\s*/i, "")
+    .replace(/^(?:de\s+d[oó]nde\s+(?:sale|viene|proviene|surge|nace)|c[oó]mo\s+(?:llegaron|surgi[oó]|funciona|se\s+origin[oó])|qu[eé]\s+(?:pas[oó]\s+con|sabes\s+(?:de|sobre)|es|son|fue|fueron))\s+(?:un|una|el|la|los|las)?\s*/i, "")
+    .replace(/^yuca$/i, "Manihot esculenta")
+    .trim() || consulta.trim();
   const cacheKey = `search:${queryLimpia.toLowerCase()}`;
   const enCache = cacheWikipedia.get(cacheKey);
   if (enCache && Date.now() < enCache.expiraAt) {
@@ -154,6 +160,7 @@ export async function buscarWikipedia(consulta, { signal, docenteId, env } = {})
       clave: p.key,
       descripcion: p.description || "",
       extracto: sanitizarTextoComoDato(p.excerpt || ""),
+      imagen: p.thumbnail?.url ? (p.thumbnail.url.startsWith("//") ? `https:${p.thumbnail.url}` : p.thumbnail.url) : null,
     }));
 
     // Guardar en caché 7 días (sin datos personales)
@@ -246,6 +253,7 @@ export async function obtenerResumen(titulo, { signal, docenteId, env } = {}) {
       revision: data.revision ? String(data.revision) : "desconocida",
       url: data.content_urls?.desktop?.page || `https://${WIKIPEDIA_HOST}/wiki/${encodeURIComponent(data.title)}`,
       tipo: data.type || "standard",
+      imagen: data.thumbnail?.source || data.originalimage?.source || null,
     };
 
     cacheWikipedia.set(cacheKey, { data: resumen, expiraAt: Date.now() + CACHE_TTL_MS });

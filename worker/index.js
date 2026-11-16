@@ -51,6 +51,7 @@ import { explicarFallo, clasificarFallo, CODIGOS_FALLO, limpiarDetalle, describi
 import { GestorMemoriaHibrida } from "./services/gestorMemoriaHibrida.js";
 import { buscarWebMulti } from "./services/buscadorWeb.js";
 import { buscarWikipedia, obtenerResumen } from "./services/wikipedia.js";
+import { generarTextoConRespaldo, respuestaSSEDeGemini } from "./services/enrutadorTexto.js";
 
 export function obtenerFechaActualRD(ahora = new Date()) {
   // Formato YYYY-MM-DD en la zona horaria de República Dominicana
@@ -2777,20 +2778,54 @@ async function handleApiRequest(request, env, ctx) {
       });
     }
 
-    // 3.5. MODO BÚSQUEDA WEB -> Multi-motor (Wikipedia, Gemini Grounding, Tavily, OpenAlex)
+    // 3.5. MODO BÚSQUEDA WEB -> Multi-motor (Wikipedia, Gemini Grounding, Tavily, OpenAlex) + lectura directa de URL e imágenes
     if (clasificacion.categoria === "busqueda_web") {
       let fuentesCitas = [];
       let contenido = "";
+      let imagenEncontrada = null;
+
+      // 0. Si el usuario incluye una URL explícita (https://...), abrirla y leer su contenido en segundo plano
+      const urlExplicitaMatch = textoParaProcesar.match(/https?:\/\/[^\s"'<>)+]+/i);
+      if (urlExplicitaMatch) {
+        const urlObjetivo = urlExplicitaMatch[0].replace(/[.,;:!?]+$/, "");
+        try {
+          const resPag = await fetchConLimite(urlObjetivo, {
+            headers: { "User-Agent": "PlanificaMaestro-Bot/1.0 (+https://planifica-maestro.israelmontas65.workers.dev)", Accept: "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.8" },
+            signal: request.signal
+          }, 6000);
+          if (resPag && resPag.ok) {
+            const htmlRaw = await resPag.text();
+            const tituloMatch = htmlRaw.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+            const tituloPag = tituloMatch ? tituloMatch[1].replace(/\s+/g, " ").trim().slice(0, 140) : urlObjetivo;
+            const textoLimpioPag = htmlRaw
+              .replace(/<script[\s\S]*?<\/script>/gi, " ")
+              .replace(/<style[\s\S]*?<\/style>/gi, " ")
+              .replace(/<[^>]+>/g, " ")
+              .replace(/\s+/g, " ")
+              .trim()
+              .slice(0, 1200);
+            if (textoLimpioPag) {
+              fuentesCitas.push({ titulo: tituloPag, url: urlObjetivo, resumen: textoLimpioPag.slice(0, 350) });
+              contenido = `Leí el contenido de **[${tituloPag}](${urlObjetivo})**:\n\n${textoLimpioPag}`;
+            }
+          }
+        } catch (eUrl) {
+          console.warn("Lectura directa de URL falló:", eUrl?.message || eUrl);
+        }
+      }
 
       // 1. Intentar buscador web multi-motor unificado
-      try {
-        const resWeb = await buscarWebMulti(env, textoParaProcesar, { modo: "general", max: 5, signal: request.signal, timeoutMs: 6000 });
-        if (resWeb && resWeb.fuentes && resWeb.fuentes.length > 0) {
-          fuentesCitas = resWeb.fuentes;
-          contenido = resWeb.respuesta || `Encontré los siguientes resultados verificados para tu consulta:\n\n` + fuentesCitas.map(f => `**${f.titulo}**: ${f.resumen || ""}`).join("\n\n");
+      if (!fuentesCitas.length) {
+        try {
+          const resWeb = await buscarWebMulti(env, textoParaProcesar, { modo: "general", max: 5, signal: request.signal, timeoutMs: 6000 });
+          if (resWeb && resWeb.fuentes && resWeb.fuentes.length > 0) {
+            fuentesCitas = resWeb.fuentes;
+            imagenEncontrada = fuentesCitas.find(f => f.imagen)?.imagen || null;
+            contenido = resWeb.respuesta || `Encontré los siguientes resultados verificados para tu consulta:\n\n` + fuentesCitas.map(f => `**${f.titulo}**: ${f.resumen || ""}`).join("\n\n");
+          }
+        } catch (eWeb) {
+          console.warn("buscarWebMulti error:", eWeb?.message || eWeb);
         }
-      } catch (eWeb) {
-        console.warn("buscarWebMulti error:", eWeb?.message || eWeb);
       }
 
       // 2. Fallback especializado a Wikipedia en español si no hubo fuentes
@@ -2801,8 +2836,10 @@ async function handleApiRequest(request, env, ctx) {
             fuentesCitas = wikiRes.resultados.map(r => ({
               titulo: r.titulo,
               url: `https://es.wikipedia.org/wiki/${encodeURIComponent(r.clave || r.titulo)}`,
-              resumen: r.extracto || r.descripcion || ""
+              resumen: r.extracto || r.descripcion || "",
+              ...(r.imagen ? { imagen: r.imagen } : {})
             }));
+            imagenEncontrada = fuentesCitas.find(f => f.imagen)?.imagen || null;
             contenido = `Encontré la siguiente información en Wikipedia:\n\n` + fuentesCitas.map(f => `**${f.titulo}**: ${f.resumen}`).join("\n\n");
           }
         } catch (eWiki) {
@@ -2810,16 +2847,37 @@ async function handleApiRequest(request, env, ctx) {
         }
       }
 
+      // 2.5. Enriquecer con resumen e imagen de Wikipedia si el usuario pidió imagen o el primer resultado es de Wikipedia
+      const pideImagenWeb = /\b(?:imagen|foto|fotograf[ií]a|ilustraci[oó]n|dibujo)\b/i.test(textoParaProcesar);
+      if (fuentesCitas.length > 0 && (!imagenEncontrada || pideImagenWeb)) {
+        try {
+          const candWiki = fuentesCitas.find(f => f.url && f.url.includes("wikipedia.org")) || fuentesCitas[0];
+          if (candWiki && candWiki.titulo) {
+            const resSum = await obtenerResumen(candWiki.titulo, { signal: request.signal, env });
+            if (resSum && resSum.exito && resSum.resumen) {
+              if (resSum.resumen.imagen) {
+                imagenEncontrada = resSum.resumen.imagen;
+              }
+              if (resSum.resumen.extracto && (!contenido || pideImagenWeb)) {
+                contenido = `**${resSum.resumen.titulo}**: ${resSum.resumen.extracto}`;
+              }
+            }
+          }
+        } catch (_) {}
+      }
+
       // 3. Si se encontraron fuentes o contenido, entregar respuesta enriquecida
       if (fuentesCitas.length > 0 || contenido) {
+        const bloqueImagen = imagenEncontrada ? `\n\n![${fuentesCitas[0]?.titulo || "Imagen de referencia"}](${imagenEncontrada})` : "";
         const fuentesStr = fuentesCitas.map(f => `\n- [${f.titulo}](${f.url})`).join("");
         return responderWorker({
           data: {
-            mensaje_chat: `${contenido}\n\n**Fuentes consultadas:**${fuentesStr}\n\n*(Nota: Información obtenida mediante búsqueda externa verificada para apoyar tu labor docente).*`,
+            mensaje_chat: `${contenido}${bloqueImagen}\n\n**Fuentes consultadas:**${fuentesStr}\n\n*(Nota: Información obtenida mediante búsqueda externa verificada para apoyar tu labor docente).*`,
             plan_completado: false,
             modo: "busqueda_web",
             categoria: "busqueda_web",
             fuentes: fuentesCitas,
+            ...(imagenEncontrada ? { imagen: imagenEncontrada } : {}),
             datos_planificacion: null
           },
           estado: "conversando"
@@ -2847,135 +2905,181 @@ async function handleApiRequest(request, env, ctx) {
       });
     }
 
-    // 4. MODO CONOCIMIENTO GENERAL -> Conversacional directo con modelo sin buscar en currículo oficial
+    // 4. MODO CONOCIMIENTO GENERAL -> Conversacional directo con modelo + respaldo multi-proveedor y enciclopédico
     if (clasificacion.categoria === "conocimiento_general") {
-      const aviso = "\n\n*(Nota: Esta es una explicación pedagógica general, no una cita textual del currículo oficial MINERD. Si deseas llevar este concepto a una actividad de clase o situación de aprendizaje, dime el grado y lo armamos.)*";
-
       if (iaApagada) return generarErrorPlanificacion("IA_NO_DISPONIBLE", "El servicio de inteligencia artificial está en mantenimiento breve.", "Puedes seguir consultando el currículo oficial y las secuencias didácticas disponibles.", false);
 
-      if (!env.GEMINI_API_KEY) {
-        const avisoHonesto = "La consulta de conocimiento general requiere conexión con el modelo de inteligencia artificial. En este momento el servicio externo no está disponible o no tiene cuota configurada. Puedes consultar contenidos directamente del currículo oficial o escribir tu consulta pedagógica.";
-        return responderWorker({
-          data: {
-            mensaje_chat: avisoHonesto,
-            plan_completado: false,
-            modo: "conocimiento_general",
-            categoria: "conocimiento_general",
-            datos_planificacion: null
-          },
-          estado: "conversando"
-        });
-      }
+      const tieneAlgunProveedorIA = Boolean(
+        env.GEMINI_API_KEY ||
+        env.GROQ_API_KEY ||
+        env.OPENROUTER_API_KEY ||
+        (env.AI && typeof env.AI.run === "function")
+      );
 
       // Llamar al modelo de IA con prompt conversacional y ventana configurable de turnos (T4)
-      try {
-        const t0Conversacion = performance.now();
-        const maxTurnos = parseInt(env.TURNOS_CONVERSACION_MAX || "6", 10);
-        const turnosRecientes = messages.slice(-maxTurnos);
-        const geminiContents = [];
-        for (const m of turnosRecientes) {
-          const role = (m.role === "assistant" || m.role === "model") ? "model" : "user";
-          let text = (m.text || m.content || "").trim();
-          if (role === "model" && (m.datosGenerados || m.datos_planificacion)) {
-            const planEntregado = m.datosGenerados || m.datos_planificacion;
-            const jsonPlan = typeof planEntregado === "string" ? planEntregado : JSON.stringify(planEntregado, null, 2);
-            text = `${text}\n\n[MEMORIA DE TRABAJO - PLANIFICACIÓN YA GENERADA Y ENTREGADA AL DOCENTE EN ESTE TURNO]:\n${jsonPlan}`.trim();
-          }
-          if (text) {
-            geminiContents.push({ role, parts: [{ text }] });
-          }
-        }
-        while (geminiContents.length > 0 && geminiContents[0].role !== "user") {
-          geminiContents.shift();
-        }
-        if (geminiContents.length === 0) {
-          geminiContents.push({ role: "user", parts: [{ text: textoConsulta }] });
-        }
-
-        const t0PromptConv = performance.now();
-        const models = getGeminiModels(env);
-        const msPromptConv = performance.now() - t0PromptConv;
-
-        const supabaseConv = null;
-        const auditoriaEstadoConv = await ejecutarAuditoriaInterna(env, supabaseConv);
-        const promptHemisferioCognitivoConv = `
-[IDENTIDAD ABSOLUTA - INMUTABLE]
-- Eres exclusivamente **Planifica Maestro**, el copiloto pedagógico oficial para el MINERD en la República Dominicana.
-- Creado y diseñado por el docente **Israel Montás**.
-
-[ESTADO DE AUTODIAGNÓSTICO DEL SISTEMA (HEMISFERIO 1)]
-- Estado general del servidor: ${auditoriaEstadoConv.estado_general}
-- Fallos técnicos detectados en tiempo real: ${JSON.stringify(auditoriaEstadoConv.fallos_detectados)}
-- INSTRUCCIÓN DE CRISIS: Si hay fallos críticos detectados arriba, tienes prohibido ocultarlo. Debes informarle al docente con total transparencia técnica: "Atención: Mi subsistema de [componente] reporta una falla de conexión en este momento, por lo que opero con limitaciones..."
-`;
-        const geminiBase = env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com";
-        let textoGenerado = "";
-        let msGeminiConv = 0;
-        for (const model of models) {
-          try {
-            const geminiUrl = `${geminiBase}/v1beta/models/${model}:generateContent`;
-            const t0GeminiFetch = performance.now();
-            const res = await fetchGeminiWithRetry(geminiUrl, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "x-goog-api-key": env.GEMINI_API_KEY,
-              },
-              body: JSON.stringify({
-                contents: geminiContents,
-                systemInstruction: { parts: [{ text: `${construirPromptSistema()}\n${textoMemoriaDocente}\n${promptHemisferioCognitivoConv}\n${SYSTEM_PROMPT_CONVERSACIONAL}` }] },
-                generationConfig: { temperature: 0.3 }
-              }),
-              signal: request.signal,
-            });
-            msGeminiConv = performance.now() - t0GeminiFetch;
-            if (res && res.ok) {
-              const data = await res.json();
-              textoGenerado = textoDeCandidato(data.candidates?.[0]);
-              textoGenerado = marcarSinRespaldo(textoGenerado);
-              textoGenerado = sanitizarAntiAlucinacion(textoGenerado);
-              if (textoGenerado) break;
+      if (tieneAlgunProveedorIA) {
+        try {
+          const t0Conversacion = performance.now();
+          const maxTurnos = parseInt(env.TURNOS_CONVERSACION_MAX || "6", 10);
+          const turnosRecientes = messages.slice(-maxTurnos);
+          const geminiContents = [];
+          for (const m of turnosRecientes) {
+            const role = (m.role === "assistant" || m.role === "model") ? "model" : "user";
+            let text = (m.text || m.content || "").trim();
+            if (role === "model" && (m.datosGenerados || m.datos_planificacion)) {
+              const planEntregado = m.datosGenerados || m.datos_planificacion;
+              const jsonPlan = typeof planEntregado === "string" ? planEntregado : JSON.stringify(planEntregado, null, 2);
+              text = `${text}\n\n[MEMORIA DE TRABAJO - PLANIFICACIÓN YA GENERADA Y ENTREGADA AL DOCENTE EN ESTE TURNO]:\n${jsonPlan}`.trim();
             }
-          } catch (e) {
-            console.warn(`[Conocimiento General] Falló modelo ${model}:`, e?.message || e);
+            if (text) {
+              geminiContents.push({ role, parts: [{ text }] });
+            }
           }
-        }
+          while (geminiContents.length > 0 && geminiContents[0].role !== "user") {
+            geminiContents.shift();
+          }
+          if (geminiContents.length === 0) {
+            geminiContents.push({ role: "user", parts: [{ text: textoConsulta }] });
+          }
 
-        if (textoGenerado) {
-          if (esModoPrueba && env.DESACTIVAR_CAPA_2 === "true") {
-            return new Response(JSON.stringify({ error: "Capa 2 desactivada por mutación", ok: false }), {
-              status: 500,
-              headers: { ...corsHeaders, "Content-Type": "application/json" }
+          const t0PromptConv = performance.now();
+          const models = getGeminiModels(env);
+          const msPromptConv = performance.now() - t0PromptConv;
+
+          const promptHemisferioCognitivoConv = `
+[IDENTIDAD ABSOLUTA - INMUTABLE]
+- Eres exclusivamente **Planifica Maestro**, el copiloto pedagógico e intelectual creado y diseñado por el docente **Israel Montás**.
+- En este modo de Conocimiento General estás plenamente autorizado y obligado a responder con fluidez, precisión y profundidad cualquier pregunta de cultura general, historia universal y dominicana (ej. origen del idioma hebreo, llegada de los taínos, misión Apolo 11), ciencias, naturaleza, geografía, lengua, matemáticas y conceptos cotidianos (ej. qué son los huevos fritos), sin decir jamás que no sabes de historia o que no está en el corpus curricular.
+`;
+          const systemFullConv = `${construirPromptSistema()}\n${textoMemoriaDocente}\n${promptHemisferioCognitivoConv}\n${SYSTEM_PROMPT_CONVERSACIONAL}`;
+          const geminiBase = env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com";
+          let textoGenerado = "";
+          let msGeminiConv = 0;
+
+          if (env.GEMINI_API_KEY) {
+            for (const model of models) {
+              try {
+                const geminiUrl = `${geminiBase}/v1beta/models/${model}:generateContent`;
+                const t0GeminiFetch = performance.now();
+                const res = await fetchGeminiWithRetry(geminiUrl, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": env.GEMINI_API_KEY,
+                  },
+                  body: JSON.stringify({
+                    contents: geminiContents,
+                    systemInstruction: { parts: [{ text: systemFullConv }] },
+                    generationConfig: { temperature: 0.3 }
+                  }),
+                  signal: request.signal,
+                });
+                msGeminiConv = performance.now() - t0GeminiFetch;
+                if (res && res.ok) {
+                  const data = await res.json();
+                  textoGenerado = textoDeCandidato(data.candidates?.[0]);
+                  textoGenerado = marcarSinRespaldo(textoGenerado);
+                  textoGenerado = sanitizarAntiAlucinacion(textoGenerado);
+                  if (textoGenerado) break;
+                }
+              } catch (e) {
+                console.warn(`[Conocimiento General] Falló modelo ${model}:`, e?.message || e);
+              }
+            }
+          }
+
+          // Respaldo automático con Groq -> OpenRouter -> Cloudflare Workers AI si Gemini no respondió
+          if (!textoGenerado && (env.GROQ_API_KEY || env.OPENROUTER_API_KEY || (env.AI && typeof env.AI.run === "function"))) {
+            try {
+              const t0Resp = performance.now();
+              const respAlt = await generarTextoConRespaldo(env, {
+                systemPrompt: systemFullConv,
+                contents: geminiContents,
+                maxTokens: 2048,
+                json: false,
+                signal: request.signal,
+                presupuestoMs: 20000
+              });
+              if (respAlt && respAlt.texto) {
+                textoGenerado = marcarSinRespaldo(respAlt.texto);
+                textoGenerado = sanitizarAntiAlucinacion(textoGenerado);
+                msGeminiConv = performance.now() - t0Resp;
+              }
+            } catch (eAlt) {
+              console.warn("[Conocimiento General] Respaldo de texto agotado:", eAlt?.message || eAlt);
+            }
+          }
+
+          if (textoGenerado) {
+            if (esModoPrueba && env.DESACTIVAR_CAPA_2 === "true") {
+              return new Response(JSON.stringify({ error: "Capa 2 desactivada por mutación", ok: false }), {
+                status: 500,
+                headers: { ...corsHeaders, "Content-Type": "application/json" }
+              });
+            }
+            const pideOficial = /curr[ií]culo|oficial|minerd|malla/i.test(textoConsulta);
+            const avisoCorto = pideOficial ? "\n\n*(Orientación pedagógica general. Para competencias oficiales exactas, consulta por grado y área).*" : "";
+            const finalChat = `${textoGenerado.trim()}${avisoCorto}`;
+            registrarCapa(2, "Modo conversacional", "charla pedagógica", `turnos recientes: ${turnosRecientes.length}`, performance.now() - t0Conversacion);
+            if (esModoPrueba && env.DESACTIVAR_CAPA_3 === "true") {
+              // Omite Capa 3 bajo prueba de mutación
+            } else {
+              registrarCapa(3, "Prompt de sistema V2", "rol colega pedagógico", "SYSTEM_PROMPT_CONVERSACIONAL", msPromptConv);
+            }
+            if (esModoPrueba && env.DESACTIVAR_CAPA_6 === "true") {
+              // Omite Capa 6 bajo prueba de mutación
+            } else {
+              registrarCapa(6, "Gemini", "modelo conversación", "generación pedagógica completada", msGeminiConv);
+            }
+            return responderWorker({
+              data: {
+                mensaje_chat: finalChat,
+                plan_completado: false,
+                modo: "conocimiento_general",
+                categoria: "conocimiento_general",
+                datos_planificacion: null
+              },
+              estado: "conversando"
             });
           }
-          const pideOficial = /curr[ií]culo|oficial|minerd|malla/i.test(textoConsulta);
-          const avisoCorto = pideOficial ? "\n\n*(Orientación pedagógica general. Para competencias oficiales exactas, consulta por grado y área).*" : "";
-          const finalChat = `${textoGenerado.trim()}${avisoCorto}`;
-          registrarCapa(2, "Modo conversacional", "charla pedagógica", `turnos recientes: ${turnosRecientes.length}`, performance.now() - t0Conversacion);
-          if (esModoPrueba && env.DESACTIVAR_CAPA_3 === "true") {
-            // Omite Capa 3 bajo prueba de mutación
-          } else {
-            registrarCapa(3, "Prompt de sistema V2", "rol colega pedagógico", "SYSTEM_PROMPT_CONVERSACIONAL", msPromptConv);
-          }
-          if (esModoPrueba && env.DESACTIVAR_CAPA_6 === "true") {
-            // Omite Capa 6 bajo prueba de mutación
-          } else {
-            registrarCapa(6, "Gemini", "modelo conversación", "generación pedagógica completada", msGeminiConv);
-          }
-          return responderWorker({
-            data: {
-              mensaje_chat: finalChat,
-              plan_completado: false,
-              modo: "conocimiento_general",
-              categoria: "conocimiento_general",
-              datos_planificacion: null
-            },
-            estado: "conversando"
-          });
+        } catch (err) {
+          console.warn("[Conocimiento General] Error en flujo general:", err?.message || err);
         }
-      } catch (err) {
-        console.warn("[Conocimiento General] Error en flujo general:", err?.message || err);
       }
+
+      // Respaldo enciclopédico verificado (Wikipedia / Web) cuando no hay clave de IA activa o los proveedores externos fallan
+      try {
+        const wikiRes = await buscarWikipedia(textoParaProcesar, { signal: request.signal, env });
+        if (wikiRes && wikiRes.exito && wikiRes.resultados && wikiRes.resultados.length > 0) {
+          const top = wikiRes.resultados[0];
+          let extractoCompleto = top.extracto || top.descripcion || "";
+          let imgWiki = top.imagen || null;
+          let urlWiki = `https://es.wikipedia.org/wiki/${encodeURIComponent(top.clave || top.titulo)}`;
+          try {
+            const sumRes = await obtenerResumen(top.titulo, { signal: request.signal, env });
+            if (sumRes && sumRes.exito && sumRes.resumen) {
+              extractoCompleto = sumRes.resumen.extracto || extractoCompleto;
+              imgWiki = sumRes.resumen.imagen || imgWiki;
+              urlWiki = sumRes.resumen.url || urlWiki;
+            }
+          } catch (_) {}
+          if (extractoCompleto) {
+            const bloqueImg = imgWiki ? `\n\n![${top.titulo}](${imgWiki})` : "";
+            return responderWorker({
+              data: {
+                mensaje_chat: `**${top.titulo}**: ${extractoCompleto}${bloqueImg}\n\n**Fuente consultada:** [${top.titulo} (Wikipedia)](${urlWiki})`,
+                plan_completado: false,
+                modo: "conocimiento_general",
+                categoria: "conocimiento_general",
+                fuentes: [{ titulo: top.titulo, url: urlWiki, resumen: extractoCompleto }],
+                ...(imgWiki ? { imagen: imgWiki } : {}),
+                datos_planificacion: null
+              },
+              estado: "conversando"
+            });
+          }
+        }
+      } catch (_) {}
 
       const avisoHonesto = "La consulta de conocimiento general requiere conexión con el modelo de inteligencia artificial. En este momento el servicio externo no está disponible o no tiene cuota configurada. Puedes consultar contenidos directamente del currículo oficial o escribir tu consulta pedagógica.";
       return responderWorker({
@@ -3965,6 +4069,24 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
               }
             }
 
+            if (!geminiRes && (env.GROQ_API_KEY || env.OPENROUTER_API_KEY || (env.AI && typeof env.AI.run === "function"))) {
+              try {
+                const respAlt = await generarTextoConRespaldo(env, {
+                  systemPrompt: promptParaStreaming,
+                  contents,
+                  maxTokens: construirMaxSalida(env),
+                  json: true,
+                  signal: request.signal,
+                  presupuestoMs: 30000
+                });
+                if (respAlt && respAlt.texto) {
+                  geminiRes = respuestaSSEDeGemini(respAlt.texto, respAlt.finish);
+                }
+              } catch (eResp) {
+                console.warn("[AI Warn] Respaldo streaming agotado:", eResp?.message || eResp);
+              }
+            }
+
             if (!geminiRes) {
               const incidentId = "INC-" + generarCodigoSeguro(6);
               console.error(`[AI Error ${incidentId}] Modelos agotados. Código: ${ultimoStatus} - ${ultimoError}`);
@@ -4509,6 +4631,26 @@ ${esquema.bloques.map((b) => `"${b}"`).join("\n")}
       } catch (err) {
         ultimoError = "FETCH_EXCEPTION";
         console.warn(`[AI Warn] Excepción en modelo ${model}`);
+      }
+    }
+
+    if (!geminiData && (env.GROQ_API_KEY || env.OPENROUTER_API_KEY || (env.AI && typeof env.AI.run === "function"))) {
+      try {
+        const respAlt = await generarTextoConRespaldo(env, {
+          systemPrompt: dynamicPrompt,
+          contents,
+          maxTokens: construirMaxSalida(env),
+          json: true,
+          signal: request.signal,
+          presupuestoMs: 30000
+        });
+        if (respAlt && respAlt.texto) {
+          geminiData = {
+            candidates: [{ content: { role: "model", parts: [{ text: respAlt.texto }] }, finishReason: "STOP" }]
+          };
+        }
+      } catch (eResp) {
+        console.warn("[AI Warn] Respaldo JSON agotado:", eResp?.message || eResp);
       }
     }
 

@@ -54,6 +54,9 @@ export function getGeminiModels(env, modeloPreferido = null) {
   const models = [primary];
   if (primary !== FALLBACK_GEMINI_MODEL) models.push(FALLBACK_GEMINI_MODEL);
   if (!models.includes("gemini-3.1-flash-lite")) models.push("gemini-3.1-flash-lite");
+  for (const respaldoReal of ["gemini-2.5-flash", "gemini-2.5-flash-lite"]) {
+    if (!models.includes(respaldoReal)) models.push(respaldoReal);
+  }
   return models;
 }
 

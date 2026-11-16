@@ -9,6 +9,14 @@ const pausas = new Map();
 export function reiniciarEstadoBusqueda() { pausas.clear(); }
 
 const limpiar = (t, n = 300) => String(t == null ? "" : t).replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim().slice(0, n);
+const limpiarTermino = (q) => String(q || "")
+  .trim()
+  .replace(/^[¿¡"'«(\s]+|[?!"'»)\s.]+$/g, "")
+  .replace(/^(?:por\s+favor\s+)?(?:b[uú]sca(?:me)?|buscar|investiga(?:r)?|encuentra|dime|expl[ií]came|h[aá]blame\s+(?:de|sobre)|cu[eé]ntame\s+(?:de|sobre))\s+(?:en\s+(?:la\s+web|internet|google|wikipedia)\s+)?/i, "")
+  .replace(/^(?:una?\s+)?(?:imagen|foto|fotograf[ií]a|ilustraci[oó]n|dibujo)\s+(?:de|del|sobre)\s+(?:un|una|el|la|los|las)?\s*/i, "")
+  .replace(/^(?:de\s+d[oó]nde\s+(?:sale|viene|proviene|surge|nace)|c[oó]mo\s+(?:llegaron|surgi[oó]|funciona|se\s+origin[oó])|qu[eé]\s+(?:pas[oó]\s+con|sabes\s+(?:de|sobre)|es|son|fue|fueron))\s+(?:un|una|el|la|los|las)?\s*/i, "")
+  .replace(/^yuca$/i, "Manihot esculenta")
+  .trim() || String(q || "").trim();
 
 async function tavily(env, q, { max, oficial, signal, timeoutMs }) {
   if (!env.TAVILY_API_KEY) return { sinConfig: true };
@@ -24,12 +32,16 @@ async function geminiGrounding(env, q, { signal, timeoutMs }) {
   if (!env.GEMINI_API_KEY) return { sinConfig: true };
   const base = env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com";
   const modelo = env.GEMINI_GROUNDING_MODEL || env.GEMINI_MODEL || "gemini-3.1-flash-lite";
-  const res = await fetchConLimite(`${base}/v1beta/models/${modelo}:generateContent`, {
+  const reqOpts = {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
     body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: q }] }], tools: [{ google_search: {} }], generationConfig: { temperature: 0.1, maxOutputTokens: 1024 } }),
     signal,
-  }, timeoutMs);
+  };
+  let res = await fetchConLimite(`${base}/v1beta/models/${modelo}:generateContent`, reqOpts, timeoutMs);
+  if (res.status === 404 && modelo !== "gemini-2.5-flash") {
+    res = await fetchConLimite(`${base}/v1beta/models/gemini-2.5-flash:generateContent`, reqOpts, timeoutMs);
+  }
   if (!res.ok) { const e = new Error(`HTTP_${res.status}`); e.status = res.status; throw e; }
   const d = await res.json();
   const cand = d && d.candidates && d.candidates[0];
@@ -50,10 +62,19 @@ async function exa(env, q, { max, oficial, signal, timeoutMs }) {
 }
 
 async function wikipediaEs(env, q, { max, signal, timeoutMs }) {
-  const res = await fetchConLimite(`https://es.wikipedia.org/w/rest.php/v1/search/page?q=${encodeURIComponent(q)}&limit=${max}`, { headers: { "User-Agent": UA, Accept: "application/json" }, signal }, timeoutMs);
+  const qLimpia = limpiarTermino(q);
+  const res = await fetchConLimite(`https://es.wikipedia.org/w/rest.php/v1/search/page?q=${encodeURIComponent(qLimpia)}&limit=${max}`, { headers: { "User-Agent": UA, Accept: "application/json" }, signal }, timeoutMs);
   if (!res.ok) { const e = new Error(`HTTP_${res.status}`); e.status = res.status; throw e; }
   const d = await res.json();
-  return { respuesta: null, fuentes: (d.pages || []).map((p) => ({ titulo: limpiar(p.title, 160), url: `https://es.wikipedia.org/wiki/${encodeURIComponent(p.key || p.title)}`, resumen: limpiar(p.description || p.excerpt) })) };
+  return {
+    respuesta: null,
+    fuentes: (d.pages || []).map((p) => ({
+      titulo: limpiar(p.title, 160),
+      url: `https://es.wikipedia.org/wiki/${encodeURIComponent(p.key || p.title)}`,
+      resumen: limpiar(p.description || p.excerpt),
+      ...(p.thumbnail && p.thumbnail.url ? { imagen: p.thumbnail.url.startsWith("//") ? `https:${p.thumbnail.url}` : p.thumbnail.url } : {})
+    }))
+  };
 }
 
 async function openAlex(env, q, { max, signal, timeoutMs }) {

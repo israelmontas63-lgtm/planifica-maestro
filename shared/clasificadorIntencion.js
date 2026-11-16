@@ -108,7 +108,9 @@ export const PATRONES_BUSQUEDA_WEB = [
   "busca en internet", "buscar en internet", "busca en la web", "buscar en la web",
   "busca en google", "buscar en google", "noticias de hoy", "noticias recientes",
   "informacion reciente", "acontecimientos recientes", "en tiempo real", "busca online",
-  "investiga", "investigar"
+  "investiga", "investigar", "busca una imagen", "buscame una imagen", "buscar una imagen",
+  "imagen de una ", "imagen de un ", "imagen del ", "imagen de la ",
+  "abre la pagina", "entra a la pagina", "lee la pagina"
 ];
 
 export const PATRONES_CONOCIMIENTO_GENERAL = [
@@ -124,6 +126,8 @@ export const PATRONES_CONOCIMIENTO_GENERAL = [
   "que objeto", "que es esto", "que es esta", "que dice aqui", "leeme esto", "explica esta",
   "identifica", "como se llama", "cuentame sobre",
   "cuantos ", "cuantas ", "cuanto ", "cuanta ", "donde queda ", "donde esta ", "capital de ",
+  "de donde ", "cual es ", "cuales son ", "que paso con ", "que paso en ", "como llegaron",
+  "que sabes", "sabes de ", "hablame de ", "hablame sobre ", "historia de ", "origen de ",
   "si todos", "si todas", "que sigue", "razonamiento", "logica"
 ];
 
@@ -370,8 +374,14 @@ export function clasificarPorReglas(texto, contexto = {}) {
   }
 
   // 1.5. Consulta sobre fallo o error previo en la conversación (T1)
-  const tieneFalloAnterior = PATRONES_FALLO_ANTERIOR.some(p => norm === p || norm.startsWith(`${p} `) || contienePalabraOFrase(norm, p));
-  if (tieneFalloAnterior || (contexto?.ultimoError && (norm.startsWith("por que") || norm.startsWith("que paso") || norm.startsWith("como asi")))) {
+  const FRASES_FALLO_SOLO_EXACTAS = new Set(["que paso", "y eso", "como asi", "dime por que", "explicame por que", "por que motivo", "por que razon"]);
+  const tieneFalloAnterior = PATRONES_FALLO_ANTERIOR.some(p =>
+    FRASES_FALLO_SOLO_EXACTAS.has(p)
+      ? norm === p
+      : (norm === p || norm.startsWith(`${p} `) || contienePalabraOFrase(norm, p))
+  );
+  const esPreguntaHistoricaQuePaso = /^que paso (?:con|en|durante|cuando|el|la|los|las)\b/.test(norm) && !/\b(?:mi plan|la planificacion|el error|el sistema|la app)\b/.test(norm);
+  if ((tieneFalloAnterior || (contexto?.ultimoError && (norm.startsWith("por que") || norm.startsWith("que paso") || norm.startsWith("como asi")))) && !esPreguntaHistoricaQuePaso) {
     return {
       categoria: "fallo_anterior",
       tipo: "fallo_anterior",
@@ -556,7 +566,22 @@ export function clasificarPorReglas(texto, contexto = {}) {
   }
 
   // 9. Frases interrogativas generales (Categoría C)
-  if (norm.startsWith("que ") || norm.startsWith("quien ") || norm.startsWith("donde ") || norm.startsWith("por que ") || norm.startsWith("como ")) {
+  if (
+    norm.startsWith("que ") ||
+    norm.startsWith("quien ") ||
+    norm.startsWith("quienes ") ||
+    norm.startsWith("donde ") ||
+    norm.startsWith("de donde ") ||
+    norm.startsWith("por que ") ||
+    norm.startsWith("como ") ||
+    norm.startsWith("cual ") ||
+    norm.startsWith("cuales ") ||
+    norm.startsWith("cuando ") ||
+    norm.startsWith("cuanto ") ||
+    norm.startsWith("cuantos ") ||
+    norm.startsWith("a que ") ||
+    norm.startsWith("en que ")
+  ) {
     return {
       categoria: "conocimiento_general",
       tipo: "web",

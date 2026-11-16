@@ -809,8 +809,87 @@ export function procesarConsultaMatematica(texto) {
     };
   }
 
+  // Raíz cuadrada: "raíz cuadrada de 63" o "√63"
+  const mRaiz = t.match(/(?:ra[ií]z\s+cuadrada\s+de|√)\s*([0-9\.,]+)/i);
+  if (mRaiz) {
+    const numInfo = interpretarNumero(mRaiz[1]);
+    const valNum = Number(numInfo.frac.num) / Number(numInfo.frac.den);
+    if (!Number.isNaN(valNum) && valNum >= 0) {
+      const r = Math.sqrt(valNum);
+      const rEnt = Math.round(r);
+      const esExacta = Math.abs(r - rEnt) < 1e-12;
+      if (esExacta) {
+        const resFmt = formatearMiles(String(rEnt));
+        return {
+          tipo: 'raiz_cuadrada',
+          resultado: resFmt,
+          respuesta: `√ **Raíz cuadrada exacta:**\n` +
+            `Buscamos un número que multiplicado por sí mismo dé ${mRaiz[1]}:\n` +
+            `${resFmt} × ${resFmt} = ${mRaiz[1]}\n\n` +
+            `Resultado: **${resFmt}**`
+        };
+      }
+      const piso = Math.floor(r);
+      const techo = piso + 1;
+      const r2 = r.toFixed(2).replace('.', ',');
+      const r4 = r.toFixed(4).replace('.', ',');
+      return {
+        tipo: 'raiz_cuadrada',
+        resultado: r2,
+        respuesta: `√ **Raíz cuadrada aproximada de ${mRaiz[1]}:**\n` +
+          `1. Ubicamos entre cuadrados perfectos: ${piso}² = ${piso * piso} y ${techo}² = ${techo * techo}, así que √${mRaiz[1]} está entre **${piso}** y **${techo}**.\n` +
+          `2. Aproximación decimal: **${r2}** (con 4 decimales: **${r4}**).\n\n` +
+          `✅ Comprobación: ${r2} × ${r2} ≈ ${(Number(r.toFixed(2)) ** 2).toFixed(2).replace('.', ',')}`
+      };
+    }
+  }
+
+  // Operaciones encadenadas (2 o más operadores): ej. "5 * 5 / 5 - 5" o "5 por 5 dividido entre 5 restado entre 5"
+  const normOps = t
+    .replace(/\bmultiplicado\s+por\b/gi, '*')
+    .replace(/\bdividido\s+(?:entre|por)\b/gi, '/')
+    .replace(/\brestado\s+(?:entre|por|de|con)\b/gi, '-')
+    .replace(/\brest[aá]ndole\b/gi, '-')
+    .replace(/\bm[aá]s\b/gi, '+')
+    .replace(/\bmenos\b/gi, '-')
+    .replace(/\bpor\b/gi, '*')
+    .replace(/\bentre\b/gi, '/');
+  const mCadena = normOps.match(/([0-9]+(?:[\.,][0-9]+)?(?:\s*[\+\-\*×x÷\/:−]\s*[0-9]+(?:[\.,][0-9]+)?){2,})/i);
+  if (mCadena && !mCadena[1].includes('/0')) {
+    const exprStr = mCadena[1].trim();
+    const tokens = exprStr.split(/\s*([\+\-\*×x÷\/:−])\s*/).filter(Boolean);
+    if (tokens.length >= 5) {
+      try {
+        let acum = Fraccion.fromString(tokens[0].replace(/\./g, ''));
+        const pasos = [];
+        for (let i = 1; i < tokens.length; i += 2) {
+          const opRaw = tokens[i];
+          const sig = Fraccion.fromString(tokens[i + 1].replace(/\./g, ''));
+          const antesStr = acum.toDecimalString();
+          const sigStr = sig.toDecimalString();
+          let simb = '+';
+          if (opRaw === '+' ) { acum = acum.sumar(sig); simb = '+'; }
+          else if (opRaw === '-' || opRaw === '−') { acum = acum.restar(sig); simb = '−'; }
+          else if (opRaw === '*' || opRaw === '×' || opRaw.toLowerCase() === 'x') { acum = acum.multiplicar(sig); simb = '×'; }
+          else { acum = acum.dividir(sig); simb = '÷'; }
+          pasos.push(`Paso ${(i + 1) / 2}: ${antesStr} ${simb} ${sigStr} = **${acum.toDecimalString()}**`);
+        }
+        const finalStr = acum.toDecimalString();
+        return {
+          tipo: 'operacion_combinada',
+          resultado: finalStr,
+          respuesta: `🧮 **Operación paso a paso (${exprStr}):**\n` +
+            pasos.join('\n') +
+            `\n\nResultado final: **${finalStr}**`
+        };
+      } catch (_) {
+        // Si hay división por cero u otro caso, deja continuar al flujo normal
+      }
+    }
+  }
+
   // Suma
-  const mSuma = t.match(/(?:cu[aá]nto\s+es\s+|suma\s+)?([0-9\.,]+)\s*(?:[\+]|\bm[aá]s\b)\s*([0-9\.,]+)/i);
+  const mSuma = t.match(/(?:cu[aá]ntos?\s+(?:es|son)\s+|suma\s+)?([0-9\.,]+)\s*(?:[\+]|\bm[aá]s\b)\s*([0-9\.,]+)/i);
   if (mSuma) {
     const res = resolverSuma(mSuma[1], mSuma[2]);
     return {
@@ -827,7 +906,7 @@ export function procesarConsultaMatematica(texto) {
   }
 
   // Resta
-  const mResta = t.match(/(?:cu[aá]nto\s+es\s+|resta\s+)?([0-9\.,]+)\s*(?:[\-−]|\bmenos\b)\s*([0-9\.,]+)/i);
+  const mResta = t.match(/(?:cu[aá]ntos?\s+(?:es|son)\s+|resta\s+)?([0-9\.,]+)\s*(?:[\-−]|\bmenos\b)\s*([0-9\.,]+)/i);
   if (mResta) {
     const res = resolverResta(mResta[1], mResta[2]);
     return {
@@ -844,7 +923,7 @@ export function procesarConsultaMatematica(texto) {
   }
 
   // Multiplicación
-  const mMult = t.match(/(?:cu[aá]nto\s+es\s+|multiplica\s+)?([0-9\.,]+)\s*(?:[\*×x]|\bpor\b)\s*([0-9\.,]+)/i);
+  const mMult = t.match(/(?:cu[aá]ntos?\s+(?:es|son)\s+|multiplica\s+)?([0-9\.,]+)\s*(?:[\*×x]|\bpor\b)\s*([0-9\.,]+)/i);
   if (mMult) {
     const res = resolverMultiplicacion(mMult[1], mMult[2]);
     return {
@@ -861,7 +940,7 @@ export function procesarConsultaMatematica(texto) {
   }
 
   // División
-  const mDiv = t.match(/(?:cu[aá]nto\s+es\s+|divide\s+)?([0-9\.,]+)\s*(?:[\/÷:]|\b(?:entre|dividido\s+entre)\b)\s*([0-9\.,]+)/i);
+  const mDiv = t.match(/(?:cu[aá]ntos?\s+(?:es|son)\s+|divide\s+)?([0-9\.,]+)\s*(?:[\/÷:]|\b(?:entre|dividido\s+entre)\b)\s*([0-9\.,]+)/i);
   if (mDiv) {
     const res = resolverDivision(mDiv[1], mDiv[2]);
     if (res.error) {
