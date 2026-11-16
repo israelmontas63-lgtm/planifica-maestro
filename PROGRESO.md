@@ -28,8 +28,9 @@
 | **21** | PANEL DE ANALÍTICA CURRICULAR Y COBERTURA DE COMPETENCIAS (7 Competencias Fundamentales MINERD, KPIs estratégicos, DUA, alertas tempranas y gráficos SVG) | OK |
 | **22** | REGISTRO DE CALIFICACIONES Y CONTROL DE ASISTENCIA MINERD EN EXCEL (Ordenanza 04-2023, SpreadsheetML .xls con 2 hojas, nómina configurable y fórmulas automáticas) | OK |
 | **23** | BETA ABIERTA SIN BARRERAS Y CUOTA POR DISPOSITIVO (Acceso libre directo sin login/claves, 25 planes/día por dispositivo, topes multinivel IP/Global, aislamiento estricto y ruta a cuentas) | OK |
+| **24** | ASISTENTE CONVERSACIONAL Y MULTIMODAL "PLANI MAESTRA" (Endpoint /api/chat, voz Web Speech, visión 1024px, identidad oficial de Israel Montás, MINERD y CON BASE) | OK |
 
 ## Resumen de Verificación Vigente
-- **Suites de prueba**: 402 pruebas en 26 suites aprobadas (100% pass) + 4/4 Vitest frontend.
-- **Despliegue producción**: En vivo en Cloudflare Workers (`https://planifica-maestro.israelmontas65.workers.dev`).
-- **Riesgos abiertos mitigados**: Topes multinivel en Worker (25 dispositivo, 75 IP escolar, 500 presupuesto global diario); bypass ilimitado de dueño; aislamiento de almacenamiento `localStorage` por dispositivo; reversibilidad 100% mediante banderas de configuración.
+- **Sello Criptográfico Vigente**: `b3443bd257a5f936098fa545e125268747a168aeaf496845186d084bb9280a3a` (Autorización 080 sellada, 83 archivos intactos, 0 violaciones).
+- **Despliegue producción**: En vivo en Cloudflare Workers (`https://planifica-maestro.israelmontas65.workers.dev`, Version ID: `763dfb9b-6931-4d13-a74b-9b907dfccfcf`).
+- **Riesgos abiertos mitigados**: Topes multinivel en Worker (25 dispositivo, 75 IP escolar, 500 presupuesto global diario); bypass ilimitado de dueño; aislamiento de almacenamiento `localStorage` por dispositivo; reversibilidad 100% mediante banderas de configuración; omisión de caché en canal imagen.

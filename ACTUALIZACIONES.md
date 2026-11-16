@@ -80,3 +80,38 @@ Todas las pruebas locales siguientes pasaron tras las últimas ediciones de cód
 2. **Aplicar la migración SQL** en Supabase:
    - `supabase/migrations/20261112000000_sincronizar_memoria_1024_y_cache_semantica.sql`
 3. **Despliegue controlado** a staging/producción una vez sellada la guardia y aplicada la migración.
+
+
+---
+
+## 5. Actualizaciones Recientes (16/11/2026) — Autorizaciones 079 y 080
+
+### Asistente Multimodal "Planifica Maestro" / "Plani Maestra" (Voz, Imagen y Texto)
+
+1. **Blindaje de Identidad y Autoría Oficial (`worker/identidad.js` y `src/identidad.js`):**
+   - **Identidad inmutable:** Asistente pedagógica creada en República Dominicana por el maestro y desarrollador Israel Montás para acompañar a docentes de primaria (1.º y 2.º grado y multigrado) según el currículo del MINERD y el programa CON BASE.
+   - **Tono y estilo (Cero Estrés):** Trato cálido, directo y solidario dominicano; sin tecnicismos pesados ni fórmulas robóticas.
+   - **Regla estricta:** Cierre obligatorio de cada intervención con una única pregunta breve de seguimiento.
+   - **Firma en cabeceras:** Retorno de `X-App-Author: Israel Montas - Planifica Maestro` en cada respuesta HTTP de chat.
+
+2. **Backend `/api/chat` Multimodal en Cloudflare Worker (`worker/index.js`):**
+   - Integración con Google Gemini (`gemini-2.5-flash`) mediante `GEMINI_API_KEY`.
+   - Soporte de 3 canales de interacción (`canal`: `"texto"` | `"voz"` | `"imagen"`).
+   - En canal `"imagen"`, recibe `imagenBase64` y `mimeType`, procesando el análisis visual con `inlineData` y vinculándolo al currículo MINERD/CON BASE.
+   - Consulta a `curriculo_fragmentos` en Supabase para fundamentar con rigor pedagógico oficial.
+   - Gestión de caché en `CACHE_KV`: almacenamiento de respuestas frecuentes para texto y voz (etiquetadas con versión de identidad `id-v1.1-plani-maestra`), con bypass automático cuando hay imagen adjunta.
+
+3. **Frontend PWA React + Vite (`client/src/App.jsx`, `client/src/api.js`, `HomeGreeting.jsx`):**
+   - Saludo institucional actualizado presentando a "Plani Maestra".
+   - Barra inferior unificada con 3 controles: campo de texto, botón de micrófono y botón de cámara/imagen.
+   - Reconocimiento de voz vía Web Speech API (`SpeechRecognition` configurado para `es-DO` / `es-419`).
+   - Síntesis de voz automática (`window.speechSynthesis`) cuando la entrada fue por voz, más botón de altavoz en cada burbuja de respuesta.
+   - Compresión y redimensionado ligero de imágenes en Canvas (máx 1024px, JPEG 0.8) antes de la codificación Base64.
+   - Memoria de sesión acotada a los últimos 8 mensajes en estado y almacenamiento volátil.
+
+4. **Sellado Criptográfico e Integridad:**
+   - **Commit Base Sellado:** `f8a1382`
+   - **Commit de Sellado:** `f47b111`
+   - **Resumen Criptográfico del Sello:** `b3443bd257a5f936098fa545e125268747a168aeaf496845186d084bb9280a3a`
+   - **Estado Guardia:** 83 archivos protegidos verificados al 100%, 0 violaciones.
+   - **Despliegue Producción:** Activo al 100% en Cloudflare Workers (`https://planifica-maestro.israelmontas65.workers.dev`).

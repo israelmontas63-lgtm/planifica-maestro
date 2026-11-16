@@ -204,3 +204,14 @@ Para exponer la aplicación en internet sin exponer puertos de tu router:
 - La URL asignada por Cloudflare se almacena en la variable de entorno `PUBLIC_URL` en `server/.env`.
 - El frontend utiliza rutas relativas (`/api/...`), por lo que la aplicación funciona automáticamente bajo cualquier dominio o túnel sin necesidad de cambiar código.
 
+
+
+---
+
+## 🎙️ Asistente Conversacional y Multimodal "Plani Maestra"
+
+Planifica Maestro incorpora a **Plani Maestra**, asistente pedagógica virtual creada en República Dominicana por el maestro y desarrollador Israel Montás:
+- **Voz, Texto y Visión:** Entrada por dictado (`SpeechRecognition` en `es-DO` / `es-419`), lectura en voz alta (`window.speechSynthesis`) y análisis de capturas curriculares o de aula con compresión automática a 1024px.
+- **Rigor Curricular:** Vinculada al currículo del MINERD y al programa CON BASE para 1.º y 2.º grado, consultando `curriculo_fragmentos` en Supabase.
+- **Tono Cero Estrés:** Lenguaje cercano, cálido y sin jerga robótica, concluyendo cada respuesta con una única pregunta breve de seguimiento.
+- **Endpoint:** `POST /api/chat` en Cloudflare Workers conectado a `gemini-2.5-flash` con firma de autoría `X-App-Author: Israel Montas - Planifica Maestro`.
