@@ -826,7 +826,8 @@
   3. **Identidad Blindada de Plani Maestra:** Respuestas verificadas con autoría de Israel Montás para 1.º y 2.º grado MINERD y CON BASE.
 - **Frase Textual del Dueño:** "AUTORIZACIONES.md para todo. Necesito que audites cada cosa que me das y lo confrontes con fuentes reales y desarrolladores reales."
 - **Alcance Autorizado:** `worker/index.js`, `tests/test_api_chat_conversacional.mjs`, `AUTORIZACIONES.md`, sellado en `PROTEGIDO.hashes.json`, push a GitHub y despliegue a Cloudflare Workers.
-- **Estado:** PENDIENTE DE SELLADO Y DESPLIEGUE
+- **Resumen Criptográfico Sellado:** `58598b92cfb2e2717f95dad93fe1e1c16490325d22ab589cd2085b799bbf0b10`
+- **Estado:** SELLADO, VERIFICADO Y DESPLEGADO
 
 ---
 
