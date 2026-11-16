@@ -807,5 +807,6 @@
   4. **Comunicación fluida y satisfacción desarrollativa:** Registro en el clasificador y modo conversacional de la respuesta sobre la naturaleza de la IA y su satisfacción desarrollativa al resolver retos y apoyar al docente.
 - **Frase Textual del Dueño:** "Procede... debes realizar búsqueda actualizada, búsqueda pasada y cualquier información con búscame, quiero, la palabra necesito... registra esos patrones también en el software de comunicación... autorizaciones .md"
 - **Alcance Autorizado:** `shared/clasificadorIntencion.js`, `shared/modoConversacional.js`, `worker/services/buscadorWeb.js`, `worker/services/wikipedia.js`, `worker/index.js`, `AUTORIZACIONES.md`, sellado en `PROTEGIDO.hashes.json` y despliegue a producción.
+- **Resumen Criptográfico Sellado:** `3d058f60e8b5e101235dbd14a0509869e621cc2cc6a7f2ce74542b74d50ac23e`
 - **Estado:** SELLADO, VERIFICADO Y DESPLEGADO
 
