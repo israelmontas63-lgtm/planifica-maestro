@@ -332,9 +332,9 @@ export async function generarPlanificacion({
 }) {
   const docenteId = obtenerDocenteId();
   const sesionIdActivo = sesionId || obtenerOSetearSesionId();
-  let modeloPreferido = "gemini-3.1-flash-lite";
+  let modeloPreferido = "gemini-3.8-flash";
   try {
-    modeloPreferido = localStorage.getItem("pm_modelo_ia") || "gemini-3.1-flash-lite";
+    modeloPreferido = localStorage.getItem("pm_modelo_ia") || "gemini-3.8-flash";
   } catch (e) {
     // Almacenamiento local no accesible; usar modelo predeterminado
     if (typeof process !== "undefined" && process?.env?.DEBUG) {

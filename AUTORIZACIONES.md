@@ -812,6 +812,29 @@
 
 ---
 
+### Autorización 082
+- **Fecha:** 16/11/2026 (America/Santo_Domingo)
+- **Componentes:**
+  - `worker/index.js`
+  - `worker/services/aiProvider.js`
+  - `wrangler.toml`
+  - `client/src/App.jsx`
+  - `client/src/api.js`
+  - `client/src/components/ConfiguracionModal.jsx`
+  - `tests/test_api_chat_conversacional.mjs`
+  - `PROTEGIDO.hashes.json`
+  - `AUTORIZACIONES.md`
+- **Motivo:** Unificación de modelo activo a `gemini-3.8-flash` en backend y frontend (tras el retiro de `gemini-2.5-flash` y descontinuación de `gemini-3.5-flash`), corrección de consulta a columnas reales de `curriculo_fragmentos` en Supabase y blindaje de `resChat.ok` en `App.jsx` para evitar lectura en voz alta de errores de servidor.
+- **Decisiones Aprobadas:**
+  1. **Unificación a `gemini-3.8-flash`:** Configuración de `gemini-3.8-flash` como modelo principal en `worker/index.js`, `worker/services/aiProvider.js`, `wrangler.toml` y selector de modelo en cliente (`ConfiguracionModal.jsx` y `api.js`).
+  2. **Columnas Reales de `curriculo_fragmentos`:** Corrección de la consulta REST en `/api/chat` para solicitar estrictamente columnas existentes (`id,documento_id,contenido,pagina,seccion,nivel,grado,area`) y mapear `seccion` en lugar de `tema`, eliminando el error HTTP 400 Bad Request de PostgREST.
+  3. **Blindaje de Captura de Errores en `App.jsx`:** Verificación explícita de `resChat && resChat.ok !== false` en los despachos por voz y cámara/imagen, evitando que mensajes de fallo de IA se agreguen como respuestas del asistente o se reproduzcan por el sintetizador de voz.
+- **Frase Textual del Dueño:** "Sí, autorizo aplicar las 3 correcciones (unificar a gemini-3.8-flash, corregir las columnas reales de curriculo_fragmentos en Supabase y validar resChat.ok en App.jsx para no leer errores en voz alta). Ejecútalas ahora, corre npm.cmd run guardia y muéstrame el resumen antes del sellado y deploy."
+- **Alcance Autorizado:** `worker/index.js`, `worker/services/aiProvider.js`, `wrangler.toml`, `client/src/App.jsx`, `client/src/api.js`, `client/src/components/ConfiguracionModal.jsx`, `tests/test_api_chat_conversacional.mjs`, `AUTORIZACIONES.md`, sellado en `PROTEGIDO.hashes.json` y despliegue a producción.
+- **Estado:** EN PROCESO DE AUDITORÍA Y VERIFICACIÓN
+
+---
+
 ### Autorización 081
 - **Fecha:** 16/11/2026 (America/Santo_Domingo)
 - **Componentes y Hashes:**

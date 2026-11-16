@@ -73,11 +73,11 @@ test("POST /api/chat integra identidad oficial (Israel Montás), header X-App-Au
 
     assert.equal(data1.ok, true);
     assert.equal(data1.desdeCache, false);
-    assert.match(data1.modelo, /gemini-(?:3\.5|2\.5)-flash/);
+    assert.match(data1.modelo, /gemini-(?:3\.8|3\.5|2\.5)-flash/);
     assert.equal(data1.identidad_version, IDENTIDAD_VERSION);
     assert.equal(data1.autor, FIRMA_AUTORIA_HEADER);
     assert.equal(data1.historial_usado, 8, "Debe mantener solo los últimos 8 mensajes");
-    assert.match(urlGeminiUsada, /gemini-(?:3\.5|2\.5)-flash.*:generateContent/);
+    assert.match(urlGeminiUsada, /gemini-(?:3\.8|3\.5|2\.5)-flash.*:generateContent/);
     assert.ok(bodyGeminiEnviado.systemInstruction.parts[0].text.startsWith(SYSTEM_INSTRUCTION_IDENTIDAD));
     assert.match(bodyGeminiEnviado.systemInstruction.parts[0].text, /Israel Montás/);
     assert.match(bodyGeminiEnviado.systemInstruction.parts[0].text, /cero estrés/i);

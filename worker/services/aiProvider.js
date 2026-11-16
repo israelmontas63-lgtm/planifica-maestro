@@ -41,7 +41,7 @@ export class AiProvider {
   }
 }
 
-export const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite";
+export const DEFAULT_GEMINI_MODEL = "gemini-3.8-flash";
 export const FALLBACK_GEMINI_MODEL = "gemini-3.5-flash";
 
 /**
@@ -52,6 +52,7 @@ export function getGeminiModels(env, modeloPreferido = null) {
   const pref = (typeof modeloPreferido === "string" && modeloPreferido.trim()) ? modeloPreferido.trim() : null;
   const primary = pref || (env && env.GEMINI_MODEL ? env.GEMINI_MODEL : DEFAULT_GEMINI_MODEL).trim();
   const models = [primary];
+  if (!models.includes("gemini-3.8-flash")) models.push("gemini-3.8-flash");
   if (primary !== FALLBACK_GEMINI_MODEL) models.push(FALLBACK_GEMINI_MODEL);
   if (!models.includes("gemini-3.1-flash-lite")) models.push("gemini-3.1-flash-lite");
   for (const respaldoReal of ["gemini-2.5-flash", "gemini-2.5-flash-lite"]) {

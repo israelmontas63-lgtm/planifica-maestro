@@ -1560,7 +1560,7 @@ async function handleApiRequest(request, env, ctx) {
         const terminoLimpio = ultimoMensaje.replace(/[^\p{L}\p{N}\s]/gu, " ").trim().split(/\s+/).filter(w => w.length > 3).slice(0, 4).join(" ");
         const baseSupa = env.SUPABASE_URL.replace(/\/+$/, "");
         const filtroTexto = terminoLimpio ? `&contenido=ilike.*${encodeURIComponent(terminoLimpio)}*` : "";
-        const urlFrag = `${baseSupa}/rest/v1/curriculo_fragmentos?select=id,grado,area,tema,contenido,competencias_especificas,indicadores_logro,fuente,pagina${filtroTexto}&limit=5`;
+        const urlFrag = `${baseSupa}/rest/v1/curriculo_fragmentos?select=id,documento_id,contenido,pagina,seccion,nivel,grado,area${filtroTexto}&limit=5`;
         const resFrag = await fetchConLimite(urlFrag, {
           method: "GET",
           headers: {
@@ -1585,7 +1585,7 @@ async function handleApiRequest(request, env, ctx) {
     const contextoFragmentosTexto = fragmentosCurriculo.length > 0
       ? `\n[FRAGMENTOS OFICIALES DE curriculo_fragmentos (SUPABASE)]:\n` +
         fragmentosCurriculo.map((f, idx) =>
-          `${idx + 1}. [${f.grado || "1.º-2.º"} | ${f.area || "General"} | ${f.tema || "Currículo"}${f.pagina ? ` | pág. ${f.pagina}` : ""}]: ${(f.contenido || f.competencias_especificas || "").slice(0, 500)}`
+          `${idx + 1}. [${f.grado || "1.º-2.º"} | ${f.area || "General"} | ${f.seccion || "Currículo"}${f.pagina ? ` | pág. ${f.pagina}` : ""}]: ${(f.contenido || "").slice(0, 500)}`
         ).join("\n")
       : `\n[ESTADO DE curriculo_fragmentos]: No se recuperaron fragmentos exactos para esta consulta; si falta información oficial, indícalo con transparencia sin inventar indicadores.`;
 
@@ -1629,13 +1629,13 @@ async function handleApiRequest(request, env, ctx) {
       });
     }
 
-    // 4. Llamar a Gemini (gemini-3.5-flash-lite con fallback a gemini-3.5-flash, gemini-flash-latest, etc.)
+    // 4. Llamar a Gemini (gemini-3.8-flash como principal con fallback)
     const geminiBase = env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com";
     const modelosChat = Array.from(new Set([
-      "gemini-3.5-flash-lite",
-      "gemini-3.5-flash",
-      "gemini-flash-latest",
+      "gemini-3.8-flash",
       env.GEMINI_MODEL,
+      "gemini-3.5-flash",
+      "gemini-3.5-flash-lite",
       "gemini-3.1-flash-lite",
       "gemini-2.5-flash"
     ].filter(Boolean)));

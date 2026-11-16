@@ -780,8 +780,8 @@ export default function App() {
           historial: hist8Voz,
           canal: "voz"
         }).then((resChat) => {
-          const textoResp = resChat?.respuesta || resChat?.mensaje_chat || "";
-          if (textoResp) {
+          if (resChat && resChat.ok !== false && (resChat.respuesta || resChat.mensaje_chat)) {
+            const textoResp = resChat.respuesta || resChat.mensaje_chat;
             setMessages([...hist8Voz, { role: "assistant", text: textoResp, modo: "chat_conversacional", canal: "voz" }].slice(-MAX_HISTORIAL_CHAT));
             speak(textoResp);
           } else {
@@ -1975,17 +1975,21 @@ export default function App() {
                 imagenBase64: imgAdj ? imgAdj.base64 : null,
                 mimeType: imgAdj ? imgAdj.mimeType : "image/jpeg"
               });
-              const textoResp = resChat?.respuesta || resChat?.mensaje_chat || "¿En qué contenido de 1.º o 2.º grado te apoyo hoy?";
-              const assistantMsg = {
-                role: "assistant",
-                text: textoResp,
-                fragmentos: resChat?.fragmentos || [],
-                modo: "chat_conversacional",
-                canal: canalEnvio
-              };
-              setMessages([...hist8, assistantMsg].slice(-MAX_HISTORIAL_CHAT));
-              if (hablarRespuestas && textoResp) {
-                speak(textoResp);
+              if (resChat && resChat.ok !== false && (resChat.respuesta || resChat.mensaje_chat)) {
+                const textoResp = resChat.respuesta || resChat.mensaje_chat;
+                const assistantMsg = {
+                  role: "assistant",
+                  text: textoResp,
+                  fragmentos: resChat?.fragmentos || [],
+                  modo: "chat_conversacional",
+                  canal: canalEnvio
+                };
+                setMessages([...hist8, assistantMsg].slice(-MAX_HISTORIAL_CHAT));
+                if (hablarRespuestas && textoResp) {
+                  speak(textoResp);
+                }
+              } else {
+                enviarMensaje(txt, imgAdj?.base64, imgAdj?.mimeType);
               }
             } catch (errChat) {
               enviarMensaje(txt, imgAdj?.base64, imgAdj?.mimeType);

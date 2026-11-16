@@ -15,9 +15,9 @@ export default function ConfiguracionModal({
   const [limpiado, setLimpiado] = useState(false);
   const [modeloIA, setModeloIA] = useState(() => {
     try {
-      return localStorage.getItem("pm_modelo_ia") || "gemini-3.1-flash-lite";
+      return localStorage.getItem("pm_modelo_ia") || "gemini-3.8-flash";
     } catch (e) {
-      return "gemini-3.1-flash-lite";
+      return "gemini-3.8-flash";
     }
   });
   const totalPlanes = obtenerTodasLasPlanificaciones().length;
@@ -198,10 +198,10 @@ export default function ConfiguracionModal({
                 fontWeight: "700",
                 padding: "3px 8px",
                 borderRadius: "12px",
-                background: modeloIA === "gemini-3.1-flash-lite" ? "#dcfce7" : "#e0e7ff",
-                color: modeloIA === "gemini-3.1-flash-lite" ? "#15803d" : "#4338ca"
+                background: modeloIA === "gemini-3.8-flash" ? "#dcfce7" : "#e0e7ff",
+                color: modeloIA === "gemini-3.8-flash" ? "#15803d" : "#4338ca"
               }}>
-                {modeloIA === "gemini-3.1-flash-lite" ? "⚡ Ultrarrápido" : "🔬 Alta Capacidad"}
+                {modeloIA === "gemini-3.8-flash" ? "⚡ Ultrarrápido" : "🔬 Alta Capacidad"}
               </span>
             </div>
 
@@ -212,21 +212,21 @@ export default function ConfiguracionModal({
                 gap: "10px",
                 padding: "10px",
                 borderRadius: "8px",
-                border: `1.5px solid ${modeloIA === "gemini-3.1-flash-lite" ? "#0d9488" : "#e2e8f0"}`,
-                background: modeloIA === "gemini-3.1-flash-lite" ? "#f0fdfa" : "#ffffff",
+                border: `1.5px solid ${modeloIA === "gemini-3.8-flash" ? "#0d9488" : "#e2e8f0"}`,
+                background: modeloIA === "gemini-3.8-flash" ? "#f0fdfa" : "#ffffff",
                 cursor: "pointer"
               }}>
                 <input
                   type="radio"
                   name="modeloIA"
-                  value="gemini-3.1-flash-lite"
-                  checked={modeloIA === "gemini-3.1-flash-lite"}
-                  onChange={() => handleCambiarModelo("gemini-3.1-flash-lite")}
+                  value="gemini-3.8-flash"
+                  checked={modeloIA === "gemini-3.8-flash"}
+                  onChange={() => handleCambiarModelo("gemini-3.8-flash")}
                   style={{ marginTop: "3px", accentColor: "#0d9488" }}
                 />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a" }}>
-                    Gemini 3.1 Flash-Lite <span style={{ color: "#0d9488", fontWeight: "600" }}>(Recomendado)</span>
+                    Gemini 3.8 Flash <span style={{ color: "#0d9488", fontWeight: "600" }}>(Recomendado)</span>
                   </div>
                   <div style={{ fontSize: "11.5px", color: "#64748b", marginTop: "2px" }}>
                     Respuesta en ~2.4 s • $0 costo • Optimizado para el currículo dominicano y guías CON BASE.
