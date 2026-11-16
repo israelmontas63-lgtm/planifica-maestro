@@ -984,6 +984,52 @@ function requerirAcceso(request, env, corsHeaders) {
 // ─────────────────────────────────────────────────────────────
 // ROUTER DE API
 // ─────────────────────────────────────────────────────────────
+const CORS_HEADERS_BASE = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, x-docente-id, x-app-key, x-owner-key, authorization",
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+};
+
+function crearRespuestaErrorGlobal(err, env, { method = "", path = "", isApi = true } = {}) {
+  const incidentId = "INC-" + generarCodigoSeguro(6);
+  const rawMsg = (err && err.message) ? err.message : String(err || "Error desconocido");
+  let detalleSeguro = "Error interno";
+  try {
+    detalleSeguro = enmascararSecretos(rawMsg, env).slice(0, 240);
+  } catch (_) {
+    detalleSeguro = "Error interno (no serializable)";
+  }
+  console.error(`[GlobalError ${incidentId}] ${method} ${path}: ${detalleSeguro}`);
+
+  if (!isApi) {
+    return new Response(`Error interno del servidor (${incidentId})`, {
+      status: 500,
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "X-Content-Type-Options": "nosniff",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+      },
+    });
+  }
+
+  return new Response(JSON.stringify({
+    ok: false,
+    isError: true,
+    error: true,
+    codigo: "ERROR_INTERNO",
+    codigoError: "ERROR_INTERNO",
+    incidentId,
+    mensaje: "Ocurrió un error interno inesperado al procesar la solicitud.",
+    reintentable: true,
+  }), {
+    status: 500,
+    headers: { ...CORS_HEADERS_BASE, "Content-Type": "application/json" },
+  });
+}
+
 async function handleApiRequest(request, env, ctx) {
   const url = new URL(request.url);
   const path = url.pathname;
@@ -1015,13 +1061,7 @@ async function handleApiRequest(request, env, ctx) {
   }
 
   // Headers CORS para desarrollo o integración segura
-  const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, x-docente-id, x-app-key, x-owner-key, authorization",
-    "X-Content-Type-Options": "nosniff",
-    "Referrer-Policy": "strict-origin-when-cross-origin",
-  };
+  const corsHeaders = { ...CORS_HEADERS_BASE };
 
   const CODIGOS_ERROR_CERRADOS = new Set([
     "IA_RESPUESTA_INVALIDA",
@@ -1062,7 +1102,7 @@ async function handleApiRequest(request, env, ctx) {
     return new Response(JSON.stringify(payload), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-
+  try {
   if (method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -5426,6 +5466,15 @@ Genera un JSON estricto con:
     status: 404,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+  } catch (err) {
+    await guardarUltimoFallo(deviceId, {
+      codigoError: "ERROR_INTERNO",
+      componente: "WorkerRouter",
+      motivo: enmascararSecretos((err && err.message) ? err.message : String(err || ""), env).slice(0, 240),
+      queFalta: "Intenta de nuevo en unos segundos."
+    });
+    return crearRespuestaErrorGlobal(err, env, { method, path, isApi: true });
+  }
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -5433,16 +5482,17 @@ Genera un JSON estricto con:
 // ─────────────────────────────────────────────────────────────
 export default {
   async fetch(request, env, ctx) {
-    const url = new URL(request.url);
+    try {
+      const url = new URL(request.url);
 
-    // 1. Todas las peticiones /api/* van al enrutador del Worker
-    if (url.pathname.startsWith("/api/")) {
-      return handleApiRequest(request, env, ctx);
-    }
+      // 1. Todas las peticiones /api/* van al enrutador del Worker
+      if (url.pathname.startsWith("/api/")) {
+        return await handleApiRequest(request, env, ctx);
+      }
 
-    // 2. Todas las demás peticiones se sirven desde los assets estáticos de client/dist
-    if (env.ASSETS) {
-      const response = await env.ASSETS.fetch(request);
+      // 2. Todas las demás peticiones se sirven desde los assets estáticos de client/dist
+      if (env.ASSETS) {
+        const response = await env.ASSETS.fetch(request);
       const ct = response.headers.get("Content-Type") || "";
 
       // /assets/* con hash en el nombre → caché inmutable de un año
@@ -5509,5 +5559,14 @@ export default {
     }
 
     return new Response("Assets binding not available", { status: 500 });
+    } catch (err) {
+      let path = "";
+      try { path = new URL(request.url).pathname; } catch (_) {}
+      return crearRespuestaErrorGlobal(err, env, {
+        method: request.method,
+        path,
+        isApi: path.startsWith("/api/"),
+      });
+    }
   },
 };
