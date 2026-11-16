@@ -1,10 +1,10 @@
 {
   "version": "2.0.0",
-  "fecha_generacion": "2026-11-16T00:47:14.992Z",
-  "commit": "94c3010",
+  "fecha_generacion": "2026-11-16T01:12:03.385Z",
+  "commit": "80b337c",
   "algoritmo": "sha256",
   "total_archivos": 83,
-  "resumen": "11581e183d9cc4df39def6c7ba2f9b25e1d66f905115cde3c0ab98c67cc27c99",
+  "resumen": "a143614dc8a7487ddb8330f7fb007769ac7745a20a628b723c66d060635076cb",
   "hashes": {
     "client/src/App.jsx": "08f48aac9131fd967a25bfca5af841c796773827c85fa0b4b0441afd7247198a",
     "client/src/api.js": "a69d3943721546cf6518011add4a1676f33f1d334a0e0f5b1514022bfe491848",
@@ -88,6 +88,6 @@
     "worker/services/voiceProvider.js": "362fadb6c4b99aecc26b60ddb8133a0ea76bbbab4c1f7d5044600bdf37697635",
     "worker/services/wikipedia.js": "29e4935f92914797dba6d31e510028b1121493447c430ec9ae68c44735ffc3a1",
     "worker/verificadorCitas.js": "bbdc7b502b6027eb268b28d360e0af5c6b41b182e52a61f85c900fdcb19f8a81",
-    "wrangler.toml": "d716def284e2293cf0890fe221a7a551e67fba4f56039317fea33c918626a722"
+    "wrangler.toml": "ae29e8291d6a8227b4d85b168b032f5af77a1fb58cff2046b167d4391066a070"
   }
 }
