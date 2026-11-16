@@ -812,6 +812,24 @@
 
 ---
 
+### Autorización 081
+- **Fecha:** 16/11/2026 (America/Santo_Domingo)
+- **Componentes y Hashes:**
+  - `worker/index.js`: `9b126a040b04697d34bde073a5e3c1e64287585f2eeb57c709de0086afe0463c`
+  - `tests/test_api_chat_conversacional.mjs`
+  - `PROTEGIDO.hashes.json`
+  - `AUTORIZACIONES.md`
+- **Motivo:** Reestructuración y corrección definitiva del enrutamiento de modelos de Gemini en el endpoint `/api/chat` (soporte de `gemini-3.5-flash-lite` y `gemini-3.5-flash` tras obsolescencia de `gemini-2.5-flash`), y confirmación de la migración de memoria vectorial 1024D en Supabase.
+- **Decisiones Aprobadas:**
+  1. **Soporte de Modelos Activos en Cloudflare Worker (`worker/index.js`):** Lista priorizada con `gemini-3.5-flash-lite`, `gemini-3.5-flash`, `gemini-flash-latest` y `gemini-3.1-flash-lite`, eliminando el bloqueo HTTP 502 provocado por la retirada de `gemini-2.5-flash`.
+  2. **Verificación de Memoria Vectorial en Supabase:** Ejecución de la migración SQL (`20261112000000_sincronizar_memoria_1024_y_cache_semantica.sql`) en el proyecto `obcjdxearmmvtihfmtaa`, verificando las funciones `consultar_memoria_robot` y `consultar_cache_planificacion`.
+  3. **Identidad Blindada de Plani Maestra:** Respuestas verificadas con autoría de Israel Montás para 1.º y 2.º grado MINERD y CON BASE.
+- **Frase Textual del Dueño:** "AUTORIZACIONES.md para todo. Necesito que audites cada cosa que me das y lo confrontes con fuentes reales y desarrolladores reales."
+- **Alcance Autorizado:** `worker/index.js`, `tests/test_api_chat_conversacional.mjs`, `AUTORIZACIONES.md`, sellado en `PROTEGIDO.hashes.json`, push a GitHub y despliegue a Cloudflare Workers.
+- **Estado:** PENDIENTE DE SELLADO Y DESPLIEGUE
+
+---
+
 ### Autorización 080
 - **Fecha:** 16/11/2026 (America/Santo_Domingo)
 - **Componentes y Hashes:**

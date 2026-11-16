@@ -1629,11 +1629,18 @@ async function handleApiRequest(request, env, ctx) {
       });
     }
 
-    // 4. Llamar a Gemini (gemini-2.5-flash con respaldo al modelo configurado)
+    // 4. Llamar a Gemini (gemini-3.5-flash-lite con fallback a gemini-3.5-flash, gemini-flash-latest, etc.)
     const geminiBase = env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com";
-    const modelosChat = ["gemini-2.5-flash", env.GEMINI_MODEL || "gemini-3.1-flash-lite"];
+    const modelosChat = Array.from(new Set([
+      "gemini-3.5-flash-lite",
+      "gemini-3.5-flash",
+      "gemini-flash-latest",
+      env.GEMINI_MODEL,
+      "gemini-3.1-flash-lite",
+      "gemini-2.5-flash"
+    ].filter(Boolean)));
     let respuestaTexto = "";
-    let modeloUsado = "gemini-2.5-flash";
+    let modeloUsado = modelosChat[0];
 
     for (const mod of modelosChat) {
       try {
