@@ -833,7 +833,8 @@
   3. **Interfaz React multimodal (`client/src/App.jsx`, `client/src/api.js`, `client/src/components/HomeGreeting.jsx`):** Saludo oficial, barra con triple control (texto, micrófono y cámara/imagen con compresión ligera a 1024px) y síntesis de voz automática.
 - **Frase Textual del Dueño:** "Implementa el asistente multimodal 'Planifica Maestro' ('Plani' / 'Plani Maestra') con soporte para texto, micrófono e imagen... autualisacion .md para todo el sello"
 - **Alcance Autorizado:** `worker/index.js`, `worker/identidad.js`, `src/identidad.js`, `shared/modoConversacional.js`, `client/src/api.js`, `client/src/App.jsx`, `client/src/components/HomeGreeting.jsx`, `tests/test_api_chat_conversacional.mjs`, `tests/test_api_chat_multimodal.mjs`, `AUTORIZACIONES.md`, sellado en `PROTEGIDO.hashes.json`, push a GitHub y despliegue a Cloudflare Workers.
-- **Estado:** PENDIENTE DE AUTORIZACIÓN EXPLÍCITA PARA SELLADO Y DESPLIEGUE
+- **Resumen Criptográfico Sellado:** `b3443bd257a5f936098fa545e125268747a168aeaf496845186d084bb9280a3a`
+- **Estado:** SELLADO, VERIFICADO Y DESPLEGADO
 
 ---
 
