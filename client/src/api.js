@@ -342,9 +342,10 @@ export async function generarPlanificacion({
     }
   }
 
+  const historialReciente = Array.isArray(messages) ? messages.slice(-8) : [];
   const payload = {
     sesionId: sesionIdActivo,
-    messages,
+    messages: historialReciente,
     nivel,
     periodo,
     docenteId,
@@ -506,6 +507,40 @@ export async function generarPlanificacion({
     plan_completado: Boolean(resJson?.plan_completado && resJson?.datos_planificacion),
     ...resJson
   };
+}
+
+/**
+ * POST /api/chat
+ * Asistente conversacional con memoria de los últimos 8 mensajes, Gemini 2.5 Flash,
+ * consulta a curriculo_fragmentos y caché en CACHE_KV.
+ */
+export async function enviarMensajeChat({
+  messages = [],
+  texto = "",
+  grado = "",
+  area = "",
+  sesionId = null,
+  signal,
+} = {}) {
+  const sesionIdActivo = sesionId || obtenerOSetearSesionId();
+  const historial8 = Array.isArray(messages) ? messages.slice(-8) : [];
+  const res = await request(
+    "/api/chat",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        sesionId: sesionIdActivo,
+        messages: historial8,
+        message: texto,
+        grado,
+        area,
+      }),
+      signal,
+      timeout: 35000,
+    },
+    1
+  );
+  return res.json();
 }
 
 /**

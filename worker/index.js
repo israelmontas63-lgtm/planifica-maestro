@@ -13,7 +13,7 @@ import { getAiProvider, getGeminiModels, fetchGeminiWithRetry, fetchGeminiConThi
 import { fetchConLimite } from "./services/timeoutIntento.js";
 import { generateVoice } from "./services/voiceProvider.js";
 import { clasificarIntencion, clasificarPorReglas } from "./clasificadorIntencion.js";
-import { generarRespuestaCharlaLocal, SYSTEM_PROMPT_CONVERSACIONAL, limpiarSaludoInnecesario, sanitizarAntiAlucinacion } from "./modoConversacional.js";
+import { generarRespuestaCharlaLocal, SYSTEM_PROMPT_CONVERSACIONAL, SYSTEM_INSTRUCTION_CHAT_MINERD, limpiarSaludoInnecesario, sanitizarAntiAlucinacion } from "./modoConversacional.js";
 import { buscarEnGlosario } from "./glosarioDocente.js";
 import {
   generarClaveCurricularSha256,
@@ -1474,6 +1474,203 @@ async function handleApiRequest(request, env, ctx) {
     const estado = await consultarCuota(env, rawDev, isOwner, clientIp);
     return new Response(JSON.stringify(estado), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // 6.5. POST /api/chat (Asistente conversacional con memoria de 8 mensajes, Gemini 2.5 Flash, curriculo_fragmentos y CACHE_KV)
+  if (path === "/api/chat" && method === "POST") {
+    const auth = requerirAcceso(request, env, corsHeaders);
+    if (auth.errorResponse) return auth.errorResponse;
+
+    const body = await request.json().catch(() => ({}));
+    const rawMessages = Array.isArray(body.messages) ? body.messages : [];
+    const textoDirecto = (body.message || body.texto || body.prompt || "").trim();
+    const historial8 = (rawMessages.length > 0
+      ? rawMessages
+      : (textoDirecto ? [{ role: "user", text: textoDirecto }] : [])
+    ).slice(-8);
+
+    if (historial8.length === 0) {
+      return new Response(JSON.stringify({ ok: false, error: "Falta el mensaje de consulta en /api/chat." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    const ultimoMensaje = (historial8[historial8.length - 1]?.text || historial8[historial8.length - 1]?.content || textoDirecto || "").trim();
+    const gradoFiltro = body.grado || "";
+    const areaFiltro = body.area || "";
+
+    // 1. Verificar caché de respuestas frecuentes en CACHE_KV (cache-kv)
+    const kvCache = env.CACHE_KV || env["cache-kv"] || null;
+    const claveHash = await generarClaveCurricularSha256({
+      grado: String(gradoFiltro || "1-2"),
+      area: String(areaFiltro || "general"),
+      tema: ultimoMensaje.toLowerCase(),
+      nivel: "chat_minerd_conbase",
+      periodo: String(historial8.length)
+    });
+    const kvKey = `chat_kv:${claveHash}`;
+
+    if (kvCache && typeof kvCache.get === "function") {
+      try {
+        const cachedRaw = await kvCache.get(kvKey);
+        if (cachedRaw) {
+          const cachedObj = JSON.parse(cachedRaw);
+          if (cachedObj && cachedObj.respuesta) {
+            return new Response(JSON.stringify({
+              ...cachedObj,
+              ok: true,
+              desdeCache: true
+            }), {
+              status: 200,
+              headers: { ...corsHeaders, "Content-Type": "application/json" }
+            });
+          }
+        }
+      } catch (eKv) {
+        console.warn("[/api/chat] Error leyendo CACHE_KV:", eKv?.message || eKv);
+      }
+    }
+
+    // 2. Consultar tabla curriculo_fragmentos en Supabase (priorizando 1.º y 2.º grado MINERD / CON BASE)
+    let fragmentosCurriculo = [];
+    const supaKey = env.SUPABASE_ANON_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
+    if (env.SUPABASE_URL && supaKey && ultimoMensaje) {
+      try {
+        const terminoLimpio = ultimoMensaje.replace(/[^\p{L}\p{N}\s]/gu, " ").trim().split(/\s+/).filter(w => w.length > 3).slice(0, 4).join(" ");
+        const baseSupa = env.SUPABASE_URL.replace(/\/+$/, "");
+        const filtroTexto = terminoLimpio ? `&contenido=ilike.*${encodeURIComponent(terminoLimpio)}*` : "";
+        const urlFrag = `${baseSupa}/rest/v1/curriculo_fragmentos?select=id,grado,area,tema,contenido,competencias_especificas,indicadores_logro,fuente,pagina${filtroTexto}&limit=5`;
+        const resFrag = await fetchConLimite(urlFrag, {
+          method: "GET",
+          headers: {
+            apikey: supaKey,
+            Authorization: `Bearer ${supaKey}`,
+            Accept: "application/json"
+          },
+          signal: request.signal
+        }, 4000);
+        if (resFrag && resFrag.ok) {
+          const dataFrag = await resFrag.json();
+          if (Array.isArray(dataFrag)) {
+            fragmentosCurriculo = dataFrag;
+          }
+        }
+      } catch (eSupa) {
+        console.warn("[/api/chat] Error consultando curriculo_fragmentos:", eSupa?.message || eSupa);
+      }
+    }
+
+    // 3. Construir systemInstruction especializado en MINERD y CON BASE (1.º y 2.º grado) con pregunta final obligatoria
+    const contextoFragmentosTexto = fragmentosCurriculo.length > 0
+      ? `\n\n[FRAGMENTOS OFICIALES DE curriculo_fragmentos (SUPABASE)]:\n` +
+        fragmentosCurriculo.map((f, idx) =>
+          `${idx + 1}. [${f.grado || "1.º-2.º"} | ${f.area || "General"} | ${f.tema || "Currículo"}${f.pagina ? ` | pág. ${f.pagina}` : ""}]: ${(f.contenido || f.competencias_especificas || "").slice(0, 500)}`
+        ).join("\n")
+      : "";
+
+    const systemInstructionChat = `${SYSTEM_INSTRUCTION_CHAT_MINERD}${contextoFragmentosTexto}`;
+
+    const contentsChat = historial8
+      .map((m) => ({
+        role: (m.role === "assistant" || m.role === "model") ? "model" : "user",
+        parts: [{ text: String(m.text || m.content || "").trim() || "..." }]
+      }));
+    while (contentsChat.length > 0 && contentsChat[0].role !== "user") {
+      contentsChat.shift();
+    }
+    if (contentsChat.length === 0) {
+      contentsChat.push({ role: "user", parts: [{ text: ultimoMensaje }] });
+    }
+
+    if (!env.GEMINI_API_KEY) {
+      return new Response(JSON.stringify({
+        ok: false,
+        error: "Falta GEMINI_API_KEY en el servidor.",
+        mensaje_chat: "El servicio de chat requiere GEMINI_API_KEY configurada en el Worker."
+      }), {
+        status: 503,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // 4. Llamar a Gemini (gemini-2.5-flash con respaldo al modelo configurado)
+    const geminiBase = env.GEMINI_BASE_URL || "https://generativelanguage.googleapis.com";
+    const modelosChat = ["gemini-2.5-flash", env.GEMINI_MODEL || "gemini-3.1-flash-lite"];
+    let respuestaTexto = "";
+    let modeloUsado = "gemini-2.5-flash";
+
+    for (const mod of modelosChat) {
+      try {
+        const resGem = await fetchConLimite(`${geminiBase}/v1beta/models/${mod}:generateContent`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": env.GEMINI_API_KEY
+          },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: systemInstructionChat }] },
+            contents: contentsChat,
+            generationConfig: {
+              temperature: 0.3,
+              maxOutputTokens: 1024
+            }
+          }),
+          signal: request.signal
+        }, 20000);
+
+        if (resGem && resGem.ok) {
+          const dataGem = await resGem.json();
+          const textoExtraido = textoDeCandidato(dataGem.candidates?.[0]);
+          if (textoExtraido) {
+            respuestaTexto = sanitizarAntiAlucinacion(textoExtraido.trim());
+            modeloUsado = mod;
+            break;
+          }
+        }
+      } catch (eGem) {
+        console.warn(`[/api/chat] Falló modelo ${mod}:`, eGem?.message || eGem);
+      }
+    }
+
+    if (!respuestaTexto) {
+      return new Response(JSON.stringify({
+        ok: false,
+        error: "No se pudo obtener respuesta de Gemini.",
+        mensaje_chat: "En este momento el modelo Gemini no pudo responder. ¿Deseas intentarlo con otra consulta curricular de 1.º o 2.º grado?"
+      }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
+    // Garantizar regla: cerrar siempre con una única pregunta breve de seguimiento
+    if (!/\?\s*$/.test(respuestaTexto)) {
+      respuestaTexto = `${respuestaTexto}\n\n¿Te gustaría enfocar esta actividad para 1.º o para 2.º grado?`;
+    }
+
+    const payloadRespuesta = {
+      ok: true,
+      respuesta: respuestaTexto,
+      mensaje_chat: respuestaTexto,
+      modelo: modeloUsado,
+      historial_usado: historial8.length,
+      fragmentos: fragmentosCurriculo,
+      desdeCache: false
+    };
+
+    if (kvCache && typeof kvCache.put === "function") {
+      try {
+        await kvCache.put(kvKey, JSON.stringify(payloadRespuesta), { expirationTtl: 86400 });
+      } catch (ePut) {
+        console.warn("[/api/chat] Error guardando en CACHE_KV:", ePut?.message || ePut);
+      }
+    }
+
+    return new Response(JSON.stringify(payloadRespuesta), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
   }
 

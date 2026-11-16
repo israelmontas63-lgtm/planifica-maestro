@@ -169,8 +169,24 @@ export default function App() {
     refrescarContadorNotificaciones();
   }, [refrescarContadorNotificaciones]);
   
-  // Chat History
-  const [messages, setMessages] = useState([]);
+  // Chat History (memoria de sesión de los últimos 8 mensajes)
+  const MAX_HISTORIAL_CHAT = 8;
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem("pm_historial_chat_8");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed.slice(-8);
+      }
+    } catch (e) {}
+    return [];
+  });
+  const [chatInputRapido, setChatInputRapido] = useState("");
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("pm_historial_chat_8", JSON.stringify(messages.slice(-8)));
+    } catch (e) {}
+  }, [messages]);
   const [cargando, setCargando] = useState(false);
   const [cambiandoARespaldo, setCambiandoARespaldo] = useState(false);
   const timerRespaldoRef = useRef(null);
@@ -449,7 +465,7 @@ export default function App() {
 
     setErrorGeneracion(null);
     const newUserMsg = { role: "user", text: texto, imageBase64, mediaType, aspectRatio };
-    const newHistory = [...messages, newUserMsg];
+    const newHistory = [...messages, newUserMsg].slice(-MAX_HISTORIAL_CHAT);
     setMessages(newHistory);
     setImageSrc(null);
 
@@ -573,7 +589,7 @@ export default function App() {
         sugerencia: data.sugerencia || null,
         reintentable: data.reintentable !== false
       };
-      setMessages([...newHistory, newAssistantMsg]);
+      setMessages([...newHistory, newAssistantMsg].slice(-MAX_HISTORIAL_CHAT));
 
       if ((hablarRespuestas || fuePorVozRef.current) && chatText) {
         handleEscuchar(chatText);
@@ -1837,6 +1853,108 @@ export default function App() {
           onRemoveImage={() => setImageSrc(null)}
           procesando={procesandoImagen}
         />
+
+        {/* Barra de asistente conversacional con memoria de 8 mensajes, micrófono (Web Speech API) y altavoz */}
+        <form
+          className="pm-chat-quickbar no-print"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const txt = chatInputRapido.trim();
+            if (!txt || cargando) return;
+            setChatInputRapido("");
+            enviarMensaje(txt);
+          }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            padding: "8px 10px",
+            margin: "4px 2px",
+            background: "#ffffff",
+            border: "1px solid #cbd5e1",
+            borderRadius: "12px",
+            boxShadow: "0 2px 6px rgba(15, 23, 42, 0.05)"
+          }}
+        >
+          <button
+            type="button"
+            onClick={handleDictadoClick}
+            title={listening ? "Detener micrófono (Web Speech API)" : "Hablar por micrófono (Web Speech API)"}
+            aria-label="Micrófono por voz"
+            style={{
+              background: listening ? "#dc2626" : "#f1f5f9",
+              color: listening ? "#ffffff" : "#0f766e",
+              border: "1px solid #cbd5e1",
+              borderRadius: "8px",
+              padding: "7px 10px",
+              fontSize: "14px",
+              cursor: "pointer",
+              fontWeight: "600",
+              flexShrink: 0
+            }}
+          >
+            {listening ? "⏹️" : "🎙️"}
+          </button>
+          <input
+            type="text"
+            value={chatInputRapido}
+            onChange={(e) => setChatInputRapido(e.target.value)}
+            placeholder="Pregunta o planifica (1.º y 2.º MINERD / CON BASE)…"
+            aria-label="Mensaje para el asistente conversacional"
+            style={{
+              flex: 1,
+              minWidth: 0,
+              border: "none",
+              outline: "none",
+              fontSize: "13.5px",
+              color: "#1e293b",
+              background: "transparent"
+            }}
+          />
+          {messages.some((m) => m.role === "assistant" && m.text) && (
+            <button
+              type="button"
+              onClick={() => {
+                const ultimaResp = [...messages].reverse().find((m) => m.role === "assistant" && m.text);
+                if (!ultimaResp) return;
+                if (isSpeaking) stopSpeaking();
+                else handleEscuchar(ultimaResp.text);
+              }}
+              title="Leer última respuesta en voz alta (Altavoz)"
+              aria-label="Altavoz para leer respuesta en voz alta"
+              style={{
+                background: isSpeaking ? "#fef3c7" : "#f1f5f9",
+                color: "#334155",
+                border: "1px solid #cbd5e1",
+                borderRadius: "8px",
+                padding: "7px 10px",
+                fontSize: "14px",
+                cursor: "pointer",
+                flexShrink: 0
+              }}
+            >
+              {isSpeaking ? "⏹️" : "🔊"}
+            </button>
+          )}
+          <button
+            type="submit"
+            disabled={!chatInputRapido.trim() || cargando}
+            title="Enviar mensaje"
+            style={{
+              background: chatInputRapido.trim() && !cargando ? "#0d9488" : "#cbd5e1",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: "8px",
+              padding: "7px 12px",
+              fontSize: "13px",
+              fontWeight: "700",
+              cursor: chatInputRapido.trim() && !cargando ? "pointer" : "default",
+              flexShrink: 0
+            }}
+          >
+            Enviar
+          </button>
+        </form>
 
         {/* Versión instalada y garantía de privacidad integrada en el scroll */}
         <footer style={{

@@ -810,3 +810,24 @@
 - **Resumen Criptográfico Sellado:** `3d058f60e8b5e101235dbd14a0509869e621cc2cc6a7f2ce74542b74d50ac23e`
 - **Estado:** SELLADO, VERIFICADO Y DESPLEGADO
 
+---
+
+### Autorización 079
+- **Fecha:** 16/11/2026 (America/Santo_Domingo)
+- **Componentes y Hashes:**
+  - `client/src/App.jsx`: `c6715ce1b533205c14f44a8d6926d21188939573762ed44507cdb9a3ff589fad`
+  - `client/src/api.js`: `6fc0df6c89a28053f50f21546cae2837a5067f0a51b2fad5bb35408fe8a90d65`
+  - `shared/modoConversacional.js`: `bcfb47c4dc2cfd2be107d75ecb9bbe5fc0d02843ad8050f26dd245ec5be406ec`
+  - `worker/index.js`: `bb9741c86cc4332bbaf66f4f9694f04b1ff1d30a76b5206df51b199ca02a9d96`
+  - `PROTEGIDO.hashes.json`
+  - `AUTORIZACIONES.md`
+- **Motivo:** Implementación de asistente conversacional con memoria de sesión de 8 mensajes, endpoint `/api/chat` con `gemini-2.5-flash`, consulta a `curriculo_fragmentos`, caché en `CACHE_KV` y controles de micrófono (Web Speech API) y altavoz en React/Vite.
+- **Decisiones Aprobadas:**
+  1. **Endpoint `/api/chat` en Cloudflare Worker (`worker/index.js`):** Conectado a `gemini-2.5-flash` usando `GEMINI_API_KEY`, consultando `curriculo_fragmentos` en Supabase y cacheando respuestas frecuentes en `CACHE_KV` (`cache-kv`).
+  2. **`systemInstruction` MINERD y CON BASE (1.º y 2.º grado):** Configurado en `shared/modoConversacional.js` con regla obligatoria de cerrar cada respuesta con una única pregunta breve de seguimiento.
+  3. **Memoria de sesión (8 mensajes) y voz en React/Vite (`client/src/App.jsx`, `client/src/api.js`):** Historial acotado a los últimos 8 mensajes en estado y `sessionStorage`, más barra de chat con botón de micrófono (Web Speech API) y botón de altavoz para lectura en voz alta.
+- **Frase Textual del Dueño:** "Implementa un asistente conversacional con memoria de sesión y soporte de voz en Planifica Maestro... autualisacion .md para todo el sello"
+- **Alcance Autorizado:** `worker/index.js`, `shared/modoConversacional.js`, `client/src/api.js`, `client/src/App.jsx`, `AUTORIZACIONES.md`, sellado en `PROTEGIDO.hashes.json`, push a GitHub y despliegue a Cloudflare Workers.
+- **Estado:** SELLADO, VERIFICADO Y DESPLEGADO
+
+
