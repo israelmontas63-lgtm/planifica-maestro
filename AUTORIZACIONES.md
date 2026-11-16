@@ -828,6 +828,7 @@
   3. **Memoria de sesión (8 mensajes) y voz en React/Vite (`client/src/App.jsx`, `client/src/api.js`):** Historial acotado a los últimos 8 mensajes en estado y `sessionStorage`, más barra de chat con botón de micrófono (Web Speech API) y botón de altavoz para lectura en voz alta.
 - **Frase Textual del Dueño:** "Implementa un asistente conversacional con memoria de sesión y soporte de voz en Planifica Maestro... autualisacion .md para todo el sello"
 - **Alcance Autorizado:** `worker/index.js`, `shared/modoConversacional.js`, `client/src/api.js`, `client/src/App.jsx`, `AUTORIZACIONES.md`, sellado en `PROTEGIDO.hashes.json`, push a GitHub y despliegue a Cloudflare Workers.
+- **Resumen Criptográfico Sellado:** `422d9beffc3ba94c76a7402d7df15652637204f5e60ba6b809c7445fff8583b5`
 - **Estado:** SELLADO, VERIFICADO Y DESPLEGADO
 
 
